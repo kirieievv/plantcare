@@ -1,0 +1,122 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+body {
+  background: #e8f5e9;
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+nav {
+  background: #388e3c;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+}
+nav a {
+  color: #fff;
+  text-decoration: none;
+  margin-right: 1.5rem;
+  font-weight: 500;
+  font-size: 1.1rem;
+  transition: color 0.2s;
+}
+nav a:hover {
+  color: #c8e6c9;
+}
+
+.container {
+  max-width: 400px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(56, 142, 60, 0.1);
+  padding: 2rem 2.5rem 2.5rem 2.5rem;
+  text-align: center;
+}
+
+input[type="text"], input[type="email"], input[type="password"] {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.5rem 0 1rem 0;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #f1f8e9;
+  transition: border 0.2s;
+}
+input:focus {
+  border: 1.5px solid #388e3c;
+  outline: none;
+}
+
+button {
+  background: linear-gradient(90deg, #43a047 0%, #66bb6a 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.2s;
+}
+button:hover {
+  background: linear-gradient(90deg, #388e3c 0%, #43a047 100%);
+}
+
+h2 {
+  color: #388e3c;
+  margin-bottom: 1.5rem;
+}
+
+img.plant-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 12px rgba(56, 142, 60, 0.15);
+}
+
+p {
+  margin: 0.5rem 0;
+}
