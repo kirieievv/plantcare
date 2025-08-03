@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class PlantDetailsScreen extends StatefulWidget {
   final Plant plant;
@@ -178,16 +179,27 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    _plant.imageUrl ?? '',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.local_florist, size: 100, color: Colors.grey),
-                      );
-                    },
-                  ),
+                  _plant.imageUrl != null && _plant.imageUrl!.startsWith('data:image')
+                      ? Image.memory(
+                          base64Decode(_plant.imageUrl!.split(',')[1]),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.local_florist, size: 100, color: Colors.grey),
+                            );
+                          },
+                        )
+                      : Image.network(
+                          _plant.imageUrl ?? '',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.local_florist, size: 100, color: Colors.grey),
+                            );
+                          },
+                        ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(

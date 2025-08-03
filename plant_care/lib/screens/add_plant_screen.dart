@@ -4,6 +4,7 @@ import 'package:plant_care/services/plant_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 
 class AddPlantScreen extends StatefulWidget {
   const AddPlantScreen({Key? key}) : super(key: key);
@@ -83,13 +84,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       // Handle image selection - use custom image if selected, otherwise predefined
       String imageUrl;
       if (_selectedImageBytes != null) {
-        // For now, use a predefined image since web upload needs more setup
-        // In a real app, you would upload the bytes to Firebase Storage
-        imageUrl = _plantImages[0];
+        // Convert bytes to base64 data URL for storage
+        final base64String = base64Encode(_selectedImageBytes!);
+        imageUrl = 'data:image/jpeg;base64,$base64String';
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Custom image selected! Using predefined image for now.'),
+              content: Text('Custom image applied successfully!'),
               backgroundColor: Colors.green,
             ),
           );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/plant.dart';
+import 'dart:convert';
 
 class PlantCard extends StatelessWidget {
   final Plant plant;
@@ -59,12 +60,19 @@ class PlantCard extends StatelessWidget {
                 child: plant.imageUrl != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(30),
-                        child: Image.network(
-                          plant.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(Icons.local_florist, size: 30, color: needsWater ? Colors.orange.shade600 : Colors.green.shade600),
-                        ),
+                        child: plant.imageUrl!.startsWith('data:image')
+                            ? Image.memory(
+                                base64Decode(plant.imageUrl!.split(',')[1]),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(Icons.local_florist, size: 30, color: needsWater ? Colors.orange.shade600 : Colors.green.shade600),
+                              )
+                            : Image.network(
+                                plant.imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(Icons.local_florist, size: 30, color: needsWater ? Colors.orange.shade600 : Colors.green.shade600),
+                              ),
                       )
                     : Icon(
                         Icons.local_florist,
