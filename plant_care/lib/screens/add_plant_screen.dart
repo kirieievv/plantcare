@@ -484,6 +484,45 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
+              // Plant Name - Moved above photo upload
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Plant Name *',
+                      hintText: 'e.g., Monstera, Snake Plant',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.green.shade600, width: 2),
+                      ),
+                      prefixIcon: Icon(Icons.local_florist, color: Colors.green.shade600),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a plant name';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
               // Plant Image Section
               Card(
                 elevation: 4,
@@ -610,48 +649,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 ),
               ),
               
-              const SizedBox(height: 24),
-              
-              // Plant Name
-              Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Plant Name *',
-                      hintText: 'e.g., Monstera, Snake Plant',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.green.shade600, width: 2),
-                      ),
-                      prefixIcon: Icon(Icons.local_florist, color: Colors.green.shade600),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a plant name';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              
-
-              
-              // AI-Determined Watering Schedule
+                            // AI-Determined Watering Schedule
               if (_aiWateringFrequency != null) ...[
                 Card(
                   elevation: 3,
@@ -998,13 +996,83 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                           
                           if (_aiCareTips != null) ...[
                             const SizedBox(height: 20),
-                                                          Container(
+                            
+                            // Check if this is a fallback response (analysis failed)
+                            if (_aiName == 'Upload New Photo' || _aiGeneralDescription!.contains('parsing issue') || _aiGeneralDescription!.contains('temporarily unavailable')) ...[
+                              Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.shade50,
+                                  color: Colors.orange.shade50,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.purple.shade200),
+                                  border: Border.all(color: Colors.orange.shade200),
                                 ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Analysis Issue Detected',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.orange.shade700,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'The AI analysis encountered an issue. Please upload a new, clearer plant photo for better results.',
+                                      style: TextStyle(
+                                        color: Colors.orange.shade600,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          // Clear current image and prompt for new upload
+                                          setState(() {
+                                            _selectedImageBytes = null;
+                                            _aiGeneralDescription = null;
+                                            _aiName = null;
+                                            _aiMoistureLevel = null;
+                                            _aiLight = null;
+                                            _aiSpecificIssues = null;
+                                            _aiCareTips = null;
+                                            _aiWateringFrequency = null;
+                                            _aiWateringAmount = null;
+                                          });
+                                        },
+                                        icon: const Icon(Icons.upload_file),
+                                        label: const Text('Upload New Photo'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.orange.shade600,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.purple.shade200),
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
