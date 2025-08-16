@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/services/chatgpt_service.dart';
+import 'package:plant_care/utils/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
@@ -465,17 +466,18 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add New Plant'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        title: Text('Add New Plant', style: AppTheme.headingMedium.copyWith(color: AppTheme.white)),
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: AppTheme.white,
         elevation: 0,
+        centerTitle: true,
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.green, Colors.white],
+            colors: [AppTheme.primaryGreen, AppTheme.white],
             stops: [0.0, 0.3],
           ),
         ),
@@ -487,30 +489,17 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               // Plant Name - Moved above photo upload
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(AppTheme.spacingL),
                   child: TextFormField(
                     controller: _nameController,
-                    decoration: InputDecoration(
+                    decoration: AppTheme.inputDecoration(
                       labelText: 'Plant Name *',
                       hintText: 'e.g., Monstera, Snake Plant',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.green.shade600, width: 2),
-                      ),
-                      prefixIcon: Icon(Icons.local_florist, color: Colors.green.shade600),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
+                      prefixIcon: Icons.local_florist,
                     ),
+                    style: AppTheme.bodyLarge,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter a plant name';
@@ -526,33 +515,29 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               // Plant Image Section
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(AppTheme.spacingL),
                   child: Column(
                     children: [
                       // Section Title
-                      const Text(
+                      Text(
                         'Plant Image',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: AppTheme.headingSmall,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppTheme.spacingM),
                       
                       // Image Display Area
                       Container(
                         width: 200,
                         height: 200,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusL),
                           border: Border.all(
-                            color: Colors.green.shade200,
+                            color: AppTheme.lightGreen,
                             width: 2,
                           ),
-                          color: Colors.grey.shade50,
+                          color: AppTheme.lightGrey,
                         ),
                         child: _selectedImageBytes != null
                             ? Stack(
@@ -605,19 +590,14 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                         child: ElevatedButton.icon(
                           onPressed: _pickImage,
                           icon: const Icon(Icons.upload_rounded, size: 20),
-                          label: const Text(
+                          label: Text(
                             'Upload Photo',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade600,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            style: AppTheme.bodyLarge.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.white,
                             ),
-                            elevation: 2,
                           ),
+                          style: AppTheme.primaryButtonStyle,
                         ),
                       ),
                       
@@ -632,9 +612,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                               });
                             },
                             icon: const Icon(Icons.delete_outline, size: 18),
-                            label: const Text(
+                            label: Text(
                               'Remove Photo',
-                              style: TextStyle(fontSize: 14),
+                              style: AppTheme.bodyMedium.copyWith(
+                                color: Colors.red.shade600,
+                              ),
                             ),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.red.shade600,
@@ -1110,29 +1092,20 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _addPlant,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 3,
-                    shadowColor: Colors.green.shade200,
-                  ),
+                  style: AppTheme.primaryButtonStyle,
                   child: _isLoading
                       ? const SizedBox(
                           height: 24,
                           width: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Add Plant',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                          style: AppTheme.headingSmall.copyWith(
+                            color: AppTheme.white,
                             letterSpacing: 0.5,
                           ),
                         ),

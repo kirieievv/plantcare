@@ -543,7 +543,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   ],
                   
                   // AI Care Recommendations
-                                              if (_plant.aiGeneralDescription != null) ...[
+                  if (_plant.aiGeneralDescription != null) ...[
                     const SizedBox(height: 16),
                     
                     Card(
@@ -556,18 +556,56 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           children: [
                             Row(
                               children: [
-                                                            Icon(
-                              Icons.psychology,
-                              color: Colors.purple[600],
-                              size: 24,
-                            ),
+                                Icon(
+                                  Icons.psychology,
+                                  color: Colors.purple.shade600,
+                                  size: 24,
+                                ),
                                 const SizedBox(width: 12),
-                                const Text(
-                                  'AI Care Recommendations',
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                Expanded(
+                                  child: Text(
+                                    'AI Care Recommendations',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.purple.shade700,
+                                    ),
+                                  ),
+                                ),
+                                // Status Indicator
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: Colors.green.shade100,
+                                    border: Border.all(
+                                      color: Colors.green.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green.shade600,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'AI Ready',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.green.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
+                            
                             const SizedBox(height: 20),
                             
                             // Plant Name and Description
@@ -590,24 +628,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                     _plant.aiMoistureLevel ?? 'Not specified',
                                     Icons.opacity,
                                     Colors.green,
+                                    moisturePercentage: _getMoisturePercentage(_plant.aiMoistureLevel),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildCareCard(
-                                    'Moisture',
-                                    _plant.aiMoistureLevel ?? 'Not specified',
-                                    Icons.opacity,
-                                    Colors.green,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            Row(
-                              children: [
                                 Expanded(
                                   child: _buildCareCard(
                                     'Light',
@@ -616,12 +640,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                     Colors.orange,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Container(), // Empty space for alignment
-                                ),
                               ],
                             ),
+                            
+                            const SizedBox(height: 16),
                             
                             // Specific Issues
                             if (_plant.aiSpecificIssues != null) ...[
@@ -635,9 +657,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple[50],
+                                  color: Colors.purple.shade50,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.purple[200]!),
+                                  border: Border.all(color: Colors.purple.shade200),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,7 +668,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                       'Care Tips',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.purple[700],
+                                        color: Colors.purple.shade700,
                                         fontSize: 16,
                                       ),
                                     ),
@@ -654,7 +676,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                     Text(
                                       _plant.aiCareTips!,
                                       style: TextStyle(
-                                        color: Colors.purple[600],
+                                        color: Colors.purple.shade600,
                                         height: 1.4,
                                         fontSize: 16,
                                       ),
