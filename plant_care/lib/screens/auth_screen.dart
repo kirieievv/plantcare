@@ -18,6 +18,7 @@ class _AuthScreenState extends State<AuthScreen> {
   
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _rememberMe = true; // Default to true for better UX
   String _errorMessage = '';
 
   @override
@@ -41,6 +42,7 @@ class _AuthScreenState extends State<AuthScreen> {
         await AuthService.signIn(
           email: _emailController.text.trim(),
           password: _passwordController.text,
+          rememberMe: _rememberMe,
         );
       } else {
         final userCredential = await AuthService.signUp(
@@ -56,7 +58,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         print('Navigating to DashboardScreen...');
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          MaterialPageRoute(builder: (context) => DashboardScreen(user: FirebaseAuth.instance.currentUser)),
         );
       }
     } catch (e) {
@@ -192,6 +194,29 @@ class _AuthScreenState extends State<AuthScreen> {
                             return null;
                           },
                         ),
+                        
+                        // Remember Me checkbox (only show for login)
+                        if (_isLogin) ...[
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _rememberMe,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _rememberMe = value ?? true;
+                                  });
+                                },
+                                activeColor: Colors.green.shade600,
+                              ),
+                              const Text(
+                                'Remember me for 30 days',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ],
+                        
                         const SizedBox(height: 24),
 
                         // Error message

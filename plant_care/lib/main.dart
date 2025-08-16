@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/auth_screen.dart';
+import 'screens/dashboard_screen.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,18 +17,95 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Plant Care',
-      debugShowCheckedModeBanner: false, // Remove debug banner
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const AuthScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isLoading = true;
+  User? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthState();
+  }
+
+  Future<void> _checkAuthState() async {
+    try {
+      // Check if user has valid auth cookie
+      if (await AuthService.hasValidAuthCookie()) {
+        // Check if Firebase user is still valid
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          setState(() {
+            _user = currentUser;
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+      
+      // Listen to Firebase auth state changes
+      FirebaseAuth.instance.authStateChanges().listen((User? user) {
+        if (user != null) {
+          // User signed in, save cookie
+          AuthService.refreshAuthCookie();
+        }
+        setState(() {
+          _user = user;
+          _isLoading = false;
+        });
+      });
+    } catch (e) {
+      print('Error checking auth state: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading Plant Care...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If user is authenticated, show dashboard
+    if (_user != null) {
+      return DashboardScreen(user: _user!);
+    }
+
+    // If no user, show auth screen
+    return const AuthScreen();
   }
 }
 

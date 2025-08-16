@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
@@ -6,12 +7,14 @@ import '../services/plant_service.dart';
 import '../widgets/plant_card.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
-import 'plant_list_screen.dart';
 import 'add_plant_screen.dart';
 import 'plant_details_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final User? user;
+  
+  const DashboardScreen({super.key, this.user});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -143,6 +146,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   actions: [
+                    IconButton(
+                      onPressed: () {
+                        if (widget.user != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => SettingsScreen(user: widget.user!),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.settings, color: Colors.white),
+                    ),
                     IconButton(
                       onPressed: () {
                         Navigator.of(context).push(

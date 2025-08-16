@@ -11,6 +11,14 @@ class Plant {
   final String? notes;
   final DateTime createdAt;
   final String? userId;
+  
+  // AI-generated care recommendations
+  final String? aiGeneralDescription;
+  final String? aiName;
+  final String? aiMoistureLevel;
+  final String? aiLight;
+  final String? aiSpecificIssues;
+  final String? aiCareTips;
 
   Plant({
     required this.id,
@@ -23,6 +31,12 @@ class Plant {
     this.notes,
     required this.createdAt,
     this.userId,
+    this.aiGeneralDescription,
+    this.aiName,
+    this.aiMoistureLevel,
+    this.aiLight,
+    this.aiSpecificIssues,
+    this.aiCareTips,
   });
 
   // Convert to Map for Firestore
@@ -38,6 +52,12 @@ class Plant {
       'notes': notes,
       'createdAt': createdAt.toIso8601String(),
       'userId': userId,
+      'aiGeneralDescription': aiGeneralDescription,
+      'aiName': aiName,
+      'aiMoistureLevel': aiMoistureLevel,
+      'aiLight': aiLight,
+      'aiSpecificIssues': aiSpecificIssues,
+      'aiCareTips': aiCareTips,
     };
   }
 
@@ -54,6 +74,12 @@ class Plant {
       notes: map['notes'],
       createdAt: _parseTimestamp(map['createdAt']) ?? DateTime.now(),
       userId: map['userId'],
+      aiGeneralDescription: map['aiGeneralDescription'],
+      aiName: map['aiName'],
+      aiMoistureLevel: map['aiMoistureLevel'],
+      aiLight: map['aiLight'],
+      aiSpecificIssues: map['aiSpecificIssues'],
+      aiCareTips: map['aiCareTips'],
     );
   }
 
@@ -82,6 +108,12 @@ class Plant {
     String? notes,
     DateTime? createdAt,
     String? userId,
+    String? aiGeneralDescription,
+    String? aiName,
+    String? aiMoistureLevel,
+    String? aiLight,
+    String? aiSpecificIssues,
+    String? aiCareTips,
   }) {
     return Plant(
       id: id ?? this.id,
@@ -94,6 +126,12 @@ class Plant {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       userId: userId ?? this.userId,
+      aiGeneralDescription: aiGeneralDescription ?? this.aiGeneralDescription,
+      aiName: aiName ?? this.aiName,
+      aiMoistureLevel: aiMoistureLevel ?? this.aiMoistureLevel,
+      aiLight: aiLight ?? this.aiLight,
+      aiSpecificIssues: aiSpecificIssues ?? this.aiSpecificIssues,
+      aiCareTips: aiCareTips ?? this.aiCareTips,
     );
   }
 } 
