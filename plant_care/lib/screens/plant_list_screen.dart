@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/plant.dart';
 import '../services/plant_service.dart';
-import '../services/auth_service.dart';
 import '../widgets/plant_card.dart';
-import 'auth_screen.dart';
-import 'add_plant_screen.dart';
+import '../utils/app_theme.dart';
 import 'plant_details_screen.dart';
 
 class PlantListScreen extends StatelessWidget {
@@ -16,38 +14,30 @@ class PlantListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Plants'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              if (value == 'signout') {
-                await AuthService.signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const AuthScreen()),
-                  );
-                }
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'signout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout),
-                    const SizedBox(width: 8),
-                    Text('Sign Out (${AuthService.currentUser?.email ?? 'User'})'),
-                  ],
-                ),
-              ),
-            ],
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.account_circle),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.local_florist,
+              color: Colors.white,
+              size: 24,
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            const Text(
+              'PLANT CARE',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: StreamBuilder<List<Plant>>(
         stream: plantService.getPlants(),
@@ -113,24 +103,7 @@ class PlantListScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddPlantScreen(),
-            ),
-          );
-          // Refresh the list if a plant was added
-          if (result == true) {
-            // The stream will automatically update
-          }
-        },
-        tooltip: 'Add Plant',
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      ),
+
     );
   }
 } 

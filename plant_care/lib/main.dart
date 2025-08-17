@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
-import 'screens/auth_screen.dart';
-import 'screens/dashboard_screen.dart';
-import 'services/auth_service.dart';
+import 'package:plant_care/screens/auth_screen.dart';
+
+import 'package:plant_care/screens/main_navigation_screen.dart';
+import 'package:plant_care/services/auth_service.dart';
+import 'package:plant_care/utils/app_theme.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,13 +27,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00C853), // AppTheme.primaryGreen
+          seedColor: AppTheme.primaryBlue,
           brightness: Brightness.light,
         ),
         useMaterial3: true,
         fontFamily: 'Inter',
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF00C853),
+          backgroundColor: AppTheme.primaryBlue,
           foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: true,
@@ -42,7 +45,7 @@ class MyApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00C853),
+            backgroundColor: AppTheme.primaryBlue,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
             shape: RoundedRectangleBorder(
@@ -71,7 +74,7 @@ class MyApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFF00C853), width: 2),
+            borderSide: BorderSide(color: AppTheme.primaryBlue, width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         ),
@@ -149,9 +152,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
-    // If user is authenticated, show dashboard
+    // If user is authenticated, show main navigation
     if (_user != null) {
-      return DashboardScreen(user: _user!);
+      return MainNavigationScreen(user: _user!);
     }
 
     // If no user, show auth screen

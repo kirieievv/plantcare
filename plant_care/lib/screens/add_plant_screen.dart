@@ -24,7 +24,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   bool _isLoading = false;
   bool _isAnalyzing = false;
   final ImagePicker _picker = ImagePicker();
-  
+
   // AI-generated care recommendations
   String? _aiGeneralDescription;
   String? _aiName;
@@ -466,9 +466,28 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add New Plant', style: AppTheme.headingMedium.copyWith(color: AppTheme.white)),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.white,
+                title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.local_florist,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'PLANT CARE',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
@@ -477,7 +496,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.primaryGreen, AppTheme.white],
+                                colors: [AppTheme.primaryBlue, AppTheme.white],
             stops: [0.0, 0.3],
           ),
         ),
@@ -522,19 +541,19 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     children: [
                       // Section Title
                       Text(
-                        'Plant Image',
+                            'Plant Image',
                         style: AppTheme.headingSmall,
                       ),
                       const SizedBox(height: AppTheme.spacingM),
                       
                       // Image Display Area
-                      Container(
+                        Container(
                         width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
+                          height: 200,
+                          decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(AppTheme.radiusL),
                           border: Border.all(
-                            color: AppTheme.lightGreen,
+                            color: AppTheme.lightBlue,
                             width: 2,
                           ),
                         ),
@@ -543,9 +562,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(14),
-                                    child: Image.memory(
-                                      _selectedImageBytes!,
-                                      fit: BoxFit.cover,
+                            child: Image.memory(
+                              _selectedImageBytes!,
+                              fit: BoxFit.cover,
                                       width: 200,
                                       height: 200,
                                       errorBuilder: (context, error, stackTrace) {
@@ -646,7 +665,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                           children: [
                             Icon(Icons.water_drop, color: Colors.blue.shade600),
                             const SizedBox(width: 12),
-                            const Text(
+                      const Text(
                               'Watering Schedule',
                               style: TextStyle(
                                 fontSize: 18,
@@ -722,11 +741,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                           ],
                         ),
                         
@@ -800,16 +819,16 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                       if (_aiGeneralDescription != null || _isAnalyzing) ...[
                 const SizedBox(height: 24),
                 
-                Card(
+              Card(
                   elevation: 3,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
+                child: Padding(
                     padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
                             Icon(
                               Icons.psychology,
                               color: Colors.purple.shade600,
@@ -1002,12 +1021,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                     fontWeight: FontWeight.w600,
                                     color: Colors.orange.shade700,
                                     fontSize: 16,
-                                  ),
-                                ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
                                       _aiName == 'Photo Quality Issue' 
                                     ? 'The photo is unclear or poorly lit for AI analysis. Please upload a new, clearer photo with better lighting and focus.'
                                     : 'The AI analysis encountered an issue. Please upload a new, clearer plant photo for better results.',
@@ -1044,11 +1063,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
                             ],
                             
                             Container(

@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Modern Color Palette
-  static const Color primaryGreen = Color(0xFF00C853);
-  static const Color lightGreen = Color(0xFF69F0AE);
-  static const Color darkGreen = Color(0xFF00E676);
-  static const Color primaryBlue = Color(0xFF2196F3);
-  static const Color lightBlue = Color(0xFF64B5F6);
-  static const Color darkBlue = Color(0xFF1976D2);
+  // KLM Style Color Palette
+  static const Color primaryBlue = Color(0xFF1976D2); // KLM Blue
+  static const Color darkBlue = Color(0xFF0D47A1); // Dark Blue
+  static const Color lightBlue = Color(0xFFE3F2FD); // Light Blue
+  static const Color accentGreen = Color(0xFF4CAF50); // Success Green
   static const Color white = Color(0xFFFFFFFF);
-  static const Color lightGrey = Color(0xFFFAFAFA);
-  static const Color mediumGrey = Color(0xFFE8E8E8);
-  static const Color darkGrey = Color(0xFF424242);
-  static const Color textPrimary = Color(0xFF1A1A1A);
-  static const Color textSecondary = Color(0xFF666666);
-  static const Color accentPurple = Color(0xFF7C4DFF);
-  static const Color accentOrange = Color(0xFFFF6B35);
+  static const Color lightGrey = Color(0xFFF8F9FA);
+  static const Color mediumGrey = Color(0xFFE9ECEF);
+  static const Color darkGrey = Color(0xFF6C757D);
+  static const Color textPrimary = Color(0xFF212121);
+  static const Color textSecondary = Color(0xFF6C757D);
+  static const Color borderGrey = Color(0xFFDEE2E6);
+  static const Color shadowGrey = Color(0xFF000000);
 
   // Modern Typography
   static const String fontFamily = 'Inter';
@@ -85,8 +83,17 @@ class AppTheme {
   static const double radiusL = 24.0;
   static const double radiusXL = 32.0;
 
-  // Modern Shadows
+  // KLM Style Shadows
   static const List<BoxShadow> shadowSmall = [
+    BoxShadow(
+      color: Color(0x08000000),
+      blurRadius: 4,
+      offset: Offset(0, 1),
+      spreadRadius: 0,
+    ),
+  ];
+  
+  static const List<BoxShadow> shadowMedium = [
     BoxShadow(
       color: Color(0x0A000000),
       blurRadius: 8,
@@ -95,20 +102,11 @@ class AppTheme {
     ),
   ];
   
-  static const List<BoxShadow> shadowMedium = [
-    BoxShadow(
-      color: Color(0x0F000000),
-      blurRadius: 16,
-      offset: Offset(0, 4),
-      spreadRadius: 0,
-    ),
-  ];
-  
   static const List<BoxShadow> shadowLarge = [
     BoxShadow(
-      color: Color(0x15000000),
-      blurRadius: 24,
-      offset: Offset(0, 8),
+      color: Color(0x0F000000),
+      blurRadius: 12,
+      offset: Offset(0, 4),
       spreadRadius: 0,
     ),
   ];
@@ -156,21 +154,21 @@ class AppTheme {
     boxShadow: shadowMedium,
   );
 
-  // Modern Button Styles
+  // KLM Style Button Styles
   static ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: primaryGreen,
+    backgroundColor: primaryBlue,
     foregroundColor: white,
     padding: const EdgeInsets.symmetric(horizontal: spacingL, vertical: spacingM),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radiusM),
     ),
     elevation: 0,
-    shadowColor: primaryGreen.withOpacity(0.3),
+    shadowColor: primaryBlue.withOpacity(0.2),
   );
   
   // Gradient Button
   static ButtonStyle gradientButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: primaryGreen,
+    backgroundColor: primaryBlue,
     foregroundColor: white,
     padding: const EdgeInsets.symmetric(horizontal: spacingL, vertical: spacingM),
     shape: RoundedRectangleBorder(
@@ -209,7 +207,7 @@ class AppTheme {
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
-      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: primaryGreen) : null,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: primaryBlue) : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusM),
         borderSide: BorderSide(color: borderColor ?? mediumGrey),
@@ -220,7 +218,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusM),
-        borderSide: BorderSide(color: primaryGreen, width: 2),
+        borderSide: BorderSide(color: primaryBlue, width: 2),
       ),
       filled: true,
       fillColor: lightGrey,
