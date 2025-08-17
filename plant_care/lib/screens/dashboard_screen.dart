@@ -5,11 +5,12 @@ import '../services/auth_service.dart';
 import '../services/user_service.dart';
 import '../services/plant_service.dart';
 import '../widgets/plant_card.dart';
+import '../utils/app_theme.dart';
 import 'auth_screen.dart';
-import 'profile_screen.dart';
+
 import 'add_plant_screen.dart';
 import 'plant_details_screen.dart';
-import 'settings_screen.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   final User? user;
@@ -84,95 +85,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.green.shade50,
+      backgroundColor: AppTheme.lightGrey,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : CustomScrollView(
               slivers: [
-                // App Bar with Profile
-                SliverAppBar(
-                  expandedHeight: 200,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: Colors.green.shade600,
-                  flexibleSpace: FlexibleSpaceBar(
-                    title: Text(
-                      'Welcome back, ${_userProfile?.name.split(' ').first ?? 'Plant Lover'}!',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(1, 1),
-                            blurRadius: 3,
-                            color: Colors.black26,
-                          ),
-                        ],
-                      ),
+                // Plant Care Logo Bar
+                SliverToBoxAdapter(
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      boxShadow: AppTheme.shadowSmall,
                     ),
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.green.shade600,
-                            Colors.green.shade400,
-                          ],
-                        ),
-                      ),
-                      child: Stack(
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Positioned(
-                            right: -50,
-                            top: -50,
-                            child: Icon(
-                              Icons.local_florist,
-                              size: 150,
-                              color: Colors.white.withOpacity(0.2),
-                            ),
+                          Icon(
+                            Icons.local_florist,
+                            color: AppTheme.primaryBlue,
+                            size: 24,
                           ),
-                          Positioned(
-                            left: -30,
-                            bottom: -30,
-                            child: Icon(
-                              Icons.eco,
-                              size: 100,
-                              color: Colors.white.withOpacity(0.2),
+                          const SizedBox(width: 8),
+                          Text(
+                            'PLANT CARE',
+                            style: TextStyle(
+                              color: AppTheme.primaryBlue,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  actions: [
-                    IconButton(
-                      onPressed: () {
-                        if (widget.user != null) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => SettingsScreen(user: widget.user!),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.settings, color: Colors.white),
+                ),
+                
+                // Welcome Text
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                    child: Text(
+                      'Welcome back, ${_userProfile?.name.split(' ').first ?? 'Plant Lover'}!',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const ProfileScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.person, color: Colors.white),
-                    ),
-                    IconButton(
-                      onPressed: _signOut,
-                      icon: const Icon(Icons.logout, color: Colors.white),
-                    ),
-                  ],
+                  ),
                 ),
 
                 // Statistics Cards
@@ -182,12 +145,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Your Garden Overview',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 16),

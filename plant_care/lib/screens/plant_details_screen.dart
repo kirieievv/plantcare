@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
-import 'package:plant_care/screens/edit_plant_screen.dart';
+
+import 'package:plant_care/utils/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 
@@ -184,79 +185,53 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // App Bar with plant name only
-          SliverAppBar(
-            expandedHeight: 120,
-            pinned: true,
-            backgroundColor: Colors.green.shade600,
-            foregroundColor: Colors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                _plant.name,
-                style: const TextStyle(
-                  color: Colors.white,
+          // Plant Care Logo Bar
+          SliverToBoxAdapter(
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                boxShadow: AppTheme.shadowSmall,
+              ),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.local_florist,
+                      color: AppTheme.primaryBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PLANT CARE',
+                      style: TextStyle(
+                        color: AppTheme.primaryBlue,
+                        fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(0, 1),
-                      blurRadius: 3.0,
-                      color: Colors.black54,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            actions: [
-              PopupMenuButton<String>(
-                onSelected: (value) async {
-                  switch (value) {
-                    case 'edit':
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditPlantScreen(plant: _plant),
-                        ),
-                      );
-                      
-                      if (result == 'deleted') {
-                        // Plant was deleted, go back to previous screen
-                        Navigator.pop(context, true);
-                      } else if (result != null) {
-                        // Plant was updated, refresh the screen
-                        setState(() {
-                          _plant = result as Plant;
-                        });
-                      }
-                      break;
-                    case 'delete':
-                      _deletePlant();
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, color: Colors.black),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
+          ),
+          
+          // Plant Name Header
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              child: Text(
+                _plant.name,
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ],
+            ),
           ),
           
           // Centered Plant Image
@@ -285,18 +260,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(14),
                     child: _plant.imageUrl != null && _plant.imageUrl!.startsWith('data:image')
-                        ? Image.memory(
-                            base64Decode(_plant.imageUrl!.split(',')[1]),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
+                      ? Image.memory(
+                          base64Decode(_plant.imageUrl!.split(',')[1]),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
                               return _buildPlaceholderImage();
-                            },
-                          )
+                          },
+                        )
                         : _plant.imageUrl != null && _plant.imageUrl!.startsWith('http')
                             ? Image.network(
                                 _plant.imageUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
                                   return _buildPlaceholderImage();
                                 },
                               )
@@ -375,24 +350,24 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   
                   // Watering Schedule Block
                   if (_plant.aiMoistureLevel != null || _plant.wateringFrequency != null) ...[
-                    const SizedBox(height: 16),
-                    
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                  const SizedBox(height: 16),
+                  
+                  Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                             Row(
                               children: [
                                 Icon(Icons.water_drop, color: Colors.blue.shade600),
                                 const SizedBox(width: 12),
-                                const Text(
+                          const Text(
                                   'Watering Schedule',
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                ),
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
                               ],
                             ),
                             const SizedBox(height: 20),
@@ -483,8 +458,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               ],
                             ),
                             
-                            const SizedBox(height: 16),
-                            
+                          const SizedBox(height: 16),
+                          
                             // Next Watering Date/Time
                             Row(
                               children: [

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:image_picker/image_picker.dart';
+import '../utils/app_theme.dart';
 import 'dart:io';
 import 'dart:convert';
 
@@ -156,9 +157,30 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit ${_plant.name}'),
-        backgroundColor: Colors.green,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.local_florist,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'PLANT CARE',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
         actions: [
           IconButton(
             onPressed: _isLoading ? null : _savePlant,
