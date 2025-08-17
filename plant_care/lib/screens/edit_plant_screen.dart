@@ -187,7 +187,6 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.green.shade200, width: 2),
-                    color: Colors.grey.shade50,
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(14),

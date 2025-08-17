@@ -214,7 +214,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: Colors.grey.shade100,
+        color: Colors.grey.shade50,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -537,7 +537,6 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                             color: AppTheme.lightGreen,
                             width: 2,
                           ),
-                          color: AppTheme.lightGrey,
                         ),
                         child: _selectedImageBytes != null
                             ? Stack(
@@ -547,6 +546,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                     child: Image.memory(
                                       _selectedImageBytes!,
                                       fit: BoxFit.cover,
+                                      width: 200,
+                                      height: 200,
                                       errorBuilder: (context, error, stackTrace) {
                                         return _buildPlaceholderImage();
                                       },

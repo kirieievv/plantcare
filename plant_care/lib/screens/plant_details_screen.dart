@@ -155,7 +155,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: Colors.grey.shade100,
+        color: Colors.grey.shade50,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -273,7 +273,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       color: Colors.green.shade200,
                       width: 2,
                     ),
-                    color: Colors.grey.shade50,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.shade200,
