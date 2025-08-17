@@ -48,3 +48,6 @@ app.*.map.json
 .env
 .env.local
 .env.production
+assets/.env
+
+assets/.env
