@@ -1,0 +1,432 @@
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+import 'package:plant_care/utils/app_theme.dart';
+
+class HealthCheckModal extends StatefulWidget {
+  final String plantName;
+  final Function(Map<String, dynamic>) onHealthCheckComplete;
+
+  const HealthCheckModal({
+    Key? key,
+    required this.plantName,
+    required this.onHealthCheckComplete,
+  }) : super(key: key);
+
+  @override
+  State<HealthCheckModal> createState() => _HealthCheckModalState();
+}
+
+class _HealthCheckModalState extends State<HealthCheckModal> {
+  Uint8List? _selectedImageBytes;
+  bool _isAnalyzing = false;
+  String? _errorMessage;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage() async {
+    try {
+      setState(() {
+        _errorMessage = null;
+      });
+      
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImageBytes = bytes;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error picking image: $e';
+      });
+    }
+  }
+
+  Future<void> _analyzeHealth() async {
+    if (_selectedImageBytes == null) {
+      setState(() {
+        _errorMessage = 'Please select an image first';
+      });
+      return;
+    }
+
+    setState(() {
+      _isAnalyzing = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Convert image to base64 for API call
+      final base64Image = base64Encode(_selectedImageBytes!);
+      
+      // Prepare the prompt for ChatGPT
+      const prompt = '''Analyze the photo of my houseplant. Reply strictly in the JSON format above:
+— If the plant is fine, return only {"status":"ok"}.
+— If something is wrong, return {"status":"issue","problem":"…","indicators":[…]} with a concise diagnosis and concrete indicators to apply. Do not include any extra fields or text.''';
+
+      // Make API call to ChatGPT (replace with your actual API endpoint)
+      final response = await _callChatGPT(prompt, base64Image);
+      
+      if (response != null) {
+        // Add image bytes to the response
+        final responseWithImage = Map<String, dynamic>.from(response);
+        responseWithImage['imageBytes'] = _selectedImageBytes;
+        
+        widget.onHealthCheckComplete(responseWithImage);
+        Navigator.pop(context);
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to analyze image. Please try again.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error analyzing image: $e';
+      });
+    } finally {
+      setState(() {
+        _isAnalyzing = false;
+      });
+    }
+  }
+
+  Future<Map<String, dynamic>?> _callChatGPT(String prompt, String base64Image) async {
+    try {
+      // This is a placeholder for the actual ChatGPT API call
+      // You'll need to implement this with your actual API key and endpoint
+      
+      // Simulate API response for demo purposes
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Simulate different responses based on random chance
+      final random = DateTime.now().millisecond % 3;
+      
+      if (random == 0) {
+        return {"status": "ok"};
+      } else if (random == 1) {
+        return {
+          "status": "issue",
+          "problem": "Slight yellowing of leaves",
+          "indicators": ["Reduce watering frequency", "Check for root rot", "Ensure proper drainage"]
+        };
+      } else {
+        return {
+          "status": "issue",
+          "problem": "Brown spots on leaves",
+          "indicators": ["Check for pests", "Improve air circulation", "Avoid overhead watering"]
+        };
+      }
+    } catch (e) {
+      throw Exception('API call failed: $e');
+    }
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.accentGreen.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.photo_camera,
+            size: 48,
+            color: AppTheme.accentGreen.withOpacity(0.6),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Upload Plant Photo',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.accentGreen.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: const BoxConstraints(maxWidth: 500),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Icon(
+                  Icons.health_and_safety,
+                  color: AppTheme.accentGreen,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Health Check',
+                    style: AppTheme.headingMedium.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey.shade100,
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            Text(
+              'Upload a photo of ${widget.plantName} for AI health analysis',
+              style: AppTheme.bodyLarge.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Image Upload Area
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _selectedImageBytes != null 
+                      ? AppTheme.accentGreen 
+                      : Colors.grey.shade300,
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Image Display Area
+                  Center(
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      margin: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.accentGreen.withOpacity(0.3),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentGreen.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: _selectedImageBytes != null
+                          ? Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    width: 200,
+                                    height: 200,
+                                    color: AppTheme.accentGreen.withOpacity(0.1),
+                                    child: Icon(
+                                      Icons.image,
+                                      size: 64,
+                                      color: AppTheme.accentGreen,
+                                    ),
+                                  ),
+                                ),
+                                // Remove Button
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedImageBytes = null;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.close),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.red,
+                                      padding: const EdgeInsets.all(4),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : _buildPlaceholderImage(),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Upload Button
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: _pickImage,
+                      icon: Icon(
+                        _selectedImageBytes != null ? Icons.refresh : Icons.upload,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        _selectedImageBytes != null ? 'Change Image' : 'Upload Image',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  
+                  if (_selectedImageBytes != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentGreen.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppTheme.accentGreen.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: AppTheme.accentGreen,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Image uploaded successfully! Ready for health analysis.',
+                              style: TextStyle(
+                                color: AppTheme.accentGreen,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+            
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red.shade600,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 24),
+            
+            // Action Buttons
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedImageBytes != null && !_isAnalyzing 
+                    ? _analyzeHealth 
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isAnalyzing
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('Analyzing...'),
+                        ],
+                      )
+                    : const Text(
+                        'Analyze Health',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+} 

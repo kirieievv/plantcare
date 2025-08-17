@@ -19,6 +19,12 @@ class Plant {
   final String? aiLight;
   final String? aiSpecificIssues;
   final String? aiCareTips;
+  
+  // Health check data
+  final String? healthStatus; // 'ok', 'issue', or null
+  final String? healthProblem;
+  final List<String>? healthIndicators;
+  final DateTime? lastHealthCheck;
 
   Plant({
     required this.id,
@@ -37,6 +43,10 @@ class Plant {
     this.aiLight,
     this.aiSpecificIssues,
     this.aiCareTips,
+    this.healthStatus,
+    this.healthProblem,
+    this.healthIndicators,
+    this.lastHealthCheck,
   });
 
   // Convert to Map for Firestore
@@ -58,6 +68,10 @@ class Plant {
       'aiLight': aiLight,
       'aiSpecificIssues': aiSpecificIssues,
       'aiCareTips': aiCareTips,
+      'healthStatus': healthStatus,
+      'healthProblem': healthProblem,
+      'healthIndicators': healthIndicators,
+      'lastHealthCheck': lastHealthCheck?.toIso8601String(),
     };
   }
 
@@ -80,6 +94,12 @@ class Plant {
       aiLight: map['aiLight'],
       aiSpecificIssues: map['aiSpecificIssues'],
       aiCareTips: map['aiCareTips'],
+      healthStatus: map['healthStatus'],
+      healthProblem: map['healthProblem'],
+      healthIndicators: map['healthIndicators'] != null 
+          ? List<String>.from(map['healthIndicators'])
+          : null,
+      lastHealthCheck: _parseTimestamp(map['lastHealthCheck']),
     );
   }
 
@@ -114,6 +134,10 @@ class Plant {
     String? aiLight,
     String? aiSpecificIssues,
     String? aiCareTips,
+    String? healthStatus,
+    String? healthProblem,
+    List<String>? healthIndicators,
+    DateTime? lastHealthCheck,
   }) {
     return Plant(
       id: id ?? this.id,
@@ -132,6 +156,10 @@ class Plant {
       aiLight: aiLight ?? this.aiLight,
       aiSpecificIssues: aiSpecificIssues ?? this.aiSpecificIssues,
       aiCareTips: aiCareTips ?? this.aiCareTips,
+      healthStatus: healthStatus ?? this.healthStatus,
+      healthProblem: healthProblem ?? this.healthProblem,
+      healthIndicators: healthIndicators ?? this.healthIndicators,
+      lastHealthCheck: lastHealthCheck ?? this.lastHealthCheck,
     );
   }
 } 
