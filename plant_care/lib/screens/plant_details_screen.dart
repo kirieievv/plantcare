@@ -43,10 +43,33 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       });
 
       if (mounted) {
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Plant watered! 💧'),
-            backgroundColor: Colors.blue,
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '${_plant.name} has been watered! 💧',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -54,8 +77,30 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error watering plant: $e'),
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Error watering plant: $e',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -193,27 +238,45 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 color: AppTheme.white,
                 boxShadow: AppTheme.shadowSmall,
               ),
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.local_florist,
+              child: Row(
+                children: [
+                  // Back Button
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
                       color: AppTheme.primaryBlue,
-                      size: 24,
+                      size: 20,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'PLANT CARE',
-                      style: TextStyle(
-                        color: AppTheme.primaryBlue,
-                        fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
+                  ),
+                  // Logo and Title (centered)
+                  Expanded(
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.local_florist,
+                            color: AppTheme.primaryBlue,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'PLANT CARE',
+                            style: TextStyle(
+                              color: AppTheme.primaryBlue,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  // Empty space to balance the back button
+                  const SizedBox(width: 48),
+                ],
               ),
             ),
           ),
@@ -666,6 +729,45 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   ],
                   
 
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Delete Plant Button
+                  Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.red.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: TextButton.icon(
+                        onPressed: _deletePlant,
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Colors.red.shade400,
+                          size: 18,
+                        ),
+                        label: Text(
+                          'Delete Plant',
+                          style: TextStyle(
+                            color: Colors.red.shade400,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
+                    ),
+                  ),
                   
                   const SizedBox(height: 32),
                 ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'package:plant_care/screens/auth_screen.dart';
 
@@ -32,25 +33,21 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppTheme.primaryBlue,
+          seedColor: const Color(0xFF1976D2),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        fontFamily: 'Inter',
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppTheme.primaryBlue,
-          foregroundColor: Colors.white,
+        fontFamily: GoogleFonts.inter().fontFamily,
+        cardTheme: const CardThemeData(
           elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(24)),
           ),
+          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: const Color(0xFF1976D2),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
             shape: RoundedRectangleBorder(
@@ -58,13 +55,6 @@ class MyApp extends StatelessWidget {
             ),
             elevation: 0,
           ),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
@@ -79,9 +69,35 @@ class MyApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: AppTheme.primaryBlue, width: 2),
+            borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1976D2),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        fontFamily: GoogleFonts.inter().fontFamily,
+        cardTheme: const CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(24)),
+          ),
+          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1976D2),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 0,
+          ),
         ),
       ),
       home: const AuthWrapper(),

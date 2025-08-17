@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/user_model.dart';
-import '../services/auth_service.dart';
-import '../services/user_service.dart';
-import '../services/plant_service.dart';
-import '../widgets/plant_card.dart';
-import '../utils/app_theme.dart';
-import 'auth_screen.dart';
-
-import 'add_plant_screen.dart';
-import 'plant_details_screen.dart';
-
+import 'package:plant_care/models/plant.dart';
+import 'package:plant_care/models/user_model.dart';
+import 'package:plant_care/services/plant_service.dart';
+import 'package:plant_care/services/user_service.dart';
+import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/widgets/plant_card.dart';
+import 'package:plant_care/screens/add_plant_screen.dart';
+import 'package:plant_care/screens/plant_details_screen.dart';
+import 'package:glassmorphism/glassmorphism.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 
 class DashboardScreen extends StatefulWidget {
   final User? user;
-  
-  const DashboardScreen({super.key, this.user});
+
+  const DashboardScreen({Key? key, this.user}) : super(key: key);
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -23,23 +25,19 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   UserModel? _userProfile;
-  Map<String, dynamic> _stats = {};
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadUserProfile();
   }
 
-  Future<void> _loadUserData() async {
+  Future<void> _loadUserProfile() async {
     try {
       final profile = await UserService.getCurrentUserProfile();
-      final stats = await UserService.getUserStats();
-      
       setState(() {
         _userProfile = profile;
-        _stats = stats;
         _isLoading = false;
       });
     } catch (e) {
@@ -49,45 +47,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _signOut() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await AuthService.signOut();
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AuthScreen()),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildShimmerLoading()
           : CustomScrollView(
               slivers: [
                 // Plant Care Logo Bar
@@ -123,223 +88,199 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 
-                // Welcome Text
+                // Your Garden Overview Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                    child: Text(
-                      'Welcome back, ${_userProfile?.name.split(' ').first ?? 'Plant Lover'}!',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Statistics Cards
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Your Garden Overview',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                          style: AppTheme.headingMedium.copyWith(
                             color: AppTheme.textPrimary,
                           ),
+                        ).animate().fadeIn(
+                          duration: 600.ms,
+                          delay: 200.ms,
                         ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                'Total Plants',
-                                '${_stats['totalPlants'] ?? 0}',
-                                Icons.local_florist,
-                                Colors.green.shade600,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Need Water',
-                                '${_stats['plantsNeedingWater'] ?? 0}',
-                                Icons.water_drop,
-                                Colors.orange.shade600,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Healthy',
-                                '${_stats['healthyPlants'] ?? 0}',
-                                Icons.check_circle,
-                                Colors.green.shade400,
-                              ),
-                            ),
-                          ],
+                        
+                        const SizedBox(height: 20),
+                        
+                        // Enhanced Garden Stats Cards
+                        StreamBuilder<List<Plant>>(
+                          stream: PlantService().getPlants(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return _buildShimmerStats();
+                            }
+                            
+                            final plants = snapshot.data ?? [];
+                            final plantsNeedingWater = plants.where((p) => 
+                              p.nextWatering.isBefore(DateTime.now())
+                            ).length;
+                            final healthyPlants = plants.where((p) => 
+                              p.nextWatering.isAfter(DateTime.now().add(const Duration(days: 1)))
+                            ).length;
+                            
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    'Total Plants',
+                                    '${plants.length}',
+                                    Icons.eco,
+                                    AppTheme.accentGreen,
+                                    0.ms,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    'Need Water',
+                                    '$plantsNeedingWater',
+                                    Icons.water_drop,
+                                    Colors.orange,
+                                    200.ms,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    'Healthy',
+                                    '$healthyPlants',
+                                    Icons.check_circle,
+                                    AppTheme.accentGreen,
+                                    400.ms,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
                 ),
-
-                // Plants Section
+                
+                // Your Plants Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Your Plants',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                              style: AppTheme.headingMedium.copyWith(
+                                color: AppTheme.textPrimary,
                               ),
+                            ).animate().fadeIn(
+                              duration: 600.ms,
+                              delay: 600.ms,
                             ),
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const AddPlantScreen(),
+                            
+                            // Enhanced Add Plant Button
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppTheme.accentGreen,
+                                    AppTheme.accentGreen.withOpacity(0.8),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.accentGreen.withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
                                   ),
-                                );
-                                if (result == true) {
-                                  _loadUserData(); // Refresh data
-                                }
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Plant'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green.shade600,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
+                                ],
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const AddPlantScreen(),
+                                    ),
+                                  );
+                                  if (result == true) {
+                                    setState(() {});
+                                  }
+                                },
+                                icon: const Icon(Icons.add, color: Colors.white),
+                                label: const Text(
+                                  'Add Plant',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
+                            ).animate().scale(
+                              duration: 400.ms,
+                              delay: 800.ms,
+                              curve: Curves.elasticOut,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
                 ),
+                
+                // Plants List with Enhanced Cards
+                StreamBuilder<List<Plant>>(
+                  stream: PlantService().getPlants(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return SliverToBoxAdapter(
+                        child: _buildShimmerPlants(),
+                      );
+                    }
 
-                // Plants List
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  sliver: StreamBuilder(
-                    stream: PlantService().getPlants(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const SliverToBoxAdapter(
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-
-                      if (snapshot.hasError) {
-                        return SliverToBoxAdapter(
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(Icons.error, size: 64, color: Colors.red.shade300),
-                                const SizedBox(height: 16),
-                                Text('Error: ${snapshot.error}'),
-                              ],
-                            ),
+                    if (snapshot.hasError) {
+                      return SliverToBoxAdapter(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error, size: 64, color: Colors.red),
+                              const SizedBox(height: 16),
+                              Text('Error: ${snapshot.error}'),
+                            ],
                           ),
-                        );
-                      }
+                        ),
+                      );
+                    }
 
-                      final plants = snapshot.data ?? [];
+                    final plants = snapshot.data ?? [];
 
-                      if (plants.isEmpty) {
-                        return SliverToBoxAdapter(
-                          child: Container(
-                            padding: const EdgeInsets.all(32),
-                            margin: const EdgeInsets.symmetric(vertical: 32),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  spreadRadius: 1,
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.local_florist,
-                                  size: 64,
-                                  color: Colors.green.shade300,
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'No plants yet!',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Start your plant care journey by adding your first plant',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton.icon(
-                                  onPressed: () async {
-                                    final result = await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const AddPlantScreen(),
-                                      ),
-                                    );
-                                    if (result == true) {
-                                      _loadUserData(); // Refresh data
-                                    }
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('Add Your First Plant'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green.shade600,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
+                    if (plants.isEmpty) {
+                      return SliverToBoxAdapter(
+                        child: _buildEmptyState(),
+                      );
+                    }
 
-                      return SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final plant = plants[index];
-                            return PlantCard(
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final plant = plants[index];
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                            child: PlantCard(
                               plant: plant,
                               onWater: () => PlantService().waterPlant(plant.id),
                               onTap: () {
@@ -350,16 +291,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 );
                               },
-                            );
-                          },
-                          childCount: plants.length,
-                        ),
-                      );
-                    },
-                  ),
+                            ),
+                          );
+                        },
+                        childCount: plants.length,
+                      ),
+                    );
+                  },
                 ),
-
-                // Bottom padding
+                
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 32),
                 ),
@@ -368,43 +308,173 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, Duration delay) {
+    return GlassmorphicContainer(
+      width: double.infinity,
+      height: 200,
+      borderRadius: 20,
+      blur: 20,
+      alignment: Alignment.center,
+      border: 2,
+      linearGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(0.1),
+          Colors.white.withOpacity(0.05),
         ],
       ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: color),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
+      borderGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(0.5),
+          Colors.white.withOpacity(0.2),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 40,
+              color: color,
+            ).animate().scale(
+              duration: 400.ms,
+              delay: delay,
+              curve: Curves.elasticOut,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              value,
+              style: AppTheme.headingLarge.copyWith(
+                color: color,
+                fontSize: 36,
+              ),
+            ).animate().fadeIn(
+              duration: 400.ms,
+              delay: delay + 200.ms,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: AppTheme.bodyMedium.copyWith(
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ).animate().fadeIn(
+              duration: 400.ms,
+              delay: delay + 400.ms,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: AppTheme.lightGrey,
+      highlightColor: AppTheme.white,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildShimmerStats()),
+          SliverToBoxAdapter(child: _buildShimmerPlants()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerStats() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        children: List.generate(3, (index) => Expanded(
+          child: Container(
+            height: 200,
+            margin: EdgeInsets.only(right: index < 2 ? 16 : 0),
+            decoration: BoxDecoration(
+              color: AppTheme.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        )),
+      ),
+    );
+  }
+
+  Widget _buildShimmerPlants() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: List.generate(3, (index) => Container(
+          height: 140,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+        )),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: GlassmorphicContainer(
+        width: double.infinity,
+        height: 200,
+        borderRadius: 20,
+        blur: 20,
+        alignment: Alignment.center,
+        border: 2,
+        linearGradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.1),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        borderGradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.5),
+            Colors.white.withOpacity(0.2),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.local_florist,
+              size: 64,
+              color: AppTheme.mediumGrey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No plants yet!',
+              style: AppTheme.headingMedium.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add your first plant to get started',
+              style: AppTheme.bodyMedium.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
