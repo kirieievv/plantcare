@@ -19,14 +19,14 @@ class PlantListScreen extends StatelessWidget {
           children: [
             Icon(
               Icons.local_florist,
-              color: Colors.white,
+              color: AppTheme.accentGreen,
               size: 24,
             ),
             const SizedBox(width: 8),
             const Text(
               'PLANT CARE',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.accentGreen,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
@@ -34,8 +34,8 @@ class PlantListScreen extends StatelessWidget {
             ),
           ],
         ),
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: AppTheme.white,
+        foregroundColor: AppTheme.accentGreen,
         elevation: 0,
         centerTitle: true,
       ),

@@ -69,14 +69,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Icon(
                             Icons.local_florist,
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.accentGreen,
                             size: 24,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'PLANT CARE',
                             style: TextStyle(
-                              color: AppTheme.primaryBlue,
+                              color: AppTheme.accentGreen,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,

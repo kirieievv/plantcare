@@ -180,7 +180,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     } else if (daysUntilWatering == 1) {
       return 'Water tomorrow';
     } else {
-      return 'Water in $daysUntilWatering days';
+      return 'Next watering in $daysUntilWatering days';
     }
   }
 
@@ -245,7 +245,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: Icon(
                       Icons.arrow_back_ios,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.accentGreen,
                       size: 20,
                     ),
                   ),
@@ -257,14 +257,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         children: [
                           Icon(
                             Icons.local_florist,
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.accentGreen,
                             size: 24,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'PLANT CARE',
                             style: TextStyle(
-                              color: AppTheme.primaryBlue,
+                              color: AppTheme.accentGreen,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
@@ -395,7 +395,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                             child: ElevatedButton.icon(
                               onPressed: _isLoading ? null : _waterPlant,
                               icon: const Icon(Icons.water_drop),
-                              label: const Text('Water Plant'),
+                              label: const Text('I have watered'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,
                                 foregroundColor: Colors.white,

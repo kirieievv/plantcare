@@ -130,14 +130,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Icon(
               Icons.local_florist,
-              color: Colors.white,
+              color: AppTheme.accentGreen,
               size: 24,
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'PLANT CARE',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.accentGreen,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
@@ -145,8 +145,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: AppTheme.white,
+        foregroundColor: AppTheme.accentGreen,
         elevation: 0,
         centerTitle: true,
       ),

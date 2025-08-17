@@ -83,12 +83,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.lightBlue : Colors.transparent,
+              color: isSelected ? AppTheme.accentGreen.withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: isSelected ? AppTheme.primaryBlue : AppTheme.darkGrey,
+              color: isSelected ? AppTheme.accentGreen : AppTheme.darkGrey,
               size: 24,
             ),
           ),
@@ -98,7 +98,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? AppTheme.primaryBlue : AppTheme.darkGrey,
+              color: isSelected ? AppTheme.accentGreen : AppTheme.darkGrey,
             ),
           ),
         ],

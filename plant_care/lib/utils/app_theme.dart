@@ -203,11 +203,12 @@ class AppTheme {
     String? hintText,
     IconData? prefixIcon,
     Color? borderColor,
+    Color? prefixIconColor,
   }) {
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
-      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: primaryBlue) : null,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: prefixIconColor ?? primaryBlue) : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusM),
         borderSide: BorderSide(color: borderColor ?? mediumGrey),

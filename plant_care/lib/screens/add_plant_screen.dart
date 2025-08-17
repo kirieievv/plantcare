@@ -213,25 +213,26 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   Widget _buildPlaceholderImage() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: Colors.grey.shade50,
+        color: AppTheme.accentGreen.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppTheme.radiusL - 2),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.add_a_photo_outlined,
+            Icons.photo_camera,
             size: 48,
-            color: Colors.grey.shade400,
+            color: AppTheme.accentGreen.withOpacity(0.6),
           ),
           const SizedBox(height: 8),
           Text(
-            'Add Photo',
+            'Upload Plant Photo',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: AppTheme.accentGreen.withOpacity(0.7),
               fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -462,680 +463,507 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-                title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.local_florist,
-              color: Colors.white,
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'PLANT CARE',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-                                colors: [AppTheme.primaryBlue, AppTheme.white],
-            stops: [0.0, 0.3],
+  Widget _buildInputCard(String label, String hintText, IconData icon, {TextEditingController? controller, String? Function(String?)? validator, Color? iconColor}) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingL),
+        child: TextFormField(
+          controller: controller,
+          decoration: AppTheme.inputDecoration(
+            labelText: label,
+            hintText: hintText,
+            prefixIcon: icon,
+            prefixIconColor: iconColor,
           ),
+          style: AppTheme.bodyLarge,
+          validator: validator,
         ),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              // Plant Name - Moved above photo upload
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTheme.spacingL),
-                  child: TextFormField(
-                    controller: _nameController,
-                    decoration: AppTheme.inputDecoration(
-                      labelText: 'Plant Name *',
-                      hintText: 'e.g., Monstera, Snake Plant',
-                      prefixIcon: Icons.local_florist,
-                    ),
-                    style: AppTheme.bodyLarge,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a plant name';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Plant Image Section
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTheme.spacingL),
-                  child: Column(
-                    children: [
-                      // Section Title
-                      Text(
-                            'Plant Image',
-                        style: AppTheme.headingSmall,
-                      ),
-                      const SizedBox(height: AppTheme.spacingM),
-                      
-                      // Image Display Area
-                        Container(
-                        width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(AppTheme.radiusL),
-                          border: Border.all(
-                            color: AppTheme.lightBlue,
-                            width: 2,
-                          ),
-                        ),
-                        child: _selectedImageBytes != null
-                            ? Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(14),
-                            child: Image.memory(
-                              _selectedImageBytes!,
-                              fit: BoxFit.cover,
-                                      width: 200,
-                                      height: 200,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return _buildPlaceholderImage();
-                                      },
-                                    ),
-                                  ),
-                                  if (_isAnalyzing)
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(14),
-                                        color: Colors.black.withOpacity(0.5),
-                                      ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            CircularProgressIndicator(
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                              strokeWidth: 3,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Analyzing...',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              )
-                            : _buildPlaceholderImage(),
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Upload Button - Centered
-                      Center(
-                        child: ElevatedButton.icon(
-                          onPressed: _pickImage,
-                          icon: const Icon(Icons.upload_rounded, size: 20),
-                          label: Text(
-                            'Upload Photo',
-                            style: AppTheme.bodyLarge.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.white,
-                            ),
-                          ),
-                          style: AppTheme.primaryButtonStyle,
-                        ),
-                      ),
-                      
-                      // Remove Button (only show when image is uploaded)
-                      if (_selectedImageBytes != null) ...[
-                        const SizedBox(height: 16),
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _selectedImageBytes = null;
-                              });
-                            },
-                            icon: const Icon(Icons.delete_outline, size: 18),
-                            label: Text(
-                              'Remove Photo',
-                              style: AppTheme.bodyMedium.copyWith(
-                                color: Colors.red.shade600,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red.shade600,
-                            ),
-                          ),
-                        ),
-                      ],
-                      
+      ),
+    );
+  }
 
-                    ],
-                  ),
+  Widget _buildImageUploadCard() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section Title
+            Row(
+              children: [
+                Icon(
+                  Icons.photo_camera,
+                  color: AppTheme.accentGreen,
+                  size: 24,
                 ),
-              ),
-              
-                            // AI-Determined Watering Schedule
-              if (_aiWateringFrequency != null) ...[
-                Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.water_drop, color: Colors.blue.shade600),
-                            const SizedBox(width: 12),
-                      const Text(
-                              'Watering Schedule',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Watering Frequency
-                        Row(
-                          children: [
-                            Icon(Icons.schedule, color: Colors.blue.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _formatWateringFrequency(_aiWateringFrequency),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.blue.shade700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Watering Amount
-                        Row(
-                          children: [
-                            Icon(Icons.opacity, color: Colors.blue.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _aiWateringAmount ?? 'Until soil is moist',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.blue.shade600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Soil Moisture Level
-                        Row(
-                          children: [
-                            Icon(Icons.water_drop, color: Colors.blue.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Soil Moisture Level:',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.blue.shade600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _formatMoistureLevel(_aiMoistureLevel),
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blue.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 12),
-                        
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.blue.shade200),
-                          ),
-                          child: Text(
-                            'AI Recommended Schedule',
-                            style: TextStyle(
-                              color: Colors.blue.shade700,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ] else ...[
-                // Default Watering Info (when AI hasn't analyzed yet)
-                Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.water_drop, color: Colors.grey.shade600),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Watering Schedule',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        Text(
-                          'Upload a plant photo to get AI-recommended watering schedule',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
-                    ),
+                const SizedBox(width: 12),
+                Text(
+                  'Plant Image',
+                  style: AppTheme.headingSmall.copyWith(
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ],
-              
-              const SizedBox(height: 20),
-              
-
-              
-              // AI Recommendations Section
-                                      if (_aiGeneralDescription != null || _isAnalyzing) ...[
-                const SizedBox(height: 24),
-                
-              Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+            ),
+            const SizedBox(height: AppTheme.spacingM),
+            
+            // Image Display Area
+            Center(
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                  border: Border.all(
+                    color: AppTheme.accentGreen.withOpacity(0.3),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.accentGreen.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: _selectedImageBytes != null
+                    ? Stack(
                         children: [
-                            Icon(
-                              Icons.psychology,
-                              color: Colors.purple.shade600,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'AI Care Recommendations',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade700,
-                                ),
-                              ),
-                            ),
-                            // Status Indicator
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                color: _refreshStatus == 'success' 
-                                    ? Colors.green.shade100 
-                                    : _refreshStatus == 'error' 
-                                        ? Colors.orange.shade100 
-                                        : Colors.grey.shade100,
-                                border: Border.all(
-                                  color: _refreshStatus == 'success' 
-                                      ? Colors.green.shade300 
-                                      : _refreshStatus == 'error' 
-                                          ? Colors.orange.shade300 
-                                          : Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                                                        Icon(
-                                        _refreshStatus == 'success' 
-                                            ? Icons.check_circle
-                                            : _refreshStatus == 'error' 
-                                                ? Icons.info
-                                                : Icons.info,
-                                        color: _refreshStatus == 'success' 
-                                            ? Colors.green.shade600 
-                                            : _refreshStatus == 'error' 
-                                                ? Colors.orange.shade600 
-                                                : Colors.grey.shade600,
-                                        size: 16,
-                                      ),
-                                  const SizedBox(width: 6),
-                                                                        Text(
-                                        _refreshStatus == 'success' 
-                                            ? 'AI Ready'
-                                            : _refreshStatus == 'error' 
-                                                ? 'Using Fallback'
-                                                : 'No AI Available',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: _refreshStatus == 'success' 
-                                              ? Colors.green.shade600 
-                                              : _refreshStatus == 'error' 
-                                                  ? Colors.orange.shade600 
-                                                  : Colors.grey.shade600,
-                                        ),
-                                      ),
-                                ],
-                              ),
-                            ),
-                            
-                            const SizedBox(width: 8),
-                            
-                            // Test API Button
-                            IconButton(
-                              onPressed: _testApiConnection,
-                              icon: const Icon(Icons.bug_report),
-                              tooltip: 'Test API Connection',
-                              color: Colors.blue.shade600,
-                            ),
-                            
-                            const SizedBox(width: 8),
-                            
-                            // Refresh Button
-                            IconButton(
-                              onPressed: _isRefreshing ? null : _refreshAnalysis,
-                              icon: _isRefreshing
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.purple.shade600),
-                                      ),
-                                    )
-                                  : const Icon(Icons.refresh),
-                              tooltip: 'Refresh AI Analysis',
-                              color: Colors.purple.shade600,
-                            ),
-                          ],
-                        ),
-                        
-                        if (_isAnalyzing) ...[
-                          const SizedBox(height: 20),
-                          Center(
-                            child: Column(
-                              children: [
-                                CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.purple.shade600),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Analyzing your plant...',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusL - 2),
+                            child: Image.memory(
+                              _selectedImageBytes!,
+                              fit: BoxFit.cover,
+                              width: 200,
+                              height: 200,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildPlaceholderImage();
+                              },
                             ),
                           ),
-                        ] else if (_aiGeneralDescription != null) ...[
-                          const SizedBox(height: 20),
-                          
-                          // Plant Name and Description
-                          if (_aiName != null) ...[
-                            _buildRecommendationRow('Plant Name', _aiName!),
-                            const SizedBox(height: 16),
-                          ],
-                          
-                          _buildRecommendationRow('Description', _aiGeneralDescription!),
-                          
-                          const SizedBox(height: 16),
-                          
-                                                          // Care Details Grid
-                                Row(
+                          if (_isAnalyzing)
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(AppTheme.radiusL - 2),
+                                color: Colors.black.withOpacity(0.6),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Expanded(
-                                      child: _buildCareCard(
-                                        'Moisture',
-                                        _aiMoistureLevel ?? 'Not specified',
-                                        Icons.opacity,
-                                        Colors.green,
-                                        moisturePercentage: _getMoisturePercentage(_aiMoistureLevel),
-                                      ),
+                                    CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
+                                      strokeWidth: 3,
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _buildCareCard(
-                                        'Light',
-                                        _aiLight ?? 'Not specified',
-                                        Icons.wb_sunny,
-                                        Colors.orange,
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Analyzing...',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
                                       ),
                                     ),
                                   ],
                                 ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Specific Issues
-                          if (_aiSpecificIssues != null) ...[
-                            _buildRecommendationRow('Specific Issues', _aiSpecificIssues!),
-                            const SizedBox(height: 16),
-                          ],
-                          
-                          if (_aiCareTips != null) ...[
-                            const SizedBox(height: 20),
-                            
-                            // Check if this is a fallback response (analysis failed)
-                            if (_aiName == 'Upload New Photo' || _aiName == 'Photo Quality Issue' || _aiGeneralDescription!.contains('parsing issue') || _aiGeneralDescription!.contains('temporarily unavailable') || _aiGeneralDescription!.contains('Photo quality issue')) ...[
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.orange.shade200),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.warning_amber, color: Colors.orange.shade700),
-                                        const SizedBox(width: 8),
-                                                                        Text(
-                                  _aiName == 'Photo Quality Issue' ? 'Photo Quality Issue Detected' : 'Analysis Issue Detected',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.orange.shade700,
-                                    fontSize: 16,
+                              ),
                             ),
-                          ),
                         ],
+                      )
+                    : _buildPlaceholderImage(),
+              ),
+            ),
+            
+            const SizedBox(height: AppTheme.spacingM),
+            
+            // Upload Button
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: _pickImage,
+                icon: Icon(
+                  _selectedImageBytes != null ? Icons.refresh : Icons.upload,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  _selectedImageBytes != null ? 'Change Image' : 'Upload Image',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            
+            if (_selectedImageBytes != null && !_isAnalyzing) ...[
+              const SizedBox(height: AppTheme.spacingM),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.accentGreen.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: AppTheme.accentGreen,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Image uploaded successfully! AI analysis complete.',
+                        style: TextStyle(
+                          color: AppTheme.accentGreen,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAIResultsCard() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section Header
+            Row(
+              children: [
+                Icon(
+                  Icons.psychology,
+                  color: AppTheme.accentGreen,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'AI Care Recommendations',
+                    style: AppTheme.headingSmall.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                // Status Indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: AppTheme.accentGreen.withOpacity(0.1),
+                    border: Border.all(
+                      color: AppTheme.accentGreen.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: AppTheme.accentGreen,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
                       Text(
-                                      _aiName == 'Photo Quality Issue' 
-                                    ? 'The photo is unclear or poorly lit for AI analysis. Please upload a new, clearer photo with better lighting and focus.'
-                                    : 'The AI analysis encountered an issue. Please upload a new, clearer plant photo for better results.',
-                                      style: TextStyle(
-                                        color: Colors.orange.shade600,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton.icon(
-                                        onPressed: () {
-                                          // Clear current image and prompt for new upload
-                                          setState(() {
-                                            _selectedImageBytes = null;
-                                            _aiGeneralDescription = null;
-                                            _aiName = null;
-                                            _aiMoistureLevel = null;
-                                            _aiLight = null;
-                                            _aiSpecificIssues = null;
-                                            _aiCareTips = null;
-                                            _aiWateringFrequency = null;
-                                            _aiWateringAmount = null;
-                                          });
-                                        },
-                                        icon: const Icon(Icons.upload_file),
-                                        label: const Text('Upload New Photo'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.orange.shade600,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
+                        'AI Ready',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.accentGreen,
+                        ),
                       ),
                     ],
                   ),
                 ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Plant Description
+            if (_aiGeneralDescription != null) ...[
+              _buildInfoRow('Description', _aiGeneralDescription!),
               const SizedBox(height: 16),
-                            ],
-                            
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.purple.shade200),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+            
+            // Care Details Grid
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCareCard(
+                    'Moisture',
+                    _aiMoistureLevel ?? 'Not specified',
+                    Icons.opacity,
+                    AppTheme.accentGreen,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCareCard(
+                    'Light',
+                    _aiLight ?? 'Not specified',
+                    Icons.wb_sunny,
+                    Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Watering Schedule
+            if (_aiWateringFrequency != null) ...[
+              _buildInfoRow('Watering Frequency', _formatWateringFrequency(_aiWateringFrequency)),
+              const SizedBox(height: 16),
+            ],
+            
+            // Care Tips
+            if (_aiCareTips != null) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGreen.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.accentGreen.withOpacity(0.2),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Care Tips',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.accentGreen,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _aiCareTips!,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        height: 1.4,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: AppTheme.bodyMedium.copyWith(
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          // Plant Care Logo Bar
+          SliverToBoxAdapter(
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                boxShadow: AppTheme.shadowSmall,
+              ),
+              child: Row(
+                children: [
+                  // Back Button
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
+                      color: AppTheme.accentGreen,
+                      size: 20,
+                    ),
+                  ),
+                  // Logo and Title (centered)
+                  Expanded(
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.local_florist,
+                            color: AppTheme.accentGreen,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'PLANT CARE',
+                            style: TextStyle(
+                              color: AppTheme.accentGreen,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Empty space to balance the back button
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+          ),
+          
+          // Form Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    // Plant Name Field
+                    _buildInputCard(
+                      'Plant Name',
+                      'e.g., Monstera, Snake Plant',
+                      Icons.local_florist,
+                      controller: _nameController,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a plant name';
+                        }
+                        return null;
+                      },
+                      iconColor: AppTheme.accentGreen,
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Plant Image Section
+                    _buildImageUploadCard(),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // AI Analysis Results
+                    if (_aiGeneralDescription != null) ...[
+                      _buildAIResultsCard(),
+                      const SizedBox(height: 24),
+                    ],
+                    
+                    // Add Plant Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _addPlant,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    'Care Tips',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.purple.shade700,
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _aiCareTips!,
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Adding Plant...',
                                     style: TextStyle(
-                                      color: Colors.purple.shade600,
-                                      height: 1.4,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.add, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Add Plant',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ],
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-              
-              const SizedBox(height: 32),
-              
-              // Add Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _addPlant,
-                  style: AppTheme.primaryButtonStyle,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
-                          ),
-                        )
-                      : Text(
-                          'Add Plant',
-                          style: AppTheme.headingSmall.copyWith(
-                            color: AppTheme.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                    
+                    const SizedBox(height: 32),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -346,7 +346,7 @@ class _PlantCardState extends State<PlantCard> {
     } else if (days == 1) {
       return 'Water tomorrow';
     } else {
-      return 'Water in $days days';
+      return 'Next watering in $days days';
     }
   }
 
