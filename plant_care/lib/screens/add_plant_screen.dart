@@ -980,7 +980,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                             const SizedBox(height: 20),
                             
                             // Check if this is a fallback response (analysis failed)
-                            if (_aiName == 'Upload New Photo' || _aiGeneralDescription!.contains('parsing issue') || _aiGeneralDescription!.contains('temporarily unavailable')) ...[
+                            if (_aiName == 'Upload New Photo' || _aiName == 'Photo Quality Issue' || _aiGeneralDescription!.contains('parsing issue') || _aiGeneralDescription!.contains('temporarily unavailable') || _aiGeneralDescription!.contains('Photo quality issue')) ...[
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
@@ -995,19 +995,21 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                       children: [
                                         Icon(Icons.warning_amber, color: Colors.orange.shade700),
                                         const SizedBox(width: 8),
-                                        Text(
-                                          'Analysis Issue Detected',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.orange.shade700,
-                                            fontSize: 16,
-                                          ),
-                                        ),
+                                                                        Text(
+                                  _aiName == 'Photo Quality Issue' ? 'Photo Quality Issue Detected' : 'Analysis Issue Detected',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.orange.shade700,
+                                    fontSize: 16,
+                                  ),
+                                ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'The AI analysis encountered an issue. Please upload a new, clearer plant photo for better results.',
+                                      _aiName == 'Photo Quality Issue' 
+                                    ? 'The photo is unclear or poorly lit for AI analysis. Please upload a new, clearer photo with better lighting and focus.'
+                                    : 'The AI analysis encountered an issue. Please upload a new, clearer plant photo for better results.',
                                       style: TextStyle(
                                         color: Colors.orange.shade600,
                                         height: 1.4,
