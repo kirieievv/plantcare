@@ -22,8 +22,7 @@ class Plant {
   
   // Health check data
   final String? healthStatus; // 'ok', 'issue', or null
-  final String? healthProblem;
-  final List<String>? healthIndicators;
+  final String? healthMessage; // Friendly conversational message from Plant Care Assistant
   final DateTime? lastHealthCheck;
 
   Plant({
@@ -44,8 +43,7 @@ class Plant {
     this.aiSpecificIssues,
     this.aiCareTips,
     this.healthStatus,
-    this.healthProblem,
-    this.healthIndicators,
+    this.healthMessage,
     this.lastHealthCheck,
   });
 
@@ -69,8 +67,7 @@ class Plant {
       'aiSpecificIssues': aiSpecificIssues,
       'aiCareTips': aiCareTips,
       'healthStatus': healthStatus,
-      'healthProblem': healthProblem,
-      'healthIndicators': healthIndicators,
+      'healthMessage': healthMessage,
       'lastHealthCheck': lastHealthCheck?.toIso8601String(),
     };
   }
@@ -95,10 +92,7 @@ class Plant {
       aiSpecificIssues: map['aiSpecificIssues'],
       aiCareTips: map['aiCareTips'],
       healthStatus: map['healthStatus'],
-      healthProblem: map['healthProblem'],
-      healthIndicators: map['healthIndicators'] != null 
-          ? List<String>.from(map['healthIndicators'])
-          : null,
+      healthMessage: map['healthMessage'],
       lastHealthCheck: _parseTimestamp(map['lastHealthCheck']),
     );
   }
@@ -135,8 +129,7 @@ class Plant {
     String? aiSpecificIssues,
     String? aiCareTips,
     String? healthStatus,
-    String? healthProblem,
-    List<String>? healthIndicators,
+    String? healthMessage,
     DateTime? lastHealthCheck,
   }) {
     return Plant(
@@ -157,8 +150,7 @@ class Plant {
       aiSpecificIssues: aiSpecificIssues ?? this.aiSpecificIssues,
       aiCareTips: aiCareTips ?? this.aiCareTips,
       healthStatus: healthStatus ?? this.healthStatus,
-      healthProblem: healthProblem ?? this.healthProblem,
-      healthIndicators: healthIndicators ?? this.healthIndicators,
+      healthMessage: healthMessage ?? this.healthMessage,
       lastHealthCheck: lastHealthCheck ?? this.lastHealthCheck,
     );
   }

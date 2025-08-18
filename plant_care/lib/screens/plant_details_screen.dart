@@ -3,7 +3,7 @@ import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/widgets/health_check_modal.dart';
 import 'package:plant_care/widgets/health_gallery.dart';
-import 'package:plant_care/widgets/health_alert.dart';
+
 
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:intl/intl.dart';
@@ -401,7 +401,46 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           
                           // Watering Schedule Grid
                           if (_plant.aiMoistureLevel != null || _plant.wateringFrequency != null) ...[
-                            // First row: Frequency and Moisture
+                            // Top row: AI Recommended Schedule badge in top right (smaller, like AI Ready)
+                            Row(
+                              children: [
+                                Expanded(child: Container()), // Spacer
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: Colors.green.shade100,
+                                    border: Border.all(
+                                      color: Colors.green.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.psychology,
+                                        color: Colors.green.shade600,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'AI Ready',
+                                        style: TextStyle(
+                                          color: Colors.green.shade700,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 20),
+                            
+                            // Second row: Frequency and Next Watering on one line
                             Row(
                               children: [
                                 Expanded(
@@ -426,32 +465,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                 Expanded(
                                   child: Row(
                                     children: [
-                                      Icon(Icons.opacity, color: Colors.blue.shade600, size: 20),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Moisture: ${_formatMoistureLevel(_plant.aiMoistureLevel)}',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.blue.shade700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            // Second row: Next Watering with Health Check Button
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Row(
-                                    children: [
                                       Icon(Icons.schedule_send, color: Colors.blue.shade600, size: 20),
                                       const SizedBox(width: 8),
                                       Expanded(
@@ -467,122 +480,216 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                     ],
                                   ),
                                 ),
-                                // Health Check Button
-                                Container(
-                                  margin: const EdgeInsets.only(left: 12),
-                                  child: ElevatedButton.icon(
-                                    onPressed: _openHealthCheckModal,
-                                    icon: Icon(
-                                      Icons.emergency,
-                                      color: Colors.red,
-                                      size: 16,
-                                    ),
-                                    label: const Text(
-                                      'Chat',
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 20),
+                            
+                            // Third row: Moisture level with progress bar
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.opacity, color: Colors.blue.shade600, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Moisture: ${_formatMoistureLevel(_plant.aiMoistureLevel)}',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.red,
+                                        color: Colors.blue.shade700,
                                       ),
                                     ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.red,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                        side: BorderSide(color: Colors.red.shade300),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  width: double.infinity,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: FractionallySizedBox(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: _getMoisturePercentage(_plant.aiMoistureLevel) / 100,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade600,
+                                        borderRadius: BorderRadius.circular(3),
                                       ),
-                                      elevation: 2,
                                     ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
                             
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
                             
-                            // AI Schedule Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.blue.shade200),
-                              ),
-                              child: Text(
-                                'AI Recommended Schedule',
-                                style: TextStyle(
-                                  color: Colors.blue.shade700,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                            // Bottom Row: Water Plant Button and Check Plant Button
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _isLoading ? null : _waterPlant,
+                                    icon: const Icon(Icons.water_drop),
+                                    label: const Text('I have watered'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                ElevatedButton.icon(
+                                  onPressed: _openHealthCheckModal,
+                                  icon: Icon(
+                                    Icons.health_and_safety,
+                                    color: Colors.red,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'Health Check',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.red,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      side: BorderSide(color: Colors.red.shade300),
+                                    ),
+                                    elevation: 2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                           
                           const SizedBox(height: 20),
-                          
-                          // Water Plant Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _isLoading ? null : _waterPlant,
-                              icon: const Icon(Icons.water_drop),
-                              label: const Text('I have watered'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
                   ),
                   
-                  // Health Status Display
-                  if (_plant.healthStatus != null) ...[
+                  // Health Status Display - Plant Care Assistant Response (Merged with Recommendations)
+                  if (_plant.healthStatus != null && _plant.healthMessage != null) ...[
                     const SizedBox(height: 16),
                     
-                    if (_plant.healthStatus == 'ok')
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.green.shade200),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: _plant.healthStatus == 'ok' 
+                            ? Colors.green.shade50 
+                            : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _plant.healthStatus == 'ok' 
+                              ? Colors.green.shade200 
+                              : Colors.orange.shade200,
+                          width: 2,
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.green.shade600,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Everything is OK',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.green.shade700,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header with icon and title
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: _plant.healthStatus == 'ok' 
+                                      ? Colors.green.shade100 
+                                      : Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  _plant.healthStatus == 'ok' 
+                                      ? Icons.eco 
+                                      : Icons.psychology,
+                                  color: _plant.healthStatus == 'ok' 
+                                      ? Colors.green.shade600 
+                                      : Colors.orange.shade600,
+                                  size: 24,
                                 ),
                               ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _plant.healthStatus == 'ok' 
+                                      ? 'Plant Care Assistant 💚' 
+                                      : 'Plant Care Assistant 🌿',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: _plant.healthStatus == 'ok' 
+                                        ? Colors.green.shade700 
+                                        : Colors.orange.shade700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Main message content
+                          Text(
+                            _plant.healthMessage!,
+                            style: TextStyle(
+                              fontSize: 16,
+                              height: 1.5,
+                              color: Colors.grey.shade800,
                             ),
+                          ),
+                          
+                          // Recommendation tiles (if any) - rendered directly under the text
+                          if (_plant.healthStatus == 'issue') ...[
+                            const SizedBox(height: 20),
+                            _buildRecommendationTiles(_plant.healthMessage!),
                           ],
-                        ),
-                      )
-                    else if (_plant.healthStatus == 'issue' && _plant.healthProblem != null)
-                      HealthAlert(
-                        problem: _plant.healthProblem!,
-                        indicators: _plant.healthIndicators ?? [],
+                          
+                          const SizedBox(height: 12),
+                          
+                          // Timestamp
+                          Text(
+                            'Last checked: ${DateFormat('MMM dd, yyyy at h:mm a').format(_plant.lastHealthCheck!)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
                   ],
                   
                   // AI Care Recommendations
@@ -820,15 +927,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
   
-  /// Convert moisture level text to percentage (0-100)
+  /// Convert moisture level text to percentage (0-100) - consistent with AI recommendations
   int _getMoisturePercentage(String? moistureLevel) {
     if (moistureLevel == null) return 50;
     
     final level = moistureLevel.toLowerCase();
-    if (level.contains('low') || level.contains('dry')) return 25;
-    if (level.contains('moderate') || level.contains('medium')) return 50;
-    if (level.contains('high') || level.contains('wet') || level.contains('moist')) return 75;
-    if (level.contains('very high') || level.contains('very wet')) return 90;
+    if (level.contains('low') || level.contains('dry') || level.contains('very low') || level.contains('extremely low')) return 25;
+    if (level.contains('moderate') || level.contains('medium') || level.contains('average')) return 50;
+    if (level.contains('high') || level.contains('wet') || level.contains('moist') || level.contains('soggy') || level.contains('very high') || level.contains('extremely high')) return 75;
     
     return 50; // Default to moderate
   }
@@ -852,16 +958,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     }
   }
   
-  /// Format moisture level to five gradations
+  /// Format moisture level to match AI recommendations format
   String _formatMoistureLevel(String? moistureLevel) {
     if (moistureLevel == null) return 'Medium';
     
     final level = moistureLevel.toLowerCase();
-    if (level.contains('very low') || level.contains('extremely low') || level.contains('dry')) return 'Low';
-    if (level.contains('low') || level.contains('slightly low')) return 'Medium-Low';
+    if (level.contains('very low') || level.contains('extremely low') || level.contains('dry') || level.contains('low')) return 'Low';
     if (level.contains('moderate') || level.contains('medium') || level.contains('average')) return 'Medium';
-    if (level.contains('high') || level.contains('slightly high') || level.contains('moist')) return 'Medium-High';
-    if (level.contains('very high') || level.contains('extremely high') || level.contains('wet') || level.contains('soggy')) return 'High';
+    if (level.contains('high') || level.contains('slightly high') || level.contains('moist') || level.contains('wet') || level.contains('soggy')) return 'High';
     
     return 'Medium'; // Default
   }
@@ -956,10 +1060,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       // Update plant with health check results
       final updatedPlant = _plant.copyWith(
         healthStatus: healthResult['status'],
-        healthProblem: healthResult['problem'],
-        healthIndicators: healthResult['indicators'] != null 
-            ? List<String>.from(healthResult['indicators'])
-            : null,
+        healthMessage: healthResult['message'],
         lastHealthCheck: DateTime.now(),
       );
 
@@ -999,8 +1100,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 const SizedBox(width: 12),
                 Text(
                   healthResult['status'] == 'ok' 
-                      ? 'Health check completed - All good! 🌱'
-                      : 'Health issue detected - Check recommendations below',
+                      ? 'Plant Care Assistant has analyzed your plant! 🌱'
+                      : 'Plant Care Assistant has some advice for you! 🌿',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1008,7 +1109,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ),
               ],
             ),
-            backgroundColor: healthResult['status'] == 'ok' ? Colors.green : Colors.orange,
+            backgroundColor: healthResult['status'] == 'ok' 
+                ? Colors.green 
+                : Colors.orange,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -1060,12 +1163,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
 
 
-  Future<void> _updatePlantHealthStatus(String? status, String? problem, List<String>? indicators) async {
+  Future<void> _updatePlantHealthStatus(String? status, String? message) async {
     try {
       final updatedPlant = _plant.copyWith(
         healthStatus: status,
-        healthProblem: problem,
-        healthIndicators: indicators,
+        healthMessage: message,
         lastHealthCheck: status != null ? DateTime.now() : null,
       );
 
@@ -1084,5 +1186,103 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         );
       }
     }
+  }
+
+  /// Builds recommendation tiles from the health message
+  Widget _buildRecommendationTiles(String healthMessage) {
+    // Extract recommendations from the message
+    final recommendations = <String>[];
+    
+    // Look for recommendations after "Here's what I recommend:" or similar phrases
+    final recommendPattern = RegExp(r"Here's what I recommend:\\s*(.*?)(?=Don't worry|Keep the faith|\$)", dotAll: true);
+    final recommendMatch = recommendPattern.firstMatch(healthMessage);
+    
+    if (recommendMatch != null) {
+      final recommendText = recommendMatch.group(1)?.trim() ?? '';
+      
+      // Split by sentences or periods to get individual recommendations
+      final sentences = recommendText.split(RegExp(r'(?<=\\.)\\s+'));
+      
+      for (final sentence in sentences) {
+        final trimmed = sentence.trim();
+        if (trimmed.isNotEmpty && trimmed.length > 10) { // Filter out very short fragments
+          recommendations.add(trimmed);
+        }
+      }
+    }
+    
+    // If no recommendations found, return empty
+    if (recommendations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Build the recommendation tiles
+    return Column(
+      children: [
+        // Tiles
+        ...recommendations.map((recommendation) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildRecommendationTile(recommendation),
+        )),
+      ],
+    );
+  }
+
+  /// Builds individual recommendation tiles
+  Widget _buildRecommendationTile(String recommendation) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.9),
+            Colors.orange.shade50.withOpacity(0.3),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.orange.shade200,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.shade200.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Elegant bullet point
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 6, right: 16),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade400,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          // Recommendation text
+          Expanded(
+            child: Text(
+              recommendation,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey.shade800,
+                height: 1.6,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 } 

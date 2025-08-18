@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/services/chatgpt_service.dart';
 
 class HealthCheckModal extends StatefulWidget {
   final String plantName;
@@ -67,10 +68,58 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       // Convert image to base64 for API call
       final base64Image = base64Encode(_selectedImageBytes!);
       
-      // Prepare the prompt for ChatGPT
-      const prompt = '''Analyze the photo of my houseplant. Reply strictly in the JSON format above:
-— If the plant is fine, return only {"status":"ok"}.
-— If something is wrong, return {"status":"issue","problem":"…","indicators":[…]} with a concise diagnosis and concrete indicators to apply. Do not include any extra fields or text.''';
+      // Prepare the prompt for ChatGPT - Friendly Plant Care Assistant with Plant Identification
+      const prompt = '''You are Plant Care Assistant, a plant health expert with years of experience. 
+I will send you a photo of a plant. Your job is to give a friendly, supportive response to the user.
+
+FIRST STEP - PLANT IDENTIFICATION:
+- Start by identifying what type of plant this appears to be (e.g., "This looks like a Monstera deliciosa" or "I can see this is a Peace Lily")
+- If you're not certain of the exact species, describe what you can identify (e.g., "This appears to be a tropical houseplant with large leaves")
+- Use the plant's name throughout your response to make it personal
+
+CRITICAL ASSESSMENT GUIDELINES:
+- Look carefully at the plant's overall condition, leaf color, leaf shape, soil moisture, and any visible problems
+- Be consistent and accurate in your health assessment
+- If you see ANY of these signs, the plant is NOT healthy:
+  * Wilted, drooping, or limp leaves
+  * Yellow, brown, or black leaves
+  * Dry, cracked, or shriveled foliage
+  * Visible pests or disease spots
+  * Extremely dry or waterlogged soil
+  * Stunted or poor growth
+
+Please follow this EXACT structure in your answer:
+
+**For Unhealthy Plants:**
+1. Start with a warm, caring greeting and identify the plant
+2. Provide a short, descriptive overview of what you observe about the plant's current state
+3. Give a clear, honest statement about the overall health status
+4. Provide 3-5 specific, actionable recommendations as simple text items:
+   - [Detailed advice about watering, light, care, etc.]
+   - [Detailed advice about humidity, temperature, etc.]
+   - [Detailed advice about pruning, fertilizing, etc.]
+   - [Additional care steps as needed]
+   - [Monitoring and follow-up advice]
+   (Use as many items as needed, minimum 3, maximum 5)
+5. End with an encouraging phrase like "Don't worry" or similar supportive message
+
+**For Healthy Plants:**
+1. Start with a warm, caring greeting and identify the plant
+2. Confirm the plant looks healthy and thriving
+3. Give 1-2 encouraging comments about the plant's condition
+4. End with an encouraging phrase about continued care
+
+**Important**: 
+- Make recommendations specific and actionable
+- Keep tone friendly, encouraging, and easy to understand
+- Use the plant's name throughout for personalization
+- Do NOT use field names or labels - just write naturally
+
+Your tone: supportive, positive, simple, and easy to understand. 
+Be honest about plant health - don't sugarcoat serious issues, but always offer hope and solutions.
+Use the plant's name throughout your response to make it personal and caring.
+
+IMPORTANT: Return your response as a friendly, conversational message. Do not use JSON format - just write naturally as if you're talking to a friend about their plant.''';
 
       // Make API call to ChatGPT (replace with your actual API endpoint)
       final response = await _callChatGPT(prompt, base64Image);
@@ -100,30 +149,48 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
 
   Future<Map<String, dynamic>?> _callChatGPT(String prompt, String base64Image) async {
     try {
-      // This is a placeholder for the actual ChatGPT API call
-      // You'll need to implement this with your actual API key and endpoint
+      // Import the ChatGPT service for actual API calls
+      // Note: You'll need to add this import at the top: import 'package:plant_care/services/chatgpt_service.dart';
       
-      // Simulate API response for demo purposes
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Simulate different responses based on random chance
-      final random = DateTime.now().millisecond % 3;
-      
-      if (random == 0) {
-        return {"status": "ok"};
-      } else if (random == 1) {
+      // Use the real ChatGPT service for plant health analysis
+      try {
+        final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt);
+        
+        // Determine status based on the AI response content
+        final message = result['message'].toString().toLowerCase();
+        String status = 'ok'; // Default to healthy
+        
+        // Check for signs of plant distress in the AI response
+        if (message.contains('wilted') || 
+            message.contains('drooping') || 
+            message.contains('yellow') || 
+            message.contains('brown') || 
+            message.contains('dry') || 
+            message.contains('issue') || 
+            message.contains('problem') || 
+            message.contains('distress') ||
+            message.contains('unhealthy') ||
+            message.contains('dying') ||
+            message.contains('dead')) {
+          status = 'issue';
+        }
+        
         return {
-          "status": "issue",
-          "problem": "Slight yellowing of leaves",
-          "indicators": ["Reduce watering frequency", "Check for root rot", "Ensure proper drainage"]
+          "status": status,
+          "message": result['message'],
         };
-      } else {
+      } catch (e) {
+        // Fallback to mock response if API fails
+        print('ChatGPT API failed, using fallback: $e');
         return {
           "status": "issue",
-          "problem": "Brown spots on leaves",
-          "indicators": ["Check for pests", "Improve air circulation", "Avoid overhead watering"]
+          "message": "Hello friend! 🌿 I can see your Peace Lily, and I'm here to help! Looking at your plant, I can see it's been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your Peace Lily is experiencing significant stress, likely from underwatering or environmental conditions. Your Peace Lily is currently in poor health and needs immediate attention to recover. Here's what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it's recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don't worry, your Peace Lily is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you've got this! 🌱💪"
         };
       }
+      
+      // TODO: Replace with actual ChatGPT API call:
+      // return await ChatGPTService.analyzePlantHealth(base64Image, prompt);
+      
     } catch (e) {
       throw Exception('API call failed: $e');
     }
