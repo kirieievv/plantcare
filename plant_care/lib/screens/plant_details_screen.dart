@@ -320,7 +320,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Plant Name Header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
               child: Text(
                 _plant.name,
                 style: TextStyle(
@@ -336,7 +336,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Centered Plant Image
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Center(
                 child: Container(
                   width: 200,
@@ -384,12 +384,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Unified Watering and AI Care Information Card
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -401,7 +401,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                             color: _getWateringStatusColor(),
                             size: 24,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,6 +414,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                     color: _getWateringStatusColor(),
                                   ),
                                 ),
+                                const SizedBox(height: 4),
                                 Text(
                                   'Last watered: ${DateFormat('MMM dd, yyyy').format(_plant.lastWatered)}',
                                   style: TextStyle(color: Colors.grey.shade600),
@@ -424,14 +425,137 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         ],
                       ),
                       
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       
                       // Watering Schedule Grid
                       if (_plant.aiMoistureLevel != null || _plant.wateringFrequency != null) ...[
-                        // Top row: AI Recommended Schedule badge in top right (smaller, like AI Ready)
+                        // Second row: Frequency and Next Watering on one line
                         Row(
                           children: [
-                            Expanded(child: Container()), // Spacer
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.schedule, color: Colors.blue.shade600, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _formatWateringFrequency(_plant.wateringFrequency.toString()),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.schedule_send, color: Colors.blue.shade600, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Next: ${DateFormat('MMM dd, yyyy').format(_plant.nextWatering)}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Third row: Moisture level with progress bar
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.opacity, color: Colors.blue.shade600, size: 20),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Moisture: ${_formatMoistureLevel(_plant.aiMoistureLevel)}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: _getMoisturePercentage(_plant.aiMoistureLevel) / 100,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade600,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      
+                      // AI Care Recommendations Section
+                      if (_plant.aiGeneralDescription != null) ...[
+                        const SizedBox(height: 32),
+                        
+                        // Divider
+                        Container(
+                          height: 1,
+                          color: Colors.grey.shade200,
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // AI Care Header with AI Ready badge in top right
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.psychology,
+                              color: Colors.purple.shade600,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'AI Care Recommendations',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple.shade700,
+                                ),
+                              ),
+                            ),
+                            // AI Ready badge in top right
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
@@ -465,151 +589,20 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           ],
                         ),
                         
-                        const SizedBox(height: 20),
-                        
-                        // Second row: Frequency and Next Watering on one line
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(Icons.schedule, color: Colors.blue.shade600, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _formatWateringFrequency(_plant.wateringFrequency.toString()),
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(Icons.schedule_send, color: Colors.blue.shade600, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Next: ${DateFormat('MMM dd, yyyy').format(_plant.nextWatering)}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 20),
-                        
-                        // Third row: Moisture level with progress bar
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.opacity, color: Colors.blue.shade600, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Moisture: ${_formatMoistureLevel(_plant.aiMoistureLevel)}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              width: double.infinity,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                              child: FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: _getMoisturePercentage(_plant.aiMoistureLevel) / 100,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade600,
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      
-                      // AI Care Recommendations Section
-                      if (_plant.aiGeneralDescription != null) ...[
-                        const SizedBox(height: 32),
-                        
-                        // Divider
-                        Container(
-                          height: 1,
-                          color: Colors.grey.shade200,
-                        ),
-                        
                         const SizedBox(height: 24),
                         
-                        // AI Care Header
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.psychology,
-                              color: Colors.purple.shade600,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'AI Care Recommendations',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 20),
-                        
-                        // Plant Name and Description
+                        // Species and Description
                         if (_plant.aiName != null) ...[
-                          _buildInfoRow('Plant Name', _plant.aiName!),
-                          const SizedBox(height: 16),
+                          _buildInfoRow('Species', _plant.aiName!),
+                          const SizedBox(height: 20),
                         ],
                         
                         if (_plant.aiGeneralDescription != null) ...[
                           _buildInfoRow('Description', _plant.aiGeneralDescription!),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                         ],
                         
-                        // Care Details Grid
+                        // Care Details Grid - Moisture and Light
                         Row(
                           children: [
                             Expanded(
@@ -621,45 +614,121 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                 moisturePercentage: _getMoisturePercentage(_plant.aiMoistureLevel),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 16),
                             Expanded(
                               child: _buildCareCard(
                                 'Light',
-                                _plant.aiLight ?? 'Not specified',
+                                _plant.aiLight != null ? '${_plant.aiLight} hours' : 'Not specified',
                                 Icons.wb_sunny,
                                 Colors.orange,
+                                subtitle: _plant.aiLight != null ? 'per day' : null,
                               ),
                             ),
                           ],
                         ),
                         
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 24),
                         
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildCareCard(
-                                'Specific Issues',
-                                _plant.aiSpecificIssues ?? 'None detected',
-                                Icons.info_outline,
-                                Colors.red,
+                        // Specific Issues - Full text design
+                        if (_plant.aiSpecificIssues != null && _plant.aiSpecificIssues != 'None detected') ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.red.shade200,
+                                width: 1,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildCareCard(
-                                'Care Tips',
-                                _plant.aiCareTips ?? 'No specific tips',
-                                Icons.tips_and_updates,
-                                Colors.blue,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.red.shade600,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Specific Issues',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.red.shade700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _plant.aiSpecificIssues!,
+                                  style: TextStyle(
+                                    color: Colors.red.shade800,
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        
+                        // Care Tips - Full text design
+                        if (_plant.aiCareTips != null && _plant.aiCareTips != 'No specific tips') ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.blue.shade200,
+                                width: 1,
                               ),
                             ),
-                          ],
-                        ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.tips_and_updates,
+                                      color: Colors.blue.shade600,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Care Tips',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _plant.aiCareTips!,
+                                  style: TextStyle(
+                                    color: Colors.blue.shade800,
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                       
                       // Action Buttons Row
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                       Row(
                         children: [
                           Expanded(
@@ -670,14 +739,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 20),
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _openHealthCheckModal,
@@ -697,9 +766,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                   side: BorderSide(color: Colors.red.shade300),
                                 ),
                                 elevation: 2,
@@ -718,14 +787,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Health Status Display - Plant Care Assistant Response (Merged with Recommendations)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Column(
                 children: [
                   if (_plant.healthStatus != null && _plant.healthMessage != null) ...[
-                    const SizedBox(height: 16),
-                    
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: _plant.healthStatus == 'ok' 
                             ? Colors.green.shade50 
@@ -752,7 +819,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   color: _plant.healthStatus == 'ok' 
                                       ? Colors.green.shade100 
@@ -769,7 +836,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                   size: 24,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
                                   _plant.healthStatus == 'ok' 
@@ -787,7 +854,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                             ],
                           ),
                           
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                           
                           // Main message content
                           Text(
@@ -801,11 +868,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           
                           // Recommendation tiles (if any) - rendered directly under the text
                           if (_plant.healthStatus == 'issue') ...[
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 24),
                             _buildRecommendationTiles(_plant.healthMessage!),
                           ],
                           
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           
                           // Timestamp
                           Text(
@@ -820,6 +887,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                     ),
                   ],
+                  
+                  const SizedBox(height: 24),
                   
                   // Health Check History
                   StreamBuilder<List<HealthCheckRecord>>(
@@ -896,7 +965,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -905,15 +974,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             child: Text(
               label,
               style: TextStyle(
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 color: Colors.grey.shade700,
+                fontSize: 14,
               ),
             ),
           ),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade800,
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -964,22 +1039,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return 'Medium'; // Default
   }
 
-  Widget _buildCareCard(String title, String value, IconData icon, Color color, {int? moisturePercentage}) {
+  Widget _buildCareCard(String title, String value, IconData icon, Color color, {int? moisturePercentage, String? subtitle}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             icon,
             color: color,
             size: 24,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             title,
             style: TextStyle(
@@ -987,8 +1063,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               color: color,
               fontSize: 12,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
@@ -1000,8 +1077,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: color.withOpacity(0.8),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          // Add consistent spacing for both blocks to ensure same height
+          const SizedBox(height: 12),
           if (moisturePercentage != null) ...[
-            const SizedBox(height: 8),
             Container(
               width: double.infinity,
               height: 6,
@@ -1020,10 +1110,30 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
             Text(
               '$moisturePercentage%',
               style: TextStyle(
                 color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ] else ...[
+            // For Light block, add placeholder content to match Moisture block height
+            Container(
+              width: double.infinity,
+              height: 6,
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '', // Empty text to maintain spacing
+              style: TextStyle(
+                color: Colors.transparent,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
