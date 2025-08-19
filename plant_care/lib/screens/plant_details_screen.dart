@@ -353,18 +353,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   /// Formats health check date for display
   String _formatHealthCheckDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-    
-    if (difference.inDays == 0) {
-      return 'Today';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return DateFormat('MMM dd').format(date);
-    }
+    return DateFormat('dd MMM yyyy').format(date);
   }
 
   // Key Metrics Cards
@@ -1081,25 +1070,52 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ],
         ),
         const SizedBox(height: 16),
-          StreamBuilder<List<HealthCheckRecord>>(
-            stream: HealthCheckService().getHealthCheckHistory(_plant.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              
-              if (snapshot.hasError) {
-                return Text('Error loading history: ${snapshot.error}');
-              }
-              
-              final healthChecks = snapshot.data ?? [];
-              if (healthChecks.isEmpty) {
-                return _buildEmptyHealthHistory();
-              }
-              
-              return _buildHealthHistoryList(healthChecks);
-            },
-          ),
+        StreamBuilder<List<HealthCheckRecord>>(
+          stream: HealthCheckService().getHealthCheckHistory(_plant.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (snapshot.hasError) {
+              return Text('Error loading history: ${snapshot.error}');
+            }
+            
+            final healthChecks = snapshot.data ?? [];
+            if (healthChecks.isEmpty) {
+              return _buildEmptyHealthHistory();
+            }
+            
+            return Column(
+              children: [
+                _buildHealthHistoryList(healthChecks),
+                // Scroll indicator
+                if (healthChecks.length > 3) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.swipe_left,
+                        size: 16,
+                        color: Colors.blue.shade400,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Swipe to see more',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.blue.shade400,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
       ],
     ),
   );
@@ -1147,7 +1163,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: sortedHistory.length,
-    itemBuilder: (context, index) {
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemBuilder: (context, index) {
           final record = sortedHistory[index];
           return Container(
             width: 100,
