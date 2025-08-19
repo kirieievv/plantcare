@@ -4,6 +4,9 @@ import 'package:plant_care/screens/plant_list_screen.dart';
 import 'package:plant_care/screens/add_plant_screen.dart';
 import 'package:plant_care/screens/profile_screen.dart';
 import 'package:plant_care/screens/settings_screen.dart';
+import 'package:plant_care/screens/plant_details_screen.dart';
+import 'package:plant_care/services/navigation_service.dart';
+import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -19,11 +22,18 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   
-  late final List<Widget> _screens;
+  List<Widget> _screens = [];
   
   @override
   void initState() {
     super.initState();
+    
+    // Check if user is null before initializing screens
+    if (widget.user == null) {
+      print('❌ MainNavigationScreen: User is null, cannot initialize screens');
+      return;
+    }
+    
     _screens = [
       DashboardScreen(user: widget.user),
       const PlantListScreen(),
@@ -31,10 +41,73 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const ProfileScreen(),
       SettingsScreen(user: widget.user!),
     ];
+    
+    // Check if user should return to a specific plant details page
+    _checkNavigationState();
   }
-
+  
+  Future<void> _checkNavigationState() async {
+    print('🌱 MainNavigationScreen: Checking navigation state...');
+    
+    // On app reload, always clear navigation state and start with home page
+    // This ensures the app opens to the dashboard instead of trying to return to plant details
+    await NavigationService.clearNavigationState();
+    print('🌱 MainNavigationScreen: Navigation state cleared, starting with home page');
+    
+    // Set current index to 0 (Home/Dashboard) to ensure home page is shown
+    setState(() {
+      _currentIndex = 0;
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
+    // Check if screens are initialized
+    if (_screens.isEmpty) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red.shade300,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Authentication Error',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please log in again to continue',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  // Navigate back to auth screen
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/auth',
+                    (route) => false,
+                  );
+                },
+                child: const Text('Go to Login'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(

@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
+import 'package:plant_care/services/health_check_service.dart';
+import 'package:plant_care/services/navigation_service.dart';
+import 'package:plant_care/services/cors_proxy_service.dart';
 import 'package:plant_care/widgets/health_check_modal.dart';
 import 'package:plant_care/widgets/health_gallery.dart';
+import 'package:plant_care/screens/main_navigation_screen.dart';
+import 'package:plant_care/screens/auth_screen.dart'; // Added import for AuthScreen
+import 'package:firebase_auth/firebase_auth.dart'; // Added import for FirebaseAuth
 
 
 import 'package:plant_care/utils/app_theme.dart';
@@ -28,6 +35,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   void initState() {
     super.initState();
     _plant = widget.plant;
+    
+    // Save navigation state so user returns to this page after reload
+    _saveNavigationState();
+  }
+  
+  Future<void> _saveNavigationState() async {
+    await NavigationService.savePlantDetailsState(_plant.id);
   }
 
   Future<void> _waterPlant() async {
@@ -247,7 +261,26 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 children: [
                   // Back Button
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      // Get current user from Firebase Auth and navigate back to main navigation
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      if (currentUser != null) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => MainNavigationScreen(user: currentUser),
+                          ),
+                          (route) => false, // Remove all previous routes
+                        );
+                      } else {
+                        // If no current user, go to auth screen
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const AuthScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      }
+                    },
                     icon: Icon(
                       Icons.arrow_back_ios,
                       color: AppTheme.accentGreen,
@@ -692,6 +725,30 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     ),
                   ],
                   
+                  // Health Check History
+                  StreamBuilder<List<HealthCheckRecord>>(
+                    stream: HealthCheckService().getHealthCheckHistory(_plant.id),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return _buildHealthCheckHistorySection([]); // Show loading state
+                      }
+                      
+                      if (snapshot.hasError) {
+                        print('❌ Error loading health check history: ${snapshot.error}');
+                        return _buildHealthCheckHistorySection([]); // Show error state
+                      }
+                      
+                      final healthChecks = snapshot.data ?? [];
+                      print('🌱 PlantDetailsScreen: Loaded ${healthChecks.length} health checks');
+                      
+                      if (healthChecks.isNotEmpty) {
+                        return _buildHealthCheckHistorySection(healthChecks);
+                      } else {
+                        return _buildHealthCheckHistorySection([]); // Show empty state
+                      }
+                    },
+                  ),
+                  
                   // AI Care Recommendations
                   if (_plant.aiGeneralDescription != null) ...[
                     const SizedBox(height: 16),
@@ -1045,6 +1102,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     showDialog(
       context: context,
       builder: (context) => HealthCheckModal(
+        plantId: _plant.id,
         plantName: _plant.name,
         onHealthCheckComplete: _handleHealthCheckComplete,
       ),
@@ -1263,26 +1321,359 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             width: 8,
             height: 8,
             margin: const EdgeInsets.only(top: 6, right: 16),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade400,
-              borderRadius: BorderRadius.circular(4),
-            ),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade400,
+            borderRadius: BorderRadius.circular(4),
           ),
-          // Recommendation text
-          Expanded(
-            child: Text(
-              recommendation,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade800,
-                height: 1.6,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.left,
+        ),
+        // Recommendation text
+        Expanded(
+          child: Text(
+            recommendation,
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey.shade800,
+              height: 1.6,
+              fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.left,
           ),
-        ],
+        ),
+      ],
+    ),
+  );
+}
+
+/// Builds health check history section
+Widget _buildHealthCheckHistorySection(List<HealthCheckRecord> healthCheckHistory) {
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.blue.shade50,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: Colors.blue.shade200,
+        width: 2,
       ),
-    );
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.history,
+                color: Colors.blue.shade600,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Health Check History',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ),
+            // Add Health Check Button
+            GestureDetector(
+              onTap: () => _openHealthCheckModal(),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.add,
+                  color: Colors.blue.shade600,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Content based on health check count
+        if (healthCheckHistory.isEmpty)
+          _buildEmptyHealthCheckState()
+        else
+          _buildHealthCheckHistoryGrid(healthCheckHistory),
+      ],
+    ),
+  );
+}
+
+/// Builds empty state for health check history
+Widget _buildEmptyHealthCheckState() {
+  return Container(
+    padding: const EdgeInsets.all(40),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.9),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: Colors.blue.shade200,
+        width: 1,
+      ),
+    ),
+    child: Column(
+      children: [
+        Icon(
+          Icons.photo_library_outlined,
+          size: 48,
+          color: Colors.grey.shade400,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'No health checks yet',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Upload photos to track your plant\'s health over time',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  );
+}
+
+/// Builds health check history grid
+Widget _buildHealthCheckHistoryGrid(List<HealthCheckRecord> healthCheckHistory) {
+  // Sort history by timestamp, most recent first
+  final sortedHistory = List<HealthCheckRecord>.from(healthCheckHistory)
+    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  
+  // Take only the last 6 health checks to avoid overwhelming the UI
+  final recentHistory = sortedHistory.take(6).toList();
+  
+  return GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 3,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 0.8,
+    ),
+    itemCount: recentHistory.length,
+    itemBuilder: (context, index) {
+      final record = recentHistory[index];
+      return _buildHealthCheckHistoryCard(record);
+    },
+  );
+}
+
+            /// Builds individual health check history card
+            Widget _buildHealthCheckHistoryCard(HealthCheckRecord record) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Status badge
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            record.status == 'ok' ? Icons.check_circle : Icons.warning,
+                            color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            record.status == 'ok' ? 'OK' : 'Issue',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Image or placeholder with CORS fallback
+                    Expanded(
+                      child: record.imageUrl != null
+                          ? _buildImageWithFallback(record.imageUrl!)
+                          : _buildImagePlaceholder(),
+                    ),
+
+                    // Date
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        _formatHealthCheckDate(record.timestamp),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            /// Builds image with CORS fallback handling
+            Widget _buildImageWithFallback(String imageUrl) {
+              // Try to get a CORS-free URL for web
+              final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
+              
+              return ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+                child: Image.network(
+                  processedUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    print('❌ Image loading error: $error');
+                    // Try alternative URL if CORS fails
+                    if (CorsProxyService.hasCorsIssues) {
+                      return _buildImagePlaceholderWithRetry(imageUrl);
+                    }
+                    return _buildImagePlaceholder();
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildImagePlaceholder();
+                  },
+                ),
+              );
+            }
+
+            /// Builds image placeholder with retry button for web
+            Widget _buildImagePlaceholderWithRetry(String imageUrl) {
+              return Container(
+                color: Colors.grey.shade100,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.broken_image,
+                      size: 24,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'CORS Error',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 2),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Force refresh the image
+                        setState(() {});
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: const Size(0, 0),
+                      ),
+                      child: const Text(
+                        'Retry',
+                        style: TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+/// Builds image placeholder when no image is available
+Widget _buildImagePlaceholder() {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.grey.shade100,
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(12),
+        bottomRight: Radius.circular(12),
+      ),
+    ),
+    child: const Center(
+      child: Icon(
+        Icons.image,
+        color: Colors.grey,
+        size: 24,
+      ),
+    ),
+  );
+}
+
+/// Formats health check date for display
+String _formatHealthCheckDate(DateTime date) {
+  final now = DateTime.now();
+  final difference = now.difference(date);
+  
+  if (difference.inDays == 0) {
+    return 'Today';
+  } else if (difference.inDays == 1) {
+    return 'Yesterday';
+  } else if (difference.inDays < 7) {
+    return '${difference.inDays}d ago';
+  } else {
+    return DateFormat('MMM dd').format(date);
   }
+}
 } 

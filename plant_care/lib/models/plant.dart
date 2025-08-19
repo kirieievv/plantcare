@@ -1,4 +1,70 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:typed_data';
+
+/// Represents a single health check record
+class HealthCheckRecord {
+  final String id;
+  final DateTime timestamp;
+  final String status; // 'ok' or 'issue'
+  final String message;
+  final String? imageUrl; // Firebase Storage URL for the image
+  final Uint8List? imageBytes; // Local image bytes for immediate display
+  final Map<String, dynamic>? metadata; // Additional data like AI analysis details
+
+  HealthCheckRecord({
+    required this.id,
+    required this.timestamp,
+    required this.status,
+    required this.message,
+    this.imageUrl,
+    this.imageBytes,
+    this.metadata,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'timestamp': timestamp.toIso8601String(),
+      'status': status,
+      'message': message,
+      'imageUrl': imageUrl,
+      'metadata': metadata,
+      // Note: imageBytes is not stored in Firestore, only used locally
+    };
+  }
+
+  factory HealthCheckRecord.fromMap(Map<String, dynamic> map) {
+    return HealthCheckRecord(
+      id: map['id'],
+      timestamp: Plant._parseTimestamp(map['timestamp']) ?? DateTime.now(),
+      status: map['status'],
+      message: map['message'],
+      imageUrl: map['imageUrl'],
+      imageBytes: null, // Will be loaded separately if needed
+      metadata: map['metadata'],
+    );
+  }
+
+  HealthCheckRecord copyWith({
+    String? id,
+    DateTime? timestamp,
+    String? status,
+    String? message,
+    String? imageUrl,
+    Uint8List? imageBytes,
+    Map<String, dynamic>? metadata,
+  }) {
+    return HealthCheckRecord(
+      id: id ?? this.id,
+      timestamp: timestamp ?? this.timestamp,
+      status: status ?? this.status,
+      message: message ?? this.message,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageBytes: imageBytes ?? this.imageBytes,
+      metadata: metadata ?? this.metadata,
+    );
+  }
+}
 
 class Plant {
   final String id;

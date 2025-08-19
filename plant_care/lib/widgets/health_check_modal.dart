@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:async';
 import 'package:image_picker/image_picker.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:plant_care/services/chatgpt_service.dart';
+import 'package:plant_care/services/health_check_service.dart';
+
+import 'package:plant_care/models/plant.dart';
+import 'package:uuid/uuid.dart';
 
 class HealthCheckModal extends StatefulWidget {
+  final String plantId;
   final String plantName;
   final Function(Map<String, dynamic>) onHealthCheckComplete;
 
   const HealthCheckModal({
     Key? key,
+    required this.plantId,
     required this.plantName,
     required this.onHealthCheckComplete,
   }) : super(key: key);
@@ -33,9 +40,9 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
+        maxWidth: 600, // Reduced from 800
+        maxHeight: 600, // Reduced from 800
+        imageQuality: 70, // Reduced from 85 for smaller file size
       );
       
       if (image != null) {
@@ -62,6 +69,17 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
     setState(() {
       _isAnalyzing = true;
       _errorMessage = null;
+    });
+    
+    // Add timeout to prevent infinite freezing
+    Timer? timeoutTimer;
+    timeoutTimer = Timer(const Duration(seconds: 30), () {
+      if (mounted && _isAnalyzing) {
+        setState(() {
+          _errorMessage = 'Analysis timed out. Please try again.';
+          _isAnalyzing = false;
+        });
+      }
     });
 
     try {
@@ -125,12 +143,59 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       final response = await _callChatGPT(prompt, base64Image);
       
       if (response != null) {
-        // Add image bytes to the response
-        final responseWithImage = Map<String, dynamic>.from(response);
-        responseWithImage['imageBytes'] = _selectedImageBytes;
-        
-        widget.onHealthCheckComplete(responseWithImage);
-        Navigator.pop(context);
+        // Create a health check record
+        final healthCheckRecord = HealthCheckRecord(
+          id: const Uuid().v4(),
+          timestamp: DateTime.now(),
+          status: response['status'],
+          message: response['message'],
+          imageUrl: null, // Will be set by the service after upload
+          imageBytes: _selectedImageBytes, // Pass the actual image bytes
+          metadata: {
+            'analysisTimestamp': DateTime.now().toIso8601String(),
+          },
+        );
+
+        // Save the health check record to the plant
+        try {
+          print('🌱 Saving health check record...');
+          
+          // Show progress message to user
+          if (mounted) {
+            setState(() {
+              _errorMessage = null;
+            });
+          }
+          
+          await HealthCheckService().addHealthCheck(widget.plantId, healthCheckRecord);
+          print('✅ Health check record saved successfully');
+          
+          // Check if widget is still mounted before proceeding
+          if (!mounted) {
+            print('⚠️ Widget no longer mounted, aborting health check completion');
+            return;
+          }
+          
+          // Add image bytes to the response for immediate display
+          final responseWithImage = Map<String, dynamic>.from(response);
+          responseWithImage['imageBytes'] = _selectedImageBytes;
+          
+          print('🌱 Calling onHealthCheckComplete...');
+          widget.onHealthCheckComplete(responseWithImage);
+          print('✅ Health check completed, closing modal...');
+          
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        } catch (e) {
+          print('❌ Error saving health check: $e');
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Error saving health check: $e';
+              _isAnalyzing = false; // Reset analyzing state on error
+            });
+          }
+        }
       } else {
         setState(() {
           _errorMessage = 'Failed to analyze image. Please try again.';
@@ -141,6 +206,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
         _errorMessage = 'Error analyzing image: $e';
       });
     } finally {
+      timeoutTimer.cancel(); // Cancel timeout timer
       setState(() {
         _isAnalyzing = false;
       });
@@ -450,6 +516,50 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                   ],
                 ),
               ),
+              
+              // Add CORS help for web users
+              if (kIsWeb) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.blue.shade600,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Web App CORS Issue',
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'If you\'re seeing CORS errors, check the CORS_FIX_GUIDE.md file for instructions on fixing Firebase Storage CORS configuration.',
+                        style: TextStyle(
+                          color: Colors.blue.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
             
             const SizedBox(height: 24),
