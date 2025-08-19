@@ -1,32 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/services/health_check_service.dart';
 import 'package:plant_care/services/navigation_service.dart';
 import 'package:plant_care/services/cors_proxy_service.dart';
 import 'package:plant_care/widgets/health_check_modal.dart';
-import 'package:plant_care/screens/main_navigation_screen.dart';
-import 'package:plant_care/screens/auth_screen.dart'; // Added import for AuthScreen
-import 'package:firebase_auth/firebase_auth.dart'; // Added import for FirebaseAuth
-
-
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 
 class PlantDetailsScreen extends StatefulWidget {
   final Plant plant;
 
-  const PlantDetailsScreen({Key? key, required this.plant}) : super(key: key);
+  const PlantDetailsScreen({super.key, required this.plant});
 
   @override
   State<PlantDetailsScreen> createState() => _PlantDetailsScreenState();
 }
 
 class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
-  bool _isLoading = false;
   late Plant _plant;
   
   @override
@@ -42,1112 +34,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     await NavigationService.savePlantDetailsState(_plant.id);
   }
 
-  Future<void> _waterPlant() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final updatedPlant = _plant.copyWith(
-        lastWatered: DateTime.now(),
-        nextWatering: DateTime.now().add(Duration(days: _plant.wateringFrequency)),
-      );
-
-      await PlantService().updatePlant(updatedPlant);
-      
-      setState(() {
-        _plant = updatedPlant;
-      });
-
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  '${_plant.name} has been watered! 💧',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.error,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Error watering plant: $e',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _deletePlant() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Plant'),
-        content: Text('Are you sure you want to delete "${_plant.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await PlantService().deletePlant(_plant.id);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Plant deleted'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        Navigator.pop(context, true); // Return true to indicate deletion
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error deleting plant: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  String _getWateringStatus() {
-    final now = DateTime.now();
-    final daysUntilWatering = _plant.nextWatering.difference(now).inDays;
-    
-    if (daysUntilWatering < 0) {
-      return 'Overdue by ${daysUntilWatering.abs()} days';
-    } else if (daysUntilWatering == 0) {
-      return 'Water today!';
-    } else if (daysUntilWatering == 1) {
-      return 'Water tomorrow';
-    } else {
-      return 'Next watering in $daysUntilWatering days';
-    }
-  }
-
-  Color _getWateringStatusColor() {
-    final now = DateTime.now();
-    final daysUntilWatering = _plant.nextWatering.difference(now).inDays;
-    
-    if (daysUntilWatering < 0) {
-      return Colors.red;
-    } else if (daysUntilWatering <= 1) {
-      return Colors.orange;
-    } else {
-      return Colors.green;
-    }
-  }
-
-  Widget _buildPlaceholderImage() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: Colors.grey.shade50,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.local_florist,
-            size: 48,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'No Image',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Plant Care Logo Bar
-          SliverToBoxAdapter(
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppTheme.white,
-                boxShadow: AppTheme.shadowSmall,
-              ),
-              child: Row(
-                children: [
-                  // Back Button
-                  IconButton(
-                    onPressed: () {
-                      // Get current user from Firebase Auth and navigate back to main navigation
-                      final currentUser = FirebaseAuth.instance.currentUser;
-                      if (currentUser != null) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => MainNavigationScreen(user: currentUser),
-                          ),
-                          (route) => false, // Remove all previous routes
-                        );
-                      } else {
-                        // If no current user, go to auth screen
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const AuthScreen(),
-                          ),
-                          (route) => false,
-                        );
-                      }
-                    },
-                    icon: Icon(
-                      Icons.arrow_back_ios,
-                      color: AppTheme.accentGreen,
-                      size: 20,
-                    ),
-                  ),
-                  // Logo and Title (centered)
-                  Expanded(
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.local_florist,
-                            color: AppTheme.accentGreen,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'PLANT CARE',
-                            style: TextStyle(
-                              color: AppTheme.accentGreen,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Empty space to balance the back button
-                  const SizedBox(width: 48),
-                ],
-              ),
-            ),
-          ),
-          
-          // Plant Name Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-              child: Text(
-                _plant.name,
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          
-          // Centered Plant Image
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Center(
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.green.shade200,
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.shade200,
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: _plant.imageUrl != null && _plant.imageUrl!.startsWith('data:image')
-                      ? Image.memory(
-                          base64Decode(_plant.imageUrl!.split(',')[1]),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                              return _buildPlaceholderImage();
-                          },
-                        )
-                        : _plant.imageUrl != null && _plant.imageUrl!.startsWith('http')
-                            ? Image.network(
-                                _plant.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                                  return _buildPlaceholderImage();
-                                },
-                              )
-                            : _buildPlaceholderImage(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          // Unified Watering and AI Care Information Card
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header with watering status
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.water_drop,
-                            color: _getWateringStatusColor(),
-                            size: 24,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _getWateringStatus(),
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: _getWateringStatusColor(),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Last watered: ${DateFormat('MMM dd, yyyy').format(_plant.lastWatered)}',
-                                  style: TextStyle(color: Colors.grey.shade600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Watering Schedule Grid
-                      if (_plant.aiMoistureLevel != null || _plant.wateringFrequency != null) ...[
-                        // Second row: Frequency and Next Watering on one line
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(Icons.schedule, color: Colors.blue.shade600, size: 20),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _formatWateringFrequency(_plant.wateringFrequency.toString()),
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(Icons.schedule_send, color: Colors.blue.shade600, size: 20),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Next: ${DateFormat('MMM dd, yyyy').format(_plant.nextWatering)}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Third row: Moisture level with progress bar
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.opacity, color: Colors.blue.shade600, size: 20),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Moisture: ${_formatMoistureLevel(_plant.aiMoistureLevel)}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              width: double.infinity,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: _getMoisturePercentage(_plant.aiMoistureLevel) / 100,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade600,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      
-                      // AI Care Recommendations Section
-                      if (_plant.aiGeneralDescription != null) ...[
-                        const SizedBox(height: 32),
-                        
-                        // Divider
-                        Container(
-                          height: 1,
-                          color: Colors.grey.shade200,
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // AI Care Header with AI Ready badge in top right
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.psychology,
-                              color: Colors.purple.shade600,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                'AI Care Recommendations',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade700,
-                                ),
-                              ),
-                            ),
-                            // AI Ready badge in top right
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                color: Colors.green.shade100,
-                                border: Border.all(
-                                  color: Colors.green.shade300,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.psychology,
-                                    color: Colors.green.shade600,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'AI Ready',
-                                    style: TextStyle(
-                                      color: Colors.green.shade700,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Species and Description
-                        if (_plant.aiName != null) ...[
-                          _buildInfoRow('Species', _plant.aiName!),
-                          const SizedBox(height: 20),
-                        ],
-                        
-                        if (_plant.aiGeneralDescription != null) ...[
-                          _buildInfoRow('Description', _plant.aiGeneralDescription!),
-                          const SizedBox(height: 24),
-                        ],
-                        
-                        // Care Details Grid - Moisture and Light
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildCareCard(
-                                'Moisture',
-                                _plant.aiMoistureLevel ?? 'Not specified',
-                                Icons.opacity,
-                                Colors.green,
-                                moisturePercentage: _getMoisturePercentage(_plant.aiMoistureLevel),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildCareCard(
-                                'Light',
-                                _plant.aiLight != null ? '${_plant.aiLight} hours' : 'Not specified',
-                                Icons.wb_sunny,
-                                Colors.orange,
-                                subtitle: _plant.aiLight != null ? 'per day' : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Specific Issues - Full text design
-                        if (_plant.aiSpecificIssues != null && _plant.aiSpecificIssues != 'None detected') ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.red.shade200,
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: Colors.red.shade600,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Specific Issues',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red.shade700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _plant.aiSpecificIssues!,
-                                  style: TextStyle(
-                                    color: Colors.red.shade800,
-                                    fontSize: 14,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        
-                        // Care Tips - Full text design
-                        if (_plant.aiCareTips != null && _plant.aiCareTips != 'No specific tips') ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.blue.shade200,
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.tips_and_updates,
-                                      color: Colors.blue.shade600,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Care Tips',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _plant.aiCareTips!,
-                                  style: TextStyle(
-                                    color: Colors.blue.shade800,
-                                    fontSize: 14,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                      
-                      // Action Buttons Row
-                      const SizedBox(height: 32),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isLoading ? null : _waterPlant,
-                              icon: const Icon(Icons.water_drop),
-                              label: const Text('I have watered'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _openHealthCheckModal,
-                              icon: Icon(
-                                Icons.health_and_safety,
-                                color: Colors.red,
-                                size: 16,
-                              ),
-                              label: const Text(
-                                'Health Check',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.red,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.red.shade300),
-                                ),
-                                elevation: 2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          // Health Status Display - Plant Care Assistant Response (Merged with Recommendations)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                children: [
-                  if (_plant.healthStatus != null && _plant.healthMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: _plant.healthStatus == 'ok' 
-                            ? Colors.green.shade50 
-                            : Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _plant.healthStatus == 'ok' 
-                              ? Colors.green.shade200 
-                              : Colors.orange.shade200,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header with icon and title
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: _plant.healthStatus == 'ok' 
-                                      ? Colors.green.shade100 
-                                      : Colors.orange.shade100,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  _plant.healthStatus == 'ok' 
-                                      ? Icons.eco 
-                                      : Icons.psychology,
-                                  color: _plant.healthStatus == 'ok' 
-                                      ? Colors.green.shade600 
-                                      : Colors.orange.shade600,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  _plant.healthStatus == 'ok' 
-                                      ? 'Plant Care Assistant 💚' 
-                                      : 'Plant Care Assistant 🌿',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: _plant.healthStatus == 'ok' 
-                                        ? Colors.green.shade700 
-                                        : Colors.orange.shade700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 20),
-                          
-                          // Main message content
-                          Text(
-                            _plant.healthMessage!,
-                            style: TextStyle(
-                              fontSize: 16,
-                              height: 1.5,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                          
-                          // Recommendation tiles (if any) - rendered directly under the text
-                          if (_plant.healthStatus == 'issue') ...[
-                            const SizedBox(height: 24),
-                            _buildRecommendationTiles(_plant.healthMessage!),
-                          ],
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Timestamp
-                          Text(
-                            'Last checked: ${DateFormat('MMM dd, yyyy at h:mm a').format(_plant.lastHealthCheck!)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Health Check History
-                  StreamBuilder<List<HealthCheckRecord>>(
-                    stream: HealthCheckService().getHealthCheckHistory(_plant.id),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return _buildHealthCheckHistorySection([]); // Show loading state
-                      }
-                      
-                      if (snapshot.hasError) {
-                        print('❌ Error loading health check history: ${snapshot.error}');
-                        return _buildHealthCheckHistorySection([]); // Show error state
-                      }
-                      
-                      final healthChecks = snapshot.data ?? [];
-                      print('🌱 PlantDetailsScreen: Loaded ${healthChecks.length} health checks');
-                      
-                      if (healthChecks.isNotEmpty) {
-                        return _buildHealthCheckHistorySection(healthChecks);
-                      } else {
-                        return _buildHealthCheckHistorySection([]); // Show empty state
-                      }
-                    },
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Delete Plant Button
-                  Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.red.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      child: TextButton.icon(
-                        onPressed: _deletePlant,
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: Colors.red.shade400,
-                          size: 18,
-                        ),
-                        label: Text(
-                          'Delete Plant',
-                          style: TextStyle(
-                            color: Colors.red.shade400,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade800,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  /// Convert moisture level text to percentage (0-100) - consistent with AI recommendations
-  int _getMoisturePercentage(String? moistureLevel) {
-    if (moistureLevel == null) return 50;
-    
-    final level = moistureLevel.toLowerCase();
-    if (level.contains('low') || level.contains('dry') || level.contains('very low') || level.contains('extremely low')) return 25;
-    if (level.contains('moderate') || level.contains('medium') || level.contains('average')) return 50;
-    if (level.contains('high') || level.contains('wet') || level.contains('moist') || level.contains('soggy') || level.contains('very high') || level.contains('extremely high')) return 75;
-    
-    return 50; // Default to moderate
-  }
-  
-  /// Format watering frequency to human-readable text
-  String _formatWateringFrequency(String frequency) {
-    try {
-      final days = int.parse(frequency);
-      if (days == 1) return 'Once per day';
-      if (days == 2) return 'Once every 2 days';
-      if (days == 3) return 'Once every 3 days';
-      if (days == 4) return 'Once every 4 days';
-      if (days == 5) return 'Once every 5 days';
-      if (days == 6) return 'Once every 6 days';
-      if (days == 7) return 'Once per week';
-      if (days <= 14) return 'Once every $days days';
-      if (days <= 30) return 'Once every ${(days / 7).round()} weeks';
-      return 'Once every $days days';
-    } catch (e) {
-      return 'Once every 7 days';
-    }
-  }
-  
-  /// Format moisture level to match AI recommendations format
-  String _formatMoistureLevel(String? moistureLevel) {
-    if (moistureLevel == null) return 'Medium';
-    
-    final level = moistureLevel.toLowerCase();
-    if (level.contains('very low') || level.contains('extremely low') || level.contains('dry') || level.contains('low')) return 'Low';
-    if (level.contains('moderate') || level.contains('medium') || level.contains('average')) return 'Medium';
-    if (level.contains('high') || level.contains('slightly high') || level.contains('moist') || level.contains('wet') || level.contains('soggy')) return 'High';
-    
-    return 'Medium'; // Default
-  }
-
-  Widget _buildCareCard(String title, String value, IconData icon, Color color, {int? moisturePercentage, String? subtitle}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: color,
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: color.withOpacity(0.8),
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-          // Add consistent spacing for both blocks to ensure same height
-          const SizedBox(height: 12),
-          if (moisturePercentage != null) ...[
-            Container(
-              width: double.infinity,
-              height: 6,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: moisturePercentage / 100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '$moisturePercentage%',
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ] else ...[
-            // For Light block, add placeholder content to match Moisture block height
-            Container(
-              width: double.infinity,
-              height: 6,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '', // Empty text to maintain spacing
-              style: TextStyle(
-                color: Colors.transparent,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Health Check Methods
   void _openHealthCheckModal() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => HealthCheckModal(
         plantId: _plant.id,
         plantName: _plant.name,
@@ -1158,10 +49,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   void _handleHealthCheckComplete(Map<String, dynamic> healthResult) async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
-
       // Update plant with health check results
       final updatedPlant = _plant.copyWith(
         healthStatus: healthResult['status'],
@@ -1243,23 +130,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
-
-
-  Future<void> _updatePlantHealthStatus(String? status, String? message) async {
+  Future<void> _waterPlant() async {
     try {
       final updatedPlant = _plant.copyWith(
-        healthStatus: status,
-        healthMessage: message,
-        lastHealthCheck: status != null ? DateTime.now() : null,
+        lastWatered: DateTime.now(),
+        nextWatering: DateTime.now().add(Duration(days: _plant.wateringFrequency)),
       );
 
       await PlantService().updatePlant(updatedPlant);
@@ -1267,334 +145,279 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       setState(() {
         _plant = updatedPlant;
       });
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '${_plant.name} has been watered! 💧',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating health status: $e'),
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Error watering plant: $e',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
     }
   }
 
-  /// Builds recommendation tiles from the health message
-  Widget _buildRecommendationTiles(String healthMessage) {
-    // Extract recommendations from the message
-    final recommendations = <String>[];
-    
-    // Look for recommendations after "Here's what I recommend:" or similar phrases
-    final recommendPattern = RegExp(r"Here's what I recommend:\\s*(.*?)(?=Don't worry|Keep the faith|\$)", dotAll: true);
-    final recommendMatch = recommendPattern.firstMatch(healthMessage);
-    
-    if (recommendMatch != null) {
-      final recommendText = recommendMatch.group(1)?.trim() ?? '';
-      
-      // Split by sentences or periods to get individual recommendations
-      final sentences = recommendText.split(RegExp(r'(?<=\\.)\\s+'));
-      
-      for (final sentence in sentences) {
-        final trimmed = sentence.trim();
-        if (trimmed.isNotEmpty && trimmed.length > 10) { // Filter out very short fragments
-          recommendations.add(trimmed);
-        }
-      }
-    }
-    
-    // If no recommendations found, return empty
-    if (recommendations.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    // Build the recommendation tiles
-    return Column(
-      children: [
-        // Tiles
-        ...recommendations.map((recommendation) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildRecommendationTile(recommendation),
-        )),
-      ],
-    );
-  }
-
-  /// Builds individual recommendation tiles
-  Widget _buildRecommendationTile(String recommendation) {
+  Widget _buildPlaceholderImage() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withOpacity(0.9),
-            Colors.orange.shade50.withOpacity(0.3),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.shade200,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.shade200.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Elegant bullet point
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 6, right: 16),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade400,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        // Recommendation text
-        Expanded(
-          child: Text(
-            recommendation,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade800,
-              height: 1.6,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.left,
-          ),
-        ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds health check history section
-  Widget _buildHealthCheckHistorySection(List<HealthCheckRecord> healthCheckHistory) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.blue.shade200,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.grey.shade50,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.history,
-                  color: Colors.blue.shade600,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Health Check History',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
-                  ),
-                ),
-              ),
-              // Add Health Check Button
-              GestureDetector(
-                onTap: () => _openHealthCheckModal(),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.add,
-                    color: Colors.blue.shade600,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Content based on health check count
-          if (healthCheckHistory.isEmpty)
-            _buildEmptyHealthCheckState()
-          else
-            _buildHealthCheckHistoryGrid(healthCheckHistory),
-        ],
-      ),
-    );
-  }
-
-  /// Builds empty state for health check history
-  Widget _buildEmptyHealthCheckState() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.blue.shade200,
-          width: 1,
-        ),
-      ),
-      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.photo_library_outlined,
+            Icons.local_florist,
             size: 48,
             color: Colors.grey.shade400,
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No health checks yet',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-          ),
           const SizedBox(height: 8),
           Text(
-            'Upload photos to track your plant\'s health over time',
+            'No Image',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade500,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  /// Builds health check history grid
-  Widget _buildHealthCheckHistoryGrid(List<HealthCheckRecord> healthCheckHistory) {
-    // Sort history by timestamp, most recent first
-    final sortedHistory = List<HealthCheckRecord>.from(healthCheckHistory)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    
-    // Take only the last 6 health checks to avoid overwhelming the UI
-    final recentHistory = sortedHistory.take(6).toList();
-    
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: recentHistory.length,
-      itemBuilder: (context, index) {
-        final record = recentHistory[index];
-        return _buildHealthCheckHistoryCard(record);
-      },
-    );
-  }
-
-  /// Builds individual health check history card
-  Widget _buildHealthCheckHistoryCard(HealthCheckRecord record) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Status badge
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  record.status == 'ok' ? Icons.check_circle : Icons.warning,
-                  color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  record.status == 'ok' ? 'OK' : 'Issue',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          // Header with back button and plant name
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              child: Column(
+                children: [
+                  // Header row with back button and name
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back,
+                          color: AppTheme.textPrimary,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      Expanded(
+                        child: Text(
+                          _plant.name,
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 48), // Balance the back button
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          // Image or placeholder with CORS fallback
-          Expanded(
-            child: record.imageUrl != null
-                ? _buildImageWithFallback(record.imageUrl!)
-                : _buildImagePlaceholder(),
-          ),
-
-          // Date
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              _formatHealthCheckDate(record.timestamp),
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+                  const SizedBox(height: 20),
+                  
+                  // Plant photo (1:1 aspect ratio)
+                  Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.green.shade200,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade200,
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: _plant.imageUrl != null && _plant.imageUrl!.startsWith('data:image')
+                        ? Image.memory(
+                            base64Decode(_plant.imageUrl!.split(',')[1]),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                                return _buildPlaceholderImage();
+                            },
+                          )
+                          : _plant.imageUrl != null && _plant.imageUrl!.startsWith('http')
+                              ? Image.network(
+                                  _plant.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                                    return _buildPlaceholderImage();
+                                  },
+                                )
+                              : _buildPlaceholderImage(),
+                    ),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
+          ),
+          
+          // Key Metrics - 3 cards in a row (responsive)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Responsive layout: stack on narrow screens
+                  if (constraints.maxWidth < 600) {
+                    return Column(
+                      children: [
+                        // First row: 2 cards
+                        Row(
+                          children: [
+                            Expanded(child: _buildNextWateringCard()),
+                            const SizedBox(width: 16),
+                            Expanded(child: _buildLightCard()),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Second row: 1 card
+                        _buildMoistureCard(),
+                      ],
+                    );
+                  } else {
+                    // Wide screen: 3 cards in a row
+                    return Row(
+                      children: [
+                        Expanded(child: _buildNextWateringCard()),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildLightCard()),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildMoistureCard()),
+                      ],
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+          
+          // AI Care Assistant (green card)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: _buildAiCareCard(),
+            ),
+          ),
+          
+          // Care Section - two cards side-by-side
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < 500) {
+                    // Stack vertically on narrow screens
+                    return Column(
+                      children: [
+                        _buildIssuesCard(),
+                        const SizedBox(height: 16),
+                        _buildTipsCard(),
+                      ],
+                    );
+                  } else {
+                    // Side by side on wider screens
+                    return Row(
+                      children: [
+                        Expanded(child: _buildIssuesCard()),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildTipsCard()),
+                      ],
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+          
+          // Details (collapsible/accordion)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: _buildDetailsAccordion(),
+            ),
+          ),
+          
+          // Health Check History (horizontal gallery)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: _buildHealthHistoryGallery(),
+            ),
+          ),
+          
+          // Bottom padding
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 24),
           ),
         ],
       ),
@@ -1708,5 +531,755 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     } else {
       return DateFormat('MMM dd').format(date);
     }
+  }
+
+  // Key Metrics Cards
+  Widget _buildNextWateringCard() {
+    final daysUntilWatering = _plant.nextWatering.difference(DateTime.now()).inDays;
+    final statusColor = daysUntilWatering < 0 ? Colors.red : daysUntilWatering <= 1 ? Colors.orange : Colors.green;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.water_drop,
+            color: statusColor,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Next Watering',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            DateFormat('MMM dd').format(_plant.nextWatering),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: statusColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'every ${_plant.wateringFrequency} days',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLightCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.wb_sunny,
+            color: Colors.orange,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Light',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _plant.aiLight != null ? '${_plant.aiLight} hours' : 'Not specified',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'per day',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoistureCard() {
+    final moisturePercentage = _getMoisturePercentage(_plant.aiMoistureLevel);
+    final moistureLevel = _formatMoistureLevel(_plant.aiMoistureLevel);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.opacity,
+            color: Colors.green,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Moisture',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$moisturePercentage%',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            moistureLevel,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: moisturePercentage / 100,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _waterPlant,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade100,
+                    foregroundColor: Colors.green.shade700,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'I have watered',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _openHealthCheckModal,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade100,
+                    foregroundColor: Colors.blue.shade700,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Check plant',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // AI Care Card
+  Widget _buildAiCareCard() {
+    if (_plant.healthStatus == null || _plant.healthMessage == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.eco,
+                color: Colors.green.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'AI Care Assistant',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _plant.healthMessage!,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade800,
+              height: 1.4,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade500,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Care Section Cards
+  Widget _buildIssuesCard() {
+    final issues = _plant.aiSpecificIssues;
+    if (issues == null || issues == 'None detected') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.warning,
+                color: Colors.red.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Issues',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            issues,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.red.shade800,
+              height: 1.3,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipsCard() {
+    final tips = _plant.aiCareTips;
+    if (tips == null || tips == 'No specific tips') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.lightbulb,
+                color: Colors.blue.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Care Tips',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            tips,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.blue.shade800,
+              height: 1.3,
+            ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Details Accordion
+  Widget _buildDetailsAccordion() {
+    if (_plant.aiName == null && _plant.aiGeneralDescription == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ExpansionTile(
+        title: Row(
+          children: [
+            Icon(
+              Icons.info,
+              color: Colors.grey.shade600,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Details',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_plant.aiName != null) ...[
+                  _buildDetailRow('Species', _plant.aiName!),
+                  const SizedBox(height: 12),
+                ],
+                if (_plant.aiGeneralDescription != null) ...[
+                  _buildDetailRow('Description', _plant.aiGeneralDescription!),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade800,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Health History Gallery
+  Widget _buildHealthHistoryGallery() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.history,
+                color: Colors.blue.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Health Check History',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: _openHealthCheckModal,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          StreamBuilder<List<HealthCheckRecord>>(
+            stream: HealthCheckService().getHealthCheckHistory(_plant.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              if (snapshot.hasError) {
+                return Text('Error loading history: ${snapshot.error}');
+              }
+              
+              final healthChecks = snapshot.data ?? [];
+              if (healthChecks.isEmpty) {
+                return _buildEmptyHealthHistory();
+              }
+              
+              return _buildHealthHistoryList(healthChecks);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyHealthHistory() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.photo_library_outlined,
+            size: 48,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No health checks yet',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Upload photos to track your plant\'s health',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthHistoryList(List<HealthCheckRecord> healthChecks) {
+    final sortedHistory = List<HealthCheckRecord>.from(healthChecks)
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    
+    return SizedBox(
+      height: 120,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: sortedHistory.length,
+        itemBuilder: (context, index) {
+          final record = sortedHistory[index];
+          return Container(
+            width: 100,
+            margin: EdgeInsets.only(right: index < sortedHistory.length - 1 ? 12 : 0),
+            child: _buildHealthHistoryThumbnail(record),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHealthHistoryThumbnail(HealthCheckRecord record) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Status chip
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  record.status == 'ok' ? Icons.check : Icons.warning,
+                  color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                  size: 12,
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  record.status == 'ok' ? 'OK' : 'Issue',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Image
+          Expanded(
+            child: record.imageUrl != null
+                ? _buildImageWithFallback(record.imageUrl!)
+                : _buildImagePlaceholder(),
+          ),
+          
+          // Date
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              _formatHealthCheckDate(record.timestamp),
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Convert moisture level text to percentage (0-100) - consistent with AI recommendations
+  int _getMoisturePercentage(String? moistureLevel) {
+    if (moistureLevel == null) return 50;
+    
+    final lowerLevel = moistureLevel.toLowerCase();
+    if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
+    if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 25;
+    if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 50;
+    if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 75;
+    if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 90;
+    
+    return 50; // Default to moderate
+  }
+  
+  /// Format moisture level to match AI recommendations format
+  String _formatMoistureLevel(String? moistureLevel) {
+    if (moistureLevel == null) return 'Medium';
+    
+    final lowerLevel = moistureLevel.toLowerCase();
+    if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 'Very Low';
+    if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 'Low';
+    if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 'Medium';
+    if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 'High';
+    if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 'Very High';
+    
+    return 'Medium'; // Default
   }
 } 
