@@ -763,10 +763,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
+      decoration: BoxDecoration(
+        color: Colors.yellow.shade50,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: Colors.yellow.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -782,16 +782,16 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             children: [
               Icon(
                 Icons.warning,
-                color: Colors.red.shade600,
+                color: Colors.yellow.shade700,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 'Issues',
-                          style: TextStyle(
-                            fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700,
+                  color: Colors.yellow.shade700,
                 ),
               ),
             ],
@@ -799,9 +799,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           const SizedBox(height: 8),
           Text(
             issues,
-              style: TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Colors.red.shade800,
+              color: Colors.yellow.shade800,
               height: 1.3,
             ),
             maxLines: 3,
@@ -879,37 +879,37 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-                  color: Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppTheme.accentGreen, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+          ),
+        ],
+      ),
       child: ExpansionTile(
         title: Row(
-              children: [
-                Icon(
+          children: [
+            Icon(
               Icons.info,
-              color: Colors.grey.shade600,
-                  size: 20,
-                ),
+              color: AppTheme.accentGreen,
+              size: 20,
+            ),
             const SizedBox(width: 8),
-                Text(
+            Text(
               'Details',
               style: TextStyle(
-                    fontSize: 16,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-                  ),
-                ),
-              ],
+                color: AppTheme.accentGreen,
+              ),
             ),
-      children: [
+          ],
+        ),
+        children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Column(
@@ -921,12 +921,82 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ],
                 if (_plant.aiGeneralDescription != null) ...[
                   _buildDetailRow('Description', _plant.aiGeneralDescription!),
+                  const SizedBox(height: 12),
                 ],
+                // Add interesting facts based on plant type
+                _buildInterestingFacts(),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildInterestingFacts() {
+    final plantName = _plant.aiName?.toLowerCase() ?? '';
+    
+    String facts = '';
+    
+    if (plantName.contains('calathea')) {
+      facts = '🌿 **Prayer Plant**: Calatheas are called "prayer plants" because their leaves move up at night and down during the day, following the sun\'s movement.\n\n'
+          '💧 **Humidity Lover**: Native to tropical rainforests, they thrive in high humidity (60-80%) and prefer distilled or filtered water.\n\n'
+          '🌱 **Slow Grower**: These plants grow slowly but can live for many years with proper care.\n\n'
+          '🎨 **Unique Patterns**: Each leaf has unique, intricate patterns that make them highly prized as decorative plants.';
+    } else if (plantName.contains('monstera')) {
+      facts = '🕳️ **Swiss Cheese Plant**: The holes in Monstera leaves are called "fenestrations" and develop as the plant matures.\n\n'
+          '🌿 **Climbing Nature**: In the wild, Monsteras climb trees using aerial roots and can grow up to 70 feet tall.\n\n'
+          '🌱 **Fast Grower**: One of the fastest-growing houseplants, they can grow several feet per year.\n\n'
+          '🌿 **Split Leaves**: Young leaves start solid, then develop splits and holes as they mature.';
+    } else if (plantName.contains('ficus') || plantName.contains('fig')) {
+      facts = '🌳 **Ficus Family**: Part of the fig family, these plants can grow into large trees in their native habitats.\n\n'
+          '🌿 **Air Purifying**: Excellent at removing indoor air pollutants like formaldehyde and benzene.\n\n'
+          '🌱 **Adaptable**: Can tolerate various light conditions, from bright indirect to low light.\n\n'
+          '🌿 **Pruning Friendly**: Responds well to pruning and can be shaped into various forms.';
+    } else if (plantName.contains('philodendron')) {
+      facts = '🌿 **Tree Lover**: The name "Philodendron" means "tree lover" in Greek, as they naturally climb trees.\n\n'
+          '🌱 **Easy Care**: One of the most forgiving houseplants, perfect for beginners.\n\n'
+          '🌿 **Fast Growing**: Can grow several feet per year with proper care and conditions.\n\n'
+          '🌱 **Propagation**: Easy to propagate from stem cuttings in water or soil.';
+    } else if (plantName.contains('pothos') || plantName.contains('epipremnum')) {
+      facts = '🌿 **Devil\'s Ivy**: Called "Devil\'s Ivy" because it\'s nearly impossible to kill, even in low light.\n\n'
+          '🌱 **Air Purifying**: NASA study found it\'s excellent at removing indoor air pollutants.\n\n'
+          '🌿 **Trailing Beauty**: Can grow vines up to 10 feet long, perfect for hanging baskets.\n\n'
+          '🌱 **Low Maintenance**: Thrives on neglect and can survive with minimal watering.';
+    } else if (plantName.contains('succulent') || plantName.contains('cactus')) {
+      facts = '🌵 **Water Storage**: Succulents store water in their thick leaves, stems, or roots.\n\n'
+          '🌱 **Drought Tolerant**: Can survive weeks or months without water.\n\n'
+          '🌿 **Sun Lovers**: Most need bright, direct sunlight to maintain their compact shape.\n\n'
+          '🌱 **Easy Propagation**: Many can be grown from single leaves or stem cuttings.';
+    } else {
+      // Generic interesting facts for any plant
+      facts = '🌿 **Plant Intelligence**: Plants can communicate with each other through underground fungal networks.\n\n'
+          '🌱 **Oxygen Producers**: Plants produce oxygen during the day through photosynthesis.\n\n'
+          '🌿 **Stress Response**: Plants can sense and respond to environmental changes and stress.\n\n'
+          '🌱 **Growth Patterns**: Most plants follow circadian rhythms, growing more at certain times of day.';
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Interesting Facts',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.accentGreen,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          facts,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade700,
+            height: 1.5,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1412,6 +1482,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
           // Header with back button and plant name
@@ -1565,7 +1636,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
           ),
           
-          // Care Section - two cards side-by-side
+          // Care Section (Issues and Tips)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: _buildDetailsAccordion(),
+            ),
+          ),
+          
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -1592,14 +1670,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   }
                 },
               ),
-            ),
-          ),
-          
-          // Details (collapsible/accordion)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: _buildDetailsAccordion(),
             ),
           ),
           
