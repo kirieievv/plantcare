@@ -356,6 +356,83 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return DateFormat('dd MMM yyyy').format(date);
   }
 
+  /// Calculate water amount based on plant type and size
+  String _calculateWaterAmount() {
+    if (_plant.aiName == null) {
+      return '1-2 cups'; // Default for unknown plants
+    }
+    
+    final plantName = _plant.aiName!.toLowerCase();
+    final species = _plant.species.toLowerCase();
+    
+    // Large plants that need more water
+    if (plantName.contains('monstera') || plantName.contains('fiddle leaf') || 
+        plantName.contains('bird of paradise') || plantName.contains('elephant ear')) {
+      return '3-4 cups';
+    }
+    
+    // Medium plants with moderate water needs
+    if (plantName.contains('calathea') || plantName.contains('prayer plant') ||
+        plantName.contains('philodendron') || plantName.contains('pothos') ||
+        plantName.contains('snake plant') || plantName.contains('zz plant')) {
+      return '2-3 cups';
+    }
+    
+    // Small plants or succulents
+    if (plantName.contains('succulent') || plantName.contains('cactus') ||
+        plantName.contains('aloe') || plantName.contains('jade')) {
+      return '1/2-1 cup';
+    }
+    
+    // Flowering plants
+    if (plantName.contains('orchid') || plantName.contains('rose') ||
+        plantName.contains('lily') || plantName.contains('daisy')) {
+      return '2-3 cups';
+    }
+    
+    // Herbs and small plants
+    if (plantName.contains('herb') || plantName.contains('basil') ||
+        plantName.contains('mint') || plantName.contains('rosemary')) {
+      return '1-2 cups';
+    }
+    
+    // Default based on species if available
+    if (species.contains('tree') || species.contains('large')) {
+      return '3-4 cups';
+    } else if (species.contains('small') || species.contains('mini')) {
+      return '1/2-1 cup';
+    }
+    
+    return '2-3 cups'; // Default moderate amount
+  }
+
+  /// Get light type description
+  String _getLightType() {
+    if (_plant.aiLight == null || _plant.aiLight!.isEmpty) {
+      return 'Bright indirect';
+    }
+    
+    final lightRequirement = _plant.aiLight!.toLowerCase();
+    
+    if (lightRequirement.contains('full sun') || lightRequirement.contains('direct sun')) {
+      return 'Direct sunlight';
+    } else if (lightRequirement.contains('partial sun') || lightRequirement.contains('morning sun')) {
+      return 'Partial sun';
+    } else if (lightRequirement.contains('partial shade') || lightRequirement.contains('filtered light')) {
+      return 'Partial shade';
+    } else if (lightRequirement.contains('bright indirect') || lightRequirement.contains('bright light')) {
+      return 'Bright indirect';
+    } else if (lightRequirement.contains('low light') || lightRequirement.contains('shade')) {
+      return 'Low light';
+    } else if (lightRequirement.contains('medium light') || lightRequirement.contains('moderate light')) {
+      return 'Medium light';
+    } else if (lightRequirement.contains('very bright') || lightRequirement.contains('high light')) {
+      return 'Very bright';
+    }
+    
+    return 'Bright indirect'; // Default
+  }
+
   // Key Metrics Cards
   Widget _buildNextWateringCard() {
     final daysUntilWatering = _plant.nextWatering.difference(DateTime.now()).inDays;
@@ -363,29 +440,29 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     
     return Container(
       padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: statusColor.withOpacity(0.3)),
-                    boxShadow: [
-                      BoxShadow(
+        boxShadow: [
+          BoxShadow(
             color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
+            blurRadius: 8,
             offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                        children: [
-                          Icon(
-                            Icons.water_drop,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.water_drop,
             color: statusColor,
-                            size: 24,
-                          ),
+            size: 24,
+          ),
           const SizedBox(height: 8),
-                                Text(
+          Text(
             'Next Watering',
-                                  style: TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: Colors.grey.shade700,
@@ -393,7 +470,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-                                Text(
+          Text(
             DateFormat('MMM dd').format(_plant.nextWatering),
             style: TextStyle(
               fontSize: 16,
@@ -410,16 +487,89 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               color: Colors.grey.shade600,
             ),
             textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+          ),
+          const SizedBox(height: 8),
+          // Water amount section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.local_dining,
+                color: Colors.blue.shade600,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _calculateWaterAmount(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  /// Calculate light hours per day based on AI light requirements
+  String _calculateLightHours() {
+    if (_plant.aiLight == null || _plant.aiLight!.isEmpty) {
+      return 'Not specified';
+    }
+    
+    final lightRequirement = _plant.aiLight!.toLowerCase();
+    
+    // Extract hours if already specified as numbers
+    final hourPattern = RegExp(r'(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)');
+    final hourMatch = hourPattern.firstMatch(lightRequirement);
+    if (hourMatch != null) {
+      final hours = double.tryParse(hourMatch.group(1)!) ?? 0;
+      return '${hours.toInt()}';
+    }
+    
+    // Calculate based on light intensity descriptions
+    if (lightRequirement.contains('full sun') || lightRequirement.contains('direct sun')) {
+      return '6-8'; // Full sun plants need 6-8 hours of direct sunlight
+    } else if (lightRequirement.contains('partial sun') || lightRequirement.contains('morning sun')) {
+      return '4-6'; // Partial sun plants need 4-6 hours
+    } else if (lightRequirement.contains('partial shade') || lightRequirement.contains('filtered light')) {
+      return '2-4'; // Partial shade plants need 2-4 hours
+    } else if (lightRequirement.contains('bright indirect') || lightRequirement.contains('bright light')) {
+      return '8-12'; // Bright indirect light throughout the day
+    } else if (lightRequirement.contains('low light') || lightRequirement.contains('shade')) {
+      return '2-3'; // Low light plants need minimal direct light
+    } else if (lightRequirement.contains('medium light') || lightRequirement.contains('moderate light')) {
+      return '4-6'; // Medium light requirements
+    } else if (lightRequirement.contains('very bright') || lightRequirement.contains('high light')) {
+      return '10-12'; // Very bright light requirements
+    }
+    
+    // Default calculation based on plant species if available
+    final species = _plant.aiName?.toLowerCase() ?? _plant.species.toLowerCase();
+    
+    if (species.contains('succulent') || species.contains('cactus')) {
+      return '6-8'; // Most succulents need full sun
+    } else if (species.contains('pothos') || species.contains('philodendron')) {
+      return '4-6'; // Popular houseplants with moderate light needs
+    } else if (species.contains('snake plant') || species.contains('zz plant')) {
+      return '2-4'; // Low light tolerant plants
+    } else if (species.contains('fiddle leaf') || species.contains('monstera')) {
+      return '6-8'; // Bright light loving houseplants
+    } else if (species.contains('calathea') || species.contains('prayer plant')) {
+      return '4-6'; // Prefer bright indirect light
+    }
+    
+    // Default fallback
+    return '4-6';
   }
 
   Widget _buildLightCard() {
     return Container(
       padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.orange.withOpacity(0.3)),
@@ -432,17 +582,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ],
       ),
       child: Column(
-                                children: [
-                                  Icon(
+        children: [
+          Icon(
             Icons.wb_sunny,
             color: Colors.orange,
             size: 24,
           ),
           const SizedBox(height: 8),
-                                  Text(
+          Text(
             'Light',
-                                    style: TextStyle(
-                                      fontSize: 12,
+            style: TextStyle(
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: Colors.grey.shade700,
             ),
@@ -450,10 +600,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            _plant.aiLight != null ? '${_plant.aiLight} hours' : 'Not specified',
+            '${_calculateLightHours()} hours',
             style: TextStyle(
               fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.bold,
               color: Colors.orange,
             ),
             textAlign: TextAlign.center,
@@ -466,9 +616,28 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               color: Colors.grey.shade600,
             ),
             textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
+          ),
+          const SizedBox(height: 8),
+          // Light type section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Text(
+              _getLightType(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Colors.orange.shade700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
