@@ -858,20 +858,36 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 child: ElevatedButton(
                   onPressed: _openHealthCheckModal,
                               style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade100,
-                    foregroundColor: Colors.blue.shade700,
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.grey.shade700,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
+                                  side: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
                                 ),
                               ),
-                  child: Text(
-                    'Check plant',
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.health_and_safety,
+                        size: 14,
+                        color: Colors.red.shade600,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Check plant',
                                 style: TextStyle(
                       fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                             ),
                           ),
@@ -1012,14 +1028,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           
           const SizedBox(height: 12),
           if (_plant.lastHealthCheck != null)
-            Text(
-              'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade500,
-                fontStyle: FontStyle.italic,
-              ),
+          Text(
+            'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade500,
+              fontStyle: FontStyle.italic,
             ),
+          ),
         ],
       ),
     );
@@ -1169,30 +1185,30 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           
           return ExpansionTile(
             initiallyExpanded: !hasHealthChecks, // Open if no health checks, closed if there are
-            title: Row(
-              children: [
-                Icon(
-                  Icons.info,
-                  color: AppTheme.accentGreen,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.accentGreen,
-                  ),
-                ),
-              ],
+        title: Row(
+          children: [
+            Icon(
+              Icons.info,
+              color: AppTheme.accentGreen,
+              size: 20,
             ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            const SizedBox(width: 8),
+            Text(
+              'Details',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.accentGreen,
+              ),
+            ),
+          ],
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                     // Always show basic plant information
                     _buildDetailRow('Name', _plant.name),
                     const SizedBox(height: 12),
@@ -1202,19 +1218,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     // Show AI-enhanced information if available
                     if (_plant.aiName != null && _plant.aiName != _plant.species) ...[
                       _buildDetailRow('AI Identified', _plant.aiName!),
-                      const SizedBox(height: 12),
-                    ],
-                    if (_plant.aiGeneralDescription != null) ...[
-                      _buildDetailRow('Description', _plant.aiGeneralDescription!),
-                      const SizedBox(height: 12),
-                    ],
+                  const SizedBox(height: 12),
+                ],
+                if (_plant.aiGeneralDescription != null) ...[
+                  _buildDetailRow('Description', _plant.aiGeneralDescription!),
+                  const SizedBox(height: 12),
+                ],
                     
-                    // Add interesting facts based on plant type
-                    _buildInterestingFacts(),
-                  ],
-                ),
-              ),
-            ],
+                // Add interesting facts based on plant type
+                _buildInterestingFacts(),
+              ],
+            ),
+          ),
+        ],
           );
         },
       ),
@@ -1391,7 +1407,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           facts = '🌿 **Unique Plant**: This plant has its own special characteristics and care requirements.\n\n'
               '🌱 **Individual Needs**: Every plant is unique and may have specific preferences.\n\n'
               '🌿 **Growth Potential**: With proper care, this plant can thrive and grow beautifully.\n\n'
-              '🌱 **Care Learning**: Paying attention to your plant\'s needs helps you become a better plant parent.';
+              '�� **Care Learning**: Paying attention to your plant\'s needs helps you become a better plant parent.';
         }
       }
     }
@@ -1623,7 +1639,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     }
     
     final sortedHistory = List<HealthCheckRecord>.from(validHealthChecks)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   
     return SizedBox(
       height: 120,
@@ -1654,54 +1670,54 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       return const SizedBox.shrink();
     }
     
-    return Container(
-      decoration: BoxDecoration(
+              return Container(
+                decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Status chip
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  record.status == 'ok' ? Icons.check : Icons.warning,
-                  color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
-                  size: 12,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  record.status == 'ok' ? 'OK' : 'Issue',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+                child: Column(
+                  children: [
+          // Status chip
+                    Container(
+                      width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                  record.status == 'ok' ? Icons.check : Icons.warning,
+                            color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                  size: 12,
+                          ),
+                const SizedBox(width: 2),
+                          Text(
+                            record.status == 'ok' ? 'OK' : 'Issue',
+                            style: TextStyle(
+                    fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
           // Image - Fixed to prevent rendering issues
           Flexible(
@@ -1711,28 +1727,28 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 maxHeight: 80,
               ),
               child: record.imageUrl != null && record.imageUrl!.isNotEmpty
-                  ? _buildImageWithFallback(record.imageUrl!)
-                  : _buildImagePlaceholder(),
+                          ? _buildImageWithFallback(record.imageUrl!)
+                          : _buildImagePlaceholder(),
             ),
-          ),
+                    ),
 
-          // Date
-          Container(
+                    // Date
+                    Container(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              _formatHealthCheckDate(record.timestamp),
-              style: TextStyle(
+                      child: Text(
+                        _formatHealthCheckDate(record.timestamp),
+                        style: TextStyle(
                 fontSize: 10,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
 
   /// Convert moisture level text to percentage (0-100) - consistent with AI recommendations
   int _getMoisturePercentage(String? moistureLevel) {
@@ -1995,24 +2011,24 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       print('🌱 PlantDetailsScreen: Plant ID: ${_plant.id}');
       print('🌱 PlantDetailsScreen: Plant species: ${_plant.species}');
       
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: CustomScrollView(
-          slivers: [
-            // Header with back button and plant name
-            SliverToBoxAdapter(
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-                child: Column(
-                  children: [
-                    // Header row with back button and name
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: AppTheme.textPrimary,
-                          ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          // Header with back button and plant name
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              child: Column(
+                children: [
+                  // Header row with back button and name
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back,
+                          color: AppTheme.textPrimary,
+                        ),
                           onPressed: () {
                             // Navigate to Home page (Dashboard) instead of going back
                             final currentUser = FirebaseAuth.instance.currentUser;
@@ -2023,15 +2039,15 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               (route) => false,
                             );
                           },
-                        ),
-                        Expanded(
-                          child: Text(
-                            _plant.name,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          _plant.name,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                       ),
@@ -2063,10 +2079,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           for (final record in sortedHealthChecks) {
                             if (record.imageUrl != null && record.imageUrl!.isNotEmpty) {
                               photos.add({
-                                'url': record.imageUrl!,
+                                    'url': record.imageUrl!,
                                 'type': 'health_check',
                                 'record': record,
-                                'timestamp': record.timestamp,
+                                    'timestamp': record.timestamp,
                               });
                             }
                           }
@@ -2083,11 +2099,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         }
                         
                         if (photos.isNotEmpty) {
-                          return _HeroCarouselWidget(
+                            return _HeroCarouselWidget(
                             photos: photos,
-                            plantName: _plant.name,
+                              plantName: _plant.name,
                             plantStatus: _plant.healthStatus ?? 'unknown',
-                          );
+                            );
                         }
                         
                         // Fallback to default plant photo
@@ -2118,31 +2134,31 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
                         photoCount += 1;
                       }
-                      
-                      if (photoCount > 1) {
-                        return Container(
-                          margin: const EdgeInsets.only(top: 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(photoCount, (index) {
-                              return Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: index == 0 
-                                      ? AppTheme.accentGreen 
-                                      : Colors.grey.shade300,
-                                ),
-                              );
-                            }),
-                          ),
-                        );
+                        
+                        if (photoCount > 1) {
+                          return Container(
+                            margin: const EdgeInsets.only(top: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(photoCount, (index) {
+                                return Container(
+                                  width: 8,
+                                  height: 8,
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: index == 0 
+                                        ? AppTheme.accentGreen 
+                                        : Colors.grey.shade300,
+                                  ),
+                                );
+                              }),
+                            ),
+                          );
                       }
                       return const SizedBox.shrink();
                     },
-                  ),
+                    ),
                   ],
                 ),
             ),

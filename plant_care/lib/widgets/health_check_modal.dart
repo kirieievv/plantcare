@@ -295,312 +295,431 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        constraints: const BoxConstraints(maxWidth: 500),
-        padding: const EdgeInsets.all(24),
+        width: MediaQuery.of(context).size.width * 0.85,
+        constraints: const BoxConstraints(maxWidth: 450),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Row(
-              children: [
-                Icon(
-                  Icons.health_and_safety,
-                  color: AppTheme.accentGreen,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Health Check',
-                    style: AppTheme.headingMedium.copyWith(
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.grey.shade100,
-                    padding: const EdgeInsets.all(8),
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            Text(
-              'Upload a photo of ${widget.plantName} for AI health analysis',
-              style: AppTheme.bodyLarge.copyWith(
-                color: Colors.grey.shade600,
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Image Upload Area
+            // Header with improved design
             Container(
-              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _selectedImageBytes != null 
-                      ? AppTheme.accentGreen 
-                      : Colors.grey.shade300,
-                  width: 2,
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade100,
+                    width: 1,
+                  ),
                 ),
               ),
               child: Column(
                 children: [
-                  // Image Display Area
-                  Center(
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.accentGreen.withOpacity(0.3),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.accentGreen.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: _selectedImageBytes != null
-                          ? Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    width: 200,
-                                    height: 200,
-                                    color: AppTheme.accentGreen.withOpacity(0.1),
-                                    child: Icon(
-                                      Icons.image,
-                                      size: 64,
-                                      color: AppTheme.accentGreen,
-                                    ),
-                                  ),
-                                ),
-                                // Remove Button
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _selectedImageBytes = null;
-                                      });
-                                    },
-                                    icon: const Icon(Icons.close),
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.red,
-                                      padding: const EdgeInsets.all(4),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : _buildPlaceholderImage(),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Upload Button
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: Icon(
-                        _selectedImageBytes != null ? Icons.refresh : Icons.upload,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        _selectedImageBytes != null ? 'Change Image' : 'Upload Image',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentGreen,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        shape: RoundedRectangleBorder(
+                  // Header row with icon and title
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentGreen.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  
-                  if (_selectedImageBytes != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppTheme.accentGreen.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: AppTheme.accentGreen,
-                            size: 20,
+                          border: Border.all(
+                            color: AppTheme.accentGreen.withOpacity(0.3),
+                            width: 1,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Image uploaded successfully! Ready for health analysis.',
-                              style: TextStyle(
-                                color: AppTheme.accentGreen,
-                                fontWeight: FontWeight.w500,
-                              ),
+                        ),
+                        child: Icon(
+                          Icons.health_and_safety,
+                          color: AppTheme.accentGreen,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          'Health Check',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close,
+                            color: Colors.grey.shade600,
+                            size: 18,
+                          ),
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                   
                   const SizedBox(height: 16),
+                  
+                  // Instructions with improved styling
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGreen.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppTheme.accentGreen.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: AppTheme.accentGreen,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Upload a photo of ${widget.plantName} for AI health analysis',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.accentGreen,
+                              fontWeight: FontWeight.w500,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
             
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
+            // Image Upload Area with improved design
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red.shade600,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 14,
-                        ),
-                      ),
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _selectedImageBytes != null 
+                        ? AppTheme.accentGreen.withOpacity(0.4)
+                        : Colors.grey.shade200,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-              ),
-              
-              // Add CORS help for web users
-              if (kIsWeb) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue.shade600,
-                            size: 18,
+                child: Column(
+                  children: [
+                    // Image Display Area
+                    Center(
+                      child: Container(
+                        width: 180,
+                        height: 180,
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppTheme.accentGreen.withOpacity(0.3),
+                            width: 2,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Web App CORS Issue',
-                            style: TextStyle(
-                              color: Colors.blue.shade700,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.accentGreen.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: _selectedImageBytes != null
+                            ? Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.memory(
+                                      _selectedImageBytes!,
+                                      width: 180,
+                                      height: 180,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          width: 180,
+                                          height: 180,
+                                          color: AppTheme.accentGreen.withOpacity(0.1),
+                                          child: Icon(
+                                            Icons.image,
+                                            size: 56,
+                                            color: AppTheme.accentGreen,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  // Remove Button with improved styling
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade500,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.red.withOpacity(0.3),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedImageBytes = null;
+                                          });
+                                        },
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                        style: IconButton.styleFrom(
+                                          padding: const EdgeInsets.all(6),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : _buildPlaceholderImage(),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'If you\'re seeing CORS errors, check the CORS_FIX_GUIDE.md file for instructions on fixing Firebase Storage CORS configuration.',
-                        style: TextStyle(
-                          color: Colors.blue.shade600,
-                          fontSize: 12,
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Upload Button with improved styling
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: _pickImage,
+                        icon: Icon(
+                          _selectedImageBytes != null ? Icons.refresh : Icons.upload,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        label: Text(
+                          _selectedImageBytes != null ? 'Change Image' : 'Upload Image',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                          shadowColor: AppTheme.accentGreen.withOpacity(0.3),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    if (_selectedImageBytes != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentGreen.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.accentGreen.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentGreen,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.accentGreen.withOpacity(0.3),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Image uploaded successfully! Ready for health analysis.',
+                                style: TextStyle(
+                                  color: AppTheme.accentGreen,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            
+            // Analyze Button with improved styling
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _selectedImageBytes != null && !_isAnalyzing ? _analyzeHealth : null,
+                  icon: _isAnalyzing 
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Icon(
+                          Icons.health_and_safety,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                  label: Text(
+                    _isAnalyzing ? 'Analyzing...' : 'Analyze Health',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _selectedImageBytes != null 
+                        ? AppTheme.accentGreen 
+                        : Colors.grey.shade300,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: _selectedImageBytes != null ? 3 : 0,
+                    shadowColor: AppTheme.accentGreen.withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ),
+            
+            if (_errorMessage != null) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.red.shade200,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.1),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.error_outline,
+                          color: Colors.red.shade600,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ],
-            
-            const SizedBox(height: 24),
-            
-            // Action Buttons
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _selectedImageBytes != null && !_isAnalyzing 
-                    ? _analyzeHealth 
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: _isAnalyzing
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('Analyzing...'),
-                        ],
-                      )
-                    : const Text(
-                        'Analyze Health',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
               ),
-            ),
+            ],
           ],
         ),
       ),
