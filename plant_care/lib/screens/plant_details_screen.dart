@@ -1223,14 +1223,29 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   Widget _buildInterestingFacts() {
     // Use AI name if available, otherwise fall back to species
+    // Prioritize species over custom name for more accurate facts
     final plantName = _plant.aiName?.toLowerCase() ?? _plant.species.toLowerCase();
+    
+    print('🌱 PlantDetailsScreen: Building interesting facts');
+    print('🌱 PlantDetailsScreen: Custom name: ${_plant.name}');
+    print('🌱 PlantDetailsScreen: AI name: ${_plant.aiName}');
+    print('🌱 PlantDetailsScreen: Species: ${_plant.species}');
+    print('🌱 PlantDetailsScreen: Using plantName for facts: $plantName');
     
     String facts = '';
     
-    if (plantName.contains('calathea')) {
-      facts = '🌿 **Prayer Plant**: Calatheas are called "prayer plants" because their leaves move up at night and down during the day, following the sun\'s movement.\n\n'
-          '💧 **Humidity Lover**: Native to tropical rainforests, they thrive in high humidity (60-80%) and prefer distilled or filtered water.\n\n'
-          '🌱 **Slow Grower**: These plants grow slowly but can live for many years with proper care.\n\n'
+    // Check for specific plant types in the species/aiName
+    if (plantName.contains('tulip') || plantName.contains('tulipa')) {
+      print('🌱 PlantDetailsScreen: Found tulip, setting tulip facts');
+      facts = '🌷 **Tulip Family**: Part of the Liliaceae family, tulips are native to Central Asia and Turkey.\n\n'
+          '🌸 **Spring Beauty**: One of the first flowers to bloom in spring, symbolizing new beginnings.\n\n'
+          '🌱 **Bulb Plant**: Grows from bulbs that store energy for the next growing season.\n\n'
+          '🌿 **Cut Flower Care**: For cut tulips, trim stems at an angle and change water daily to prolong freshness.';
+    } else if (plantName.contains('calathea')) {
+      facts = '🌿 **Calathea**: This plant is known for its beautiful, variegated leaves that can be quite large.\n\n'
+          '💧 **Humidity Requirement**: Calatheas prefer high humidity, typically around 60-80%.\n\n'
+          '🌱 **Watering**: Water thoroughly but infrequently, allowing the top layer of soil to dry out between waterings.\n\n'
+          '🌿 **Fertilization**: Feed every 2-4 weeks during the growing season with a balanced fertilizer.\n\n'
           '🎨 **Unique Patterns**: Each leaf has unique, intricate patterns that make them highly prized as decorative plants.';
     } else if (plantName.contains('monstera')) {
       facts = '🕳️ **Swiss Cheese Plant**: The holes in Monstera leaves are called "fenestrations" and develop as the plant matures.\n\n'
@@ -1322,6 +1337,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           '🌱 **Annual Herb**: Grows quickly and produces abundant leaves throughout the growing season.\n\n'
           '🌿 **Culinary Star**: Essential herb in Mediterranean, Thai, and Italian cuisines.\n\n'
           '🌱 **Pinch to Grow**: Regular pinching of flower buds encourages bushier growth and more leaves.';
+    } else if (plantName.contains('cannabis') || plantName.contains('marijuana') || plantName.contains('hemp')) {
+      facts = '🌿 **Cannabis Family**: Part of the Cannabaceae family, one of the oldest cultivated plants in human history.\n\n'
+          '🌱 **Ancient Plant**: Has been used for thousands of years for fiber, medicine, and other purposes.\n\n'
+          '🌿 **Fast Growing**: Can grow several inches per day under optimal conditions.\n\n'
+          '🌱 **Light Sensitive**: Requires specific light cycles for different growth stages.';
     } else {
       // More specific facts based on plant characteristics
       if (_plant.aiMoistureLevel != null) {
@@ -1375,6 +1395,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         }
       }
     }
+    
+    print('🌱 PlantDetailsScreen: Final facts length: ${facts.length}');
+    print('🌱 PlantDetailsScreen: Facts content: $facts');
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
