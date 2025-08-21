@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/models/smart_plant.dart';
 import 'package:plant_care/models/user_model.dart';
+import 'package:plant_care/screens/main_navigation_screen.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/services/health_check_service.dart';
 import 'package:plant_care/services/navigation_service.dart';
@@ -25,11 +27,14 @@ class PlantDetailsScreen extends StatefulWidget {
 
 class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   late Plant _plant;
+  late Stream<List<HealthCheckRecord>> _healthCheckStream;
+  bool _isLoading = false;
   
   @override
   void initState() {
     super.initState();
     _plant = widget.plant;
+    _healthCheckStream = HealthCheckService().getHealthCheckHistory(_plant.id);
     
     // Save navigation state so user returns to this page after reload
     _saveNavigationState();
@@ -92,46 +97,136 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ),
               ],
             ),
-            backgroundColor: healthResult['status'] == 'ok' 
-                ? Colors.green 
-                : Colors.orange,
+            backgroundColor: healthResult['status'] == 'ok' ? Colors.green : Colors.orange,
             duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
           ),
         );
       }
     } catch (e) {
+      print('❌ Error updating plant with health check: $e');
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating plant: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.warning,
+                color: Colors.red.shade600,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Delete Plant',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to delete "${_plant.name}"? This action cannot be undone and will permanently remove the plant and all its health check history.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _deletePlant();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                'Delete',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deletePlant() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Delete the plant
+      await PlantService().deletePlant(_plant.id);
+      
+      if (mounted) {
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 Icon(
-                  Icons.error,
+                  Icons.check_circle,
                   color: Colors.white,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Error saving health check: $e',
-                  style: const TextStyle(
+                  'Plant "${_plant.name}" has been deleted',
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // Navigate back to plant list
+        final currentUser = FirebaseAuth.instance.currentUser;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => MainNavigationScreen(user: currentUser),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      print('❌ Error deleting plant: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting plant: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -260,6 +355,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   /// Builds image with CORS fallback handling
   Widget _buildImageWithFallback(String imageUrl) {
+    // Validate image URL
+    if (imageUrl.isEmpty) {
+      return _buildImagePlaceholder();
+    }
+    
     // Try to get a CORS-free URL for web
     final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
     
@@ -272,6 +372,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         processedUrl,
         fit: BoxFit.cover,
         width: double.infinity,
+        height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
           print('❌ Image loading error: $error');
           // Try alternative URL if CORS fails
@@ -283,6 +384,16 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return _buildImagePlaceholder();
+        },
+        // Add timeout to prevent hanging
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded) return child;
+          return AnimatedOpacity(
+            opacity: frame == null ? 0 : 1,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            child: child,
+          );
         },
       ),
     );
@@ -334,6 +445,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   /// Builds image placeholder when no image is available
   Widget _buildImagePlaceholder() {
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: const BorderRadius.only(
@@ -898,14 +1011,15 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ],
           
           const SizedBox(height: 12),
-          Text(
-            'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade500,
-              fontStyle: FontStyle.italic,
+          if (_plant.lastHealthCheck != null)
+            Text(
+              'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -1030,10 +1144,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   // Details Accordion
   Widget _buildDetailsAccordion() {
-    if (_plant.aiName == null && _plant.aiGeneralDescription == null) {
-      return const SizedBox.shrink();
-    }
-
+    // Show details for all plants, even new ones without AI data
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -1048,51 +1159,71 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
         ],
       ),
-      child: ExpansionTile(
-        title: Row(
-          children: [
-            Icon(
-              Icons.info,
-              color: AppTheme.accentGreen,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Details',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.accentGreen,
-              ),
-            ),
-          ],
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: StreamBuilder<List<HealthCheckRecord>>(
+        stream: _healthCheckStream,
+        builder: (context, snapshot) {
+          // Check if there are any health checks
+          final hasHealthChecks = snapshot.hasData && 
+              snapshot.data != null && 
+              snapshot.data!.isNotEmpty;
+          
+          return ExpansionTile(
+            initiallyExpanded: !hasHealthChecks, // Open if no health checks, closed if there are
+            title: Row(
               children: [
-                if (_plant.aiName != null) ...[
-                  _buildDetailRow('Species', _plant.aiName!),
-                  const SizedBox(height: 12),
-                ],
-                if (_plant.aiGeneralDescription != null) ...[
-                  _buildDetailRow('Description', _plant.aiGeneralDescription!),
-                  const SizedBox(height: 12),
-                ],
-                // Add interesting facts based on plant type
-                _buildInterestingFacts(),
+                Icon(
+                  Icons.info,
+                  color: AppTheme.accentGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Details',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accentGreen,
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Always show basic plant information
+                    _buildDetailRow('Name', _plant.name),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('Species', _plant.species),
+                    const SizedBox(height: 12),
+                    
+                    // Show AI-enhanced information if available
+                    if (_plant.aiName != null && _plant.aiName != _plant.species) ...[
+                      _buildDetailRow('AI Identified', _plant.aiName!),
+                      const SizedBox(height: 12),
+                    ],
+                    if (_plant.aiGeneralDescription != null) ...[
+                      _buildDetailRow('Description', _plant.aiGeneralDescription!),
+                      const SizedBox(height: 12),
+                    ],
+                    
+                    // Add interesting facts based on plant type
+                    _buildInterestingFacts(),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildInterestingFacts() {
-    final plantName = _plant.aiName?.toLowerCase() ?? '';
+    // Use AI name if available, otherwise fall back to species
+    final plantName = _plant.aiName?.toLowerCase() ?? _plant.species.toLowerCase();
     
     String facts = '';
     
@@ -1126,12 +1257,123 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           '🌱 **Drought Tolerant**: Can survive weeks or months without water.\n\n'
           '🌿 **Sun Lovers**: Most need bright, direct sunlight to maintain their compact shape.\n\n'
           '🌱 **Easy Propagation**: Many can be grown from single leaves or stem cuttings.';
+    } else if (plantName.contains('lemon') || plantName.contains('citrus')) {
+      facts = '🍋 **Citrus Family**: Part of the Rutaceae family, citrus trees are native to Southeast Asia.\n\n'
+          '🌿 **Evergreen**: Unlike many fruit trees, citrus trees keep their leaves year-round.\n\n'
+          '🌱 **Fragrant Flowers**: Citrus blossoms have a sweet, intoxicating fragrance that attracts pollinators.\n\n'
+          '🍊 **Fruit Production**: Can take 3-5 years to produce fruit, but then provide harvests for decades.';
+    } else if (plantName.contains('snake plant') || plantName.contains('sansevieria')) {
+      facts = '🐍 **Snake Plant**: Named for its snake-like, upright leaves that can grow up to 8 feet tall.\n\n'
+          '🌱 **Night Oxygen**: Unlike most plants, it releases oxygen at night, making it perfect for bedrooms.\n\n'
+          '🌿 **Nearly Indestructible**: Can survive in almost any condition, including very low light.\n\n'
+          '💧 **Water Efficient**: Stores water in its leaves and can go weeks without watering.';
+    } else if (plantName.contains('zz plant') || plantName.contains('zamioculcas')) {
+      facts = '🌿 **ZZ Plant**: Short for Zamioculcas zamiifolia, this plant is incredibly low maintenance.\n\n'
+          '🌱 **Drought Tolerant**: Can survive months without water due to its thick rhizomes.\n\n'
+          '🌿 **Low Light Champion**: Thrives in very low light conditions where other plants struggle.\n\n'
+          '🌱 **Slow Grower**: Grows slowly but steadily, making it perfect for small spaces.';
+    } else if (plantName.contains('fiddle leaf') || plantName.contains('ficus lyrata')) {
+      facts = '🎻 **Fiddle Leaf Fig**: Named for its large, violin-shaped leaves that can grow up to 18 inches long.\n\n'
+          '🌿 **Statement Plant**: One of the most popular statement plants due to its dramatic appearance.\n\n'
+          '🌱 **Light Sensitive**: Prefers bright, indirect light and can be finicky about placement.\n\n'
+          '🌿 **Growth Pattern**: Grows tall and tree-like, perfect for filling vertical spaces.';
+    } else if (plantName.contains('aloe') || plantName.contains('aloe vera')) {
+      facts = '🌵 **Succulent Family**: Part of the Asphodelaceae family, native to the Arabian Peninsula.\n\n'
+          '💊 **Medicinal Properties**: Gel from leaves has been used for centuries to treat burns and skin conditions.\n\n'
+          '🌱 **Easy Propagation**: Produces "pups" or offsets that can be separated to create new plants.\n\n'
+          '🌿 **Drought Resistant**: Stores water in its thick, fleshy leaves for long periods.';
+    } else if (plantName.contains('orchid') || plantName.contains('phalaenopsis')) {
+      facts = '🦋 **Moth Orchid**: Phalaenopsis means "moth-like" due to the flower\'s resemblance to flying moths.\n\n'
+          '🌿 **Epiphytic**: In nature, they grow on trees and rocks, not in soil.\n\n'
+          '🌱 **Long Blooming**: Flowers can last 2-6 months, making them excellent value.\n\n'
+          '💧 **Special Care**: Prefer bark-based potting mix and need careful watering to avoid root rot.';
+    } else if (plantName.contains('peace lily') || plantName.contains('spathiphyllum')) {
+      facts = '🕊️ **Peace Lily**: Named for its white, flag-like flowers that symbolize peace.\n\n'
+          '🌿 **Air Purifying**: Excellent at removing indoor air pollutants like formaldehyde and benzene.\n\n'
+          '🌱 **Drama Queen**: Leaves droop dramatically when thirsty, making it easy to know when to water.\n\n'
+          '🌿 **Low Light Tolerant**: Can bloom in very low light conditions, unlike many flowering plants.';
+    } else if (plantName.contains('jade') || plantName.contains('crassula')) {
+      facts = '💎 **Jade Plant**: Also called "Money Tree" or "Friendship Tree" in many cultures.\n\n'
+          '🌿 **Tree-like Growth**: Can be trained to grow like a miniature tree with proper pruning.\n\n'
+          '🌱 **Long Lived**: Can live for decades and even centuries with proper care.\n\n'
+          '🌿 **Symbolic**: In Feng Shui, it\'s believed to bring good luck and prosperity.';
+    } else if (plantName.contains('geranium') || plantName.contains('pelargonium')) {
+      facts = '🌸 **Geranium Family**: Part of the Pelargonium genus, native to South Africa.\n\n'
+          '🌿 **Flowering Beauty**: Known for their vibrant, colorful blooms that can last throughout the growing season.\n\n'
+          '🌱 **Easy Care**: Perfect for beginners, they\'re forgiving and adapt well to various conditions.\n\n'
+          '🌿 **Versatile Uses**: Great for containers, hanging baskets, garden beds, and indoor decoration.';
+    } else if (plantName.contains('rose')) {
+      facts = '🌹 **Rose Family**: Part of the Rosaceae family, roses have been cultivated for thousands of years.\n\n'
+          '🌿 **Symbolic Beauty**: Roses symbolize love, beauty, and passion across many cultures.\n\n'
+          '🌱 **Fragrant Blooms**: Many varieties have intoxicating fragrances that fill the air.\n\n'
+          '🌿 **Long History**: Roses have been grown since ancient times in China, Persia, and Egypt.';
+    } else if (plantName.contains('lavender')) {
+      facts = '💜 **Lavender Family**: Part of the Lamiaceae family, native to the Mediterranean region.\n\n'
+          '🌿 **Aromatic Herb**: Known for its calming fragrance and beautiful purple flowers.\n\n'
+          '🌱 **Drought Tolerant**: Thrives in dry, well-draining soil and full sun.\n\n'
+          '🌿 **Multiple Uses**: Used in aromatherapy, cooking, and as a natural insect repellent.';
+    } else if (plantName.contains('mint')) {
+      facts = '🌿 **Mint Family**: Part of the Lamiaceae family, mints are fast-growing, aromatic herbs.\n\n'
+          '🌱 **Invasive Nature**: Can spread quickly through underground runners, so best grown in containers.\n\n'
+          '🌿 **Culinary Uses**: Popular in teas, cocktails, and various dishes.\n\n'
+          '🌱 **Easy Propagation**: Can be grown from cuttings, seeds, or division.';
+    } else if (plantName.contains('basil')) {
+      facts = '🌿 **Basil Family**: Part of the Lamiaceae family, native to tropical regions of central Africa and Southeast Asia.\n\n'
+          '🌱 **Annual Herb**: Grows quickly and produces abundant leaves throughout the growing season.\n\n'
+          '🌿 **Culinary Star**: Essential herb in Mediterranean, Thai, and Italian cuisines.\n\n'
+          '🌱 **Pinch to Grow**: Regular pinching of flower buds encourages bushier growth and more leaves.';
     } else {
-      // Generic interesting facts for any plant
-      facts = '🌿 **Plant Intelligence**: Plants can communicate with each other through underground fungal networks.\n\n'
-          '🌱 **Oxygen Producers**: Plants produce oxygen during the day through photosynthesis.\n\n'
-          '🌿 **Stress Response**: Plants can sense and respond to environmental changes and stress.\n\n'
-          '🌱 **Growth Patterns**: Most plants follow circadian rhythms, growing more at certain times of day.';
+      // More specific facts based on plant characteristics
+      if (_plant.aiMoistureLevel != null) {
+        final moisture = _plant.aiMoistureLevel!.toLowerCase();
+        if (moisture.contains('high') || moisture.contains('moist')) {
+          facts = '💧 **Moisture Loving**: This plant prefers consistently moist soil and high humidity.\n\n'
+              '🌿 **Tropical Origin**: Likely native to tropical or subtropical regions with regular rainfall.\n\n'
+              '🌱 **Water Sensitive**: May show signs of stress if allowed to dry out completely.\n\n'
+              '🌿 **Humidity Appreciator**: Benefits from regular misting or a humidifier.';
+        } else if (moisture.contains('low') || moisture.contains('dry')) {
+          facts = '🌵 **Drought Tolerant**: This plant is adapted to survive with minimal water.\n\n'
+              '🌿 **Water Storage**: Likely stores water in its leaves, stems, or roots.\n\n'
+              '🌱 **Low Maintenance**: Perfect for busy people who might forget to water.\n\n'
+              '🌿 **Native to Arid Regions**: Evolved in environments with infrequent rainfall.';
+        }
+      } else if (_plant.aiLight != null) {
+        final light = _plant.aiLight!.toLowerCase();
+        if (light.contains('bright') || light.contains('direct')) {
+          facts = '☀️ **Sun Lover**: This plant thrives in bright, direct sunlight.\n\n'
+              '🌿 **Native to Sunny Climates**: Evolved in regions with intense sunlight.\n\n'
+              '🌱 **High Energy**: Produces lots of energy through photosynthesis.\n\n'
+              '🌿 **Color Enhancement**: Bright light often intensifies leaf colors and patterns.';
+        } else if (light.contains('low') || light.contains('shade')) {
+          facts = '🌑 **Shade Tolerant**: This plant can survive and even thrive in low light conditions.\n\n'
+              '🌿 **Forest Floor Native**: Likely evolved under the canopy of larger plants.\n\n'
+              '🌱 **Energy Efficient**: Adapted to make the most of limited light.\n\n'
+              '🌿 **Perfect for Dark Corners**: Ideal for spaces that don\'t get much natural light.';
+        }
+      } else {
+        // Fallback to plant-specific facts based on species
+        if (_plant.species.toLowerCase().contains('tree')) {
+          facts = '🌳 **Tree Characteristics**: This plant has woody stems and can grow quite large over time.\n\n'
+              '🌿 **Long Lived**: Trees can live for many years, even decades with proper care.\n\n'
+              '🌱 **Seasonal Changes**: May show different growth patterns throughout the year.\n\n'
+              '🌿 **Pruning Benefits**: Regular pruning helps maintain shape and promote healthy growth.';
+        } else if (_plant.species.toLowerCase().contains('herb')) {
+          facts = '🌿 **Herbaceous Plant**: This plant has soft, green stems that die back in winter.\n\n'
+              '🌱 **Fast Growing**: Herbs typically grow quickly and can be harvested regularly.\n\n'
+              '🌿 **Versatile Uses**: Many herbs have culinary, medicinal, or aromatic properties.\n\n'
+              '🌱 **Easy Propagation**: Most herbs can be easily propagated from cuttings or seeds.';
+        } else if (_plant.species.toLowerCase().contains('flower') || _plant.species.toLowerCase().contains('bloom')) {
+          facts = '🌸 **Flowering Plant**: This plant produces beautiful blooms to attract pollinators.\n\n'
+              '🌿 **Seasonal Beauty**: Flowers typically appear during specific seasons or growing periods.\n\n'
+              '🌱 **Pollinator Friendly**: Attracts bees, butterflies, and other beneficial insects.\n\n'
+              '🌿 **Colorful Display**: Adds vibrant colors and visual interest to your space.';
+        } else {
+          facts = '🌿 **Unique Plant**: This plant has its own special characteristics and care requirements.\n\n'
+              '🌱 **Individual Needs**: Every plant is unique and may have specific preferences.\n\n'
+              '🌿 **Growth Potential**: With proper care, this plant can thrive and grow beautifully.\n\n'
+              '🌱 **Care Learning**: Paying attention to your plant\'s needs helps you become a better plant parent.';
+        }
+      }
     }
     
     return Column(
@@ -1149,9 +1391,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         Text(
           facts,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             color: Colors.grey.shade700,
-            height: 1.5,
+            height: 1.4,
           ),
         ),
       ],
@@ -1240,14 +1482,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ),
         const SizedBox(height: 16),
         StreamBuilder<List<HealthCheckRecord>>(
-          stream: HealthCheckService().getHealthCheckHistory(_plant.id),
+          stream: _healthCheckStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
             
             if (snapshot.hasError) {
-              return Text('Error loading history: ${snapshot.error}');
+              print('❌ Error loading health check history: ${snapshot.error}');
+              return Container(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Error loading history: ${snapshot.error}',
+                  style: TextStyle(color: Colors.red.shade600),
+                ),
+              );
             }
             
             final healthChecks = snapshot.data ?? [];
@@ -1255,11 +1504,22 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               return _buildEmptyHealthHistory();
             }
             
+            // Validate health check records before rendering
+            final validHealthChecks = healthChecks.where((record) => 
+              record != null && 
+              record.id.isNotEmpty && 
+              record.status.isNotEmpty
+            ).toList();
+            
+            if (validHealthChecks.isEmpty) {
+              return _buildEmptyHealthHistory();
+            }
+            
             return Column(
               children: [
-                _buildHealthHistoryList(healthChecks),
+                _buildHealthHistoryList(validHealthChecks),
                 // Scroll indicator
-                if (healthChecks.length > 3) ...[
+                if (validHealthChecks.length > 3) ...[
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1324,8 +1584,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 }
 
   Widget _buildHealthHistoryList(List<HealthCheckRecord> healthChecks) {
-    final sortedHistory = List<HealthCheckRecord>.from(healthChecks)
-    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    // Validate health checks before processing
+    if (healthChecks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    final validHealthChecks = healthChecks.where((record) => 
+      record != null && 
+      record.id.isNotEmpty && 
+      record.status.isNotEmpty
+    ).toList();
+    
+    if (validHealthChecks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    final sortedHistory = List<HealthCheckRecord>.from(validHealthChecks)
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   
     return SizedBox(
       height: 120,
@@ -1336,6 +1611,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 4),
         itemBuilder: (context, index) {
           final record = sortedHistory[index];
+          if (record == null) {
+            return const SizedBox.shrink();
+          }
+          
           return Container(
             width: 100,
             margin: EdgeInsets.only(right: index < sortedHistory.length - 1 ? 12 : 0),
@@ -1347,79 +1626,90 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   }
 
   Widget _buildHealthHistoryThumbnail(HealthCheckRecord record) {
-              return Container(
-                decoration: BoxDecoration(
+    // Add null safety check for record
+    if (record == null) {
+      return const SizedBox.shrink();
+    }
+    
+    return Container(
+      decoration: BoxDecoration(
         color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
           // Status chip
-                    Container(
-                      width: double.infinity,
+          Container(
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
+            decoration: BoxDecoration(
+              color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
                   record.status == 'ok' ? Icons.check : Icons.warning,
-                            color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                  color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
                   size: 12,
-                          ),
-                const SizedBox(width: 2),
-                          Text(
-                            record.status == 'ok' ? 'OK' : 'Issue',
-                            style: TextStyle(
-                    fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-          // Image
-                    Expanded(
-                      child: record.imageUrl != null
-                          ? _buildImageWithFallback(record.imageUrl!)
-                          : _buildImagePlaceholder(),
-                    ),
-
-                    // Date
-                    Container(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Text(
-                        _formatHealthCheckDate(record.timestamp),
-                        style: TextStyle(
-                fontSize: 10,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
                 ),
-              );
-            }
+                const SizedBox(width: 2),
+                Text(
+                  record.status == 'ok' ? 'OK' : 'Issue',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Image - Fixed to prevent rendering issues
+          Flexible(
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: 60,
+                maxHeight: 80,
+              ),
+              child: record.imageUrl != null && record.imageUrl!.isNotEmpty
+                  ? _buildImageWithFallback(record.imageUrl!)
+                  : _buildImagePlaceholder(),
+            ),
+          ),
+
+          // Date
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              _formatHealthCheckDate(record.timestamp),
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// Convert moisture level text to percentage (0-100) - consistent with AI recommendations
   int _getMoisturePercentage(String? moistureLevel) {
@@ -1582,7 +1872,16 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 color: Colors.white,
                 size: 24,
               ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                // Navigate to Home page (Dashboard) instead of going back
+                final currentUser = FirebaseAuth.instance.currentUser;
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => MainNavigationScreen(user: currentUser),
+                  ),
+                  (route) => false,
+                );
+              },
             ),
           ),
         ),
@@ -1668,34 +1967,48 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          // Header with back button and plant name
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-              child: Column(
-                children: [
-                  // Header row with back button and name
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.arrow_back,
-                          color: AppTheme.textPrimary,
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      Expanded(
-                        child: Text(
-                          _plant.name,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+    try {
+      print('🌱 PlantDetailsScreen: Building screen for plant: ${_plant.name}');
+      print('🌱 PlantDetailsScreen: Plant ID: ${_plant.id}');
+      print('🌱 PlantDetailsScreen: Plant species: ${_plant.species}');
+      
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: CustomScrollView(
+          slivers: [
+            // Header with back button and plant name
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                child: Column(
+                  children: [
+                    // Header row with back button and name
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.arrow_back,
                             color: AppTheme.textPrimary,
-                      ),
+                          ),
+                          onPressed: () {
+                            // Navigate to Home page (Dashboard) instead of going back
+                            final currentUser = FirebaseAuth.instance.currentUser;
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (context) => MainNavigationScreen(user: currentUser),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                        ),
+                        Expanded(
+                          child: Text(
+                            _plant.name,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                        ),
                       textAlign: TextAlign.center,
                     ),
                       ),
@@ -1709,25 +2022,49 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   Container(
                     height: 400,
                     child: StreamBuilder<List<HealthCheckRecord>>(
-                      stream: HealthCheckService().getHealthCheckHistory(_plant.id),
+                      stream: _healthCheckStream,
                       builder: (context, snapshot) {
-                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                          // Use health check photos
-                          final healthCheckPhotos = snapshot.data!
-                              .where((record) => record.imageUrl != null)
-                              .map((record) => {
-                                    'url': record.imageUrl!,
-                                    'timestamp': record.timestamp,
-                                  })
-                              .toList();
+                        if (snapshot.hasError) {
+                          print('❌ Error loading hero photos: ${snapshot.error}');
+                          return _buildHeroPlaceholder();
+                        }
+                        
+                        // Prepare photos list: Health Check photos first, then default plant photo
+                        final List<Map<String, dynamic>> photos = [];
+                        
+                        if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
+                          // Add Health Check photos (most recent first)
+                          final sortedHealthChecks = List<HealthCheckRecord>.from(snapshot.data!)
+                            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
                           
-                          if (healthCheckPhotos.isNotEmpty) {
-                            return _HeroCarouselWidget(
-                              photos: healthCheckPhotos,
-                              plantName: _plant.name,
-                              plantStatus: _plant.healthStatus!,
-                            );
+                          for (final record in sortedHealthChecks) {
+                            if (record.imageUrl != null && record.imageUrl!.isNotEmpty) {
+                              photos.add({
+                                'url': record.imageUrl!,
+                                'type': 'health_check',
+                                'record': record,
+                                'timestamp': record.timestamp,
+                              });
+                            }
                           }
+                        }
+                        
+                        // Add default plant photo if it exists (first created plant photo)
+                        if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
+                          photos.add({
+                            'url': _plant.imageUrl!,
+                            'type': 'default',
+                            'record': null,
+                            'timestamp': _plant.createdAt,
+                          });
+                        }
+                        
+                        if (photos.isNotEmpty) {
+                          return _HeroCarouselWidget(
+                            photos: photos,
+                            plantName: _plant.name,
+                            plantStatus: _plant.healthStatus ?? 'unknown',
+                          );
                         }
                         
                         // Fallback to default plant photo
@@ -1738,38 +2075,51 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   
                   // Subtle Page Indicator
                   StreamBuilder<List<HealthCheckRecord>>(
-                    stream: HealthCheckService().getHealthCheckHistory(_plant.id),
+                    stream: _healthCheckStream,
                     builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                        final photoCount = snapshot.data!
-                            .where((record) => record.imageUrl != null)
+                      if (snapshot.hasError) {
+                        print('❌ Error loading page indicator: ${snapshot.error}');
+                        return const SizedBox.shrink();
+                      }
+                      
+                      // Calculate total photo count: health checks + plant photo
+                      int photoCount = 0;
+                      
+                      if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
+                        photoCount += snapshot.data!
+                            .where((record) => record != null && record.imageUrl != null && record.imageUrl!.isNotEmpty)
                             .length;
-                        
-                        if (photoCount > 1) {
-                          return Container(
-                            margin: const EdgeInsets.only(top: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(photoCount, (index) {
-                                return Container(
-                                  width: 8,
-                                  height: 8,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: index == 0 
-                                        ? AppTheme.accentGreen 
-                                        : Colors.grey.shade300,
-                                  ),
-                                );
-                              }),
-                            ),
-                          );
-                        }
+                      }
+                      
+                      // Add plant photo if it exists
+                      if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
+                        photoCount += 1;
+                      }
+                      
+                      if (photoCount > 1) {
+                        return Container(
+                          margin: const EdgeInsets.only(top: 16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(photoCount, (index) {
+                              return Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: index == 0 
+                                      ? AppTheme.accentGreen 
+                                      : Colors.grey.shade300,
+                                ),
+                              );
+                            }),
+                          ),
+                        );
                       }
                       return const SizedBox.shrink();
                     },
-                    ),
+                  ),
                   ],
                 ),
             ),
@@ -1868,6 +2218,50 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
           ),
           
+          // Delete Plant Button
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              child: Center(
+                child: SizedBox(
+                  width: 80, // Further reduced to prevent overflow
+                  height: 32, // Further reduced to prevent overflow
+                  child: ElevatedButton(
+                    onPressed: () => _showDeleteConfirmation(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600.withOpacity(0.6), // More transparent
+                      foregroundColor: Colors.white.withOpacity(0.8), // More transparent text
+                      elevation: 0, // No elevation for subtlety
+                      padding: EdgeInsets.zero, // Remove default padding
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16), // Adjusted for smaller size
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min, // Ensure row doesn't expand
+                      children: [
+                        Icon(
+                          Icons.delete_forever,
+                          size: 14, // Further reduced icon size
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                        const SizedBox(width: 3), // Minimal spacing
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontSize: 11, // Further reduced font size
+                            fontWeight: FontWeight.w400, // Lighter weight
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
           // Bottom padding
           const SliverToBoxAdapter(
             child: SizedBox(height: 24),
@@ -1875,6 +2269,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ],
       ),
     );
+    } catch (e) {
+      print('❌ Error building PlantDetailsScreen: $e');
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Error'),
+        ),
+        body: Center(
+          child: Text('An error occurred while building the PlantDetailsScreen: $e'),
+        ),
+      );
+    }
   }
 }
 

@@ -116,26 +116,42 @@ class HealthCheckService {
       return Stream.value([]);
     }
 
-    return _firestore
-        .collection(_collection)
-        .where('plantId', isEqualTo: plantId)
-        .where('userId', isEqualTo: user.uid)
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          print('🌱 HealthCheckService: Firestore returned ${snapshot.docs.length} documents');
-          final records = snapshot.docs.map((doc) {
-            final data = doc.data();
-            print('🌱 HealthCheckService: Document data: ${data['id']} - ${data['status']} - ${data['timestamp']}');
-            return HealthCheckRecord.fromMap(data);
-          }).toList();
-          print('✅ HealthCheckService: Returning ${records.length} health check records');
-          return records;
-        })
-        .handleError((error) {
-          print('❌ HealthCheckService: Error getting health check history: $error');
-          return <HealthCheckRecord>[];
-        });
+    try {
+      return _firestore
+          .collection(_collection)
+          .where('plantId', isEqualTo: plantId)
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            try {
+              print('🌱 HealthCheckService: Firestore returned ${snapshot.docs.length} documents');
+              final records = snapshot.docs.map((doc) {
+                try {
+                  final data = doc.data();
+                  print('🌱 HealthCheckService: Document data: ${data['id']} - ${data['status']} - ${data['timestamp']}');
+                  return HealthCheckRecord.fromMap(data);
+                } catch (e) {
+                  print('❌ HealthCheckService: Error parsing document ${doc.id}: $e');
+                  return null;
+                }
+              }).where((record) => record != null).cast<HealthCheckRecord>().toList();
+              
+              print('✅ HealthCheckService: Returning ${records.length} health check records');
+              return records;
+            } catch (e) {
+              print('❌ HealthCheckService: Error processing snapshot: $e');
+              return <HealthCheckRecord>[];
+            }
+          })
+          .handleError((error) {
+            print('❌ HealthCheckService: Error getting health check history: $error');
+            return <HealthCheckRecord>[];
+          });
+    } catch (e) {
+      print('❌ HealthCheckService: Critical error in getHealthCheckHistory: $e');
+      return Stream.value(<HealthCheckRecord>[]);
+    }
   }
 
   // Get all health checks across all plants for current user
@@ -143,17 +159,36 @@ class HealthCheckService {
     final user = AuthService.currentUser;
     if (user == null) return Stream.value([]);
     
-    return _firestore
-        .collection(_collection)
-        .where('userId', isEqualTo: user.uid)
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return HealthCheckRecord.fromMap(data);
-      }).toList();
-    });
+    try {
+      return _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            try {
+              return snapshot.docs.map((doc) {
+                try {
+                  final data = doc.data();
+                  return HealthCheckRecord.fromMap(data);
+                } catch (e) {
+                  print('❌ HealthCheckService: Error parsing document ${doc.id}: $e');
+                  return null;
+                }
+              }).where((record) => record != null).cast<HealthCheckRecord>().toList();
+            } catch (e) {
+              print('❌ HealthCheckService: Error processing getAllHealthChecks snapshot: $e');
+              return <HealthCheckRecord>[];
+            }
+          })
+          .handleError((error) {
+            print('❌ HealthCheckService: Error getting all health checks: $error');
+            return <HealthCheckRecord>[];
+          });
+    } catch (e) {
+      print('❌ HealthCheckService: Critical error in getAllHealthChecks: $e');
+      return Stream.value(<HealthCheckRecord>[]);
+    }
   }
 
   // Delete a health check record
@@ -172,18 +207,37 @@ class HealthCheckService {
     final user = AuthService.currentUser;
     if (user == null) return Stream.value([]);
     
-    return _firestore
-        .collection(_collection)
-        .where('userId', isEqualTo: user.uid)
-        .where('timestamp', isGreaterThanOrEqualTo: startDate.toIso8601String())
-        .where('timestamp', isLessThanOrEqualTo: endDate.toIso8601String())
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return HealthCheckRecord.fromMap(data);
-      }).toList();
-    });
+    try {
+      return _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: user.uid)
+          .where('timestamp', isGreaterThanOrEqualTo: startDate.toIso8601String())
+          .where('timestamp', isLessThanOrEqualTo: endDate.toIso8601String())
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            try {
+              return snapshot.docs.map((doc) {
+                try {
+                  final data = doc.data();
+                  return HealthCheckRecord.fromMap(data);
+                } catch (e) {
+                  print('❌ HealthCheckService: Error parsing document ${doc.id}: $e');
+                  return null;
+                }
+              }).where((record) => record != null).cast<HealthCheckRecord>().toList();
+            } catch (e) {
+              print('❌ HealthCheckService: Error processing date range snapshot: $e');
+              return <HealthCheckRecord>[];
+            }
+          })
+          .handleError((error) {
+            print('❌ HealthCheckService: Error getting health checks by date range: $error');
+            return <HealthCheckRecord>[];
+          });
+    } catch (e) {
+      print('❌ HealthCheckService: Critical error in getHealthChecksByDateRange: $e');
+      return Stream.value(<HealthCheckRecord>[]);
+    }
   }
 } 

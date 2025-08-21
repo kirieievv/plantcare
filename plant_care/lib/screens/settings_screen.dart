@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../services/plant_service.dart';
 import '../utils/app_theme.dart';
 import 'auth_screen.dart';
 
@@ -100,22 +101,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
+      await AuthService.signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  Future<void> _runDataCleanup() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Data Cleanup'),
+        content: const Text(
+          'This will attempt to fix any corrupted plant data in your database. '
+          'Plants with missing required fields will be fixed or removed if they cannot be recovered. '
+          'This action cannot be undone.\n\n'
+          'Do you want to continue?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('Run Cleanup'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
       try {
-        await AuthService.signOut();
+        await PlantService().cleanupCorruptedPlants();
+        
         if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const AuthScreen()),
-            (route) => false,
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data cleanup completed successfully! 🧹'),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error signing out: $e'),
+              content: Text('Error during cleanup: $e'),
               backgroundColor: Colors.red,
             ),
           );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
         }
       }
     }
@@ -386,6 +436,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       );
                     },
+                  ),
+                  
+                  const Divider(height: 1),
+                  
+                  ListTile(
+                    leading: const Icon(Icons.cleaning_services, color: Colors.orange),
+                    title: const Text('Data Cleanup'),
+                    subtitle: const Text('Fix corrupted plant data'),
+                    onTap: _isLoading ? null : _runDataCleanup,
                   ),
                   
                   const Divider(height: 1),

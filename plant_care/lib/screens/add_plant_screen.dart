@@ -418,12 +418,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final plant = Plant(
         id: '', // Will be set by Firestore
         name: _nameController.text.trim(),
-        species: '', // Remove species field
+        species: _aiName ?? 'Unknown Species', // Use AI name or default species
         imageUrl: imageUrl,
         lastWatered: DateTime.now(),
         nextWatering: DateTime.now().add(Duration(days: wateringFreq)),
         wateringFrequency: wateringFreq,
-        notes: '', // Remove notes field
+        notes: null, // No notes field in add plant screen
         createdAt: DateTime.now(),
         userId: user.uid,
         aiGeneralDescription: _aiGeneralDescription,
@@ -434,7 +434,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         aiCareTips: _aiCareTips,
       );
 
-      await PlantService().addPlant(plant);
+      final plantId = await PlantService().addPlant(plant);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -443,7 +443,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, true); // Return true to indicate success
+        
+        // Return the created plant ID so the calling screen can navigate to it
+        Navigator.pop(context, {
+          'success': true,
+          'plantId': plantId,
+        });
       }
     } catch (e) {
       if (mounted) {

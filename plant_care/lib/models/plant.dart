@@ -34,15 +34,37 @@ class HealthCheckRecord {
   }
 
   factory HealthCheckRecord.fromMap(Map<String, dynamic> map) {
-    return HealthCheckRecord(
-      id: map['id'],
-      timestamp: Plant._parseTimestamp(map['timestamp']) ?? DateTime.now(),
-      status: map['status'],
-      message: map['message'],
-      imageUrl: map['imageUrl'],
-      imageBytes: null, // Will be loaded separately if needed
-      metadata: map['metadata'],
-    );
+    try {
+      // Validate required fields
+      if (map['id'] == null || map['id'].toString().isEmpty) {
+        throw Exception('HealthCheckRecord: id is required');
+      }
+      if (map['status'] == null || map['status'].toString().isEmpty) {
+        throw Exception('HealthCheckRecord: status is required');
+      }
+      if (map['message'] == null || map['message'].toString().isEmpty) {
+        throw Exception('HealthCheckRecord: message is required');
+      }
+      
+      final timestamp = Plant._parseTimestamp(map['timestamp']);
+      if (timestamp == null) {
+        throw Exception('HealthCheckRecord: invalid timestamp');
+      }
+      
+      return HealthCheckRecord(
+        id: map['id'].toString(),
+        timestamp: timestamp,
+        status: map['status'].toString(),
+        message: map['message'].toString(),
+        imageUrl: map['imageUrl']?.toString(),
+        imageBytes: null, // Will be loaded separately if needed
+        metadata: map['metadata'] is Map ? Map<String, dynamic>.from(map['metadata']) : null,
+      );
+    } catch (e) {
+      print('❌ HealthCheckRecord.fromMap error: $e');
+      print('❌ Map data: $map');
+      rethrow;
+    }
   }
 
   HealthCheckRecord copyWith({
@@ -140,37 +162,68 @@ class Plant {
 
   // Create from Map (from Firestore)
   factory Plant.fromMap(Map<String, dynamic> map) {
-    return Plant(
-      id: map['id'],
-      name: map['name'],
-      species: map['species'],
-      imageUrl: map['imageUrl'],
-      lastWatered: _parseTimestamp(map['lastWatered']) ?? DateTime.now(),
-      nextWatering: _parseTimestamp(map['nextWatering']) ?? DateTime.now(),
-      wateringFrequency: map['wateringFrequency'],
-      notes: map['notes'],
-      createdAt: _parseTimestamp(map['createdAt']) ?? DateTime.now(),
-      userId: map['userId'],
-      aiGeneralDescription: map['aiGeneralDescription'],
-      aiName: map['aiName'],
-      aiMoistureLevel: map['aiMoistureLevel'],
-      aiLight: map['aiLight'],
-      aiSpecificIssues: map['aiSpecificIssues'],
-      aiCareTips: map['aiCareTips'],
-      healthStatus: map['healthStatus'],
-      healthMessage: map['healthMessage'],
-      lastHealthCheck: _parseTimestamp(map['lastHealthCheck']),
-    );
+    try {
+      // Validate required fields
+      if (map['id'] == null || map['id'].toString().isEmpty) {
+        throw Exception('Plant: id is required');
+      }
+      if (map['name'] == null || map['name'].toString().isEmpty) {
+        throw Exception('Plant: name is required');
+      }
+      if (map['species'] == null || map['species'].toString().isEmpty) {
+        throw Exception('Plant: species is required');
+      }
+      if (map['wateringFrequency'] == null) {
+        throw Exception('Plant: wateringFrequency is required');
+      }
+      
+      return Plant(
+        id: map['id'].toString(),
+        name: map['name'].toString(),
+        species: map['species'].toString(),
+        imageUrl: map['imageUrl']?.toString(),
+        lastWatered: _parseTimestamp(map['lastWatered']) ?? DateTime.now(),
+        nextWatering: _parseTimestamp(map['nextWatering']) ?? DateTime.now(),
+        wateringFrequency: map['wateringFrequency'] is int 
+            ? map['wateringFrequency'] 
+            : int.tryParse(map['wateringFrequency'].toString()) ?? 7,
+        notes: map['notes']?.toString(),
+        createdAt: _parseTimestamp(map['createdAt']) ?? DateTime.now(),
+        userId: map['userId']?.toString(),
+        aiGeneralDescription: map['aiGeneralDescription']?.toString(),
+        aiName: map['aiName']?.toString(),
+        aiMoistureLevel: map['aiMoistureLevel']?.toString(),
+        aiLight: map['aiLight']?.toString(),
+        aiSpecificIssues: map['aiSpecificIssues']?.toString(),
+        aiCareTips: map['aiCareTips']?.toString(),
+        healthStatus: map['healthStatus']?.toString(),
+        healthMessage: map['healthMessage']?.toString(),
+        lastHealthCheck: _parseTimestamp(map['lastHealthCheck']),
+      );
+    } catch (e) {
+      print('❌ Plant.fromMap error: $e');
+      print('❌ Map data: $map');
+      rethrow;
+    }
   }
 
   // Helper method to parse Firestore timestamps
   static DateTime? _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return null;
     
-    if (timestamp is String) {
-      return DateTime.parse(timestamp);
-    } else if (timestamp is Timestamp) {
-      return timestamp.toDate();
+    try {
+      if (timestamp is String) {
+        if (timestamp.isEmpty) return null;
+        return DateTime.parse(timestamp);
+      } else if (timestamp is Timestamp) {
+        return timestamp.toDate();
+      } else if (timestamp is DateTime) {
+        return timestamp;
+      }
+    } catch (e) {
+      print('❌ Error parsing timestamp: $e');
+      print('❌ Timestamp value: $timestamp');
+      return null;
     }
     
     return null;
