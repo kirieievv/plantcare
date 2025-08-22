@@ -29,6 +29,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   late Plant _plant;
   late Stream<List<HealthCheckRecord>> _healthCheckStream;
   bool _isLoading = false;
+  bool _isDetailsExpanded = true; // Add state for details expansion
   
   @override
   void initState() {
@@ -881,11 +882,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Check plant',
+                    'Check plant',
                                 style: TextStyle(
                       fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                        ),
+                    ),
                       ),
                     ],
                   ),
@@ -1166,14 +1167,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.accentGreen, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppTheme.accentGreen, width: 1),
       ),
       child: StreamBuilder<List<HealthCheckRecord>>(
         stream: _healthCheckStream,
@@ -1183,54 +1177,83 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               snapshot.data != null && 
               snapshot.data!.isNotEmpty;
           
-          return ExpansionTile(
-            initiallyExpanded: !hasHealthChecks, // Open if no health checks, closed if there are
-        title: Row(
-          children: [
-            Icon(
-              Icons.info,
-              color: AppTheme.accentGreen,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Details',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.accentGreen,
+          return Column(
+            children: [
+              // Custom header with better arrow control
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isDetailsExpanded = !_isDetailsExpanded;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentGreen.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.info,
+                          color: AppTheme.accentGreen,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Details',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.accentGreen,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        _isDetailsExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: AppTheme.accentGreen,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                    // Always show basic plant information
-                    _buildDetailRow('Name', _plant.name),
-                    const SizedBox(height: 12),
-                    _buildDetailRow('Species', _plant.species),
-                    const SizedBox(height: 12),
-                    
-                    // Show AI-enhanced information if available
-                    if (_plant.aiName != null && _plant.aiName != _plant.species) ...[
-                      _buildDetailRow('AI Identified', _plant.aiName!),
-                  const SizedBox(height: 12),
-                ],
-                if (_plant.aiGeneralDescription != null) ...[
-                  _buildDetailRow('Description', _plant.aiGeneralDescription!),
-                  const SizedBox(height: 12),
-                ],
-                    
-                // Add interesting facts based on plant type
-                _buildInterestingFacts(),
+              
+              // Content area
+              if (_isDetailsExpanded) ...[
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Always show basic plant information
+                      _buildDetailRow('Name', _plant.name),
+                      const SizedBox(height: 16),
+                      _buildDetailRow('Species', _plant.species),
+                      const SizedBox(height: 16),
+                      
+                      // Show AI-enhanced information if available
+                      if (_plant.aiName != null && _plant.aiName != _plant.species) ...[
+                        _buildDetailRow('AI Identified', _plant.aiName!),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_plant.aiGeneralDescription != null) ...[
+                        _buildDetailRow('Description', _plant.aiGeneralDescription!),
+                        const SizedBox(height: 16),
+                      ],
+                      
+                      // Add interesting facts based on plant type
+                      _buildInterestingFacts(),
+                    ],
+                  ),
+                ),
               ],
-            ),
-          ),
-        ],
+            ],
           );
         },
       ),
@@ -1350,7 +1373,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           '🌱 **Easy Propagation**: Can be grown from cuttings, seeds, or division.';
     } else if (plantName.contains('basil')) {
       facts = '🌿 **Basil Family**: Part of the Lamiaceae family, native to tropical regions of central Africa and Southeast Asia.\n\n'
-          '🌱 **Annual Herb**: Grows quickly and produces abundant leaves throughout the growing season.\n\n'
+          '�� **Annual Herb**: Grows quickly and produces abundant leaves throughout the growing season.\n\n'
           '🌿 **Culinary Star**: Essential herb in Mediterranean, Thai, and Italian cuisines.\n\n'
           '🌱 **Pinch to Grow**: Regular pinching of flower buds encourages bushier growth and more leaves.';
     } else if (plantName.contains('cannabis') || plantName.contains('marijuana') || plantName.contains('hemp')) {
