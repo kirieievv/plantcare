@@ -30,6 +30,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   late Stream<List<HealthCheckRecord>> _healthCheckStream;
   bool _isLoading = false;
   bool _isDetailsExpanded = true; // Add state for details expansion
+  int _currentCarouselPage = 0;
   
   @override
   void initState() {
@@ -1178,7 +1179,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               snapshot.data!.isNotEmpty;
           
           return Column(
-            children: [
+          children: [
               // Custom header with better arrow control
               GestureDetector(
                 onTap: () {
@@ -1197,19 +1198,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          Icons.info,
-                          color: AppTheme.accentGreen,
+              Icons.info,
+              color: AppTheme.accentGreen,
                           size: 16,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Details',
-                          style: TextStyle(
+              'Details',
+              style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.accentGreen,
+                color: AppTheme.accentGreen,
                             letterSpacing: -0.3,
                           ),
                         ),
@@ -1218,9 +1219,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         _isDetailsExpanded ? Icons.expand_less : Icons.expand_more,
                         color: AppTheme.accentGreen,
                         size: 20,
-                      ),
-                    ],
-                  ),
+            ),
+          ],
+        ),
                 ),
               ),
               
@@ -1228,9 +1229,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               if (_isDetailsExpanded) ...[
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                       // Always show basic plant information
                       _buildDetailRow('Name', _plant.name),
                       const SizedBox(height: 16),
@@ -1241,18 +1242,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       if (_plant.aiName != null && _plant.aiName != _plant.species) ...[
                         _buildDetailRow('AI Identified', _plant.aiName!),
                         const SizedBox(height: 16),
-                      ],
-                      if (_plant.aiGeneralDescription != null) ...[
-                        _buildDetailRow('Description', _plant.aiGeneralDescription!),
+                ],
+                if (_plant.aiGeneralDescription != null) ...[
+                  _buildDetailRow('Description', _plant.aiGeneralDescription!),
                         const SizedBox(height: 16),
-                      ],
+                ],
                       
-                      // Add interesting facts based on plant type
-                      _buildInterestingFacts(),
-                    ],
-                  ),
-                ),
+                // Add interesting facts based on plant type
+                _buildInterestingFacts(),
               ],
+            ),
+          ),
+        ],
             ],
           );
         },
@@ -1867,6 +1868,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       photos: photos,
       plantName: _plant.name,
       plantStatus: _plant.healthStatus!,
+      onPageChanged: (currentPage) {
+        setState(() {
+          // Update the current page state
+          _currentCarouselPage = currentPage;
+        });
+      },
     );
   }
 
@@ -2041,151 +2048,121 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Header with back button and plant name
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-              child: Column(
-                children: [
-                  // Header row with back button and name
-                  Row(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+              child: Row(
                     children: [
                       IconButton(
                         icon: Icon(
                           Icons.arrow_back,
                           color: AppTheme.textPrimary,
                         ),
-                          onPressed: () {
-                            // Navigate to Home page (Dashboard) instead of going back
-                            final currentUser = FirebaseAuth.instance.currentUser;
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (context) => MainNavigationScreen(user: currentUser),
-                              ),
-                              (route) => false,
-                            );
-                          },
-                      ),
-                      Expanded(
-                        child: Text(
-                          _plant.name,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                      ),
-                      const SizedBox(width: 48), // Balance the back button
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Hero Photo Section with margins and card effect
-                  Container(
-                    height: 400,
-                    child: StreamBuilder<List<HealthCheckRecord>>(
-                      stream: _healthCheckStream,
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          print('❌ Error loading hero photos: ${snapshot.error}');
-                          return _buildHeroPlaceholder();
-                        }
-                        
-                        // Prepare photos list: Health Check photos first, then default plant photo
-                        final List<Map<String, dynamic>> photos = [];
-                        
-                        if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
-                          // Add Health Check photos (most recent first)
-                          final sortedHealthChecks = List<HealthCheckRecord>.from(snapshot.data!)
-                            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-                          
-                          for (final record in sortedHealthChecks) {
-                            if (record.imageUrl != null && record.imageUrl!.isNotEmpty) {
-                              photos.add({
-                                    'url': record.imageUrl!,
-                                'type': 'health_check',
-                                'record': record,
-                                    'timestamp': record.timestamp,
-                              });
-                            }
-                          }
-                        }
-                        
-                        // Add default plant photo if it exists (first created plant photo)
-                        if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
-                          photos.add({
-                            'url': _plant.imageUrl!,
-                            'type': 'default',
-                            'record': null,
-                            'timestamp': _plant.createdAt,
-                          });
-                        }
-                        
-                        if (photos.isNotEmpty) {
-                            return _HeroCarouselWidget(
-                            photos: photos,
-                              plantName: _plant.name,
-                            plantStatus: _plant.healthStatus ?? 'unknown',
-                            );
-                        }
-                        
-                        // Fallback to default plant photo
-                        return _buildHeroPlaceholder();
-                      },
-                    ),
-                  ),
-                  
-                  // Subtle Page Indicator
-                  StreamBuilder<List<HealthCheckRecord>>(
-                    stream: _healthCheckStream,
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        print('❌ Error loading page indicator: ${snapshot.error}');
-                        return const SizedBox.shrink();
-                      }
-                      
-                      // Calculate total photo count: health checks + plant photo
-                      int photoCount = 0;
-                      
-                      if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
-                        photoCount += snapshot.data!
-                            .where((record) => record != null && record.imageUrl != null && record.imageUrl!.isNotEmpty)
-                            .length;
-                      }
-                      
-                      // Add plant photo if it exists
-                      if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
-                        photoCount += 1;
-                      }
-                        
-                        if (photoCount > 1) {
-                          return Container(
-                            margin: const EdgeInsets.only(top: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(photoCount, (index) {
-                                return Container(
-                                  width: 8,
-                                  height: 8,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: index == 0 
-                                        ? AppTheme.accentGreen 
-                                        : Colors.grey.shade300,
-                                  ),
-                                );
-                              }),
-                            ),
-                          );
-                      }
-                      return const SizedBox.shrink();
+                    onPressed: () {
+                      // Navigate to Home page (Dashboard) instead of going back
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => MainNavigationScreen(user: currentUser),
+                        ),
+                        (route) => false,
+                      );
                     },
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
             ),
           ),
+                  
+                  // Hero Photo Section with margins and card effect
+          SliverToBoxAdapter(
+            child: StreamBuilder<List<HealthCheckRecord>>(
+              stream: _healthCheckStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  print('❌ Error loading hero photos: ${snapshot.error}');
+                  return _buildHeroPlaceholder();
+                }
+                
+                // Prepare photos list: Health Check photos first, then default plant photo
+                final List<Map<String, dynamic>> photos = [];
+                
+                if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
+                  // Add Health Check photos (most recent first)
+                  final sortedHealthChecks = List<HealthCheckRecord>.from(snapshot.data!)
+                    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+                  
+                  for (final record in sortedHealthChecks) {
+                    if (record.imageUrl != null && record.imageUrl!.isNotEmpty) {
+                      photos.add({
+                        'url': record.imageUrl!,
+                        'type': 'health_check',
+                        'record': record,
+                        'timestamp': record.timestamp,
+                      });
+                    }
+                  }
+                }
+                
+                // Add default plant photo if it exists (first created plant photo)
+                if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
+                  photos.add({
+                    'url': _plant.imageUrl!,
+                    'type': 'default',
+                    'record': null,
+                    'timestamp': _plant.createdAt,
+                  });
+                }
+                
+                if (photos.isNotEmpty) {
+                  return Column(
+                    children: [
+                      Container(
+                        height: 400,
+                        child: _HeroCarouselWidget(
+                          photos: photos,
+                          plantName: _plant.name,
+                          plantStatus: _plant.healthStatus ?? 'unknown',
+                          onPageChanged: (currentPage) {
+                            setState(() {
+                              // Update the current page state
+                              _currentCarouselPage = currentPage;
+                            });
+                          },
+                        ),
+                      ),
+                      
+                      // Page Indicator - now part of the same StreamBuilder
+                      if (photos.length > 1)
+                        Container(
+                          margin: const EdgeInsets.only(top: 20, bottom: 24),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(photos.length, (index) {
+                              return Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: index == _currentCarouselPage 
+                                      ? AppTheme.accentGreen 
+                                      : Colors.grey.shade300,
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                    ],
+                  );
+                }
+                
+                // Fallback to default plant photo
+                return _buildHeroPlaceholder();
+              },
+            ),
+          ),
+          
+
           
           // Key Metrics - 3 cards in a row (responsive)
           SliverToBoxAdapter(
@@ -2349,11 +2326,13 @@ class _HeroCarouselWidget extends StatefulWidget {
   final List<Map<String, dynamic>> photos;
   final String plantName;
   final String plantStatus;
+  final Function(int) onPageChanged;
 
   const _HeroCarouselWidget({
     required this.photos,
     required this.plantName,
     required this.plantStatus,
+    required this.onPageChanged,
   });
 
   @override
@@ -2388,6 +2367,7 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
           setState(() {
             _currentPage = index;
           });
+          widget.onPageChanged(index);
         },
         itemCount: widget.photos.length,
         physics: const BouncingScrollPhysics(),
