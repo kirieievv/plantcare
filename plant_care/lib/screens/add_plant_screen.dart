@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:plant_care/screens/plant_details_screen.dart';
 
@@ -69,6 +70,24 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   // Refresh status
   bool _isRefreshing = false;
   String? _refreshStatus = 'error'; // Start with error status since we know API is failing
+  
+  // Random plant names for name generator
+  final List<String> _randomPlantNames = [
+    'Fernando', 'Leafy', 'Buddy', 'Sprout', 'Greenie', 'Planty', 'Grower', 'Flora',
+    'Verdant', 'Emerald', 'Jade', 'Sage', 'Olive', 'Mint', 'Basil', 'Rosemary',
+    'Thyme', 'Lavender', 'Ivy', 'Willow', 'Maple', 'Oak', 'Pine', 'Cedar',
+    'Bamboo', 'Palm', 'Cactus', 'Succulent', 'Herb', 'Spice', 'Blossom', 'Bloom',
+    'Petunia', 'Daisy', 'Rose', 'Tulip', 'Lily', 'Orchid', 'Sunflower', 'Marigold',
+    'Zinnia', 'Pansy', 'Violet', 'Iris', 'Peony', 'Chrysanthemum', 'Dahlia', 'Aster',
+    'Cosmos', 'Snapdragon', 'Foxglove', 'Delphinium', 'Larkspur', 'Columbine',
+    'Monstera', 'Philodendron', 'Pothos', 'Snake Plant', 'ZZ Plant', 'Fiddle Leaf',
+    'Bird of Paradise', 'Elephant Ear', 'Calathea', 'Prayer Plant', 'Alocasia',
+    'Anthurium', 'Peace Lily', 'Chinese Evergreen', 'Dracaena', 'Schefflera',
+    'Ficus', 'Jade Plant', 'Aloe Vera', 'Haworthia', 'Echeveria', 'Sedum',
+    'Crassula', 'Kalanchoe', 'Peperomia', 'Begonia', 'Impatiens', 'Geranium',
+    'Coleus', 'Polka Dot Plant', 'Nerve Plant', 'Pilea', 'String of Pearls',
+    'String of Hearts', 'Burro\'s Tail', 'Jade Necklace', 'Trailing Jade'
+  ];
 
 
 
@@ -76,6 +95,46 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _generateRandomPlantName() {
+    final random = Random();
+    final randomName = _randomPlantNames[random.nextInt(_randomPlantNames.length)];
+    
+    setState(() {
+      _nameController.text = randomName;
+    });
+    
+    // Show a fun message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Your plant is now called "$randomName"! 🌱',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.accentGreen,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _pickImage() async {
@@ -563,16 +622,71 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: TextFormField(
-          controller: controller,
-          decoration: AppTheme.inputDecoration(
-            labelText: label,
-            hintText: hintText,
-            prefixIcon: icon,
-            prefixIconColor: iconColor,
-          ),
-          style: AppTheme.bodyLarge,
-          validator: validator,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Label
+            Text(
+              label,
+              style: AppTheme.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Input field with random name button (only for Plant Name)
+            if (label == 'Plant Name') ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller,
+                      decoration: AppTheme.inputDecoration(
+                        labelText: '',
+                        hintText: hintText,
+                        prefixIcon: icon,
+                        prefixIconColor: iconColor,
+                      ),
+                      style: AppTheme.bodyLarge,
+                      validator: validator,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Random name button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.accentGreen.withOpacity(0.3)),
+                    ),
+                    child: IconButton(
+                      onPressed: _generateRandomPlantName,
+                      icon: Icon(
+                        Icons.shuffle,
+                        color: AppTheme.accentGreen,
+                        size: 24,
+                      ),
+                      tooltip: 'Generate random name',
+                      padding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // Regular input field for other fields
+              TextFormField(
+                controller: controller,
+                decoration: AppTheme.inputDecoration(
+                  labelText: '',
+                  hintText: hintText,
+                  prefixIcon: icon,
+                  prefixIconColor: iconColor,
+                ),
+                style: AppTheme.bodyLarge,
+                validator: validator,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -911,56 +1025,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Plant Care Logo Bar
-          SliverToBoxAdapter(
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppTheme.white,
-                boxShadow: AppTheme.shadowSmall,
-              ),
-              child: Row(
-                children: [
-                  // Back Button
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.arrow_back_ios,
-                      color: AppTheme.accentGreen,
-                      size: 20,
-                    ),
-                  ),
-                  // Logo and Title (centered)
-                  Expanded(
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.local_florist,
-                            color: AppTheme.accentGreen,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'PLANT CARE',
-                            style: TextStyle(
-                              color: AppTheme.accentGreen,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Empty space to balance the back button
-                  const SizedBox(width: 48),
-                ],
-              ),
-            ),
-          ),
+          // Header removed - clean interface
           
           // Form Content
           SliverToBoxAdapter(

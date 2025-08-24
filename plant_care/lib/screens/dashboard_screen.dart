@@ -88,38 +88,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? _buildShimmerLoading()
           : CustomScrollView(
               slivers: [
-                // Plant Care Logo Bar
-                SliverToBoxAdapter(
-                  child: Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: AppTheme.white,
-                      boxShadow: AppTheme.shadowSmall,
-                    ),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.local_florist,
-                            color: AppTheme.accentGreen,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'PLANT CARE',
-                            style: TextStyle(
-                              color: AppTheme.accentGreen,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                // Header removed - clean interface
                 
                 // Your Garden Overview Section
                 SliverToBoxAdapter(
@@ -300,46 +269,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         
                         const SizedBox(height: 20),
                         
-                        // Test navigation button
-                        ElevatedButton(
-                          onPressed: () {
-                            print('🧪 Dashboard: Testing direct navigation to PlantDetailsScreen');
-                            // Create a test plant
-                            final testPlant = Plant(
-                              id: 'test-plant',
-                              name: 'Test Plant',
-                              species: 'Test Species',
-                              imageUrl: '',
-                              lastWatered: DateTime.now(),
-                              nextWatering: DateTime.now().add(const Duration(days: 7)),
-                              wateringFrequency: 7,
-                              notes: null,
-                              createdAt: DateTime.now(),
-                              userId: 'test-user',
-                            );
-                            
-                            try {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PlantDetailsScreen(plant: testPlant),
-                                ),
-                              );
-                              print('🧪 Dashboard: Test navigation successful!');
-                            } catch (e) {
-                              print('❌ Dashboard: Test navigation failed: $e');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Test navigation failed: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                          child: const Text('🧪 Test Plant Details Navigation'),
-                        ),
-                        
-                        const SizedBox(height: 20),
+                        // Test button removed - clean interface
                       ],
                     ),
                   ),

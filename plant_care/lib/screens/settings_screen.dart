@@ -174,32 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.local_florist,
-              color: AppTheme.accentGreen,
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'PLANT CARE',
-              style: TextStyle(
-                color: AppTheme.accentGreen,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.white,
-        foregroundColor: AppTheme.accentGreen,
-        elevation: 0,
-        centerTitle: true,
-      ),
+      // Header removed - clean interface
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

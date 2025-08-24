@@ -121,43 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.local_florist,
-              color: AppTheme.accentGreen,
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'PLANT CARE',
-              style: TextStyle(
-                color: AppTheme.accentGreen,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.white,
-        foregroundColor: AppTheme.accentGreen,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                });
-              },
-              icon: const Icon(Icons.edit),
-            ),
-        ],
-      ),
+      // Header removed - clean interface
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

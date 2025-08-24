@@ -13,32 +13,7 @@ class PlantListScreen extends StatelessWidget {
     final plantService = PlantService();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.local_florist,
-              color: AppTheme.accentGreen,
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'PLANT CARE',
-              style: TextStyle(
-                color: AppTheme.accentGreen,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.white,
-        foregroundColor: AppTheme.accentGreen,
-        elevation: 0,
-        centerTitle: true,
-      ),
+      // Header removed - clean interface
       body: StreamBuilder<List<Plant>>(
         stream: plantService.getPlants(),
         builder: (context, snapshot) {
