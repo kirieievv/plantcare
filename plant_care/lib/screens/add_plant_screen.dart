@@ -437,6 +437,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         throw Exception('Please upload a plant image');
       }
       
+      // Require AI analysis before creating plant
+      if (_aiGeneralDescription == null || _aiSpecificIssues == null) {
+        throw Exception('Please wait for AI analysis to complete before adding the plant');
+      }
+      
       // Convert bytes to base64 data URL for storage
       final base64String = base64Encode(_selectedImageBytes!);
       final imageUrl = 'data:image/jpeg;base64,$base64String';
@@ -445,6 +450,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final wateringFreq = _aiWateringFrequency != null 
           ? int.tryParse(_aiWateringFrequency!) ?? 7 
           : 7;
+      
+      // NEW PLANTS: NO health status or health message until first manual health check
+      // AI analysis is only used for care recommendations, not health status
       
       final plant = Plant(
         id: '', // Will be set by Firestore
@@ -463,6 +471,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         aiLight: _aiLight,
         aiSpecificIssues: _aiSpecificIssues,
         aiCareTips: _aiCareTips,
+        healthStatus: null, // No health status for new plants
+        healthMessage: null, // No health message for new plants
+        lastHealthCheck: null, // No health check for new plants
       );
 
       final plantId = await PlantService().addPlant(plant);
@@ -991,9 +1002,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: (_isLoading || _isAnalyzing) ? null : _addPlant,
+                        onPressed: (_isLoading || _isAnalyzing || _aiGeneralDescription == null) ? null : _addPlant,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: (_isLoading || _isAnalyzing) ? Colors.grey.shade400 : AppTheme.accentGreen,
+                          backgroundColor: (_isLoading || _isAnalyzing || _aiGeneralDescription == null) ? Colors.grey.shade400 : AppTheme.accentGreen,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           shape: RoundedRectangleBorder(
@@ -1023,29 +1034,48 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                   ),
                                 ],
                               )
-                            : _isAnalyzing
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        'Analyzing Photo...',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Row(
+                                                            : _isAnalyzing
+                                    ? Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text(
+                                            'Analyzing Photo...',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : _aiGeneralDescription == null
+                                        ? Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.photo_camera,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              const Text(
+                                                'Upload & Analyze Photo First',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       const Icon(Icons.add, size: 20),

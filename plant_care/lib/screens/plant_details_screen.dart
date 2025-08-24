@@ -1895,15 +1895,67 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return 'Medium'; // Default
   }
 
+  /// Helper method to check if text contains problem indicators
+  bool _hasProblemsInText(String text) {
+    print('🌱 _hasProblemsInText checking: "$text"');
+    
+    final hasProblems = text.contains('critical') || 
+           text.contains('dying') || 
+           text.contains('urgent') || 
+           text.contains('emergency') || 
+           text.contains('severe') || 
+           text.contains('serious problem') ||
+           text.contains('immediate attention') ||
+           text.contains('declining') ||
+           text.contains('unhealthy') ||
+           text.contains('yellow') ||
+           text.contains('brown') ||
+           text.contains('wilting') ||
+           text.contains('drooping') ||
+           text.contains('overwatered') ||
+           text.contains('underwatered') ||
+           text.contains('root rot') ||
+           text.contains('pest') ||
+           text.contains('disease') ||
+           text.contains('stress') ||
+           text.contains('problem') ||
+           text.contains('issue') ||
+           text.contains('needs help') ||
+           text.contains('trouble') ||
+           text.contains('concern') ||
+           text.contains('damaged') ||
+           text.contains('sick') ||
+           text.contains('poor health') ||
+           text.contains('not thriving') ||
+           text.contains('struggling');
+    
+    print('🌱 _hasProblemsInText result: $hasProblems');
+    return hasProblems;
+  }
+
   Color _getMainStatusColor() {
-    // Check if the plant has issues based on health status
-    if (_plant.healthStatus == 'ok') {
-      return AppTheme.accentGreen; // Green for healthy plants
-    } else if (_plant.healthStatus == 'issue') {
-      return Colors.red.shade600; // Red for plants with issues
+    // Debug logging to see what values we're working with
+    print('🌱 _getMainStatusColor Debug:');
+    print('🌱 healthMessage: ${_plant.healthMessage}');
+    print('🌱 healthStatus: ${_plant.healthStatus}');
+    print('🌱 aiSpecificIssues: ${_plant.aiSpecificIssues}');
+    print('🌱 aiGeneralDescription: ${_plant.aiGeneralDescription}');
+    
+    // For newly created plants: NO health status until first health check
+    if (_plant.healthMessage == null || _plant.healthMessage!.isEmpty) {
+      print('🌱 New plant - no health checks yet - returning TRANSPARENT (no status)');
+      return Colors.transparent; // No status for new plants
+    }
+    
+    // Only show status if there's a health check message
+    final message = _plant.healthMessage!.toLowerCase();
+    print('🌱 Checking healthMessage: $message');
+    if (_hasProblemsInText(message)) {
+      print('🌱 healthMessage indicates PROBLEMS - returning RED');
+      return Colors.red.shade600; // Red for plants with problems
     } else {
-      // For null or unknown status, default to green (assuming healthy until proven otherwise)
-      return AppTheme.accentGreen;
+      print('🌱 healthMessage indicates HEALTHY - returning GREEN');
+      return AppTheme.accentGreen; // Green for healthy plants
     }
   }
 
@@ -1918,14 +1970,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   }
 
   IconData _getMainStatusIcon() {
-    // Check if the plant has issues based on health status
-    if (_plant.healthStatus == 'ok') {
-      return Icons.check_circle; // Checkmark for healthy plants
-    } else if (_plant.healthStatus == 'issue') {
-      return Icons.warning; // Warning icon for plants with issues
+    // For newly created plants: NO health status until first health check
+    if (_plant.healthMessage == null || _plant.healthMessage!.isEmpty) {
+      return Icons.info; // Info icon for new plants (no status yet)
+    }
+    
+    // Only show status icon if there's a health check message
+    final message = _plant.healthMessage!.toLowerCase();
+    if (_hasProblemsInText(message)) {
+      return Icons.warning; // Warning icon for plants with problems
     } else {
-      // For null or unknown status, default to checkmark (assuming healthy until proven otherwise)
-      return Icons.check_circle;
+      return Icons.check_circle; // Checkmark for healthy plants
     }
   }
 
@@ -1936,6 +1991,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       return Icons.error;
     } else {
       return Icons.error;
+    }
+  }
+
+  String _getMainStatusText() {
+    // For newly created plants: NO health status until first health check
+    if (_plant.healthMessage == null || _plant.healthMessage!.isEmpty) {
+      return 'No Status'; // No status for new plants
+    }
+    
+    // Only show status text if there's a health check message
+    final message = _plant.healthMessage!.toLowerCase();
+    if (_hasProblemsInText(message)) {
+      return 'Issue'; // Show "Issue" for plants with problems
+    } else {
+      return 'Healthy'; // Show "Healthy" for plants without problems
     }
   }
 
@@ -2477,33 +2547,35 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Health Status
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getMainStatusColor(),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getMainStatusIcon(),
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _plant.healthStatus ?? 'Healthy',
-                            style: TextStyle(
+                    // Health Status - Only show if there's a health check
+                    if (_plant.healthMessage != null && _plant.healthMessage!.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getMainStatusColor(),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getMainStatusIcon(),
                               color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              size: 16,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              _getMainStatusText(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
