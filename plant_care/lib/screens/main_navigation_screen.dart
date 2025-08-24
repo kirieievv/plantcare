@@ -37,10 +37,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _screens = [
       DashboardScreen(user: widget.user),
       const PlantListScreen(),
-      const AddPlantScreen(),
+      const AddPlantScreen(), // ⚠️ IMPORTANT: This screen has automatic navigation feature
       const ProfileScreen(),
       SettingsScreen(user: widget.user!),
     ];
+    
+    // ⚠️ IMPORTANT: AUTOMATIC NAVIGATION FEATURE ⚠️
+    // The AddPlantScreen automatically redirects users to their newly created plant's details page
+    // after successful plant creation. This provides a better user experience.
+    // 
+    // User flow: Add Plant Tab → AddPlantScreen → Create Plant → Automatically redirected to PlantDetailsScreen
+    // 
+    // If you need to modify this behavior:
+    // 1. Check the AddPlantScreen navigation logic first
+    // 2. Ensure the change works from all entry points (Dashboard, Bottom Navigation)
+    // 3. Test thoroughly to ensure user experience is maintained or improved
+    // 
+    // Related files: add_plant_screen.dart, plant_details_screen.dart, plant_service.dart
     
     // Check if user should return to a specific plant details page
     _checkNavigationState();

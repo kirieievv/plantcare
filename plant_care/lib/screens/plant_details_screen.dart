@@ -125,7 +125,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           title: Row(
             children: [
               Icon(
-                Icons.warning,
+                Icons.delete_forever,
                 color: Colors.red.shade600,
                 size: 24,
               ),
@@ -316,12 +316,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   Widget _buildPlaceholderImage() {
     return Container(
       width: double.infinity,
-      height: 400, // Increased height for vertical photos
+      height: 400,
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.circular(20),
         color: Colors.grey.shade100,
       ),
       child: Column(
@@ -355,115 +352,67 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
-  /// Builds image with CORS fallback handling
-  Widget _buildImageWithFallback(String imageUrl) {
+  /// Builds hero image with improved error handling
+  Widget _buildHeroImage(String imageUrl) {
     // Validate image URL
     if (imageUrl.isEmpty) {
-      return _buildImagePlaceholder();
+      return _buildPlaceholderImage();
     }
     
     // Try to get a CORS-free URL for web
     final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
     
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(12),
-        bottomRight: Radius.circular(12),
-      ),
-      child: Image.network(
-        processedUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) {
-          print('❌ Image loading error: $error');
-          // Try alternative URL if CORS fails
-          if (CorsProxyService.hasCorsIssues) {
-            return _buildImagePlaceholderWithRetry(imageUrl);
-          }
-          return _buildImagePlaceholder();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildImagePlaceholder();
-        },
-        // Add timeout to prevent hanging
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-          if (wasSynchronouslyLoaded) return child;
-          return AnimatedOpacity(
-            opacity: frame == null ? 0 : 1,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-            child: child,
-          );
-        },
-      ),
-    );
-  }
-
-  /// Builds image placeholder with retry button for web
-  Widget _buildImagePlaceholderWithRetry(String imageUrl) {
-    return Container(
-      color: Colors.grey.shade100,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-            Icons.broken_image,
-                            size: 24,
-            color: Colors.grey.shade400,
-                          ),
-          const SizedBox(height: 4),
-                          Text(
-            'CORS Error',
-                            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          ElevatedButton(
-            onPressed: () {
-              // Force refresh the image
-              setState(() {});
+    return imageUrl.startsWith('data:image')
+        ? Image.memory(
+            base64Decode(imageUrl.split(',')[1]),
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.high,
+            isAntiAlias: true,
+            errorBuilder: (context, error, stackTrace) {
+              print('❌ Hero image memory error: $error');
+              return _buildPlaceholderImage();
             },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: const Size(0, 0),
-            ),
-            child: const Text(
-              'Retry',
-              style: TextStyle(fontSize: 10),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds image placeholder when no image is available
-  Widget _buildImagePlaceholder() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.image,
-          color: Colors.grey,
-          size: 24,
-        ),
-      ),
-    );
+          )
+        : imageUrl.startsWith('http')
+            ? Image.network(
+                processedUrl,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+                isAntiAlias: true,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                        color: Colors.green,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  print('❌ Hero image network error: $error');
+                  // Try alternative URL if CORS fails
+                  if (CorsProxyService.hasCorsIssues) {
+                    return _buildPlaceholderImage();
+                  }
+                  return _buildPlaceholderImage();
+                },
+                // Add timeout to prevent hanging
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded) return child;
+                  return AnimatedOpacity(
+                    opacity: frame == null ? 0 : 1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                    child: child,
+                  );
+                },
+              )
+            : _buildPlaceholderImage();
   }
 
   /// Formats health check date for display
@@ -1563,6 +1512,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             }
             
             final healthChecks = snapshot.data ?? [];
+            print('🌱 PlantDetailsScreen: Loaded ${healthChecks.length} health checks for plant: ${_plant.name}');
+            
             if (healthChecks.isEmpty) {
               return _buildEmptyHealthHistory();
             }
@@ -1573,6 +1524,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               record.id.isNotEmpty && 
               record.status.isNotEmpty
             ).toList();
+            
+            print('🌱 PlantDetailsScreen: Valid health checks: ${validHealthChecks.length}');
+            
+            // Debug each health check record
+            for (int i = 0; i < validHealthChecks.length; i++) {
+              final record = validHealthChecks[i];
+              print('🌱 PlantDetailsScreen: Health check $i: ID=${record.id}, Status=${record.status}, ImageURL=${record.imageUrl?.isNotEmpty == true ? "Present" : "Missing"}, Timestamp=${record.timestamp}');
+            }
             
             if (validHealthChecks.isEmpty) {
               return _buildEmptyHealthHistory();
@@ -1662,25 +1621,29 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       return const SizedBox.shrink();
     }
     
+    // Sort by timestamp, most recent first
     final sortedHistory = List<HealthCheckRecord>.from(validHealthChecks)
-    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    
+    // Limit to prevent overwhelming the UI
+    final displayHistory = sortedHistory.take(10).toList();
   
     return SizedBox(
       height: 120,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: sortedHistory.length,
+        itemCount: displayHistory.length,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 4),
         itemBuilder: (context, index) {
-          final record = sortedHistory[index];
+          final record = displayHistory[index];
           if (record == null) {
             return const SizedBox.shrink();
           }
           
           return Container(
             width: 100,
-            margin: EdgeInsets.only(right: index < sortedHistory.length - 1 ? 12 : 0),
+            margin: EdgeInsets.only(right: index < displayHistory.length - 1 ? 12 : 0),
             child: _buildHealthHistoryThumbnail(record),
           );
         },
@@ -1694,56 +1657,56 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       return const SizedBox.shrink();
     }
     
-              return Container(
-                decoration: BoxDecoration(
+    return Container(
+      decoration: BoxDecoration(
         color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: record.status == 'ok' ? Colors.green.shade200 : Colors.orange.shade200,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: record.status == 'ok' ? Colors.green.shade200 : Colors.red.shade200,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
           // Status chip
-                    Container(
-                      width: double.infinity,
+          Container(
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        color: record.status == 'ok' ? Colors.green.shade100 : Colors.orange.shade100,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
+            decoration: BoxDecoration(
+              color: record.status == 'ok' ? Colors.green.shade100 : Colors.red.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
                   record.status == 'ok' ? Icons.check : Icons.warning,
-                            color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
+                  color: record.status == 'ok' ? Colors.green.shade600 : Colors.red.shade600,
                   size: 12,
-                          ),
+                ),
                 const SizedBox(width: 2),
-                          Text(
-                            record.status == 'ok' ? 'OK' : 'Issue',
-                            style: TextStyle(
-                    fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: record.status == 'ok' ? Colors.green.shade600 : Colors.orange.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
+                                  Text(
+                    record.status == 'ok' ? 'OK' : 'Issue',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: record.status == 'ok' ? Colors.green.shade600 : Colors.red.shade600,
                     ),
+                  ),
+              ],
+            ),
+          ),
 
-          // Image - Fixed to prevent rendering issues
+          // Image - Improved error handling and fallback
           Flexible(
             child: Container(
               constraints: const BoxConstraints(
@@ -1751,28 +1714,158 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 maxHeight: 80,
               ),
               child: record.imageUrl != null && record.imageUrl!.isNotEmpty
-                          ? _buildImageWithFallback(record.imageUrl!)
-                          : _buildImagePlaceholder(),
+                  ? _buildHealthCheckImage(record.imageUrl!)
+                  : _buildHealthCheckImagePlaceholder(),
             ),
-                    ),
+          ),
 
-                    // Date
-                    Container(
+          // Date
+          Container(
             padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Text(
-                        _formatHealthCheckDate(record.timestamp),
-                        style: TextStyle(
+            child: Text(
+              _formatHealthCheckDate(record.timestamp),
+              style: TextStyle(
                 fontSize: 10,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds health check image with improved error handling
+  Widget _buildHealthCheckImage(String imageUrl) {
+    // Validate image URL
+    if (imageUrl.isEmpty) {
+      return _buildHealthCheckImagePlaceholder();
+    }
+    
+    // Try to get a CORS-free URL for web
+    final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
+    
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(12),
+        topRight: Radius.circular(12),
+      ),
+      child: imageUrl.startsWith('data:image')
+          ? Image.memory(
+              base64Decode(imageUrl.split(',')[1]),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                print('❌ Health check image memory error: $error');
+                return _buildHealthCheckImagePlaceholder();
+              },
+            )
+          : Image.network(
+              processedUrl,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                print('❌ Health check image network error: $error');
+                // Try alternative URL if CORS fails
+                if (CorsProxyService.hasCorsIssues) {
+                  return _buildHealthCheckImagePlaceholderWithRetry(imageUrl);
+                }
+                return _buildHealthCheckImagePlaceholder();
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Colors.grey.shade100,
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                        color: Colors.blue.shade400,
+                        strokeWidth: 2,
                       ),
                     ),
-                  ],
-                ),
-              );
-            }
+                  ),
+                );
+              },
+              // Add timeout to prevent hanging
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                if (wasSynchronouslyLoaded) return child;
+                return AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: child,
+                );
+              },
+            ),
+    );
+  }
+
+  /// Builds health check image placeholder
+  Widget _buildHealthCheckImagePlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.image,
+          color: Colors.grey.shade400,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  /// Builds health check image placeholder with retry button for web
+  Widget _buildHealthCheckImagePlaceholderWithRetry(String imageUrl) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.broken_image,
+            size: 16,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'CORS',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 
   /// Convert moisture level text to percentage (0-100) - consistent with AI recommendations
   int _getMoisturePercentage(String? moistureLevel) {
@@ -1802,6 +1895,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return 'Medium'; // Default
   }
 
+  Color _getMainStatusColor() {
+    // Check if the plant has issues based on health status
+    if (_plant.healthStatus == 'ok') {
+      return AppTheme.accentGreen; // Green for healthy plants
+    } else if (_plant.healthStatus == 'issue') {
+      return Colors.red.shade600; // Red for plants with issues
+    } else {
+      // For null or unknown status, default to green (assuming healthy until proven otherwise)
+      return AppTheme.accentGreen;
+    }
+  }
+
   Color _getStatusColor() {
     if (_plant.healthStatus == 'ok') {
       return Colors.green;
@@ -1812,11 +1917,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     }
   }
 
+  IconData _getMainStatusIcon() {
+    // Check if the plant has issues based on health status
+    if (_plant.healthStatus == 'ok') {
+      return Icons.check_circle; // Checkmark for healthy plants
+    } else if (_plant.healthStatus == 'issue') {
+      return Icons.warning; // Warning icon for plants with issues
+    } else {
+      // For null or unknown status, default to checkmark (assuming healthy until proven otherwise)
+      return Icons.check_circle;
+    }
+  }
+
   IconData _getStatusIcon() {
     if (_plant.healthStatus == 'ok') {
       return Icons.check_circle;
     } else if (_plant.healthStatus == 'warning') {
-      return Icons.warning;
+      return Icons.error;
     } else {
       return Icons.error;
     }
@@ -1882,9 +1999,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       children: [
         Container(
           width: double.infinity,
-          height: 400, // Increased height for vertical photos
+          height: _getHeroImageHeight(context), // Use orientation-aware height
           child: ClipRRect(
-                borderRadius: const BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(20),
               bottomRight: Radius.circular(20),
             ),
@@ -2037,170 +2154,149 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     try {
+      final screenSize = MediaQuery.of(context).size;
       print('🌱 PlantDetailsScreen: Building screen for plant: ${_plant.name}');
       print('🌱 PlantDetailsScreen: Plant ID: ${_plant.id}');
       print('🌱 PlantDetailsScreen: Plant species: ${_plant.species}');
+      print('🌱 PlantDetailsScreen: Screen size: ${screenSize.width}x${screenSize.height}');
+      print('🌱 PlantDetailsScreen: Is portrait: ${screenSize.height > screenSize.width}');
       
     return Scaffold(
       backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true, // Allow content to extend behind system UI
       body: CustomScrollView(
         slivers: [
-          // Header with back button and plant name
+          // Hero Photo Section - Full width and to the top in portrait orientation
           SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.arrow_back,
-                          color: AppTheme.textPrimary,
-                        ),
-                    onPressed: () {
-                      // Navigate to Home page (Dashboard) instead of going back
-                      final currentUser = FirebaseAuth.instance.currentUser;
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => MainNavigationScreen(user: currentUser),
-                        ),
-                        (route) => false,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-                  
-                  // Hero Photo Section with margins and card effect
-          SliverToBoxAdapter(
-            child: StreamBuilder<List<HealthCheckRecord>>(
-              stream: _healthCheckStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  print('❌ Error loading hero photos: ${snapshot.error}');
-                  return _buildHeroPlaceholder();
-                }
-                
-                // Prepare photos list: Health Check photos first, then default plant photo
-                final List<Map<String, dynamic>> photos = [];
-                
-                if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
-                  // Add Health Check photos (most recent first)
-                  final sortedHealthChecks = List<HealthCheckRecord>.from(snapshot.data!)
-                    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-                  
-                  for (final record in sortedHealthChecks) {
-                    if (record.imageUrl != null && record.imageUrl!.isNotEmpty) {
-                      photos.add({
-                        'url': record.imageUrl!,
-                        'type': 'health_check',
-                        'record': record,
-                        'timestamp': record.timestamp,
-                      });
+            child: Stack(
+              children: [
+                // Hero Image Section - Full width and height
+                StreamBuilder<List<HealthCheckRecord>>(
+                  stream: _healthCheckStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      print('❌ Error loading hero photos: ${snapshot.error}');
+                      return _buildHeroPlaceholder();
                     }
-                  }
-                }
-                
-                // Add default plant photo if it exists (first created plant photo)
-                if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
-                  photos.add({
-                    'url': _plant.imageUrl!,
-                    'type': 'default',
-                    'record': null,
-                    'timestamp': _plant.createdAt,
-                  });
-                }
-                
-                if (photos.isNotEmpty) {
-                  return Column(
-                    children: [
-                      Container(
-                        height: 400,
-                        child: _HeroCarouselWidget(
-                          photos: photos,
-                          plantName: _plant.name,
-                          plantStatus: _plant.healthStatus ?? 'unknown',
-                          onPageChanged: (currentPage) {
-                            setState(() {
-                              // Update the current page state
-                              _currentCarouselPage = currentPage;
-                            });
-                          },
-                        ),
-                      ),
+                    
+                    // Prepare photos list: Health Check photos first, then default plant photo
+                    final List<Map<String, dynamic>> photos = [];
+                    
+                    if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
+                      // Add Health Check photos (most recent first)
+                      final sortedHealthChecks = List<HealthCheckRecord>.from(snapshot.data!)
+                        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
                       
-                      // Page Indicator - now part of the same StreamBuilder
-                      if (photos.length > 1)
-                        Container(
-                          margin: const EdgeInsets.only(top: 20, bottom: 24),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(photos.length, (index) {
-                              return Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: index == _currentCarouselPage 
-                                      ? AppTheme.accentGreen 
-                                      : Colors.grey.shade300,
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                    ],
-                  );
-                }
+                      print('🌱 PlantDetailsScreen: Processing ${sortedHealthChecks.length} health check photos');
+                      
+                      for (int i = 0; i < sortedHealthChecks.length; i++) {
+                        final record = sortedHealthChecks[i];
+                        if (record.imageUrl != null && record.imageUrl!.isNotEmpty) {
+                          print('🌱 PlantDetailsScreen: Adding health check photo $i: URL=${record.imageUrl!.substring(0, record.imageUrl!.length > 50 ? 50 : record.imageUrl!.length)}...');
+                          photos.add({
+                            'url': record.imageUrl!,
+                            'type': 'health_check',
+                            'record': record,
+                            'timestamp': record.timestamp,
+                          });
+                        } else {
+                          print('🌱 PlantDetailsScreen: Skipping health check photo $i: No image URL');
+                        }
+                      }
+                    }
+                    
+                    // Add default plant photo if it exists (first created plant photo)
+                    if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
+                      print('🌱 PlantDetailsScreen: Adding default plant photo: URL=${_plant.imageUrl!.substring(0, _plant.imageUrl!.length > 50 ? 50 : _plant.imageUrl!.length)}...');
+                      photos.add({
+                        'url': _plant.imageUrl!,
+                        'type': 'default',
+                        'record': null,
+                        'timestamp': _plant.createdAt,
+                      });
+                    } else {
+                      print('🌱 PlantDetailsScreen: No default plant photo available');
+                    }
+                    
+                    print('🌱 PlantDetailsScreen: Total photos prepared: ${photos.length}');
+                    
+                    if (photos.isNotEmpty) {
+                      // Convert photos to list of URLs for the new carousel
+                      final List<String> imageUrls = photos.map((photo) => photo['url'] as String).toList();
+                      
+                      return PlantCarouselHeader(
+                        images: imageUrls,
+                        onBackPressed: () {
+                          // Navigate to Home page (Dashboard) instead of going back
+                          final currentUser = FirebaseAuth.instance.currentUser;
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (context) => MainNavigationScreen(user: currentUser),
+                            ),
+                            (route) => false,
+                          );
+                        },
+                      );
+                    }
+                    
+                    // Fallback to default plant photo
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 52), // Match the 52px total spacing from other scenarios
+                      child: _buildHeroPlaceholder(),
+                    );
+                  },
+                ),
                 
-                // Fallback to default plant photo
-                return _buildHeroPlaceholder();
-              },
+
+              ],
             ),
           ),
+                  
+                  // Key Metrics - 3 cards in a row (responsive) - REMOVED: Now integrated into unified block above image
+                  // SliverToBoxAdapter(
+                  //   child: Padding(
+                  //     padding: const EdgeInsets.fromLTRB(24, 0, 24, 24), // Removed top padding since spacing is now consistent above
+                  //     child: LayoutBuilder(
+                  //       builder: (context, constraints) {
+                  //         // Responsive layout: stack on narrow screens
+                  //         if (constraints.maxWidth < 600) {
+                  //           return Column(
+                  //             children: [
+                  //               // First row: 2 cards
+                  //               Row(
+                  //                 children: [
+                  //                   Expanded(child: _buildNextWateringCard()),
+                  //                   const SizedBox(width: 16),
+                  //                   Expanded(child: _buildLightCard()),
+                  //                 ],
+                  //               ),
+                  //               const SizedBox(height: 16),
+                  //               // Second row: 1 card
+                  //               _buildMoistureCard(),
+                  //             ],
+                  //           );
+                  //         } else {
+                  //           // Wide screen: 3 cards in a row
+                  //           return Row(
+                  //             children: [
+                  //               Expanded(child: _buildNextWateringCard()),
+                  //               const SizedBox(width: 16),
+                  //               Expanded(child: _buildLightCard()),
+                  //               const SizedBox(height: 16),
+                  //               Expanded(child: _buildMoistureCard()),
+                  //             ],
+                  //           );
+                  //         }
+                  //       },
+                  //     ),
+                  //   ),
+                  // ),
           
-
-          
-          // Key Metrics - 3 cards in a row (responsive)
+          // Unified Information Block - Plant name, health, and care info (NOW ABOVE THE IMAGE)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Responsive layout: stack on narrow screens
-                  if (constraints.maxWidth < 600) {
-                    return Column(
-                      children: [
-                        // First row: 2 cards
-                        Row(
-                          children: [
-                            Expanded(child: _buildNextWateringCard()),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildLightCard()),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Second row: 1 card
-                        _buildMoistureCard(),
-                      ],
-                    );
-                  } else {
-                    // Wide screen: 3 cards in a row
-                    return Row(
-                      children: [
-                        Expanded(child: _buildNextWateringCard()),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildLightCard()),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildMoistureCard()),
-                      ],
-                    );
-                  }
-                },
-              ),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: _buildUnifiedInformationBlock(),
             ),
           ),
           
@@ -2320,6 +2416,341 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       );
     }
   }
+
+  /// Check if device is in portrait orientation
+  bool _isPortrait(BuildContext context) {
+    return MediaQuery.of(context).orientation == Orientation.portrait;
+  }
+  
+  /// Get hero image height based on orientation
+  /// ⚠️ IMPORTANT: This method ensures the hero image is full width and to the top in portrait mode
+  /// 
+  /// Portrait mode: 60% of screen height for immersive experience
+  /// Landscape mode: Fixed 400px height to maintain usability
+  /// 
+  /// This provides the optimal user experience for both orientations
+  double _getHeroImageHeight(BuildContext context) {
+    if (_isPortrait(context)) {
+      return MediaQuery.of(context).size.height * 0.6; // 60% of screen height in portrait
+    } else {
+      return 400; // Fixed height in landscape
+    }
+  }
+
+  // Unified Information Block - Plant name, health, and care info
+  // Now positioned below the image as a separate section
+  Widget _buildUnifiedInformationBlock() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Plant Name and Health Status Row
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Plant Name
+                    Text(
+                      _plant.name,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Health Status
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getMainStatusColor(),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getMainStatusIcon(),
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _plant.healthStatus ?? 'Healthy',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Note: Page indicators are shown in the hero image section above
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Care Information Grid
+          Row(
+            children: [
+              // Next Watering Card
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.water_drop,
+                        color: Colors.green.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Next Watering',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('MMM dd').format(_plant.nextWatering),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'every ${_plant.wateringFrequency} days',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Light Card
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.wb_sunny,
+                        color: Colors.orange.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Light',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_calculateLightHours()} hours',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'per day',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Moisture Card
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.opacity,
+                        color: Colors.green.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Moisture',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatMoistureLevel(_plant.aiMoistureLevel),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Action Buttons Row
+          Row(
+            children: [
+              // "I have watered" Button
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _waterPlant,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  icon: Icon(
+                    Icons.water_drop,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'I have watered',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // "Check plant" Button
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _openHealthCheckModal,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.red.shade600,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: Colors.red.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    elevation: 1,
+                  ),
+                  icon: Icon(
+                    Icons.health_and_safety,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'Check plant',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HeroCarouselWidget extends StatefulWidget {
@@ -2360,205 +2791,34 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
 
   @override
   Widget build(BuildContext context) {
-  return Container(
-      child: PageView.builder(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentPage = index;
-          });
-          widget.onPageChanged(index);
-        },
-        itemCount: widget.photos.length,
-        physics: const BouncingScrollPhysics(),
-        scrollDirection: Axis.horizontal,
-        pageSnapping: true,
-        itemBuilder: (context, index) {
-          final photo = widget.photos[index];
-          final isActive = index == _currentPage;
-          
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            margin: EdgeInsets.symmetric(
-              horizontal: isActive ? 0 : 8,
-              vertical: isActive ? 0 : 4,
+    return PageView.builder(
+      controller: _pageController,
+      onPageChanged: (index) {
+        setState(() {
+          _currentPage = index;
+        });
+        widget.onPageChanged(index);
+      },
+      itemCount: widget.photos.length,
+      physics: const BouncingScrollPhysics(),
+      scrollDirection: Axis.horizontal,
+      pageSnapping: true,
+      itemBuilder: (context, index) {
+        final photo = widget.photos[index];
+        
+        return Stack(
+          children: [
+            // Photo - Full width and height
+            Positioned.fill(
+              child: _buildHeroImage(photo['url']),
             ),
-            child: Container(
-    decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: isActive ? 20 : 8,
-                    offset: Offset(0, isActive ? 8 : 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  children: [
-                    // Photo
-                    Container(
-                      width: double.infinity,
-                      height: 400,
-                      child: photo['url'].startsWith('data:image')
-                        ? Image.memory(
-                            base64Decode(photo['url'].split(',')[1]),
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                            isAntiAlias: true,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildPlaceholderImage();
-                            },
-                          )
-                        : photo['url'].startsWith('http')
-                            ? Image.network(
-                                photo['url'],
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                                isAntiAlias: true,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    color: Colors.grey.shade200,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                            : null,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return _buildPlaceholderImage();
-                                },
-                              )
-                            : _buildPlaceholderImage(),
-                    ),
-                    
-                    // Plant Name Overlay with Gradient
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.6),
-                            ],
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              widget.plantName,
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    offset: const Offset(0, 1),
-                                    blurRadius: 3,
-                                    color: Colors.black.withValues(alpha: 0.5),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor().withValues(alpha: 0.8),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _getStatusIcon(),
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _getStatusText(),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-    ),
-  );
-}
-
-  Color _getStatusColor() {
-    switch (widget.plantStatus.toLowerCase()) {
-      case 'healthy':
-        return Colors.green;
-      case 'needs attention':
-        return Colors.orange;
-      case 'critical':
-        return Colors.red;
-      default:
-        return Colors.green;
-    }
+          ],
+        );
+      },
+    );
   }
 
-  IconData _getStatusIcon() {
-    switch (widget.plantStatus.toLowerCase()) {
-      case 'healthy':
-        return Icons.check_circle;
-      case 'needs attention':
-        return Icons.warning;
-      case 'critical':
-        return Icons.error;
-      default:
-        return Icons.check_circle;
-    }
-  }
 
-  String _getStatusText() {
-    switch (widget.plantStatus.toLowerCase()) {
-      case 'healthy':
-        return 'Healthy';
-      case 'needs attention':
-        return 'Needs Attention';
-      case 'critical':
-        return 'Critical';
-      default:
-        return 'Healthy';
-    }
-  }
 
   Widget _buildPlaceholderImage() {
     return Container(
@@ -2598,4 +2858,216 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
       ),
     );
   }
+
+  /// Builds hero image with improved error handling
+  Widget _buildHeroImage(String imageUrl) {
+    // Validate image URL
+    if (imageUrl.isEmpty) {
+      return _buildPlaceholderImage();
+    }
+    
+    // Try to get a CORS-free URL for web
+    final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
+    
+    return imageUrl.startsWith('data:image')
+        ? Image.memory(
+            base64Decode(imageUrl.split(',')[1]),
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.high,
+            isAntiAlias: true,
+            errorBuilder: (context, error, stackTrace) {
+              print('❌ Hero image memory error: $error');
+              return _buildPlaceholderImage();
+            },
+          )
+        : imageUrl.startsWith('http')
+            ? Image.network(
+                processedUrl,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+                isAntiAlias: true,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                        color: Colors.green,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  print('❌ Hero image network error: $error');
+                  // Try alternative URL if CORS fails
+                  if (CorsProxyService.hasCorsIssues) {
+                    return _buildPlaceholderImage();
+                  }
+                  return _buildPlaceholderImage();
+                },
+                // Add timeout to prevent hanging
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded) return child;
+                  return AnimatedOpacity(
+                    opacity: frame == null ? 0 : 1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                    child: child,
+                  );
+                },
+              )
+            : _buildPlaceholderImage();
+  }
 } 
+
+// Reusable header widget for edge-to-edge carousel
+class PlantCarouselHeader extends StatefulWidget {
+  final List<String> images;
+  final VoidCallback? onBackPressed;
+  
+  const PlantCarouselHeader({
+    super.key, 
+    required this.images,
+    this.onBackPressed,
+  });
+
+  @override
+  State<PlantCarouselHeader> createState() => _PlantCarouselHeaderState();
+}
+
+class _PlantCarouselHeaderState extends State<PlantCarouselHeader> {
+  late final PageController _controller;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController(viewportFraction: 1.0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isPortrait = size.height > size.width;
+    
+    // In portrait mode: 60% of screen height, in landscape: fixed 400px
+    final headerH = isPortrait ? size.height * 0.60 : 400.0;
+    final clampedH = headerH.clamp(260.0, 600.0); // Increased max height for portrait
+    
+    print('🌱 PlantCarouselHeader: Screen size: ${size.width}x${size.height}');
+    print('🌱 PlantCarouselHeader: Is portrait: $isPortrait');
+    print('🌱 PlantCarouselHeader: Calculated height: $headerH, clamped: $clampedH');
+    print('🌱 PlantCarouselHeader: Device width: ${MediaQuery.of(context).size.width}');
+
+    return Container(
+      width: MediaQuery.of(context).size.width, // Explicit full device width
+      height: clampedH,
+      margin: EdgeInsets.zero, // No margins
+      padding: EdgeInsets.zero, // No padding
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Edge-to-edge PageView - Full width
+          PageView.builder(
+            controller: _controller,
+            onPageChanged: (i) => setState(() => _index = i),
+            padEnds: false,
+            itemCount: widget.images.length,
+            itemBuilder: (_, i) {
+              return Container(
+                width: MediaQuery.of(context).size.width, // Explicit full width
+                height: clampedH,
+                child: Image.network(
+                  widget.images[i],
+                  fit: BoxFit.cover, // fill width, crop height
+                  alignment: Alignment.center,
+                  width: MediaQuery.of(context).size.width, // Force full width
+                  height: clampedH, // Force full height
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width,
+                      height: clampedH,
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+
+          // Back button overlay (SafeArea)
+          Positioned(
+            left: 8,
+            top: 8,
+            child: SafeArea(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  onPressed: widget.onBackPressed ?? () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                ),
+              ),
+            ),
+          ),
+
+          // Green dots indicators (padding above white card)
+          if (widget.images.length > 1)
+            Positioned(
+              bottom: 24, // keep 16–24px above the card overlap
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.images.length, (i) {
+                  final active = i == _index;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: active ? 10 : 8, 
+                    height: active ? 10 : 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: active
+                          ? const Color(0xFF2E7D32)       // green active
+                          : const Color(0x662E7D32),      // green with opacity
+                      border: active 
+                          ? Border.all(color: Colors.white, width: 2)
+                          : null,
+                      boxShadow: active 
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                  );
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

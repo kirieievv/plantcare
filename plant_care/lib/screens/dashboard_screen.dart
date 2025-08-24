@@ -247,102 +247,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   if (result != null && result['success'] == true) {
                                     final plantId = result['plantId'];
                                     print('🌱 Dashboard: Plant created successfully with ID: $plantId');
-                                    print('🌱 Dashboard: Result data: $result');
+                                    print('🌱 Dashboard: Add plant screen should handle navigation automatically');
                                     
-                                    // Refresh the plants list
+                                    // ⚠️ IMPORTANT: Navigation is now handled automatically by AddPlantScreen ⚠️
+                                    // The AddPlantScreen automatically redirects users to the new plant's details page
+                                    // after successful creation. This provides a better user experience.
+                                    // 
+                                    // If you need to modify this behavior:
+                                    // 1. Check the AddPlantScreen navigation logic first
+                                    // 2. Consider whether the change improves or degrades user experience
+                                    // 3. Test thoroughly to ensure the change works as expected
+                                    // 
+                                    // Current behavior: AddPlantScreen handles navigation automatically
+                                    // Expected user flow: Add Plant → Success Message → View New Plant Details
+                                    
+                                    // Refresh the plants list to show the new plant
                                     setState(() {});
                                     
-                                    // Navigate to the newly created plant
-                                    if (mounted && plantId != null) {
-                                      try {
-                                        print('🌱 Dashboard: Starting navigation to plant $plantId');
-                                        print('🌱 Dashboard: Context mounted: $mounted');
-                                        print('🌱 Dashboard: Plant ID valid: ${plantId.isNotEmpty}');
-                                        
-                                        // Get the plant data directly from Firestore
-                                        final plantDoc = await FirebaseFirestore.instance
-                                            .collection('plants')
-                                            .doc(plantId)
-                                            .get();
-                                        
-                                        print('🌱 Dashboard: Firestore query completed, exists: ${plantDoc.exists}');
-                                        print('🌱 Dashboard: Plant data: ${plantDoc.data()}');
-                                        
-                                        if (plantDoc.exists) {
-                                          final plantData = plantDoc.data()!;
-                                          plantData['id'] = plantId;
-                                          final newPlant = Plant.fromMap(plantData);
-                                          
-                                          print('🌱 Dashboard: Plant data parsed successfully');
-                                          print('🌱 Dashboard: Plant name: ${newPlant.name}');
-                                          print('🌱 Dashboard: Plant species: ${newPlant.species}');
-                                          print('🌱 Dashboard: About to navigate to PlantDetailsScreen');
-                                          
-                                          // Test: Try simple navigation first
-                                          try {
-                                            print('🌱 Dashboard: Attempting navigation with push...');
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => PlantDetailsScreen(plant: newPlant),
-                                              ),
-                                            );
-                                            print('🌱 Dashboard: Navigation completed successfully!');
-                                          } catch (navigationError) {
-                                            print('❌ Dashboard: Navigation failed: $navigationError');
-                                            print('❌ Dashboard: Navigation error type: ${navigationError.runtimeType}');
-                                            // Fallback: try to go back to dashboard and show message
-                                            Navigator.pop(context);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Plant created! Tap on it in the list to view details.'),
-                                                backgroundColor: Colors.green,
-                                                duration: const Duration(seconds: 5),
-                                              ),
-                                            );
-                                          }
-                                        } else {
-                                          print('🌱 Dashboard: Plant not found in Firestore, trying stream fallback');
-                                          
-                                          // Fallback: try to find in the stream
-                                          final plants = await PlantService().getPlants().first;
-                                          final newPlant = plants.firstWhere(
-                                            (plant) => plant.id == plantId,
-                                            orElse: () => plants.first,
-                                          );
-                                          
-                                          print('🌱 Dashboard: Using fallback plant data, navigating to PlantDetailsScreen');
-                                          
-                                          try {
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => PlantDetailsScreen(plant: newPlant),
-                                              ),
-                                            );
-                                          } catch (navigationError) {
-                                            print('❌ Dashboard: Fallback navigation failed: $navigationError');
-                                            // Fallback: try to go back to dashboard and show message
-                                            Navigator.pop(context);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Plant created! Tap on it in the list to view details.'),
-                                                backgroundColor: Colors.green,
-                                                duration: const Duration(seconds: 5),
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      } catch (e) {
-                                        print('❌ Dashboard: Error navigating to new plant: $e');
-                                        // Show error message but don't crash
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Plant created! Please refresh to see it.'),
-                                            backgroundColor: Colors.orange,
-                                          ),
-                                        );
-                                      }
+                                    // Show success message (navigation is handled by AddPlantScreen)
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Plant created successfully! 🌱'),
+                                          backgroundColor: Colors.green,
+                                          duration: Duration(seconds: 3),
+                                        ),
+                                      );
                                     }
                                   }
                                 },

@@ -68,6 +68,12 @@ class PlantService {
   }
 
   // Add a new plant
+  // ⚠️ IMPORTANT: This method is part of the automatic navigation feature ⚠️
+  // After calling this method, the AddPlantScreen automatically navigates to the new plant's details
+  // DO NOT modify this method's return value (plant ID) without updating the navigation logic
+  // 
+  // Expected behavior: Returns the new plant's ID for automatic navigation to PlantDetailsScreen
+  // Related feature: Automatic redirect after plant creation for better user experience
   Future<String> addPlant(Plant plant) async {
     final user = AuthService.currentUser;
     if (user == null) throw Exception('User not authenticated');

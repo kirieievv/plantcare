@@ -7,7 +7,38 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:plant_care/screens/plant_details_screen.dart';
 
+/// ⚠️ IMPORTANT: AUTOMATIC NAVIGATION FEATURE ⚠️
+/// 
+/// This screen automatically redirects users to their newly created plant's details page
+/// after successful plant creation. This is a key user experience feature that should
+/// NOT be removed without careful consideration.
+/// 
+/// FEATURE DESCRIPTION:
+/// - User creates a plant → Success message appears → Automatically redirected to PlantDetailsScreen
+/// - Uses Navigator.pushReplacement to prevent accidental return to add plant form
+/// - Provides fallback navigation if automatic navigation fails
+/// 
+/// WHY THIS FEATURE EXISTS:
+/// - Better UX: Users see their new plant immediately after creation
+/// - No confusion: No need to search for the new plant in a list
+/// - Seamless flow: Direct transition from creation to management
+/// 
+/// IF YOU NEED TO MODIFY THIS BEHAVIOR:
+/// 1. Test thoroughly to ensure the change improves user experience
+/// 2. Consider adding a user preference option rather than removing the feature
+/// 3. Update all related comments and documentation
+/// 4. Ensure the change works from all entry points (Dashboard, Bottom Navigation)
+/// 
+/// RELATED FILES:
+/// - dashboard_screen.dart: Simplified navigation logic (relies on this feature)
+/// - plant_details_screen.dart: Destination screen for new plants
+/// - plant_service.dart: Plant creation service
+/// 
+/// LAST UPDATED: [Current Date] - Automatic navigation implemented
+/// 
 class AddPlantScreen extends StatefulWidget {
   const AddPlantScreen({Key? key}) : super(key: key);
 
@@ -441,14 +472,61 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           const SnackBar(
             content: Text('Plant added successfully! 🌱'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
         
-        // Return the created plant ID so the calling screen can navigate to it
-        Navigator.pop(context, {
-          'success': true,
-          'plantId': plantId,
-        });
+        // ⚠️ IMPORTANT: DO NOT DELETE THIS AUTOMATIC NAVIGATION FUNCTIONALITY ⚠️
+        // This feature automatically redirects users to their newly created plant's details page
+        // instead of just going back to the previous screen. This provides a much better UX.
+        // 
+        // If you need to modify this behavior:
+        // 1. Test thoroughly to ensure the change doesn't break user experience
+        // 2. Consider adding a user preference option rather than removing the feature
+        // 3. Update this comment to reflect any changes made
+        // 
+        // Current behavior: User creates plant → Automatically redirected to PlantDetailsScreen
+        // Expected user flow: Add Plant → See Success Message → View New Plant Details
+        
+        // Navigate directly to the new plant's details page
+        try {
+          // Get the plant data from Firestore to pass to PlantDetailsScreen
+          final plantDoc = await FirebaseFirestore.instance
+              .collection('plants')
+              .doc(plantId)
+              .get();
+          
+          if (plantDoc.exists) {
+            final plantData = plantDoc.data()!;
+            plantData['id'] = plantId;
+            final newPlant = Plant.fromMap(plantData);
+            
+            // Navigate to the new plant's details page using pushReplacement
+            // This ensures the user can't accidentally go back to the add plant form
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PlantDetailsScreen(plant: newPlant),
+              ),
+            );
+          } else {
+            // Fallback: return to previous screen with plant ID
+            // This should rarely happen but provides safety if Firestore query fails
+            print('⚠️ AddPlantScreen: Plant not found in Firestore, using fallback navigation');
+            Navigator.pop(context, {
+              'success': true,
+              'plantId': plantId,
+            });
+          }
+        } catch (e) {
+          print('❌ Error navigating to new plant: $e');
+          // Fallback: return to previous screen with plant ID
+          // This ensures the app doesn't crash if navigation fails
+          Navigator.pop(context, {
+            'success': true,
+            'plantId': plantId,
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -913,9 +991,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _addPlant,
+                        onPressed: (_isLoading || _isAnalyzing) ? null : _addPlant,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accentGreen,
+                          backgroundColor: (_isLoading || _isAnalyzing) ? Colors.grey.shade400 : AppTheme.accentGreen,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           shape: RoundedRectangleBorder(
@@ -945,20 +1023,42 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                   ),
                                 ],
                               )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.add, size: 20),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'Add Plant',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            : _isAnalyzing
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        'Analyzing Photo...',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.add, size: 20),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Add Plant',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
                       ),
                     ),
                     
