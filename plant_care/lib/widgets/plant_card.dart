@@ -290,13 +290,6 @@ class _PlantCardState extends State<PlantCard> {
                         color: Colors.white.withOpacity(0.3),
                         width: 1,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentGreen.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: IconButton(
                       onPressed: _isWatering ? null : _handleWater,
