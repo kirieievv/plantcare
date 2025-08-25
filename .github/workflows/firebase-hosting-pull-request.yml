@@ -17,14 +17,17 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.1'
+          flutter-version: '3.8.1'
           channel: 'stable'
       
+      - name: Flutter doctor
+        run: flutter doctor -v
+        
       - name: Get dependencies
         run: flutter pub get
         
       - name: Build web app
-        run: flutter build web --release
+        run: flutter build web --release --verbose
         
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
