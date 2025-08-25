@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
-// import 'package:plant_care/services/chatgpt_service.dart'; // Temporarily disabled
+import 'package:plant_care/services/chatgpt_service.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
@@ -172,17 +172,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
     try {
       final base64Image = base64Encode(imageBytes);
-      // final recommendations = await ChatGPTService.analyzePlantPhoto(base64Image); // Temporarily disabled
-      final recommendations = <String, dynamic>{
-        'general_description': 'AI analysis temporarily unavailable',
-        'name': 'Plant',
-        'moisture_level': 'Moderate',
-        'light': 'Bright indirect light',
-        'watering_frequency': 7,
-        'watering_amount': 'Until soil is moist',
-        'specific_issues': 'Please check plant care manually',
-        'care_tips': 'Monitor soil moisture and light conditions'
-      };
+      final recommendations = await ChatGPTService.analyzePlantPhoto(base64Image);
       
       setState(() {
         _aiGeneralDescription = recommendations['general_description'];
@@ -222,8 +212,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
   Future<void> _testApiConnection() async {
     try {
-      // final isAvailable = await ChatGPTService.isApiAvailable(); // Temporarily disabled
-      final isAvailable = false; // AI service temporarily unavailable
+      final isAvailable = await ChatGPTService.isApiAvailable();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -261,17 +250,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
     try {
       final base64Image = base64Encode(_selectedImageBytes!);
-      // final recommendations = await ChatGPTService.analyzePlantPhoto(base64Image); // Temporarily disabled
-      final recommendations = <String, dynamic>{
-        'general_description': 'AI analysis temporarily unavailable',
-        'name': 'Plant',
-        'moisture_level': 'Moderate',
-        'light': 'Bright indirect light',
-        'watering_frequency': 7,
-        'watering_amount': 'Until soil is moist',
-        'specific_issues': 'Please check plant care manually',
-        'care_tips': 'Monitor soil moisture and light conditions'
-      };
+      final recommendations = await ChatGPTService.analyzePlantPhoto(base64Image);
       
       setState(() {
         _aiGeneralDescription = recommendations['general_description'];
