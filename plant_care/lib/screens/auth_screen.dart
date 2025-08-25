@@ -110,14 +110,14 @@ class _AuthScreenState extends State<AuthScreen> {
         child: SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).padding.bottom + 60,
+              bottom: MediaQuery.of(context).padding.bottom + 30,
             ),
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.85,
+                    maxHeight: MediaQuery.of(context).size.height * 0.8,
                   ),
                   child: Card(
                     elevation: 8,
@@ -125,213 +125,207 @@ class _AuthScreenState extends State<AuthScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(14.0),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Flexible header section
-                            Flexible(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // App Icon and Title
-                                  Icon(
-                                    Icons.local_florist,
-                                    size: 44,
-                                    color: Colors.green.shade600,
+                            // Compact header section
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // App Icon and Title
+                                Icon(
+                                  Icons.local_florist,
+                                  size: 40,
+                                  color: Colors.green.shade600,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Plant Care',
+                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Plant Care',
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                      color: Colors.green.shade700,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _isLogin ? 'Welcome back!' : 'Create your account',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: Colors.grey[600],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _isLogin ? 'Welcome back!' : 'Create your account',
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                             ),
 
-                            // Flexible form section
-                            Flexible(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Name field (only for sign up)
-                                  if (!_isLogin) ...[
-                                    TextFormField(
-                                      controller: _nameController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Full Name',
-                                        prefixIcon: Icon(Icons.person),
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.trim().isEmpty) {
-                                          return 'Please enter your name';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(height: 12),
-                                  ],
-
-                                  // Email field
+                            // Compact form section
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Name field (only for sign up)
+                                if (!_isLogin) ...[
                                   TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
+                                    controller: _nameController,
                                     decoration: const InputDecoration(
-                                      labelText: 'Email',
-                                      prefixIcon: Icon(Icons.email),
+                                      labelText: 'Full Name',
+                                      prefixIcon: Icon(Icons.person),
                                       border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                     ),
                                     validator: (value) {
                                       if (value == null || value.trim().isEmpty) {
-                                        return 'Please enter your email';
-                                      }
-                                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                        return 'Please enter a valid email';
+                                        return 'Please enter your name';
                                       }
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
+                                ],
 
-                                  // Password field
-                                  TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: true,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Password',
-                                      prefixIcon: Icon(Icons.lock),
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your password';
-                                      }
-                                      if (value.length < 6) {
-                                        return 'Password must be at least 6 characters';
-                                      }
-                                      return null;
-                                    },
+                                // Email field
+                                TextFormField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Email',
+                                    prefixIcon: Icon(Icons.email),
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                   ),
-                                  
-                                  // Remember Me checkbox (only show for login)
-                                  if (_isLogin) ...[
-                                    const SizedBox(height: 12),
-                                    Row(
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Please enter your email';
+                                    }
+                                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                      return 'Please enter a valid email';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+
+                                // Password field
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Password',
+                                    prefixIcon: Icon(Icons.lock),
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter your password';
+                                    }
+                                    if (value.length < 6) {
+                                      return 'Password must be at least 6 characters';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                
+                                // Remember Me checkbox (only show for login)
+                                if (_isLogin) ...[
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                        value: _rememberMe,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _rememberMe = value ?? true;
+                                          });
+                                        },
+                                        activeColor: Colors.green.shade600,
+                                      ),
+                                      const Text(
+                                        'Remember me for 30 days',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 16),
+
+                            // Compact action section
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Error message
+                                if (_errorMessage.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.red.shade200),
+                                    ),
+                                    child: Row(
                                       children: [
-                                        Checkbox(
-                                          value: _rememberMe,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _rememberMe = value ?? true;
-                                            });
-                                          },
-                                          activeColor: Colors.green.shade600,
-                                        ),
-                                        const Text(
-                                          'Remember me for 30 days',
-                                          style: TextStyle(fontSize: 14),
+                                        Icon(Icons.error, color: Colors.red.shade600, size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _errorMessage,
+                                            style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 20),
+                                  ),
+                                if (_errorMessage.isNotEmpty) const SizedBox(height: 10),
 
-                            // Flexible action section
-                            Flexible(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Error message
-                                  if (_errorMessage.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.shade50,
+                                // Submit button
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 40,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _submitForm,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green.shade600,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.red.shade200),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.error, color: Colors.red.shade600, size: 20),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              _errorMessage,
-                                              style: TextStyle(color: Colors.red.shade700),
+                                    ),
+                                    child: _isLoading
+                                        ? const SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                             ),
+                                          )
+                                        : Text(
+                                            _isLogin ? 'Log in' : 'Registration',
+                                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                  if (_errorMessage.isNotEmpty) const SizedBox(height: 12),
-
-                                  // Submit button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 44,
-                                    child: ElevatedButton(
-                                      onPressed: _isLoading ? null : _submitForm,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green.shade600,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      child: _isLoading
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                              ),
-                                            )
-                                          : Text(
-                                              _isLogin ? 'Log in' : 'Registration',
-                                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                            ),
-                                    ),
                                   ),
-                                  const SizedBox(height: 12),
+                                ),
+                                const SizedBox(height: 10),
 
-                                  // Toggle mode button
-                                  TextButton(
-                                    onPressed: _isLoading ? null : _toggleMode,
-                                    child: Text(
-                                      _isLogin
-                                          ? 'Don\'t have an account? Registration'
-                                          : 'Already have an account? Log in',
-                                      style: TextStyle(color: Colors.green.shade600),
-                                    ),
+                                // Toggle mode button
+                                TextButton(
+                                  onPressed: _isLoading ? null : _toggleMode,
+                                  child: Text(
+                                    _isLogin
+                                        ? 'Don\'t have an account? Registration'
+                                        : 'Already have an account? Log in',
+                                    style: TextStyle(color: Colors.green.shade600, fontSize: 14),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                             
-                            // Add bottom padding for mobile browsers
-                            const SizedBox(height: 40),
+                            // Minimal bottom padding for mobile browsers
+                            const SizedBox(height: 20),
                           ],
                         ),
                       ),
