@@ -297,9 +297,13 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.85,
-        constraints: const BoxConstraints(maxWidth: 450),
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxWidth: 450,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -720,6 +724,9 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                 ),
               ),
             ],
+            
+            // Add bottom padding for mobile
+            const SizedBox(height: 32),
           ],
         ),
       ),

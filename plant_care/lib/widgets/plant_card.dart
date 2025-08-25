@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:glassmorphism/glassmorphism.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
@@ -112,11 +111,10 @@ class _PlantCardState extends State<PlantCard> {
   @override
   Widget build(BuildContext context) {
     final daysUntilWatering = widget.plant.nextWatering.difference(DateTime.now()).inDays;
-    final wateringPercentage = _calculateWateringPercentage();
     
     return GlassmorphicContainer(
       width: double.infinity,
-      height: 140,
+      height: 100,
       borderRadius: 20,
       blur: 20,
       alignment: Alignment.center,
@@ -235,48 +233,10 @@ class _PlantCardState extends State<PlantCard> {
                   ),
                 ),
                 
-                // Watering Progress Indicator
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: AppTheme.lightGrey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: CircularPercentIndicator(
-                    radius: 30.0,
-                    lineWidth: 6.0,
-                    percent: wateringPercentage,
-                    center: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${daysUntilWatering.abs()}',
-                          style: AppTheme.bodyMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: _getWateringStatusColor(),
-                          ),
-                        ),
-                        Text(
-                          'days',
-                          style: AppTheme.bodySmall.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    progressColor: _getWateringStatusColor(),
-                    backgroundColor: AppTheme.lightGrey,
-                    circularStrokeCap: CircularStrokeCap.round,
-                  ),
-                ).animate().rotate(
-                  duration: 600.ms,
-                  delay: 300.ms,
-                ),
+                const Spacer(),
                 
                 // Water Button
                 if (widget.onWater != null) ...[
-                  const SizedBox(width: 12),
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -360,15 +320,5 @@ class _PlantCardState extends State<PlantCard> {
     } else {
       return 'Next watering in $days days';
     }
-  }
-
-  double _calculateWateringPercentage() {
-    final totalDays = widget.plant.wateringFrequency;
-    final daysLeft = widget.plant.nextWatering.difference(DateTime.now()).inDays;
-    
-    if (daysLeft <= 0) return 1.0; // Overdue
-    if (daysLeft >= totalDays) return 0.0; // Just watered
-    
-    return 1.0 - (daysLeft / totalDays);
   }
 } 
