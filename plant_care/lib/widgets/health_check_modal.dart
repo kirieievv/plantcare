@@ -227,18 +227,35 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
         String status = 'ok'; // Default to healthy
         
         // Check for signs of plant distress in the AI response
+        // Use more specific patterns to avoid false positives
         if (message.contains('wilted') || 
             message.contains('drooping') || 
             message.contains('yellow') || 
             message.contains('brown') || 
             message.contains('dry') || 
-            message.contains('issue') || 
-            message.contains('problem') || 
+            (message.contains('issue') && !message.contains('no issue') && !message.contains('no issues')) || 
+            (message.contains('problem') && !message.contains('no problem') && !message.contains('no problems')) || 
             message.contains('distress') ||
             message.contains('unhealthy') ||
             message.contains('dying') ||
-            message.contains('dead')) {
+            message.contains('dead') ||
+            message.contains('critical') ||
+            message.contains('urgent') ||
+            message.contains('emergency') ||
+            message.contains('severe') ||
+            message.contains('serious')) {
           status = 'issue';
+        }
+        
+        // Override to 'ok' if the message clearly indicates health
+        if (message.contains('healthy') || 
+            message.contains('thriving') || 
+            message.contains('good condition') ||
+            message.contains('no problems') ||
+            message.contains('no issues') ||
+            message.contains('appears healthy') ||
+            message.contains('looks good')) {
+          status = 'ok';
         }
         
         return {

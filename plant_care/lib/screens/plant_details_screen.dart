@@ -1899,6 +1899,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   bool _hasProblemsInText(String text) {
     print('🌱 _hasProblemsInText checking: "$text"');
     
+    // Check for positive health indicators first (these override negative ones)
+    if (text.contains('healthy') || 
+        text.contains('thriving') || 
+        text.contains('good condition') ||
+        text.contains('no problems') ||
+        text.contains('no issues') ||
+        text.contains('appears healthy') ||
+        text.contains('looks good') ||
+        text.contains('doing well') ||
+        text.contains('in good shape')) {
+      print('🌱 _hasProblemsInText: Found positive indicators - returning FALSE (no problems)');
+      return false;
+    }
+    
+    // Check for specific problem indicators (avoiding false positives)
     final hasProblems = text.contains('critical') || 
            text.contains('dying') || 
            text.contains('urgent') || 
@@ -1918,8 +1933,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
            text.contains('pest') ||
            text.contains('disease') ||
            text.contains('stress') ||
-           text.contains('problem') ||
-           text.contains('issue') ||
+           (text.contains('problem') && !text.contains('no problem') && !text.contains('no problems')) ||
+           (text.contains('issue') && !text.contains('no issue') && !text.contains('no issues')) ||
            text.contains('needs help') ||
            text.contains('trouble') ||
            text.contains('concern') ||
