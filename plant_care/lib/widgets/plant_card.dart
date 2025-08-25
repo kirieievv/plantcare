@@ -273,38 +273,41 @@ class _PlantCardState extends State<PlantCard> {
                       ),
                     ),
                     
-                    // Fixed-size Water Button - pill shape with centered icon
+                    // Fixed-size Water Button - pill shape with perfectly centered icon
                     if (widget.onWater != null) ...[
                       Container(
                         width: 56,
                         height: 48,
                         margin: const EdgeInsets.only(left: 8),
-                        child: FilledButton.tonalIcon(
-                          onPressed: _isWatering ? null : _handleWater,
-                          icon: _isWatering
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.water_drop,
-                                  color: AppTheme.accentGreen,
-                                  size: 24,
-                                ),
-                          label: const Text(''),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppTheme.accentGreen.withOpacity(0.1),
-                            foregroundColor: AppTheme.accentGreen,
-                            minimumSize: const Size(56, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: AppTheme.accentGreen.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _isWatering ? null : _handleWater,
+                            borderRadius: BorderRadius.circular(24),
+                            child: Center(
+                              child: _isWatering
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.water_drop,
+                                      color: AppTheme.accentGreen,
+                                      size: 24,
+                                    ),
                             ),
-                            padding: EdgeInsets.zero,
-                            elevation: 0,
                           ),
                         ),
                       ).animate().scale(
