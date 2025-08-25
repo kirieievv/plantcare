@@ -112,177 +112,210 @@ class _PlantCardState extends State<PlantCard> {
   Widget build(BuildContext context) {
     final daysUntilWatering = widget.plant.nextWatering.difference(DateTime.now()).inDays;
     
-    return GlassmorphicContainer(
-      width: double.infinity,
-      height: 100,
-      borderRadius: 20,
-      blur: 20,
-      alignment: Alignment.center,
-      border: 2,
-      linearGradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withOpacity(0.1),
-          Colors.white.withOpacity(0.05),
-        ],
-      ),
-      borderGradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withOpacity(0.5),
-          Colors.white.withOpacity(0.2),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                // Plant Image with enhanced styling
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: AppTheme.shadowMedium,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: widget.plant.imageUrl != null && widget.plant.imageUrl!.startsWith('data:image')
-                        ? Image.memory(
-                            base64Decode(widget.plant.imageUrl!.split(',')[1]),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildPlaceholderImage();
-                            },
-                          )
-                        : widget.plant.imageUrl != null && widget.plant.imageUrl!.startsWith('http')
-                            ? Image.network(
-                                widget.plant.imageUrl!,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+        
+        return GlassmorphicContainer(
+          width: double.infinity,
+          height: isCompact ? 120 : 100,
+          borderRadius: 20,
+          blur: 20,
+          alignment: Alignment.center,
+          border: 2,
+          linearGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.1),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          borderGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.5),
+              Colors.white.withOpacity(0.2),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    // Plant Image with enhanced styling
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: AppTheme.shadowMedium,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: widget.plant.imageUrl != null && widget.plant.imageUrl!.startsWith('data:image')
+                            ? Image.memory(
+                                base64Decode(widget.plant.imageUrl!.split(',')[1]),
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return _buildPlaceholderImage();
                                 },
                               )
-                            : _buildPlaceholderImage(),
-                  ),
-                ).animate().scale(
-                  duration: 300.ms,
-                  curve: Curves.easeOutBack,
-                ),
-                
-                const SizedBox(width: 16),
-                
-                // Plant Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Plant Name with animation
-                      Text(
-                        widget.plant.name,
-                        style: AppTheme.headingSmall.copyWith(
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ).animate().fadeIn(
-                        duration: 400.ms,
-                        delay: 100.ms,
+                            : widget.plant.imageUrl != null && widget.plant.imageUrl!.startsWith('http')
+                                ? Image.network(
+                                    widget.plant.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildPlaceholderImage();
+                                    },
+                                  )
+                                : _buildPlaceholderImage(),
                       ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // Watering Status with enhanced indicator
-                      Row(
+                    ).animate().scale(
+                      duration: 300.ms,
+                      curve: Curves.easeOutBack,
+                    ),
+                    
+                    const SizedBox(width: 16),
+                    
+                    // Plant Info - Expanded to prevent overflow
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: _getWateringStatusColor().withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.water_drop,
-                              color: _getWateringStatusColor(),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
+                          // Plant Name with animation - priority for space
                           Text(
-                            _getWateringStatusText(daysUntilWatering),
-                            style: AppTheme.bodyMedium.copyWith(
-                              color: _getWateringStatusColor(),
-                              fontWeight: FontWeight.w500,
+                            widget.plant.name,
+                            style: AppTheme.headingSmall.copyWith(
+                              color: AppTheme.textPrimary,
+                              fontWeight: FontWeight.bold,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ).animate().fadeIn(
+                            duration: 400.ms,
+                            delay: 100.ms,
                           ),
+                          
+                          const SizedBox(height: 8),
+                          
+                          // Watering Status with enhanced indicator
+                          if (isCompact) ...[
+                            // Compact layout: status on next line
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: _getWateringStatusColor().withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.water_drop,
+                                    color: _getWateringStatusColor(),
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    _getWateringStatusText(daysUntilWatering),
+                                    style: AppTheme.bodyMedium.copyWith(
+                                      color: _getWateringStatusColor(),
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ] else ...[
+                            // Standard layout: status on same line
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: _getWateringStatusColor().withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.water_drop,
+                                    color: _getWateringStatusColor(),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    _getWateringStatusText(daysUntilWatering),
+                                    style: AppTheme.bodyMedium.copyWith(
+                                      color: _getWateringStatusColor(),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
-                      ).animate().slideX(
-                        begin: 0.3,
-                        duration: 500.ms,
-                        delay: 200.ms,
+                      ),
+                    ),
+                    
+                    // Fixed-size Water Button - never collides with text
+                    if (widget.onWater != null) ...[
+                      SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: FilledButton.tonalIcon(
+                          onPressed: _isWatering ? null : _handleWater,
+                          icon: _isWatering
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.water_drop,
+                                  color: AppTheme.accentGreen,
+                                  size: 24,
+                                ),
+                          label: const Text(''),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppTheme.accentGreen.withOpacity(0.1),
+                            foregroundColor: AppTheme.accentGreen,
+                            minimumSize: const Size(56, 56),
+                            shape: const StadiumBorder(),
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ).animate().scale(
+                        duration: 400.ms,
+                        delay: 400.ms,
+                        curve: Curves.elasticOut,
                       ),
                     ],
-                  ),
+                  ],
                 ),
-                
-                const Spacer(),
-                
-                // Water Button
-                if (widget.onWater != null) ...[
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.accentGreen,
-                          AppTheme.accentGreen.withOpacity(0.8),
-                        ],
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      onPressed: _isWatering ? null : _handleWater,
-                      icon: _isWatering
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Icon(
-                              Icons.water_drop,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        padding: const EdgeInsets.all(12),
-                      ),
-                    ),
-                  ).animate().scale(
-                    duration: 400.ms,
-                    delay: 400.ms,
-                    curve: Curves.elasticOut,
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -312,13 +345,13 @@ class _PlantCardState extends State<PlantCard> {
 
   String _getWateringStatusText(int days) {
     if (days < 0) {
-      return 'Overdue by ${days.abs()} days';
+      return 'Overdue ${days.abs()}d';
     } else if (days == 0) {
-      return 'Water today!';
+      return 'Watering today';
     } else if (days == 1) {
-      return 'Water tomorrow';
+      return 'Watering tomorrow';
     } else {
-      return 'Next watering in $days days';
+      return 'Watering in ${days}d';
     }
   }
 } 

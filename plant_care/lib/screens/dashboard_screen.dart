@@ -339,7 +339,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatCard(String title, String value, IconData icon, Color color, Duration delay) {
     return GlassmorphicContainer(
       width: double.infinity,
-      height: 200,
+      height: 140,
       borderRadius: 20,
       blur: 20,
       alignment: Alignment.center,
@@ -361,44 +361,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 40,
+              size: 32,
               color: color,
             ).animate().scale(
               duration: 400.ms,
               delay: delay,
               curve: Curves.elasticOut,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Text(
               value,
               style: AppTheme.headingLarge.copyWith(
                 color: color,
-                fontSize: 36,
+                fontSize: 28,
               ),
             ).animate().fadeIn(
               duration: 400.ms,
               delay: delay + 200.ms,
             ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: AppTheme.bodyMedium.copyWith(
-                color: AppTheme.textSecondary,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
+            const SizedBox(height: 8),
+            Flexible(
+              child: Text(
+                title,
+                style: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ).animate().fadeIn(
+                duration: 400.ms,
+                delay: delay + 400.ms,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ).animate().fadeIn(
-              duration: 400.ms,
-              delay: delay + 400.ms,
             ),
           ],
         ),
@@ -425,7 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         children: List.generate(3, (index) => Expanded(
           child: Container(
-            height: 200,
+            height: 140,
             margin: EdgeInsets.only(right: index < 2 ? 16 : 0),
             decoration: BoxDecoration(
               color: AppTheme.white,
