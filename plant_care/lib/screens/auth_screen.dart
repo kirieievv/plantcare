@@ -266,10 +266,10 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                           if (_errorMessage.isNotEmpty) const SizedBox(height: 12),
 
-                          // Submit button - increased height to prevent text cropping
+                          // Submit button - fixed styling to match outlined button dimensions
                           SizedBox(
                             width: double.infinity,
-                            height: 52,
+                            height: 40,
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _submitForm,
                               style: ElevatedButton.styleFrom(
@@ -278,6 +278,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                               ),
                               child: _isLoading
                                   ? const SizedBox(
@@ -290,7 +291,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                     )
                                   : Text(
                                       _isLogin ? 'Log in' : 'Registration',
-                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                     ),
                             ),
                           ),
