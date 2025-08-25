@@ -263,6 +263,11 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
   }
 
   Widget _buildPlaceholderImage() {
+    // Detect iPhone SE for responsive sizing
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isIPhoneSE = screenWidth == 375 && screenHeight == 667;
+    
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.accentGreen.withOpacity(0.1),
@@ -273,19 +278,21 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
         children: [
           Icon(
             Icons.photo_camera,
-            size: 48,
+            size: isIPhoneSE ? 32 : 48,
             color: AppTheme.accentGreen.withOpacity(0.6),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Upload Plant Photo',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.accentGreen.withOpacity(0.7),
-              fontWeight: FontWeight.w500,
+          if (!isIPhoneSE) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Upload Plant Photo',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.accentGreen.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
+          ],
         ],
       ),
     );
@@ -293,16 +300,27 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
 
   @override
   Widget build(BuildContext context) {
+    // Detect iPhone SE and other small screens
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isIPhoneSE = screenWidth == 375 && screenHeight == 667;
+    final isSmallScreen = screenHeight < 700;
+    
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: 16, 
+        vertical: isIPhoneSE ? 96 : (isSmallScreen ? 48 : 32),
+      ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
         constraints: BoxConstraints(
           maxWidth: 450,
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxHeight: isIPhoneSE 
+              ? screenHeight * 0.4 
+              : (isSmallScreen ? screenHeight * 0.7 : screenHeight * 0.8),
         ),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -321,7 +339,12 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
           children: [
             // Header with improved design
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+              padding: EdgeInsets.fromLTRB(
+                20, 
+                isIPhoneSE ? 12 : 20, 
+                20, 
+                isIPhoneSE ? 8 : 16
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.only(
@@ -361,7 +384,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                         child: Text(
                           'Health Check',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: isIPhoneSE ? 18 : 22,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textPrimary,
                             letterSpacing: -0.5,
@@ -395,11 +418,11 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                     ],
                   ),
                   
-                  const SizedBox(height: 16),
+                  SizedBox(height: isIPhoneSE ? 8 : 16),
                   
                   // Instructions with improved styling
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(isIPhoneSE ? 6 : 12),
                     decoration: BoxDecoration(
                       color: AppTheme.accentGreen.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(10),
@@ -420,7 +443,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                           child: Text(
                             'Upload a photo of ${widget.plantName} for AI health analysis',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: isIPhoneSE ? 12 : 14,
                               color: AppTheme.accentGreen,
                               fontWeight: FontWeight.w500,
                               height: 1.3,
@@ -436,7 +459,12 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
             
             // Image Upload Area with improved design
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              padding: EdgeInsets.fromLTRB(
+                20, 
+                isIPhoneSE ? 8 : 16, 
+                20, 
+                isIPhoneSE ? 8 : 16
+              ),
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -461,9 +489,9 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                     // Image Display Area
                     Center(
                       child: Container(
-                        width: 180,
-                        height: 180,
-                        margin: const EdgeInsets.all(16),
+                        width: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
+                        height: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
+                        margin: EdgeInsets.all(isIPhoneSE ? 0 : (isSmallScreen ? 8 : 16)),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
@@ -485,17 +513,17 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                                     borderRadius: BorderRadius.circular(12),
                                     child: Image.memory(
                                       _selectedImageBytes!,
-                                      width: 180,
-                                      height: 180,
+                                      width: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
+                                      height: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
                                       fit: BoxFit.cover,
                                       errorBuilder: (context, error, stackTrace) {
                                         return Container(
-                                          width: 180,
-                                          height: 180,
+                                          width: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
+                                          height: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
                                           color: AppTheme.accentGreen.withOpacity(0.1),
                                           child: Icon(
                                             Icons.image,
-                                            size: 56,
+                                            size: isIPhoneSE ? 32 : 56,
                                             color: AppTheme.accentGreen,
                                           ),
                                         );
@@ -541,7 +569,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                       ),
                     ),
                     
-                    const SizedBox(height: 16),
+                    SizedBox(height: isIPhoneSE ? 0 : (isSmallScreen ? 8 : 16)),
                     
                     // Upload Button with improved styling
                     Center(
@@ -554,16 +582,19 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                         ),
                         label: Text(
                           _selectedImageBytes != null ? 'Change Image' : 'Upload Image',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                            fontSize: isIPhoneSE ? 12 : 14,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.accentGreen,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isIPhoneSE ? 16 : 24, 
+                            vertical: isIPhoneSE ? 8 : 12
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -573,13 +604,13 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: isIPhoneSE ? 1 : (isSmallScreen ? 8 : 16)),
                     
                     if (_selectedImageBytes != null) ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: isIPhoneSE ? 8 : (isSmallScreen ? 12 : 16)),
                       Container(
-                        padding: const EdgeInsets.all(14),
-                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        padding: EdgeInsets.all(isIPhoneSE ? 6 : 8),
+                        margin: EdgeInsets.fromLTRB(16, 0, 16, isIPhoneSE ? 6 : 8),
                         decoration: BoxDecoration(
                           color: AppTheme.accentGreen.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(12),
@@ -616,7 +647,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                                 style: TextStyle(
                                   color: AppTheme.accentGreen,
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontSize: isIPhoneSE ? 11 : 13,
                                 ),
                               ),
                             ),
@@ -652,10 +683,10 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                         ),
                   label: Text(
                     _isAnalyzing ? 'Analyzing...' : 'Analyze Health',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
-                      fontSize: 15,
+                      fontSize: isIPhoneSE ? 13 : 15,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -663,7 +694,9 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                         ? AppTheme.accentGreen 
                         : Colors.grey.shade300,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(
+                      vertical: isIPhoneSE ? 8 : 16
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -726,7 +759,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
             ],
             
             // Add bottom padding for mobile
-            const SizedBox(height: 32),
+            SizedBox(height: isIPhoneSE ? 0 : (isSmallScreen ? 12 : 20)),
           ],
         ),
       ),
