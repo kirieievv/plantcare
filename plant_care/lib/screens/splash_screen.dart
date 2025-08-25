@@ -1,30 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:plant_care/screens/auth_screen.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final screenWidth = mediaQuery.size.width;
-    final isSmallScreen = screenHeight < 700;
-    final isVerySmallScreen = screenHeight < 600;
-    
-    // Dynamic sizing based on screen dimensions
-    final iconSize = isVerySmallScreen ? 60.0 : (isSmallScreen ? 70.0 : 80.0);
-    final titleSize = isVerySmallScreen ? 24.0 : (isSmallScreen ? 28.0 : 32.0);
-    final subtitleSize = isVerySmallScreen ? 14.0 : (isSmallScreen ? 16.0 : 18.0);
-    final buttonHeight = isVerySmallScreen ? 44.0 : 48.0;
-    final buttonTextSize = isVerySmallScreen ? 13.0 : 14.0;
-    final descriptionTextSize = isVerySmallScreen ? 12.0 : 14.0;
-    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -32,187 +13,164 @@ class _SplashScreenState extends State<SplashScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.green.shade50,
               Colors.green.shade100,
+              Colors.green.shade50,
             ],
           ),
         ),
         child: SafeArea(
-          bottom: true,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: isVerySmallScreen ? 40 : 50,
-                  bottom: isVerySmallScreen ? 40 : 50,
-                ),
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 40,
+            ),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - (isVerySmallScreen ? 40 : 60),
-                    maxHeight: constraints.maxHeight - (isVerySmallScreen ? 40 : 60),
+                    maxHeight: MediaQuery.of(context).size.height * 0.75,
                   ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Top section with icon and title
-                        Flexible(
-                          flex: 2,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.local_florist,
-                                size: iconSize,
-                                color: Colors.green.shade600,
-                              ),
-                              SizedBox(height: isVerySmallScreen ? 6 : 8),
-                              Text(
-                                'Plant Care',
-                                style: TextStyle(
-                                  fontSize: titleSize,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade800,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: isVerySmallScreen ? 3 : 4),
-                              Text(
-                                'Your personal plant care assistant',
-                                style: TextStyle(
-                                  fontSize: subtitleSize,
-                                  color: Colors.grey.shade700,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Compact top section
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // App Icon and Title
+                          Icon(
+                            Icons.local_florist,
+                            size: 70,
+                            color: Colors.green.shade600,
                           ),
-                        ),
-                        
-                        // Minimal spacing between sections
-                        SizedBox(height: isVerySmallScreen ? 4 : 6),
-                        
-                        // Middle section with buttons
-                        Flexible(
-                          flex: 2,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Registration Button
-                              SizedBox(
-                                width: double.infinity,
-                                height: buttonHeight,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => const AuthScreen(isRegistration: true),
-                                      ),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green.shade600,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 4,
-                                  ),
-                                  child: Text(
-                                    'Registration',
-                                    style: TextStyle(
-                                      fontSize: buttonTextSize,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: isVerySmallScreen ? 4 : 6),
-                              
-                              // Log in Button
-                              SizedBox(
-                                width: double.infinity,
-                                height: buttonHeight,
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => const AuthScreen(isRegistration: false),
-                                      ),
-                                    );
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.green.shade600,
-                                    side: BorderSide(color: Colors.green.shade600, width: 2),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Log in',
-                                    style: TextStyle(
-                                      fontSize: buttonTextSize,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 16),
+                          Text(
+                            'Plant Care',
+                            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        
-                        // Minimal spacing between sections
-                        SizedBox(height: isVerySmallScreen ? 4 : 6),
-                        
-                        // Bottom section with description
-                        Flexible(
-                          flex: 1,
-                          child: Container(
+                          const SizedBox(height: 6),
+                          Text(
+                            'Your personal plant care assistant',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Compact button section
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Registration Button
+                          SizedBox(
                             width: double.infinity,
-                            padding: EdgeInsets.all(isVerySmallScreen ? 10 : 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.green.shade200),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.eco,
-                                  size: isVerySmallScreen ? 16 : 18,
-                                  color: Colors.green.shade600,
-                                ),
-                                SizedBox(height: isVerySmallScreen ? 4 : 6),
-                                Text(
-                                  'Monitor your plants, get care tips, and track their health with our smart plant care system.',
-                                  style: TextStyle(
-                                    fontSize: descriptionTextSize,
-                                    color: Colors.grey.shade700,
-                                    height: 1.3,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const AuthScreen(isRegistration: true),
                                   ),
-                                  textAlign: TextAlign.center,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green.shade600,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ],
+                                elevation: 4,
+                              ),
+                              child: const Text(
+                                'Registration',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 10),
+                          
+                          // Log in Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const AuthScreen(isRegistration: false),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.green.shade600,
+                                side: BorderSide(color: Colors.green.shade600, width: 2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'Log in',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Compact description section
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.green.shade200, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.eco,
+                              color: Colors.green.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Monitor your plants, get care tips, and track their health with our smart plant care system.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: 12,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Minimal bottom spacing
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),
