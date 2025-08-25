@@ -312,15 +312,15 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       ),
       insetPadding: EdgeInsets.symmetric(
         horizontal: 16, 
-        vertical: isIPhoneSE ? 96 : (isSmallScreen ? 48 : 32),
+        vertical: isIPhoneSE ? 88 : (isSmallScreen ? 48 : 32),
       ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
         constraints: BoxConstraints(
           maxWidth: 450,
           maxHeight: isIPhoneSE 
-              ? screenHeight * 0.4 
-              : (isSmallScreen ? screenHeight * 0.7 : screenHeight * 0.8),
+              ? screenHeight * 0.85 
+              : (isSmallScreen ? screenHeight * 0.8 : screenHeight * 0.85),
         ),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -457,52 +457,32 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
               ),
             ),
             
-            // Image Upload Area with improved design
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                20, 
-                isIPhoneSE ? 8 : 16, 
-                20, 
-                isIPhoneSE ? 8 : 16
-              ),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _selectedImageBytes != null 
-                        ? AppTheme.accentGreen.withOpacity(0.4)
-                        : Colors.grey.shade200,
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
+            // Flexible content area that adapts to content size
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    // Image Display Area
+                    // Image Upload Area with improved design
                     Center(
                       child: Container(
-                        width: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
-                        height: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
-                        margin: EdgeInsets.all(isIPhoneSE ? 0 : (isSmallScreen ? 8 : 16)),
+                        width: isIPhoneSE ? 60 : (isSmallScreen ? 120 : 180),
+                        height: isIPhoneSE ? 60 : (isSmallScreen ? 120 : 180),
+                        margin: EdgeInsets.all(isIPhoneSE ? 2 : (isSmallScreen ? 8 : 16)),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppTheme.accentGreen.withOpacity(0.3),
-                            width: 2,
+                            color: _selectedImageBytes != null 
+                                ? AppTheme.accentGreen.withOpacity(0.4)
+                                : Colors.grey.shade200,
+                            width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.accentGreen.withOpacity(0.15),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -513,13 +493,13 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                                     borderRadius: BorderRadius.circular(12),
                                     child: Image.memory(
                                       _selectedImageBytes!,
-                                      width: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
-                                      height: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
+                                      width: isIPhoneSE ? 60 : (isSmallScreen ? 120 : 180),
+                                      height: isIPhoneSE ? 60 : (isSmallScreen ? 120 : 180),
                                       fit: BoxFit.cover,
                                       errorBuilder: (context, error, stackTrace) {
                                         return Container(
-                                          width: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
-                                          height: isIPhoneSE ? 40 : (isSmallScreen ? 120 : 180),
+                                          width: isIPhoneSE ? 60 : (isSmallScreen ? 120 : 180),
+                                          height: isIPhoneSE ? 60 : (isSmallScreen ? 120 : 180),
                                           color: AppTheme.accentGreen.withOpacity(0.1),
                                           child: Icon(
                                             Icons.image,
@@ -569,7 +549,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                       ),
                     ),
                     
-                    SizedBox(height: isIPhoneSE ? 0 : (isSmallScreen ? 8 : 16)),
+                    SizedBox(height: isIPhoneSE ? 2 : (isSmallScreen ? 8 : 16)),
                     
                     // Upload Button with improved styling
                     Center(
@@ -604,7 +584,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                       ),
                     ),
                     
-                    SizedBox(height: isIPhoneSE ? 1 : (isSmallScreen ? 8 : 16)),
+                    SizedBox(height: isIPhoneSE ? 3 : (isSmallScreen ? 8 : 16)),
                     
                     if (_selectedImageBytes != null) ...[
                       SizedBox(height: isIPhoneSE ? 8 : (isSmallScreen ? 12 : 16)),
@@ -655,111 +635,111 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                         ),
                       ),
                     ],
+                    
+                    // Analyze Button with improved styling
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _selectedImageBytes != null && !_isAnalyzing ? _analyzeHealth : null,
+                          icon: _isAnalyzing 
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.health_and_safety,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                          label: Text(
+                            _isAnalyzing ? 'Analyzing...' : 'Analyze Health',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: isIPhoneSE ? 13 : 15,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _selectedImageBytes != null 
+                                ? AppTheme.accentGreen 
+                                : Colors.grey.shade300,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              vertical: isIPhoneSE ? 8 : 16
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: _selectedImageBytes != null ? 3 : 0,
+                            shadowColor: AppTheme.accentGreen.withOpacity(0.3),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    if (_errorMessage != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.red.shade200,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.1),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red.shade600,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    
+                    // Add bottom padding for mobile
+                    SizedBox(height: isIPhoneSE ? 4 : (isSmallScreen ? 12 : 20)),
                   ],
                 ),
               ),
             ),
-            
-            // Analyze Button with improved styling
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _selectedImageBytes != null && !_isAnalyzing ? _analyzeHealth : null,
-                  icon: _isAnalyzing 
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Icon(
-                          Icons.health_and_safety,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                  label: Text(
-                    _isAnalyzing ? 'Analyzing...' : 'Analyze Health',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: isIPhoneSE ? 13 : 15,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _selectedImageBytes != null 
-                        ? AppTheme.accentGreen 
-                        : Colors.grey.shade300,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      vertical: isIPhoneSE ? 8 : 16
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: _selectedImageBytes != null ? 3 : 0,
-                    shadowColor: AppTheme.accentGreen.withOpacity(0.3),
-                  ),
-                ),
-              ),
-            ),
-            
-            if (_errorMessage != null) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.red.shade200,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.1),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.error_outline,
-                          color: Colors.red.shade600,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(
-                            color: Colors.red.shade700,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            
-            // Add bottom padding for mobile
-            SizedBox(height: isIPhoneSE ? 0 : (isSmallScreen ? 12 : 20)),
           ],
         ),
       ),
