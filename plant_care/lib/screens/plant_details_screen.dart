@@ -525,7 +525,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Next Watering',
+            'Watering',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -1899,21 +1899,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   bool _hasProblemsInText(String text) {
     print('🌱 _hasProblemsInText checking: "$text"');
     
-    // Check for positive health indicators first (these override negative ones)
-    if (text.contains('healthy') || 
-        text.contains('thriving') || 
-        text.contains('good condition') ||
-        text.contains('no problems') ||
-        text.contains('no issues') ||
-        text.contains('appears healthy') ||
-        text.contains('looks good') ||
-        text.contains('doing well') ||
-        text.contains('in good shape')) {
-      print('🌱 _hasProblemsInText: Found positive indicators - returning FALSE (no problems)');
-      return false;
-    }
-    
-    // Check for specific problem indicators (avoiding false positives)
+    // Check for specific problem indicators first (these are more reliable)
     final hasProblems = text.contains('critical') || 
            text.contains('dying') || 
            text.contains('urgent') || 
@@ -1942,7 +1928,32 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
            text.contains('sick') ||
            text.contains('poor health') ||
            text.contains('not thriving') ||
-           text.contains('struggling');
+           text.contains('struggling') ||
+           text.contains('wilted') ||
+           text.contains('drooping') ||
+           text.contains('turning yellow') ||
+           text.contains('brown spots') ||
+           text.contains('not in the best health') ||
+           text.contains('bounce back') ||
+           text.contains('recovery') ||
+           text.contains('tough times');
+    
+    // Only check for positive indicators if no problems were found
+    if (!hasProblems) {
+      // Check for positive health indicators (only if no problems detected)
+      if (text.contains('healthy') || 
+          text.contains('thriving') || 
+          text.contains('good condition') ||
+          text.contains('no problems') ||
+          text.contains('no issues') ||
+          text.contains('appears healthy') ||
+          text.contains('looks good') ||
+          text.contains('doing well') ||
+          text.contains('in good shape')) {
+        print('🌱 _hasProblemsInText: No problems found, positive indicators confirm - returning FALSE (no problems)');
+        return false;
+      }
+    }
     
     print('🌱 _hasProblemsInText result: $hasProblems');
     return hasProblems;
@@ -2624,7 +2635,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Next Watering',
+                        'Watering',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

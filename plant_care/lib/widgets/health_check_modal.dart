@@ -243,18 +243,28 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
             message.contains('urgent') ||
             message.contains('emergency') ||
             message.contains('severe') ||
-            message.contains('serious')) {
+            message.contains('serious') ||
+            message.contains('turning yellow') ||
+            message.contains('brown spots') ||
+            message.contains('not in the best health') ||
+            message.contains('bounce back') ||
+            message.contains('recovery') ||
+            message.contains('tough times') ||
+            message.contains('needs help') ||
+            message.contains('poor health') ||
+            message.contains('struggling') ||
+            message.contains('stress')) {
           status = 'issue';
         }
         
-        // Override to 'ok' if the message clearly indicates health
-        if (message.contains('healthy') || 
+        // Only override to 'ok' if the message clearly indicates health AND no problems were detected above
+        if (status == 'ok' && (message.contains('healthy') || 
             message.contains('thriving') || 
             message.contains('good condition') ||
             message.contains('no problems') ||
             message.contains('no issues') ||
             message.contains('appears healthy') ||
-            message.contains('looks good')) {
+            message.contains('looks good'))) {
           status = 'ok';
         }
         
