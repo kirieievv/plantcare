@@ -881,7 +881,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16), // Reduced from 20 to 16
       decoration: BoxDecoration(
         color: isBadAdvice ? Colors.red.shade50 : Colors.green.shade50,
         borderRadius: BorderRadius.circular(16),
@@ -902,37 +902,40 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               Icon(
                 isBadAdvice ? Icons.warning : Icons.eco,
                 color: isBadAdvice ? Colors.red.shade600 : Colors.green.shade600,
-                size: 20,
+                size: 18, // Reduced from 20 to 18
               ),
               const SizedBox(width: 8),
-              Text(
-                isBadAdvice ? 'Plant Needs Help!' : 'AI Care Assistant',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isBadAdvice ? Colors.red.shade700 : Colors.green.shade700,
+              Expanded( // Added Expanded to prevent overflow
+                child: Text(
+                  isBadAdvice ? 'Plant Needs Help!' : 'AI Care Assistant',
+                  style: TextStyle(
+                    fontSize: 15, // Reduced from 16 to 15
+                    fontWeight: FontWeight.bold,
+                    color: isBadAdvice ? Colors.red.shade700 : Colors.green.shade700,
+                  ),
+                  overflow: TextOverflow.ellipsis, // Added overflow handling
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10), // Reduced from 12 to 10
           Text(
             _plant.healthMessage!,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13, // Reduced from 14 to 13
               color: isBadAdvice ? Colors.red.shade800 : Colors.grey.shade800,
-              height: 1.4,
+              height: 1.3, // Reduced from 1.4 to 1.3
             ),
-            // Always show full text - no truncation
+            // Ensure text fits and can be scrolled if needed
             maxLines: null,
             overflow: TextOverflow.visible,
           ),
           
-          // Add helpful tips for bad advice
+          // Add helpful tips for bad advice - more compact
           if (isBadAdvice) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12), // Reduced from 16 to 12
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10), // Reduced from 12 to 10
               decoration: BoxDecoration(
                 color: Colors.red.shade100,
                 borderRadius: BorderRadius.circular(8),
@@ -946,20 +949,20 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       Icon(
                         Icons.lightbulb_outline,
                         color: Colors.red.shade700,
-                        size: 16,
+                        size: 14, // Reduced from 16 to 14
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'Quick Help Tips',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11, // Reduced from 12 to 11
                           fontWeight: FontWeight.bold,
                           color: Colors.red.shade700,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6), // Reduced from 8 to 6
                   Text(
                     '• Check soil moisture - may need immediate watering\n'
                     '• Move to appropriate lighting conditions\n'
@@ -967,9 +970,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     '• Take a new health check photo to track progress\n'
                     '• Consider repotting if roots are visible',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10, // Reduced from 11 to 10
                       color: Colors.red.shade800,
-                      height: 1.3,
+                      height: 1.2, // Reduced from 1.3 to 1.2
                     ),
                   ),
                 ],
@@ -977,12 +980,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
           ],
           
-          const SizedBox(height: 12),
+          const SizedBox(height: 10), // Reduced from 12 to 10
           if (_plant.lastHealthCheck != null)
           Text(
             'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10, // Reduced from 11 to 10
               color: Colors.grey.shade500,
               fontStyle: FontStyle.italic,
             ),
@@ -2362,11 +2365,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   //               Row(
                   //                 children: [
                   //                   Expanded(child: _buildNextWateringCard()),
-                  //                   const SizedBox(width: 16),
-                  //                   Expanded(child: _buildLightCard()),
-                  //                 ],
-                  //               ),
-                  //               const SizedBox(height: 16),
+                  //               //     const SizedBox(width: 16),
+                  //               //     Expanded(child: _buildLightCard()),
+                  //               //   ],
+                  //               // ),
+                  //               // const SizedBox(height: 16),
                   //               // Second row: 1 card
                   //               _buildMoistureCard(),
                   //             ],
@@ -2378,7 +2381,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   //               Expanded(child: _buildNextWateringCard()),
                   //               const SizedBox(width: 16),
                   //               Expanded(child: _buildLightCard()),
-                  //               const SizedBox(height: 16),
+                  //               const SizedBox(width: 16),
                   //               Expanded(child: _buildMoistureCard()),
                   //             ],
                   //           );
@@ -2396,10 +2399,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
           ),
           
-          // AI Care Assistant (green card)
+          // AI Care Assistant (green card) - More compact for mobile
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
               child: _buildAiCareCard(),
             ),
           ),
@@ -2407,14 +2410,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Care Section (Issues and Tips)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
               child: _buildDetailsAccordion(),
             ),
           ),
           
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth < 500) {
@@ -2444,7 +2447,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Health Check History (horizontal gallery)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
               child: _buildHealthHistoryGallery(),
             ),
           ),
@@ -2493,9 +2496,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
           ),
           
-          // Bottom padding
+          // Bottom padding - Increased for better mobile experience
           const SliverToBoxAdapter(
-            child: SizedBox(height: 24),
+            child: SizedBox(height: 32), // Increased from 24 to 32
           ),
         ],
       ),
