@@ -104,7 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await AuthService.signOut();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          MaterialPageRoute(builder: (context) => const AuthScreen(isRegistration: false)),
           (route) => false,
         );
       }

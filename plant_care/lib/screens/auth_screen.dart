@@ -4,7 +4,9 @@ import '../services/auth_service.dart';
 import 'dashboard_screen.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  final bool isRegistration;
+  
+  const AuthScreen({super.key, required this.isRegistration});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -16,10 +18,16 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   
-  bool _isLogin = true;
+  late bool _isLogin;
   bool _isLoading = false;
   bool _rememberMe = true; // Default to true for better UX
   String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _isLogin = !widget.isRegistration;
+  }
 
   @override
   void dispose() {
@@ -276,7 +284,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                     )
                                   : Text(
-                                      _isLogin ? 'Sign In' : 'Sign Up',
+                                      _isLogin ? 'Log in' : 'Registration',
                                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                     ),
                             ),
@@ -284,15 +292,15 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 12),
 
                           // Toggle mode button
-                          TextButton(
-                            onPressed: _isLoading ? null : _toggleMode,
-                            child: Text(
-                              _isLogin
-                                  ? 'Don\'t have an account? Sign Up'
-                                  : 'Already have an account? Sign In',
-                              style: TextStyle(color: Colors.green.shade600),
-                            ),
-                          ),
+                                                        TextButton(
+                                onPressed: _isLoading ? null : _toggleMode,
+                                child: Text(
+                                  _isLogin
+                                      ? 'Don\'t have an account? Registration'
+                                      : 'Already have an account? Log in',
+                                  style: TextStyle(color: Colors.green.shade600),
+                                ),
+                              ),
                           
                           // Add bottom padding for mobile browsers
                           const SizedBox(height: 16),

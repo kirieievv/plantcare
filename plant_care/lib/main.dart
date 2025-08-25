@@ -4,11 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
-import 'package:plant_care/screens/auth_screen.dart';
-
+import 'package:plant_care/screens/splash_screen.dart';
 import 'package:plant_care/screens/main_navigation_screen.dart';
 import 'package:plant_care/services/auth_service.dart';
-import 'package:plant_care/utils/app_theme.dart';
 
 
 void main() async {
@@ -178,8 +176,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return MainNavigationScreen(user: _user!, initialIndex: 0);
     }
 
-    // If no user, show auth screen
-    return const AuthScreen();
+    // If no user, show splash screen
+    return const SplashScreen();
   }
 }
 

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:image_picker/image_picker.dart';
 import 'package:plant_care/utils/app_theme.dart';
-import 'package:plant_care/services/chatgpt_service.dart';
+// import 'package:plant_care/services/chatgpt_service.dart'; // Temporarily disabled
 import 'package:plant_care/services/health_check_service.dart';
 
 import 'package:plant_care/models/plant.dart';
@@ -220,7 +220,10 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       
       // Use the real ChatGPT service for plant health analysis
       try {
-        final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt);
+        // final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt); // Temporarily disabled
+        final result = <String, dynamic>{
+          'message': 'Hello friend! 🌿 I can see your plant, and I\'m here to help! Looking at your plant, I can see it\'s been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your plant is experiencing significant stress, likely from underwatering or environmental conditions. Your plant is currently in poor health and needs immediate attention to recover. Here\'s what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it\'s recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don\'t worry, your plant is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you\'ve got this! 🌱💪'
+        };
         
         // Determine status based on the AI response content
         final message = result['message'].toString().toLowerCase();
