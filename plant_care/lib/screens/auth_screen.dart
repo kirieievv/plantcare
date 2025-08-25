@@ -103,8 +103,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 padding: EdgeInsets.only(
                   left: 20,
                   right: 20,
-                  top: isVerySmallScreen ? 20 : 30,
-                  bottom: isVerySmallScreen ? 20 : 30,
+                  top: isVerySmallScreen ? 40 : 50,
+                  bottom: isVerySmallScreen ? 40 : 50,
                 ),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
@@ -126,7 +126,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 size: iconSize,
                                 color: Colors.green.shade600,
                               ),
-                              SizedBox(height: isVerySmallScreen ? 8 : 10),
+                              SizedBox(height: isVerySmallScreen ? 6 : 8),
                               Text(
                                 _isLogin ? 'Welcome Back' : 'Create Account',
                                 style: TextStyle(
@@ -140,15 +140,15 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         
-                        // Reduced spacing between sections
-                        SizedBox(height: isVerySmallScreen ? 8 : 12),
+                        // Minimal spacing between sections
+                        SizedBox(height: isVerySmallScreen ? 4 : 6),
                         
                         // Form section
                         Flexible(
                           flex: 3,
                           child: Container(
                             width: double.infinity,
-                            padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
+                            padding: EdgeInsets.all(isVerySmallScreen ? 10 : 14),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
@@ -180,7 +180,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         ),
                                         contentPadding: EdgeInsets.symmetric(
                                           horizontal: 12,
-                                          vertical: isVerySmallScreen ? 10 : 12,
+                                          vertical: isVerySmallScreen ? 8 : 10,
                                         ),
                                       ),
                                       validator: (value) {
@@ -190,7 +190,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         return null;
                                       },
                                     ),
-                                    SizedBox(height: isVerySmallScreen ? 8 : 12),
+                                    SizedBox(height: isVerySmallScreen ? 6 : 8),
                                   ],
                                   
                                   // Email field
@@ -206,7 +206,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                       contentPadding: EdgeInsets.symmetric(
                                         horizontal: 12,
-                                        vertical: isVerySmallScreen ? 10 : 12,
+                                        vertical: isVerySmallScreen ? 8 : 10,
                                       ),
                                     ),
                                     validator: (value) {
@@ -219,7 +219,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       return null;
                                     },
                                   ),
-                                  SizedBox(height: isVerySmallScreen ? 8 : 12),
+                                  SizedBox(height: isVerySmallScreen ? 6 : 8),
                                   
                                   // Password field
                                   TextFormField(
@@ -241,7 +241,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                       contentPadding: EdgeInsets.symmetric(
                                         horizontal: 12,
-                                        vertical: isVerySmallScreen ? 10 : 12,
+                                        vertical: isVerySmallScreen ? 8 : 10,
                                       ),
                                     ),
                                     validator: (value) {
@@ -257,7 +257,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   
                                   // Remember me checkbox (only for login)
                                   if (_isLogin) ...[
-                                    SizedBox(height: isVerySmallScreen ? 8 : 12),
+                                    SizedBox(height: isVerySmallScreen ? 6 : 8),
                                     Row(
                                       children: [
                                         Checkbox(
@@ -272,7 +272,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                     ),
                                   ],
                                   
-                                  SizedBox(height: isVerySmallScreen ? 12 : 16),
+                                  SizedBox(height: isVerySmallScreen ? 8 : 12),
                                   
                                   // Submit button
                                   SizedBox(
@@ -311,8 +311,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         
-                        // Reduced spacing between sections
-                        SizedBox(height: isVerySmallScreen ? 8 : 12),
+                        // Minimal spacing between sections
+                        SizedBox(height: isVerySmallScreen ? 4 : 6),
                         
                         // Toggle mode section
                         Flexible(
@@ -320,7 +320,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SizedBox(height: isVerySmallScreen ? 8 : 12),
+                              SizedBox(height: isVerySmallScreen ? 4 : 6),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
