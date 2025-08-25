@@ -110,7 +110,7 @@ class _AuthScreenState extends State<AuthScreen> {
         child: SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).padding.bottom + 20,
+              bottom: MediaQuery.of(context).padding.bottom + 40,
             ),
             child: Center(
               child: SingleChildScrollView(
@@ -121,7 +121,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -130,10 +130,10 @@ class _AuthScreenState extends State<AuthScreen> {
                           // App Icon and Title
                           Icon(
                             Icons.local_florist,
-                            size: 56,
+                            size: 48,
                             color: Colors.green.shade600,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           Text(
                             'Plant Care',
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -141,14 +141,14 @@ class _AuthScreenState extends State<AuthScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             _isLogin ? 'Welcome back!' : 'Create your account',
                             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Colors.grey[600],
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
 
                           // Name field (only for sign up)
                           if (!_isLogin) ...[
@@ -303,7 +303,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                           
                           // Add bottom padding for mobile browsers
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 32),
                         ],
                       ),
                     ),

@@ -21,7 +21,7 @@ class SplashScreen extends StatelessWidget {
         child: SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).padding.bottom + 20,
+              bottom: MediaQuery.of(context).padding.bottom + 40,
             ),
             child: Center(
               child: SingleChildScrollView(
@@ -29,13 +29,13 @@ class SplashScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App Icon and Title
+                                        // App Icon and Title
                     Icon(
                       Icons.local_florist,
-                      size: 120,
+                      size: 100,
                       color: Colors.green.shade600,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     Text(
                       'Plant Care',
                       style: Theme.of(context).textTheme.displayMedium?.copyWith(
@@ -43,20 +43,20 @@ class SplashScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                                              Text(
-                            'Your personal plant care assistant',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                    const SizedBox(height: 64),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your personal plant care assistant',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 48),
                     
                     // Registration Button
                     SizedBox(
                       width: double.infinity,
-                      height: 56,
+                      height: 48,
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).push(
@@ -75,16 +75,16 @@ class SplashScreen extends StatelessWidget {
                         ),
                         child: const Text(
                           'Registration',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     
                     // Log in Button
                     SizedBox(
                       width: double.infinity,
-                      height: 56,
+                      height: 48,
                       child: OutlinedButton(
                         onPressed: () {
                           Navigator.of(context).push(
@@ -102,16 +102,16 @@ class SplashScreen extends StatelessWidget {
                         ),
                         child: const Text(
                           'Log in',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
                     
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 32),
                     
                     // App description
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(16),
@@ -121,10 +121,10 @@ class SplashScreen extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.eco,
-                            size: 32,
+                            size: 28,
                             color: Colors.green.shade600,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           Text(
                             'Monitor your plants, get care tips, and track their health with our smart plant care system.',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -135,6 +135,9 @@ class SplashScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                    
+                    // Extra bottom spacing for mobile browsers
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
