@@ -213,7 +213,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         final currentUser = FirebaseAuth.instance.currentUser;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => MainNavigationScreen(user: currentUser),
+            builder: (context) => MainNavigationScreen(user: currentUser, initialIndex: 0),
           ),
           (route) => false,
         );
@@ -2301,7 +2301,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           final currentUser = FirebaseAuth.instance.currentUser;
                           Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(
-                              builder: (context) => MainNavigationScreen(user: currentUser),
+                              builder: (context) => MainNavigationScreen(user: currentUser, initialIndex: 0),
                             ),
                             (route) => false,
                           );

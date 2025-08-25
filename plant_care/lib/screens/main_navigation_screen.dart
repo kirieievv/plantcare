@@ -4,7 +4,6 @@ import 'package:plant_care/screens/plant_list_screen.dart';
 import 'package:plant_care/screens/add_plant_screen.dart';
 import 'package:plant_care/screens/profile_screen.dart';
 import 'package:plant_care/screens/settings_screen.dart';
-import 'package:plant_care/screens/plant_details_screen.dart';
 import 'package:plant_care/services/navigation_service.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/utils/app_theme.dart';
@@ -12,8 +11,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final User? user;
+  final int initialIndex;
 
-  const MainNavigationScreen({Key? key, this.user}) : super(key: key);
+  const MainNavigationScreen({Key? key, this.user, this.initialIndex = 0}) : super(key: key);
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -23,6 +23,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   
   List<Widget> _screens = [];
+  
+  // Method to change the current tab index
+  void changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
   
   @override
   void initState() {
@@ -35,7 +42,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
     
     _screens = [
-      DashboardScreen(user: widget.user),
+      DashboardScreen(user: widget.user, onTabChange: changeTab),
       const PlantListScreen(),
       const AddPlantScreen(), // ⚠️ IMPORTANT: This screen has automatic navigation feature
       const ProfileScreen(),
@@ -57,6 +64,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     
     // Check if user should return to a specific plant details page
     _checkNavigationState();
+    
+    // Set the initial index from the parameter
+    setState(() {
+      _currentIndex = widget.initialIndex;
+    });
   }
   
   Future<void> _checkNavigationState() async {
@@ -67,10 +79,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await NavigationService.clearNavigationState();
     print('🌱 MainNavigationScreen: Navigation state cleared, starting with home page');
     
-    // Set current index to 0 (Home/Dashboard) to ensure home page is shown
-    setState(() {
-      _currentIndex = 0;
-    });
+    // Only set current index to 0 if no initialIndex was specified
+    // This allows other screens to specify which tab should be selected
+    if (widget.initialIndex == 0) {
+      setState(() {
+        _currentIndex = 0;
+      });
+    }
   }
   
   @override

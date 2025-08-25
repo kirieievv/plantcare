@@ -205,10 +205,17 @@ class _PlantCardState extends State<PlantCard> {
                       // Watering Status with enhanced indicator
                       Row(
                         children: [
-                          Icon(
-                            Icons.water_drop,
-                            color: _getWateringStatusColor(),
-                            size: 16,
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: _getWateringStatusColor().withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.water_drop,
+                              color: _getWateringStatusColor(),
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -229,31 +236,39 @@ class _PlantCardState extends State<PlantCard> {
                 ),
                 
                 // Watering Progress Indicator
-                CircularPercentIndicator(
-                  radius: 30.0,
-                  lineWidth: 6.0,
-                  percent: wateringPercentage,
-                  center: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${daysUntilWatering.abs()}',
-                        style: AppTheme.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: _getWateringStatusColor(),
-                        ),
-                      ),
-                      Text(
-                        'days',
-                        style: AppTheme.bodySmall.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppTheme.lightGrey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  progressColor: _getWateringStatusColor(),
-                  backgroundColor: AppTheme.lightGrey,
-                  circularStrokeCap: CircularStrokeCap.round,
+                  child: CircularPercentIndicator(
+                    radius: 30.0,
+                    lineWidth: 6.0,
+                    percent: wateringPercentage,
+                    center: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${daysUntilWatering.abs()}',
+                          style: AppTheme.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: _getWateringStatusColor(),
+                          ),
+                        ),
+                        Text(
+                          'days',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    progressColor: _getWateringStatusColor(),
+                    backgroundColor: AppTheme.lightGrey,
+                    circularStrokeCap: CircularStrokeCap.round,
+                  ),
                 ).animate().rotate(
                   duration: 600.ms,
                   delay: 300.ms,
@@ -270,6 +285,10 @@ class _PlantCardState extends State<PlantCard> {
                           AppTheme.accentGreen,
                           AppTheme.accentGreen.withOpacity(0.8),
                         ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -293,7 +312,7 @@ class _PlantCardState extends State<PlantCard> {
                           : const Icon(
                               Icons.water_drop,
                               color: Colors.white,
-                              size: 20,
+                              size: 24,
                             ),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.transparent,
@@ -322,7 +341,7 @@ class _PlantCardState extends State<PlantCard> {
       ),
       child: Icon(
         Icons.local_florist,
-        size: 32,
+        size: 40,
         color: AppTheme.mediumGrey,
       ),
     );

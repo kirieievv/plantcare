@@ -58,7 +58,10 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         print('Navigating to DashboardScreen...');
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => DashboardScreen(user: FirebaseAuth.instance.currentUser)),
+          MaterialPageRoute(builder: (context) => DashboardScreen(
+            user: FirebaseAuth.instance.currentUser,
+            onTabChange: null, // No tab change needed from auth screen
+          )),
         );
       }
     } catch (e) {

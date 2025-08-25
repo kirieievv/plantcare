@@ -175,7 +175,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     // If user is authenticated, show main navigation
     if (_user != null) {
-      return MainNavigationScreen(user: _user!);
+              return MainNavigationScreen(user: _user!, initialIndex: 0);
     }
 
     // If no user, show auth screen

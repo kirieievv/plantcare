@@ -17,8 +17,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardScreen extends StatefulWidget {
   final User? user;
+  final Function(int)? onTabChange;
 
-  const DashboardScreen({Key? key, this.user}) : super(key: key);
+  const DashboardScreen({Key? key, this.user, this.onTabChange}) : super(key: key);
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -205,43 +206,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               child: ElevatedButton.icon(
                                 onPressed: () async {
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const AddPlantScreen(),
-                                    ),
-                                  );
-                                  
-                                  // Check if plant was created successfully
-                                  if (result != null && result['success'] == true) {
-                                    final plantId = result['plantId'];
-                                    print('🌱 Dashboard: Plant created successfully with ID: $plantId');
-                                    print('🌱 Dashboard: Add plant screen should handle navigation automatically');
+                                  // Use the callback to switch to Add Plant tab (index 2)
+                                  if (widget.onTabChange != null) {
+                                    widget.onTabChange!(2);
+                                  } else {
+                                    // Fallback: navigate to AddPlantScreen if callback not available
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const AddPlantScreen(),
+                                      ),
+                                    );
                                     
-                                    // ⚠️ IMPORTANT: Navigation is now handled automatically by AddPlantScreen ⚠️
-                                    // The AddPlantScreen automatically redirects users to the new plant's details page
-                                    // after successful creation. This provides a better user experience.
-                                    // 
-                                    // If you need to modify this behavior:
-                                    // 1. Check the AddPlantScreen navigation logic first
-                                    // 2. Consider whether the change improves or degrades user experience
-                                    // 3. Test thoroughly to ensure the change works as expected
-                                    // 
-                                    // Current behavior: AddPlantScreen handles navigation automatically
-                                    // Expected user flow: Add Plant → Success Message → View New Plant Details
-                                    
-                                    // Refresh the plants list to show the new plant
-                                    setState(() {});
-                                    
-                                    // Show success message (navigation is handled by AddPlantScreen)
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Plant created successfully! 🌱'),
-                                          backgroundColor: Colors.green,
-                                          duration: Duration(seconds: 3),
-                                        ),
-                                      );
+                                    // Check if plant was created successfully
+                                    if (result != null && result['success'] == true) {
+                                      final plantId = result['plantId'];
+                                      print('🌱 Dashboard: Plant created successfully with ID: $plantId');
+                                      
+                                      // Refresh the plants list to show the new plant
+                                      setState(() {});
+                                      
+                                      // Show success message
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Plant created successfully! 🌱'),
+                                            backgroundColor: Colors.green,
+                                            duration: Duration(seconds: 3),
+                                          ),
+                                        );
+                                      }
                                     }
                                   }
                                 },
