@@ -284,7 +284,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 // Submit button
                                 SizedBox(
                                   width: double.infinity,
-                                  height: 40,
+                                  height: 48,
                                   child: ElevatedButton(
                                     onPressed: _isLoading ? null : _submitForm,
                                     style: ElevatedButton.styleFrom(
@@ -305,7 +305,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                           )
                                         : Text(
                                             _isLogin ? 'Log in' : 'Registration',
-                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                           ),
                                   ),
                                 ),

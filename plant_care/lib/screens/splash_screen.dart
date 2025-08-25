@@ -72,7 +72,7 @@ class SplashScreen extends StatelessWidget {
                           // Registration Button
                           SizedBox(
                             width: double.infinity,
-                            height: 40,
+                            height: 48,
                             child: ElevatedButton(
                               onPressed: () {
                                 Navigator.of(context).push(
@@ -91,7 +91,7 @@ class SplashScreen extends StatelessWidget {
                               ),
                               child: const Text(
                                 'Registration',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -100,7 +100,7 @@ class SplashScreen extends StatelessWidget {
                           // Log in Button
                           SizedBox(
                             width: double.infinity,
-                            height: 40,
+                            height: 48,
                             child: OutlinedButton(
                               onPressed: () {
                                 Navigator.of(context).push(
@@ -118,7 +118,7 @@ class SplashScreen extends StatelessWidget {
                               ),
                               child: const Text(
                                 'Log in',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
