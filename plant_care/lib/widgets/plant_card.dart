@@ -273,11 +273,12 @@ class _PlantCardState extends State<PlantCard> {
                       ),
                     ),
                     
-                    // Fixed-size Water Button - never collides with text
+                    // Fixed-size Water Button - pill shape with centered icon
                     if (widget.onWater != null) ...[
-                      SizedBox(
+                      Container(
                         width: 56,
-                        height: 56,
+                        height: 48,
+                        margin: const EdgeInsets.only(left: 8),
                         child: FilledButton.tonalIcon(
                           onPressed: _isWatering ? null : _handleWater,
                           icon: _isWatering
@@ -298,8 +299,10 @@ class _PlantCardState extends State<PlantCard> {
                           style: FilledButton.styleFrom(
                             backgroundColor: AppTheme.accentGreen.withOpacity(0.1),
                             foregroundColor: AppTheme.accentGreen,
-                            minimumSize: const Size(56, 56),
-                            shape: const StadiumBorder(),
+                            minimumSize: const Size(56, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
                             padding: EdgeInsets.zero,
                           ),
                         ),

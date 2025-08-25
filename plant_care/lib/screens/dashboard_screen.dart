@@ -339,7 +339,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatCard(String title, String value, IconData icon, Color color, Duration delay) {
     return GlassmorphicContainer(
       width: double.infinity,
-      height: 140,
+      height: 160,
       borderRadius: 20,
       blur: 20,
       alignment: Alignment.center,
@@ -361,7 +361,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
@@ -386,14 +386,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               duration: 400.ms,
               delay: delay + 200.ms,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Flexible(
               child: Text(
                 title,
                 style: AppTheme.bodyMedium.copyWith(
                   color: AppTheme.textSecondary,
                   fontWeight: FontWeight.w500,
-                  fontSize: 13,
+                  fontSize: 14,
+                  height: 1.2,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -428,7 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         children: List.generate(3, (index) => Expanded(
           child: Container(
-            height: 140,
+            height: 160,
             margin: EdgeInsets.only(right: index < 2 ? 16 : 0),
             decoration: BoxDecoration(
               color: AppTheme.white,
