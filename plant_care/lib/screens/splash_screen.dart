@@ -72,7 +72,7 @@ class SplashScreen extends StatelessWidget {
                           // Registration Button
                           SizedBox(
                             width: double.infinity,
-                            height: 48,
+                            height: 40,
                             child: ElevatedButton(
                               onPressed: () {
                                 Navigator.of(context).push(
@@ -88,6 +88,7 @@ class SplashScreen extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 elevation: 4,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                               ),
                               child: const Text(
                                 'Registration',
