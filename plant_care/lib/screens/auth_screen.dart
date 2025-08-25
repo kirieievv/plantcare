@@ -305,7 +305,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                           )
                                         : Text(
                                             _isLogin ? 'Log in' : 'Registration',
-                                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                                           ),
                                   ),
                                 ),

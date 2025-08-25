@@ -91,7 +91,7 @@ class SplashScreen extends StatelessWidget {
                               ),
                               child: const Text(
                                 'Registration',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -118,7 +118,7 @@ class SplashScreen extends StatelessWidget {
                               ),
                               child: const Text(
                                 'Log in',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
