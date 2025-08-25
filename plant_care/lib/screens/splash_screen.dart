@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
                                 size: iconSize,
                                 color: Colors.green.shade600,
                               ),
-                              SizedBox(height: isVerySmallScreen ? 12 : 16),
+                              SizedBox(height: isVerySmallScreen ? 8 : 10),
                               Text(
                                 'Plant Care',
                                 style: TextStyle(
@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: isVerySmallScreen ? 8 : 12),
+                              SizedBox(height: isVerySmallScreen ? 4 : 6),
                               Text(
                                 'Your personal plant care assistant',
                                 style: TextStyle(
@@ -91,6 +91,9 @@ class _SplashScreenState extends State<SplashScreen> {
                             ],
                           ),
                         ),
+                        
+                        // Reduced spacing between sections
+                        SizedBox(height: isVerySmallScreen ? 8 : 12),
                         
                         // Middle section with buttons
                         Flexible(
@@ -127,7 +130,7 @@ class _SplashScreenState extends State<SplashScreen> {
                                   ),
                                 ),
                               ),
-                              SizedBox(height: isVerySmallScreen ? 8 : 10),
+                              SizedBox(height: isVerySmallScreen ? 6 : 8),
                               
                               // Log in Button
                               SizedBox(
@@ -161,12 +164,15 @@ class _SplashScreenState extends State<SplashScreen> {
                           ),
                         ),
                         
+                        // Reduced spacing between sections
+                        SizedBox(height: isVerySmallScreen ? 8 : 12),
+                        
                         // Bottom section with description
                         Flexible(
                           flex: 1,
                           child: Container(
                             width: double.infinity,
-                            padding: EdgeInsets.all(isVerySmallScreen ? 16 : 20),
+                            padding: EdgeInsets.all(isVerySmallScreen ? 12 : 16),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
@@ -184,10 +190,10 @@ class _SplashScreenState extends State<SplashScreen> {
                               children: [
                                 Icon(
                                   Icons.eco,
-                                  size: isVerySmallScreen ? 20 : 24,
+                                  size: isVerySmallScreen ? 18 : 20,
                                   color: Colors.green.shade600,
                                 ),
-                                SizedBox(height: isVerySmallScreen ? 8 : 12),
+                                SizedBox(height: isVerySmallScreen ? 6 : 8),
                                 Text(
                                   'Monitor your plants, get care tips, and track their health with our smart plant care system.',
                                   style: TextStyle(
