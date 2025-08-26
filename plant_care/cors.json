@@ -1,0 +1,25 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:56428", 
+      "http://localhost:*",
+      "http://localhost:8080",
+      "http://127.0.0.1:*",
+      "https://plant-care-94574.web.app",
+      "https://plant-care-94574.firebaseapp.com"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type", 
+      "Access-Control-Allow-Origin",
+      "Access-Control-Allow-Methods",
+      "Access-Control-Allow-Headers",
+      "Access-Control-Expose-Headers",
+      "Cache-Control",
+      "Content-Length",
+      "Content-Range"
+    ]
+  }
+] 

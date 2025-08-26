@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to read/write their own health check images
+    match /health_checks/{userId}/{plantId}/{imageName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read/write their own profile images
+    match /profile_images/{userId}/{imageName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read/write their own plant images
+    match /plant_images/{userId}/{plantId}/{imageName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read/write their own general images
+    match /{userId}/{imageName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
