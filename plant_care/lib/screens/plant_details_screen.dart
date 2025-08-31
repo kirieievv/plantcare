@@ -1204,6 +1204,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     // Extract plant name and species from health message
     String plantName = 'Plant';
     String species = 'Species';
+    String detailedHealthAssessment = 'Your plant is looking great!';
     
     if (_plant.healthMessage != null) {
       final lines = _plant.healthMessage!.split('\n');
@@ -1219,69 +1220,60 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           if (parts.length >= 2) {
             species = parts[1].trim();
           }
+        } else if (trimmedLine.toLowerCase().startsWith('health assessment:')) {
+          final parts = trimmedLine.split(':');
+          if (parts.length >= 2) {
+            detailedHealthAssessment = parts[1].trim();
+          }
         }
       }
+    }
+    
+    // Create a friendly, detailed health assessment
+    String friendlyAssessment = '';
+    if (detailedHealthAssessment.toLowerCase().contains('healthy') || 
+        detailedHealthAssessment.toLowerCase().contains('thriving') ||
+        detailedHealthAssessment.toLowerCase().contains('good')) {
+      friendlyAssessment = 'Your plant looks healthy and thriving! It has vibrant green leaves, strong growth, and shows no signs of disease or stress. You are doing well taking care of it! 🌱✨';
+    } else if (detailedHealthAssessment.toLowerCase().contains('no visible signs') ||
+               detailedHealthAssessment.toLowerCase().contains('appears healthy')) {
+      friendlyAssessment = 'Your plant appears healthy with no visible issues! The leaves look good, growth is steady, and overall condition is excellent. Keep up the great work! 🌱✨';
+    } else {
+      friendlyAssessment = 'Your plant is looking great! It shows healthy growth and good condition. You are doing well with your plant care routine! 🌱✨';
     }
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Plant Name
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.green.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.shade300),
-          ),
-          child: Text(
-            'Plant Name: $plantName',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.green.shade800,
-            ),
+        Text(
+          'Plant Name: $plantName',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.green.shade800,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         
         // Species
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.green.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.shade300),
-          ),
-          child: Text(
-            'Species: $species',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.green.shade800,
-            ),
+        Text(
+          'Species: $species',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.green.shade800,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         
-        // Health Assessment (friendly message)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.green.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.shade300),
-          ),
-          child: Text(
-            'Health Assessment: Your plant is looking great! Keep doing so good! 🌱✨',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.green.shade800,
-            ),
+        // Health Assessment (detailed and friendly)
+        Text(
+          'Health Assessment: $friendlyAssessment',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.green.shade700,
+            height: 1.4,
           ),
         ),
       ],
