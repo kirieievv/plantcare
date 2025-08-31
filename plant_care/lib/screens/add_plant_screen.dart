@@ -382,12 +382,23 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     
     try {
       final level = moistureLevel.toLowerCase();
-      if (level.contains('low') || level.contains('dry')) return 25;
-      if (level.contains('moderate') || level.contains('medium')) return 50;
-      if (level.contains('high') || level.contains('wet') || level.contains('moist')) return 75;
-      if (level.contains('very high') || level.contains('very wet')) return 90;
+      int percentage;
       
-      return 50; // Default to moderate
+      if (level.contains('low') || level.contains('dry')) {
+        percentage = 25;
+      } else if (level.contains('moderate') || level.contains('medium')) {
+        percentage = 50;
+      } else if (level.contains('high') || level.contains('wet') || level.contains('moist')) {
+        percentage = 75;
+      } else if (level.contains('very high') || level.contains('very wet')) {
+        percentage = 90;
+      } else {
+        percentage = 50; // Default to moderate
+      }
+      
+      // Clamp to safe range to prevent any range errors
+      // Based on the error message, there seems to be a constraint of 0..80
+      return percentage.clamp(0, 80);
     } catch (e) {
       print('Error parsing moisture level: $moistureLevel, error: $e');
       return 50; // Safe fallback

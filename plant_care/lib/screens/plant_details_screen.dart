@@ -2178,13 +2178,25 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     
     try {
       final lowerLevel = moistureLevel.toLowerCase();
-      if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
-      if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 25;
-      if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 50;
-      if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 75;
-      if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 90;
+      int percentage;
       
-      return 50; // Default to moderate
+      if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) {
+        percentage = 10;
+      } else if (lowerLevel.contains('low') || lowerLevel.contains('dry')) {
+        percentage = 25;
+      } else if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) {
+        percentage = 50;
+      } else if (lowerLevel.contains('high') || lowerLevel.contains('moist')) {
+        percentage = 75;
+      } else if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) {
+        percentage = 90;
+      } else {
+        percentage = 50; // Default to moderate
+      }
+      
+      // Clamp to safe range to prevent any range errors
+      // Based on the error message, there seems to be a constraint of 0..80
+      return percentage.clamp(0, 80);
     } catch (e) {
       print('Error parsing moisture level: $moistureLevel, error: $e');
       return 50; // Safe fallback
