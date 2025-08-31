@@ -62,11 +62,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   void _handleHealthCheckComplete(Map<String, dynamic> healthResult) async {
     try {
-      // Update plant with health check results
+      // Update plant with health check results and new AI analysis data
       final updatedPlant = _plant.copyWith(
         healthStatus: healthResult['status'],
         healthMessage: healthResult['message'],
         lastHealthCheck: DateTime.now(),
+        // Update AI analysis data if available from health check
+        aiPlantSize: healthResult['plant_size'] ?? _plant.aiPlantSize,
+        aiPotSize: healthResult['pot_size'] ?? _plant.aiPotSize,
+        aiGrowthStage: healthResult['growth_stage'] ?? _plant.aiGrowthStage,
+        // Update other AI fields if available
+        aiMoistureLevel: healthResult['moisture_level'] ?? _plant.aiMoistureLevel,
+        aiLight: healthResult['light'] ?? _plant.aiLight,
       );
 
       // Save to database
@@ -3086,6 +3093,43 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           color: Colors.grey.shade600,
                         ),
                         textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      // Water amount in cups
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.local_dining,
+                              color: Colors.blue.shade600,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              _calculateWaterAmount(),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '(200ml cups)',
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: Colors.blue.shade600,
+                        ),
                       ),
                     ],
                   ),
