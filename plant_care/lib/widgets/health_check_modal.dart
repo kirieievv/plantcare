@@ -290,7 +290,10 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       'flourishing', 'lush', 'vibrant', 'excellent',
       'strong', 'vigorous', 'well-maintained', 'properly cared for',
       'showing good growth', 'developing well', 'progressing nicely',
-      'maintaining good health', 'stable condition', 'steady growth'
+      'maintaining good health', 'stable condition', 'steady growth',
+      'good health', 'in good health', 'healthy appearance',
+      'thriving plant', 'well-cared for', 'proper care',
+      'optimal condition', 'prime condition', 'peak health'
     ];
 
     // Check if ANY problem indicator is present
@@ -340,6 +343,13 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
         'growing', 'developing', 'progressing', 'thriving'
       ];
       
+      // Also check for general plant health indicators that suggest a healthy plant
+      final generalHealthIndicators = [
+        'flower', 'bloom', 'blooming', 'petals', 'leaves',
+        'green', 'foliage', 'growth', 'plant', 'healthy',
+        'good', 'fine', 'okay', 'alright', 'stable'
+      ];
+      
       bool hasNeutralIndicators = false;
       for (final indicator in neutralIndicators) {
         if (message.contains(indicator)) {
@@ -349,12 +359,31 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
         }
       }
       
-      if (hasNeutralIndicators) {
-        print('🌱 Fallback: Status = OK (neutral indicators suggest healthy plant)');
+      // Check for general health indicators
+      bool hasGeneralHealthIndicators = false;
+      if (!hasNeutralIndicators) {
+        for (final indicator in generalHealthIndicators) {
+          if (message.contains(indicator)) {
+            print('🌱 Fallback: Found general health indicator: "$indicator"');
+            hasGeneralHealthIndicators = true;
+            break;
+          }
+        }
+      }
+      
+      if (hasNeutralIndicators || hasGeneralHealthIndicators) {
+        print('🌱 Fallback: Status = OK (indicators suggest healthy plant)');
         return 'ok';
       } else {
-        print('🌱 Fallback: Status = ISSUE (default to safety)');
-        return 'issue'; // Default to issue for safety
+        // Only default to issue if we truly can't determine health status
+        // Check if the message is too short or unclear
+        if (message.length < 20) {
+          print('🌱 Fallback: Status = OK (short message, likely healthy)');
+          return 'ok';
+        } else {
+          print('🌱 Fallback: Status = ISSUE (unclear status, defaulting to issue)');
+          return 'issue';
+        }
       }
     }
   }
