@@ -1336,95 +1336,54 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 1. Plant Name
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.red.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red.shade300),
-          ),
-          child: Text(
-            'Plant Name: $plantName',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.red.shade800,
-            ),
+        Text(
+          'Plant Name: $plantName',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.red.shade800,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         
         // 2. Species
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.red.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red.shade300),
-          ),
-          child: Text(
-            'Species: $species',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.red.shade800,
-            ),
+        Text(
+          'Species: $species',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.red.shade800,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         
         // 3. Health Assessment
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.red.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red.shade300),
-          ),
-          child: Text(
-            'Health Assessment: $healthAssessment',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.red.shade800,
-            ),
+        Text(
+          'Health Assessment: $healthAssessment',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.red.shade700,
+            height: 1.4,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         
         // 4. Care Recommendations
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.red.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red.shade300),
+        Text(
+          'Care Recommendations:',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.red.shade800,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Care Recommendations:',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red.shade800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                careRecommendations,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.red.shade700,
-                  height: 1.3,
-                ),
-              ),
-            ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          careRecommendations,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.red.shade700,
+            height: 1.3,
           ),
         ),
       ],
