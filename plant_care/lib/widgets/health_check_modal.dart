@@ -261,7 +261,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
   String _analyzeTextForHealthStatus(String message) {
     print('🌱 Fallback: Analyzing text for health status...');
     
-    // Check for problem indicators
+    // Check for problem indicators - but be more specific to avoid false positives
     final problemIndicators = [
       'wilted', 'drooping', 'yellow', 'brown', 'distress',
       'unhealthy', 'dying', 'dead', 'critical', 'urgent', 'emergency',
@@ -270,7 +270,8 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       'struggling', 'stress', 'fallen petals', 'drooping quite a bit',
       'not in the best health right now', 'problem', 'issue',
       'concern', 'damaged', 'sick', 'declining', 'overwatered',
-      'underwatered', 'root rot', 'pest', 'disease'
+      'underwatered', 'root rot', 'pest'
+      // Removed 'disease' as it can appear in educational content about healthy plants
     ];
 
     // Check for negative health statements
@@ -296,7 +297,31 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       'optimal condition', 'prime condition', 'peak health'
     ];
 
-    // Check if ANY problem indicator is present
+    // First, check if the AI explicitly states the plant is healthy
+    // If so, trust that assessment and don't look for problem indicators
+    final explicitHealthStatements = [
+      'appears healthy', 'looks healthy', 'is healthy', 'healthy and thriving',
+      'no visible signs of damage', 'no visible signs of disease',
+      'shows no visible signs', 'appears to be healthy', 'looks to be healthy',
+      'healthy appearance', 'thriving condition', 'good health'
+    ];
+    
+    bool hasExplicitHealthStatement = false;
+    for (final statement in explicitHealthStatements) {
+      if (message.contains(statement)) {
+        print('🌱 Fallback: Found explicit health statement: "$statement"');
+        hasExplicitHealthStatement = true;
+        break;
+      }
+    }
+    
+    // If AI explicitly says plant is healthy, trust that assessment
+    if (hasExplicitHealthStatement) {
+      print('🌱 Fallback: Status = OK (AI explicitly states plant is healthy)');
+      return 'ok';
+    }
+    
+    // Check if ANY problem indicator is present (only if no explicit health statement)
     bool hasProblems = false;
     for (final indicator in problemIndicators) {
       if (message.contains(indicator)) {

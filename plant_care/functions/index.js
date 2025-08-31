@@ -56,7 +56,8 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
                 type: 'text',
                 text: `Analyze this plant photo and provide detailed care recommendations. ${plantName ? `This is a ${plantName}.` : ''} You MUST follow this EXACT format:
 
-Plant: [Identify the plant and provide the common name and scientific name if possible]
+Plant Name: [What is the name of the plant?]
+Species: [What is the specific species of this plant? If available, show it next to the plant name. If not, leave it blank.]
 Description: [Provide a detailed description of the plant including its appearance, characteristics, and general information]
 Care Recommendations:
    - Watering: [Specific watering instructions]
@@ -69,7 +70,7 @@ Care Recommendations:
    - Blooming: [Flowering information if applicable]
 Interesting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.
 
-IMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. Be confident in your plant identification - analyze the image carefully and provide the most likely plant identification. Only say "unable to identify" if you truly cannot see any recognizable plant features.
+IMPORTANT: You MUST start with "Plant Name:" and "Species:" sections before the Description. Be confident in your plant identification - analyze the image carefully and provide the most likely plant name and species.
 
 HEALTH ASSESSMENT: Based on the plant's appearance, assess if it appears healthy, thriving, or if there are any visible problems. Be specific about what you observe regarding the plant's health status. If the plant looks healthy with no visible issues, clearly state that it appears healthy and thriving.`
               },
