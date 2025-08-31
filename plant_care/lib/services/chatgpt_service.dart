@@ -167,12 +167,12 @@ class ChatGPTService {
       // Fallback: extract information from text
       final response = aiResponse.toLowerCase();
       
-      // Extract plant name from Plant Name field
+      // Extract plant name from Plant field
       String plantName = 'Plant';
       final lines = aiResponse.split('\n');
       for (final line in lines) {
         final trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase().startsWith('plant name:')) {
+        if (trimmedLine.toLowerCase().startsWith('plant:')) {
           final parts = trimmedLine.split(':');
           if (parts.length >= 2) {
             plantName = parts[1].trim();
