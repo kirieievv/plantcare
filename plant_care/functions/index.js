@@ -54,28 +54,28 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
             content: [
               {
                 type: 'text',
-                text: `Analyze this plant photo and provide plant care information. ${plantName ? `This is a ${plantName}.` : ''} ${isHealthCheck ? 'This is a health check - focus on the plant\'s current condition and health status.' : 'This is a new plant analysis - focus on identification and general care.'} You MUST follow this EXACT format:
+                text: `You are a plant expert. Look at this plant photo and identify the plant. You MUST follow this EXACT format:
 
-Plant: [What name of plant is this?]
-Species: [What is the specific species of this plant? If you can see distinctive characteristics that indicate the species, provide it. If not, leave it blank.]
+Plant: [What is the name of this plant? Look at the leaves, flowers, and overall appearance.]
+Species: [What is the specific species? If you can see distinctive characteristics, provide it. If not, leave blank.]
 
-Description: [Describe what you see in this specific plant photo - its current appearance, leaf color, size, any visible features. Focus on what's observable.]
+Description: [Describe what you see in this photo - leaf color, size, flowers, any visible features.]
 
 Care Recommendations:
-   - Watering: [Based on what you see in the image, what specific watering does this plant need?]
-   - Light Requirements: [What light conditions would be best for this plant based on its appearance?]
-   - Temperature: [What temperature range would suit this plant?]
-   - Soil: [What soil type would work best for this plant?]
-   - Fertilizing: [What fertilization approach would benefit this plant?]
-   - Humidity: [What humidity level would this plant prefer?]
-   - Growth Rate / Size: [What can you observe about this plant's growth and size?]
-   - Blooming: [If you see flowers or blooming, describe them. If not, mention when this plant typically blooms.]
+   - Watering: [What watering does this plant need based on what you see?]
+   - Light: [What light conditions would be best?]
+   - Temperature: [What temperature range?]
+   - Soil: [What soil type?]
+   - Fertilizing: [What fertilization approach?]
+   - Humidity: [What humidity level?]
+   - Growth: [What can you observe about growth and size?]
+   - Blooming: [If you see flowers, describe them. If not, mention when it typically blooms.]
 
-Interesting Facts: [Provide exactly 4 facts about this specific plant type. Make 3 educational and 1 funny. Keep facts relevant to plant care.]
+Interesting Facts: [4 facts about this plant type - 3 educational, 1 funny.]
 
-HEALTH ASSESSMENT: [Look at this specific plant in the image. Is it healthy, thriving, or does it have visible problems? Be specific about what you observe - leaf color, growth pattern, any damage, etc. If it looks healthy, state that clearly. If there are issues, describe what you see.]
+HEALTH ASSESSMENT: [Is this plant healthy? Look at leaf color, growth, any damage. Be specific about what you observe.]
 
-IMPORTANT: Focus on what's actually visible in the image, not generic plant information. ${isHealthCheck ? 'For health checks, emphasize any visible health issues and provide specific care recommendations to address them.' : 'For new plants, focus on proper identification and general care guidelines.'}`
+IMPORTANT: You CAN analyze this image. Look carefully and identify the plant. Do not say you cannot analyze images.`
               },
               {
                 type: 'image_url',
