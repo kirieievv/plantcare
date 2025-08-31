@@ -5,6 +5,7 @@ import 'package:plant_care/services/chatgpt_service.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:math';
@@ -214,17 +215,20 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
   Future<void> _testApiConnection() async {
     try {
-      final isAvailable = await ChatGPTService.isApiAvailable();
+      // Test Firebase Functions connectivity
+      final response = await http.get(
+        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isAvailable 
-                ? '✅ API is working! You have credits available.' 
-                : '❌ API test failed. Check console for details.',
+              response.statusCode == 405 
+                ? '✅ Firebase Functions are accessible! (Method not allowed is expected for GET)' 
+                : '❌ Firebase Functions test failed. Status: ${response.statusCode}',
             ),
-            backgroundColor: isAvailable ? Colors.green : Colors.red,
+            backgroundColor: response.statusCode == 405 ? Colors.green : Colors.red,
             duration: const Duration(seconds: 5),
           ),
         );

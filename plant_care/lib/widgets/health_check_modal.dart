@@ -218,71 +218,31 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       // Import the ChatGPT service for actual API calls
       // Note: You'll need to add this import at the top: import 'package:plant_care/services/chatgpt_service.dart';
       
-      // Use the real ChatGPT service for plant health analysis
+      // Use Firebase Functions for plant health analysis
       try {
-        final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt);
+        // For now, use a simple health assessment based on the plant analysis
+        // In the future, we can add a dedicated health analysis endpoint
+        final result = await ChatGPTService.analyzePlantPhoto(base64Image);
         
         // Determine status based on the AI response content
-        final message = result['message'].toString().toLowerCase();
+        final message = result.toString();
         String status = 'ok'; // Default to healthy
         
         print('🌱 Health Check Modal: Analyzing AI response for health status...');
-        print('🌱 AI Message: ${result['message']}');
+        print('🌱 AI Message: $message');
         
-        // NEW APPROACH: Ask GPT directly for a simple health status
-        // Instead of trying to parse the text, we'll make a second API call
-        // to get a direct "Healthy" or "Issue" answer
-        
-        try {
-          // Make a second API call to get a direct health assessment
-          final healthAssessmentPrompt = '''
-Based on the plant photo analysis I just provided, give me ONLY a single word answer:
-
-Is this plant healthy or does it have issues?
-
-Respond with ONLY one of these two words:
-- "Healthy" (if the plant appears to be in good condition)
-- "Issue" (if the plant has visible problems, diseases, or health concerns)
-
-Do not provide any explanation, just the single word answer.
-''';
-
-          final healthAssessmentResult = await ChatGPTService.analyzePlantHealth(
-            base64Image, 
-            healthAssessmentPrompt
-          );
-          
-          final directAnswer = healthAssessmentResult['message'].toString().toLowerCase().trim();
-          print('🌱 GPT Direct Health Assessment: "$directAnswer"');
-          
-          // Parse the direct answer
-          if (directAnswer.contains('healthy')) {
-            status = 'ok';
-            print('🌱 FINAL STATUS: OK - GPT directly confirmed plant is healthy');
-          } else if (directAnswer.contains('issue')) {
-            status = 'issue';
-            print('🌱 FINAL STATUS: ISSUE - GPT directly confirmed plant has issues');
-          } else {
-            // Fallback to text analysis if direct answer is unclear
-            print('🌱 Direct answer unclear, falling back to text analysis...');
-            status = _analyzeTextForHealthStatus(message);
-          }
-          
-        } catch (e) {
-          print('🌱 Direct health assessment failed, falling back to text analysis: $e');
-          // Fallback to the old method if the direct approach fails
-          status = _analyzeTextForHealthStatus(message);
-        }
+        // Simple health assessment based on the analysis
+        status = _analyzeTextForHealthStatus(message.toLowerCase());
         
         print('🌱 Health Check Modal: Final status determined: $status');
         
         return {
           "status": status,
-          "message": result['message'],
+          "message": "Plant analysis completed. Please review the detailed care recommendations above.",
         };
       } catch (e) {
         // Fallback to mock response if API fails
-        print('ChatGPT API failed, using fallback: $e');
+        print('Firebase Functions failed, using fallback: $e');
         return {
           "status": "issue",
           "message": "Hello friend! 🌿 I can see your Peace Lily, and I'm here to help! Looking at your plant, I can see it's been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your Peace Lily is experiencing significant stress, likely from underwatering or environmental conditions. Your Peace Lily is currently in poor health and needs immediate attention to recover. Here's what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it's recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don't worry, your Peace Lily is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you've got this! 🌱💪"
