@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:plant_care/services/chatgpt_service.dart';
 import 'package:plant_care/services/health_check_service.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:plant_care/models/plant.dart';
 import 'package:uuid/uuid.dart';
@@ -215,85 +216,76 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
 
   Future<Map<String, dynamic>?> _callChatGPT(String prompt, String base64Image) async {
     try {
-      // Import the ChatGPT service for actual API calls
-      // Note: You'll need to add this import at the top: import 'package:plant_care/services/chatgpt_service.dart';
+      // Use Firebase Functions directly for plant health analysis with plant size assessment
+      print('🌱 Health Check Modal: Calling Firebase Functions for AI analysis...');
       
-      // Use the real ChatGPT service for plant health analysis
-      try {
-        final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt);
+      final response = await http.post(
+        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'base64Image': base64Image,
+          'isHealthCheck': true,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        print('✅ Firebase Function response: $result');
         
-        // Determine status based on the AI response content
-        final message = result['message'].toString().toLowerCase();
+        // Extract plant size data from the AI response
+        final plantSize = result['plant_size'];
+        final potSize = result['pot_size'];
+        final growthStage = result['growth_stage'];
+        final moistureLevel = result['moisture_level'];
+        final light = result['light'];
+        final rawResponse = result['rawResponse'] ?? result['message'] ?? '';
+        
+        // Determine health status from the AI response content
         String status = 'ok'; // Default to healthy
         
         print('🌱 Health Check Modal: Analyzing AI response for health status...');
-        print('🌱 AI Message: ${result['message']}');
+        print('🌱 AI Message: ${rawResponse.substring(0, rawResponse.length > 100 ? 100 : rawResponse.length)}...');
+        print('🌱 Plant Size: $plantSize, Pot Size: $potSize, Growth Stage: $growthStage');
         
-        // NEW APPROACH: Ask GPT directly for a simple health status
-        // Instead of trying to parse the text, we'll make a second API call
-        // to get a direct "Healthy" or "Issue" answer
-        
-        try {
-          // Make a second API call to get a direct health assessment
-          final healthAssessmentPrompt = '''
-Based on the plant photo analysis I just provided, give me ONLY a single word answer:
-
-Is this plant healthy or does it have issues?
-
-Respond with ONLY one of these two words:
-- "Healthy" (if the plant appears to be in good condition)
-- "Issue" (if the plant has visible problems, diseases, or health concerns)
-
-Do not provide any explanation, just the single word answer.
-''';
-
-          final healthAssessmentResult = await ChatGPTService.analyzePlantHealth(
-            base64Image, 
-            healthAssessmentPrompt
-          );
-          
-          final directAnswer = healthAssessmentResult['message'].toString().toLowerCase().trim();
-          print('🌱 GPT Direct Health Assessment: "$directAnswer"');
-          
-          // Parse the direct answer
-          if (directAnswer.contains('healthy')) {
-            status = 'ok';
-            print('🌱 FINAL STATUS: OK - GPT directly confirmed plant is healthy');
-          } else if (directAnswer.contains('issue')) {
-            status = 'issue';
-            print('🌱 FINAL STATUS: ISSUE - GPT directly confirmed plant has issues');
-          } else {
-            // Fallback to text analysis if direct answer is unclear
-            print('🌱 Direct answer unclear, falling back to text analysis...');
-            status = _analyzeTextForHealthStatus(message);
-          }
-          
-        } catch (e) {
-          print('🌱 Direct health assessment failed, falling back to text analysis: $e');
-          // Fallback to the old method if the direct approach fails
-          status = _analyzeTextForHealthStatus(message);
+        // Simple health status determination based on AI response content
+        if (rawResponse.toLowerCase().contains('healthy') || 
+            rawResponse.toLowerCase().contains('thriving') ||
+            rawResponse.toLowerCase().contains('good condition') ||
+            rawResponse.toLowerCase().contains('no problems')) {
+          status = 'ok';
+        } else if (rawResponse.toLowerCase().contains('issue') ||
+                   rawResponse.toLowerCase().contains('problem') ||
+                   rawResponse.toLowerCase().contains('unhealthy') ||
+                   rawResponse.toLowerCase().contains('dying') ||
+                   rawResponse.toLowerCase().contains('yellow') ||
+                   rawResponse.toLowerCase().contains('brown') ||
+                   rawResponse.toLowerCase().contains('wilting')) {
+          status = 'issue';
         }
         
         print('🌱 Health Check Modal: Final status determined: $status');
         
         return {
           "status": status,
-          "message": result['message'],
+          "message": rawResponse,
+          "plant_size": plantSize,
+          "pot_size": potSize,
+          "growth_stage": growthStage,
+          "moisture_level": moistureLevel,
+          "light": light,
         };
-      } catch (e) {
-        // Fallback to mock response if API fails
-        print('ChatGPT API failed, using fallback: $e');
-        return {
-          "status": "issue",
-          "message": "Hello friend! 🌿 I can see your Peace Lily, and I'm here to help! Looking at your plant, I can see it's been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your Peace Lily is experiencing significant stress, likely from underwatering or environmental conditions. Your Peace Lily is currently in poor health and needs immediate attention to recover. Here's what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it's recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don't worry, your Peace Lily is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you've got this! 🌱💪"
-        };
+      } else {
+        throw Exception('Firebase Function failed with status: ${response.statusCode}');
       }
-      
-      // TODO: Replace with actual ChatGPT API call:
-      // return await ChatGPTService.analyzePlantHealth(base64Image, prompt);
-      
     } catch (e) {
-      throw Exception('API call failed: $e');
+      print('❌ Firebase Function call failed: $e');
+      // Fallback to mock response if API fails
+      return {
+        "status": "issue",
+        "message": "Hello friend! 🌿 I can see your plant, and I'm here to help! Looking at your plant, I can see it's been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your plant is experiencing significant stress, likely from underwatering or environmental conditions. Your plant is currently in poor health and needs immediate attention to recover. Here's what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it's recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don't worry, your plant is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you've got this! 🌱💪"
+      };
     }
   }
 
