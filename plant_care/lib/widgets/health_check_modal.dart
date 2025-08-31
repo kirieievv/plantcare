@@ -287,7 +287,10 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       'no problems', 'no issues', 'appears healthy',
       'looks good', 'doing well', 'in good shape',
       'beautiful', 'stunning', 'great condition',
-      'flourishing', 'lush', 'vibrant'
+      'flourishing', 'lush', 'vibrant', 'excellent',
+      'strong', 'vigorous', 'well-maintained', 'properly cared for',
+      'showing good growth', 'developing well', 'progressing nicely',
+      'maintaining good health', 'stable condition', 'steady growth'
     ];
 
     // Check if ANY problem indicator is present
@@ -329,8 +332,30 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       print('🌱 Fallback: Status = OK (positive indicators found)');
       return 'ok';
     } else {
-      print('🌱 Fallback: Status = ISSUE (default to safety)');
-      return 'issue'; // Default to issue for safety
+      // If no clear problems or positive indicators, check if the plant looks generally healthy
+      // Look for neutral or slightly positive indicators
+      final neutralIndicators = [
+        'appears', 'looks', 'seems', 'appearing', 'looking',
+        'normal', 'typical', 'standard', 'regular', 'usual',
+        'growing', 'developing', 'progressing', 'thriving'
+      ];
+      
+      bool hasNeutralIndicators = false;
+      for (final indicator in neutralIndicators) {
+        if (message.contains(indicator)) {
+          print('🌱 Fallback: Found neutral indicator: "$indicator"');
+          hasNeutralIndicators = true;
+          break;
+        }
+      }
+      
+      if (hasNeutralIndicators) {
+        print('🌱 Fallback: Status = OK (neutral indicators suggest healthy plant)');
+        return 'ok';
+      } else {
+        print('🌱 Fallback: Status = ISSUE (default to safety)');
+        return 'issue'; // Default to issue for safety
+      }
     }
   }
 

@@ -69,7 +69,9 @@ Care Recommendations:
    - Blooming: [Flowering information if applicable]
 Interesting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.
 
-IMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.`
+IMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.
+
+HEALTH ASSESSMENT: Based on the plant's appearance, assess if it appears healthy, thriving, or if there are any visible problems. Be specific about what you observe regarding the plant's health status.`
               },
               {
                 type: 'image_url',

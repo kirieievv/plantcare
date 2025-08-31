@@ -397,8 +397,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       }
       
       // Clamp to safe range to prevent any range errors
-      // Based on the error message, there seems to be a constraint of 0..80
-      return percentage.clamp(0, 80);
+      // Based on the error message, there seems to be a constraint of 0..68
+      return percentage.clamp(0, 68);
     } catch (e) {
       print('Error parsing moisture level: $moistureLevel, error: $e');
       return 50; // Safe fallback
