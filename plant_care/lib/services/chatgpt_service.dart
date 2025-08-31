@@ -8,10 +8,11 @@ class ChatGPTService {
   static const String _generateContentUrl = 'https://us-central1-plant-care-94574.cloudfunctions.net/generatePlantContent';
   
   /// Analyzes a plant photo using Firebase Functions
-  static Future<Map<String, dynamic>> analyzePlantPhoto(String base64Image) async {
+  static Future<Map<String, dynamic>> analyzePlantPhoto(String base64Image, {bool isHealthCheck = false}) async {
     try {
       print('🔍 Starting plant photo analysis via Firebase Functions');
       print('🔍 Base64 image length: ${base64Image.length}');
+      print('🔍 Is Health Check: $isHealthCheck');
       
       final response = await http.post(
         Uri.parse(_analyzePhotoUrl),
@@ -20,6 +21,7 @@ class ChatGPTService {
         },
         body: jsonEncode({
           'base64Image': base64Image,
+          'isHealthCheck': isHealthCheck,
         }),
       );
       

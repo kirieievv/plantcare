@@ -86,40 +86,20 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       // Convert image to base64 for API call
       final base64Image = base64Encode(_selectedImageBytes!);
       
-      // Prepare the prompt for ChatGPT - Use standardized format for consistency
-      const prompt = '''Analyze this plant photo and provide plant care information. You MUST follow this EXACT format:
-
-Plant: [What name of plant is this?]
-Species: [What is the specific species of this plant? If you can see distinctive characteristics that indicate the species, provide it. If not, leave it blank.]
-
-Description: [Describe what you see in this specific plant photo - its current appearance, leaf color, size, any visible features. Focus on what's observable.]
-
-Care Recommendations:
-   - Watering: [Based on what you see in the image, what specific watering does this plant need?]
-   - Light Requirements: [What light conditions would be best for this plant based on its appearance?]
-   - Temperature: [What temperature range would suit this plant?]
-   - Soil: [What soil type would work best for this plant?]
-   - Fertilizing: [What fertilization approach would benefit this plant?]
-   - Humidity: [What humidity level would this plant prefer?]
-   - Growth Rate / Size: [What can you observe about this plant's growth and size?]
-   - Blooming: [If you see flowers or blooming, describe them. If not, mention when this plant typically blooms.]
-
-Interesting Facts: [Provide exactly 4 facts about this specific plant type. Make 3 educational and 1 funny. Keep facts relevant to plant care.]
-
-HEALTH ASSESSMENT: [Look at this specific plant in the image. Is it healthy, thriving, or does it have visible problems? Be specific about what you observe - leaf color, growth pattern, any damage, etc. If it looks healthy, state that clearly. If there are issues, describe what you see.]
-
-IMPORTANT: Focus on what's actually visible in the image, not generic plant information. Keep your tone friendly and supportive while being honest about the plant's condition.''';
-
-      // Make API call to ChatGPT (replace with your actual API endpoint)
-      final response = await _callChatGPT(prompt, base64Image);
+      // Use Firebase Function for unified AI analysis
+      final aiResponse = await ChatGPTService.analyzePlantPhoto(base64Image, isHealthCheck: true);
       
-      if (response != null) {
+      if (aiResponse != null) {
+        // Extract the raw AI response and determine health status
+        final rawResponse = aiResponse['rawResponse'] ?? aiResponse['general_description'] ?? '';
+        final healthStatus = _analyzeTextForHealthStatus(rawResponse.toLowerCase());
+        
         // Create a health check record
         final healthCheckRecord = HealthCheckRecord(
           id: const Uuid().v4(),
           timestamp: DateTime.now(),
-          status: response['status'],
-          message: response['message'],
+          status: healthStatus,
+          message: rawResponse,
           imageUrl: null, // Will be set by the service after upload
           imageBytes: _selectedImageBytes, // Pass the actual image bytes
           metadata: {
@@ -148,8 +128,11 @@ IMPORTANT: Focus on what's actually visible in the image, not generic plant info
           }
           
           // Add image bytes to the response for immediate display
-          final responseWithImage = Map<String, dynamic>.from(response);
-          responseWithImage['imageBytes'] = _selectedImageBytes;
+          final responseWithImage = {
+            'status': healthStatus,
+            'message': rawResponse,
+            'imageBytes': _selectedImageBytes,
+          };
           
           print('🌱 Calling onHealthCheckComplete...');
           widget.onHealthCheckComplete(responseWithImage);
@@ -184,48 +167,7 @@ IMPORTANT: Focus on what's actually visible in the image, not generic plant info
     }
   }
 
-  Future<Map<String, dynamic>?> _callChatGPT(String prompt, String base64Image) async {
-    try {
-      // Import the ChatGPT service for actual API calls
-      // Note: You'll need to add this import at the top: import 'package:plant_care/services/chatgpt_service.dart';
-      
-      // Use Firebase Functions for plant health analysis
-      try {
-        // Use the restored analyzePlantHealth method
-        final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt);
-        
-        // Determine status based on the AI response content
-        final message = result['message'].toString().toLowerCase();
-        String status = 'ok'; // Default to healthy
-        
-        print('🌱 Health Check Modal: Analyzing AI response for health status...');
-        print('🌱 AI Message: ${result['message']}');
-        
-        // Simple health assessment based on the analysis
-        status = _analyzeTextForHealthStatus(message);
-        
-        print('🌱 Health Check Modal: Final status determined: $status');
-        
-        return {
-          "status": status,
-          "message": result['message'],
-        };
-      } catch (e) {
-        // Fallback to mock response if API fails
-        print('Firebase Functions failed, using fallback: $e');
-        return {
-          "status": "issue",
-          "message": "Hello friend! 🌿 I can see your Peace Lily, and I'm here to help! Looking at your plant, I can see it's been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your Peace Lily is experiencing significant stress, likely from underwatering or environmental conditions. Your Peace Lily is currently in poor health and needs immediate attention to recover. Here's what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it's recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don't worry, your Peace Lily is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you've got this! 🌱💪"
-        };
-      }
-      
-      // TODO: Replace with actual ChatGPT API call:
-      // return await ChatGPTService.analyzePlantHealth(base64Image, prompt);
-      
-    } catch (e) {
-      throw Exception('API call failed: $e');
-    }
-  }
+
 
   /// Fallback method to analyze text for health status
   /// This is used only if the direct GPT health assessment fails

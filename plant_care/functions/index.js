@@ -36,7 +36,7 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
         throw new Error('OPENAI_API_KEY is not configured');
       }
 
-      const { base64Image, plantName } = req.body;
+      const { base64Image, plantName, isHealthCheck } = req.body;
 
       if (!base64Image) {
         return res.status(400).json({ error: 'Base64 image is required' });
@@ -54,7 +54,7 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
             content: [
               {
                 type: 'text',
-                text: `Analyze this plant photo and provide plant care information. ${plantName ? `This is a ${plantName}.` : ''} You MUST follow this EXACT format:
+                text: `Analyze this plant photo and provide plant care information. ${plantName ? `This is a ${plantName}.` : ''} ${isHealthCheck ? 'This is a health check - focus on the plant\'s current condition and health status.' : 'This is a new plant analysis - focus on identification and general care.'} You MUST follow this EXACT format:
 
 Plant: [What name of plant is this?]
 Species: [What is the specific species of this plant? If you can see distinctive characteristics that indicate the species, provide it. If not, leave it blank.]
@@ -75,7 +75,7 @@ Interesting Facts: [Provide exactly 4 facts about this specific plant type. Make
 
 HEALTH ASSESSMENT: [Look at this specific plant in the image. Is it healthy, thriving, or does it have visible problems? Be specific about what you observe - leaf color, growth pattern, any damage, etc. If it looks healthy, state that clearly. If there are issues, describe what you see.]
 
-IMPORTANT: Focus on what's actually visible in the image, not generic plant information.`
+IMPORTANT: Focus on what's actually visible in the image, not generic plant information. ${isHealthCheck ? 'For health checks, emphasize any visible health issues and provide specific care recommendations to address them.' : 'For new plants, focus on proper identification and general care guidelines.'}`
               },
               {
                 type: 'image_url',
