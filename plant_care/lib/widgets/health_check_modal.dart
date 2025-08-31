@@ -220,25 +220,24 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       
       // Use Firebase Functions for plant health analysis
       try {
-        // For now, use a simple health assessment based on the plant analysis
-        // In the future, we can add a dedicated health analysis endpoint
-        final result = await ChatGPTService.analyzePlantPhoto(base64Image);
+        // Use the restored analyzePlantHealth method
+        final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt);
         
         // Determine status based on the AI response content
-        final message = result.toString();
+        final message = result['message'].toString().toLowerCase();
         String status = 'ok'; // Default to healthy
         
         print('🌱 Health Check Modal: Analyzing AI response for health status...');
-        print('🌱 AI Message: $message');
+        print('🌱 AI Message: ${result['message']}');
         
         // Simple health assessment based on the analysis
-        status = _analyzeTextForHealthStatus(message.toLowerCase());
+        status = _analyzeTextForHealthStatus(message);
         
         print('🌱 Health Check Modal: Final status determined: $status');
         
         return {
           "status": status,
-          "message": "Plant analysis completed. Please review the detailed care recommendations above.",
+          "message": result['message'],
         };
       } catch (e) {
         // Fallback to mock response if API fails
