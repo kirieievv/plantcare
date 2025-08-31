@@ -371,13 +371,18 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   int _getMoisturePercentage(String? moistureLevel) {
     if (moistureLevel == null) return 50;
     
-    final level = moistureLevel.toLowerCase();
-    if (level.contains('low') || level.contains('dry')) return 25;
-    if (level.contains('moderate') || level.contains('medium')) return 50;
-    if (level.contains('high') || level.contains('wet') || level.contains('moist')) return 75;
-    if (level.contains('very high') || level.contains('very wet')) return 90;
-    
-    return 50; // Default to moderate
+    try {
+      final level = moistureLevel.toLowerCase();
+      if (level.contains('low') || level.contains('dry')) return 25;
+      if (level.contains('moderate') || level.contains('medium')) return 50;
+      if (level.contains('high') || level.contains('wet') || level.contains('moist')) return 75;
+      if (level.contains('very high') || level.contains('very wet')) return 90;
+      
+      return 50; // Default to moderate
+    } catch (e) {
+      print('Error parsing moisture level: $moistureLevel, error: $e');
+      return 50; // Safe fallback
+    }
   }
   
   /// Format watering frequency to human-readable text

@@ -2176,14 +2176,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   int _getMoisturePercentage(String? moistureLevel) {
     if (moistureLevel == null) return 50;
     
-    final lowerLevel = moistureLevel.toLowerCase();
-    if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
-    if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 25;
-    if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 50;
-    if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 75;
-    if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 90;
-    
-    return 50; // Default to moderate
+    try {
+      final lowerLevel = moistureLevel.toLowerCase();
+      if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
+      if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 25;
+      if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 50;
+      if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 75;
+      if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 90;
+      
+      return 50; // Default to moderate
+    } catch (e) {
+      print('Error parsing moisture level: $moistureLevel, error: $e');
+      return 50; // Safe fallback
+    }
   }
   
   /// Format moisture level to match AI recommendations format

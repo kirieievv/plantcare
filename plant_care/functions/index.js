@@ -178,6 +178,7 @@ IMPORTANT: You MUST start with "Plant:" and "Description:" sections before the C
 
 /**
  * Parse AI response to extract structured information
+ * Maps to the expected Flutter app format
  */
 function parseAIResponse(content) {
   try {
@@ -228,9 +229,64 @@ function parseAIResponse(content) {
       }
     }
     
-    return result;
+    // Map to expected Flutter app format
+    return {
+      general_description: result.description || content,
+      name: result.plant || 'Plant',
+      moisture_level: result.careRecommendations?.humidity || 'Moderate',
+      light: result.careRecommendations?.lightRequirements || 'Bright indirect light',
+      watering_frequency: _extractWateringFrequency(result.careRecommendations?.watering),
+      watering_amount: 'Until soil is moist',
+      specific_issues: 'No specific issues detected',
+      care_tips: _formatCareTips(result.careRecommendations),
+      interesting_facts: result.interestingFacts || ['Every plant is unique', 'Plants grow throughout their lifecycle', 'Proper care helps plants thrive', 'Plants can communicate with each other']
+    };
   } catch (error) {
     console.error('Error parsing AI response:', error);
-    return { rawResponse: content };
+    return { 
+      general_description: content,
+      name: 'Plant',
+      moisture_level: 'Moderate',
+      light: 'Bright indirect light',
+      watering_frequency: 7,
+      watering_amount: 'Until soil is moist',
+      specific_issues: 'Please check plant care manually',
+      care_tips: 'Monitor soil moisture and light conditions',
+      interesting_facts: ['Every plant is unique', 'Plants grow throughout their lifecycle', 'Proper care helps plants thrive', 'Plants can communicate with each other']
+    };
   }
+}
+
+/**
+ * Extract watering frequency from watering text
+ */
+function _extractWateringFrequency(wateringText) {
+  if (!wateringText) return 7;
+  
+  const text = wateringText.toLowerCase();
+  if (text.includes('every 3 days') || text.includes('3 days')) return 3;
+  if (text.includes('every 5 days') || text.includes('5 days')) return 5;
+  if (text.includes('every 10 days') || text.includes('10 days')) return 10;
+  if (text.includes('every 14 days') || text.includes('14 days')) return 14;
+  if (text.includes('weekly') || text.includes('once a week')) return 7;
+  if (text.includes('daily') || text.includes('every day')) return 1;
+  
+  return 7; // Default
+}
+
+/**
+ * Format care tips from care recommendations
+ */
+function _formatCareTips(careRecommendations) {
+  if (!careRecommendations) return 'Follow general plant care guidelines';
+  
+  const tips = [];
+  if (careRecommendations.watering) tips.push(`Watering: ${careRecommendations.watering}`);
+  if (careRecommendations.lightRequirements) tips.push(`Light: ${careRecommendations.lightRequirements}`);
+  if (careRecommendations.temperature) tips.push(`Temperature: ${careRecommendations.temperature}`);
+  if (careRecommendations.soil) tips.push(`Soil: ${careRecommendations.soil}`);
+  if (careRecommendations.fertilizing) tips.push(`Fertilizing: ${careRecommendations.fertilizing}`);
+  if (careRecommendations.humidity) tips.push(`Humidity: ${careRecommendations.humidity}`);
+  
+  return tips.length > 0 ? tips.join('\n') : 'Follow general plant care guidelines';
 }
