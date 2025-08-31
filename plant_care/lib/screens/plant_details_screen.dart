@@ -938,31 +938,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   Widget _buildAiCareCard() {
     if (_plant.healthMessage == null) return const SizedBox.shrink();
     
-    // Check if the advice indicates problems
-    final advice = _plant.healthMessage!.toLowerCase();
-    final isBadAdvice = advice.contains('critical') || 
-                       advice.contains('dying') || 
-                       advice.contains('urgent') || 
-                       advice.contains('emergency') || 
-                       advice.contains('severe') || 
-                       advice.contains('serious problem') ||
-                       advice.contains('immediate attention') ||
-                       advice.contains('declining') ||
-                       advice.contains('unhealthy') ||
-                       advice.contains('yellow') ||
-                       advice.contains('brown') ||
-                       advice.contains('wilting') ||
-                       advice.contains('drooping') ||
-                       advice.contains('overwatered') ||
-                       advice.contains('underwatered') ||
-                       advice.contains('root rot') ||
-                       advice.contains('pest') ||
-                       advice.contains('disease') ||
-                       advice.contains('stress') ||
-                       advice.contains('problem') ||
-                       advice.contains('issue') ||
+    // Use the actual health status from the health check, not text parsing
+    // This is the correct way to determine if the plant needs help
+    final isBadAdvice = _plant.healthStatus?.toLowerCase() == 'issue' ||
                        _plant.healthStatus?.toLowerCase() == 'critical' ||
                        _plant.healthStatus?.toLowerCase() == 'needs attention';
+    
+    // Debug logging to verify the logic
+    print('🌱 Plant Details: AI Care Card Logic:');
+    print('🌱 Plant healthStatus: ${_plant.healthStatus}');
+    print('🌱 Plant healthMessage length: ${_plant.healthMessage?.length}');
+    print('🌱 isBadAdvice calculated: $isBadAdvice');
+    print('🌱 Will show: ${isBadAdvice ? "Plant Needs Help!" : "Plant Care Assistant"}');
     
     return Container(
       width: double.infinity, // Full width for mobile
