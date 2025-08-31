@@ -854,7 +854,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               ),
                               child: FractionallySizedBox(
                                 alignment: Alignment.centerLeft,
-              widthFactor: moisturePercentage / 100,
+              widthFactor: (moisturePercentage / 100).clamp(0.0, 1.0),
                                 child: Container(
                                   decoration: BoxDecoration(
                   color: Colors.green,

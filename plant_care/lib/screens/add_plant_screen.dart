@@ -176,6 +176,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final base64Image = base64Encode(imageBytes);
       final recommendations = await ChatGPTService.analyzePlantPhoto(base64Image);
       
+      print('🔍 AI Analysis Results:');
+      print('🔍 general_description: ${recommendations['general_description']}');
+      print('🔍 name: ${recommendations['name']}');
+      print('🔍 moisture_level: ${recommendations['moisture_level']}');
+      print('🔍 light: ${recommendations['light']}');
+      print('🔍 watering_frequency: ${recommendations['watering_frequency']}');
+      print('🔍 specific_issues: ${recommendations['specific_issues']}');
+      print('🔍 care_tips: ${recommendations['care_tips']}');
+      
       setState(() {
         _aiGeneralDescription = recommendations['general_description'];
         _aiName = recommendations['name'];
@@ -486,7 +495,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: moisturePercentage / 100,
+                widthFactor: (moisturePercentage / 100).clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
                     color: color,
