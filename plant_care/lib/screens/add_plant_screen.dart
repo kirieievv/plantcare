@@ -69,6 +69,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _aiCareTips;
   List<String>? _aiInterestingFacts;
   
+  // Plant size assessment fields
+  String? _aiPlantSize;
+  String? _aiPotSize;
+  String? _aiGrowthStage;
+  
   // Refresh status
   bool _isRefreshing = false;
   String? _refreshStatus = 'error'; // Start with error status since we know API is failing
@@ -195,6 +200,17 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiSpecificIssues = recommendations['specific_issues'];
         _aiCareTips = recommendations['care_tips'];
         _aiInterestingFacts = recommendations['interesting_facts'];
+        
+        // Extract plant size assessment data
+        _aiPlantSize = recommendations['plant_size'];
+        _aiPotSize = recommendations['pot_size'];
+        _aiGrowthStage = recommendations['growth_stage'];
+        
+        // Extract plant size assessment data
+        _aiPlantSize = recommendations['plant_size'];
+        _aiPotSize = recommendations['pot_size'];
+        _aiGrowthStage = recommendations['growth_stage'];
+        
         _refreshStatus = 'success';
       });
 
@@ -582,6 +598,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         aiSpecificIssues: _aiSpecificIssues,
         aiCareTips: _aiCareTips,
         interestingFacts: _aiInterestingFacts,
+        aiPlantSize: _aiPlantSize,
+        aiPotSize: _aiPotSize,
+        aiGrowthStage: _aiGrowthStage,
         healthStatus: null, // No health status for new plants
         healthMessage: null, // No health message for new plants
         lastHealthCheck: null, // No health check for new plants

@@ -91,10 +91,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
               slivers: [
                 // Header removed - clean interface
                 
+                // Temporary delete Foxglove button
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final success = await PlantService().deletePlantByName('Foxglove');
+                          if (success) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Foxglove plant deleted successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              setState(() {}); // Refresh the screen
+                            }
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Foxglove plant not found or could not be deleted'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error deleting Foxglove plant: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+                      label: const Text('Delete Foxglove Plant', style: TextStyle(color: Colors.white, fontSize: 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
                 // Your Garden Overview Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

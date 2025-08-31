@@ -505,8 +505,55 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return DateFormat('dd MMM yyyy').format(date);
   }
 
-  /// Calculate water amount based on plant type and size
+  /// Calculate water amount based on plant type, size, and pot size from health check data
   String _calculateWaterAmount() {
+    // Try to get data from the most recent health check first
+    final lastHealthCheck = _getLastHealthCheckData();
+    
+    if (lastHealthCheck != null) {
+      // Use health check data for more accurate calculation
+      final plantSize = lastHealthCheck['plantSize']?.toString().toLowerCase() ?? '';
+      final potSize = lastHealthCheck['potSize']?.toString().toLowerCase() ?? '';
+      final plantType = lastHealthCheck['plantType']?.toString().toLowerCase() ?? '';
+      
+      // Calculate based on pot size and plant size from health check
+      if (potSize.contains('large') || potSize.contains('big') || potSize.contains('10') || potSize.contains('12')) {
+        if (plantSize.contains('large') || plantSize.contains('mature')) {
+          return '4-5 cups'; // Large plant in large pot
+        } else if (plantSize.contains('medium')) {
+          return '3-4 cups'; // Medium plant in large pot
+        } else {
+          return '2-3 cups'; // Small plant in large pot
+        }
+      } else if (potSize.contains('medium') || potSize.contains('6') || potSize.contains('8')) {
+        if (plantSize.contains('large') || plantSize.contains('mature')) {
+          return '3-4 cups'; // Large plant in medium pot
+        } else if (plantSize.contains('medium')) {
+          return '2-3 cups'; // Medium plant in medium pot
+        } else {
+          return '1-2 cups'; // Small plant in medium pot
+        }
+      } else if (potSize.contains('small') || potSize.contains('4') || potSize.contains('mini')) {
+        if (plantSize.contains('large') || plantSize.contains('mature')) {
+          return '2-3 cups'; // Large plant in small pot (needs more frequent watering)
+        } else if (plantSize.contains('medium')) {
+          return '1-2 cups'; // Medium plant in small pot
+        } else {
+          return '1/2-1 cup'; // Small plant in small pot
+        }
+      }
+      
+      // Fallback based on plant type from health check
+      if (plantType.contains('succulent') || plantType.contains('cactus')) {
+        return '1/2-1 cup';
+      } else if (plantType.contains('herb') || plantType.contains('small')) {
+        return '1-2 cups';
+      } else if (plantType.contains('large') || plantType.contains('tree')) {
+        return '3-4 cups';
+      }
+    }
+    
+    // Fallback to AI name if no health check data
     if (_plant.aiName == null) {
       return '1-2 cups'; // Default for unknown plants
     }
@@ -553,6 +600,25 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     }
     
     return '2-3 cups'; // Default moderate amount
+  }
+
+  /// Get the most recent health check data for dynamic calculations
+  Map<String, dynamic>? _getLastHealthCheckData() {
+    try {
+      // Use the plant's AI analysis data for dynamic calculations
+      if (_plant.aiPlantSize != null || _plant.aiPotSize != null || _plant.aiGrowthStage != null) {
+        return {
+          'plantSize': _plant.aiPlantSize,
+          'potSize': _plant.aiPotSize,
+          'growthStage': _plant.aiGrowthStage,
+          'plantType': _plant.aiName,
+        };
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting last health check data: $e');
+      return null;
+    }
   }
 
   /// Get light type description
@@ -639,24 +705,44 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 8),
           // Water amount section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.local_dining,
-                color: Colors.blue.shade600,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                _calculateWaterAmount(),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blue.shade700,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.local_dining,
+                      color: Colors.blue.shade600,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _calculateWaterAmount(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  '(200ml cups)',
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: Colors.blue.shade600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

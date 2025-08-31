@@ -109,6 +109,11 @@ class Plant {
   final String? aiCareTips;
   final List<String>? interestingFacts;
   
+  // Plant size assessment from AI analysis
+  final String? aiPlantSize;
+  final String? aiPotSize;
+  final String? aiGrowthStage;
+  
   // Health check data
   final String? healthStatus; // 'ok', 'issue', or null
   final String? healthMessage; // Friendly conversational message from Plant Care Assistant
@@ -133,6 +138,9 @@ class Plant {
     this.aiSpecificIssues,
     this.aiCareTips,
     this.interestingFacts,
+    this.aiPlantSize,
+    this.aiPotSize,
+    this.aiGrowthStage,
     this.healthStatus,
     this.healthMessage,
     this.lastHealthCheck,
@@ -159,6 +167,9 @@ class Plant {
       'aiSpecificIssues': aiSpecificIssues,
       'aiCareTips': aiCareTips,
       'interestingFacts': interestingFacts,
+      'aiPlantSize': aiPlantSize,
+      'aiPotSize': aiPotSize,
+      'aiGrowthStage': aiGrowthStage,
       'healthStatus': healthStatus,
       'healthMessage': healthMessage,
       'lastHealthCheck': lastHealthCheck?.toIso8601String(),
@@ -203,6 +214,9 @@ class Plant {
         aiSpecificIssues: map['aiSpecificIssues']?.toString(),
         aiCareTips: map['aiCareTips']?.toString(),
         interestingFacts: map['interestingFacts'] is List ? List<String>.from(map['interestingFacts']) : null,
+        aiPlantSize: map['aiPlantSize']?.toString(),
+        aiPotSize: map['aiPotSize']?.toString(),
+        aiGrowthStage: map['aiGrowthStage']?.toString(),
         healthStatus: map['healthStatus']?.toString(),
         healthMessage: map['healthMessage']?.toString(),
         lastHealthCheck: _parseTimestamp(map['lastHealthCheck']),
@@ -256,6 +270,9 @@ class Plant {
     String? aiSpecificIssues,
     String? aiCareTips,
     List<String>? interestingFacts,
+    String? aiPlantSize,
+    String? aiPotSize,
+    String? aiGrowthStage,
     String? healthStatus,
     String? healthMessage,
     DateTime? lastHealthCheck,
@@ -279,6 +296,9 @@ class Plant {
       aiSpecificIssues: aiSpecificIssues ?? this.aiSpecificIssues,
       aiCareTips: aiCareTips ?? this.aiCareTips,
       interestingFacts: interestingFacts ?? this.interestingFacts,
+      aiPlantSize: aiPlantSize ?? this.aiPlantSize,
+      aiPotSize: aiPotSize ?? this.aiPotSize,
+      aiGrowthStage: aiGrowthStage ?? this.aiGrowthStage,
       healthStatus: healthStatus ?? this.healthStatus,
       healthMessage: healthMessage ?? this.healthMessage,
       lastHealthCheck: lastHealthCheck ?? this.lastHealthCheck,

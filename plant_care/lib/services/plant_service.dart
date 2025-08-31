@@ -125,6 +125,51 @@ class PlantService {
     await _firestore.collection(_collection).doc(plantId).delete();
   }
 
+  // Delete plant by name (temporary function for debugging)
+  Future<bool> deletePlantByName(String plantName) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_collection)
+          .where('name', isEqualTo: plantName)
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        final plantId = querySnapshot.docs.first.id;
+        await _firestore.collection(_collection).doc(plantId).delete();
+        print('✅ PlantService: Successfully deleted plant "$plantName" with ID: $plantId');
+        return true;
+      } else {
+        print('⚠️ PlantService: Plant "$plantName" not found');
+        return false;
+      }
+    } catch (e) {
+      print('❌ PlantService: Error deleting plant by name: $e');
+      return false;
+    }
+  }
+
+  // Find plant by name (temporary function for debugging)
+  Future<String?> findPlantIdByName(String plantName) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_collection)
+          .where('name', isEqualTo: plantName)
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot.docs.first.id;
+      }
+      return null;
+    } catch (e) {
+      print('❌ PlantService: Error finding plant by name: $e');
+      return null;
+    }
+  }
+
+
+
   // Get a single plant by ID
   Future<Plant?> getPlantById(String plantId) async {
     try {

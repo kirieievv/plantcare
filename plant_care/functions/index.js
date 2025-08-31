@@ -58,9 +58,14 @@ Species: [What is the specific species? If you can see distinctive characteristi
 
 Description: [Describe what you see in this photo - leaf color, size, flowers, any visible features.]
 
+Plant Size Assessment:
+   - Plant Size: [Small/Medium/Large - based on visible growth and maturity]
+   - Pot Size: [Small/Medium/Large - estimate pot diameter in inches or cm]
+   - Growth Stage: [Seedling/Young/Mature/Established]
+
 Care Recommendations:
-   - Watering: [What watering does this plant need based on what you see?]
-   - Light: [What light conditions would be best?]
+   - Watering: [Specific watering needs - frequency and amount in cups (200ml) based on plant size and pot size]
+   - Light: [Specific light requirements - hours per day and intensity]
    - Temperature: [What temperature range?]
    - Soil: [What soil type?]
    - Fertilizing: [What fertilization approach?]
@@ -82,9 +87,14 @@ Species: [What is the specific species? If you can see distinctive characteristi
 
 Description: [Describe what you see in this photo - leaf color, size, flowers, any visible features.]
 
+Plant Size Assessment:
+   - Plant Size: [Small/Medium/Large - based on visible growth and maturity]
+   - Pot Size: [Small/Medium/Large - estimate pot diameter in inches or cm]
+   - Growth Stage: [Seedling/Young/Mature/Established]
+
 Care Recommendations:
-   - Watering: [What watering does this plant need based on what you see?]
-   - Light: [What light conditions would be best?]
+   - Watering: [Specific watering needs - frequency and amount in cups (200ml) based on plant size and pot size]
+   - Light: [Specific light requirements - hours per day and intensity]
    - Temperature: [What temperature range?]
    - Soil: [What soil type?]
    - Fertilizing: [What fertilization approach?]
@@ -257,6 +267,41 @@ function parseAIResponse(aiResponse) {
       }
     }
     
+    // Extract plant size assessment data
+    let plantSize = 'Medium';
+    let potSize = 'Medium';
+    let growthStage = 'Mature';
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.toLowerCase().startsWith('plant size:')) {
+        const parts = trimmedLine.split(':');
+        if (parts.length >= 2) {
+          const size = parts[1].trim().toLowerCase();
+          if (size.includes('small')) plantSize = 'Small';
+          else if (size.includes('large')) plantSize = 'Large';
+          else plantSize = 'Medium';
+        }
+      } else if (trimmedLine.toLowerCase().startsWith('pot size:')) {
+        const parts = trimmedLine.split(':');
+        if (parts.length >= 2) {
+          const size = parts[1].trim().toLowerCase();
+          if (size.includes('small') || size.includes('mini') || size.includes('4')) potSize = 'Small';
+          else if (size.includes('large') || size.includes('big') || size.includes('10') || size.includes('12')) potSize = 'Large';
+          else potSize = 'Medium';
+        }
+      } else if (trimmedLine.toLowerCase().startsWith('growth stage:')) {
+        const parts = trimmedLine.split(':');
+        if (parts.length >= 2) {
+          const stage = parts[1].trim().toLowerCase();
+          if (stage.includes('seedling')) growthStage = 'Seedling';
+          else if (stage.includes('young')) growthStage = 'Young';
+          else if (stage.includes('mature')) growthStage = 'Mature';
+          else if (stage.includes('established')) growthStage = 'Established';
+        }
+      }
+    }
+    
     // Extract moisture level
     let moistureLevel = 'Moderate';
     if (response.includes('dry') || response.includes('underwatered')) {
@@ -292,6 +337,9 @@ function parseAIResponse(aiResponse) {
       general_description: aiResponse,
       name: plantName,
       species: species,
+      plant_size: plantSize,
+      pot_size: potSize,
+      growth_stage: growthStage,
       moisture_level: moistureLevel,
       light: light,
       watering_frequency: wateringFrequency,
@@ -306,6 +354,9 @@ function parseAIResponse(aiResponse) {
       general_description: aiResponse,
       name: 'Plant',
       species: '',
+      plant_size: 'Medium',
+      pot_size: 'Medium',
+      growth_stage: 'Mature',
       moisture_level: 'Moderate',
       light: 'Bright indirect light',
       watering_frequency: 7,
