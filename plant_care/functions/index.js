@@ -6,11 +6,15 @@ const cors = require('cors')({ origin: true });
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Initialize OpenAI with API key from secrets
+// Initialize OpenAI with API key from Firebase config
 let openai;
 async function initializeOpenAI() {
   if (!openai) {
-    const apiKey = await functions.secrets().get('OPENAI_API_KEY');
+    // Try to get API key from Firebase config
+    const apiKey = functions.config().openai?.api_key;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY is not configured in Firebase Functions');
+    }
     openai = new OpenAI({
       apiKey: apiKey,
     });
