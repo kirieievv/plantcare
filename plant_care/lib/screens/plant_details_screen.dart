@@ -998,21 +998,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           
           // Content based on health status
           if (isBadAdvice) ...[
-            // For unhealthy plants: Show full health message with care recommendations
-            Container(
-              width: double.infinity,
-              child: Text(
-                _plant.healthMessage!,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.red.shade800,
-                  height: 1.4,
-                ),
-                maxLines: null,
-                overflow: TextOverflow.visible,
-                textAlign: TextAlign.left,
-              ),
-            ),
+            // For unhealthy plants: Show structured content in specific order
+            _buildUnhealthyPlantSummary(),
           ] else ...[
             // For healthy plants: Show only essential information
             _buildHealthyPlantSummary(),
@@ -1295,6 +1282,157 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               fontWeight: FontWeight.w600,
               color: Colors.green.shade800,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // Unhealthy Plant Summary - Shows structured content for plants with issues
+  Widget _buildUnhealthyPlantSummary() {
+    // Extract information from health message
+    String plantName = 'Plant';
+    String species = 'Species';
+    String healthAssessment = 'Health assessment not available';
+    String careRecommendations = 'Care recommendations not available';
+    
+    if (_plant.healthMessage != null) {
+      final lines = _plant.healthMessage!.split('\n');
+      bool inCareRecommendations = false;
+      List<String> careRecs = [];
+      
+      for (final line in lines) {
+        final trimmedLine = line.trim();
+        
+        if (trimmedLine.toLowerCase().startsWith('plant name:')) {
+          final parts = trimmedLine.split(':');
+          if (parts.length >= 2) {
+            plantName = parts[1].trim();
+          }
+        } else if (trimmedLine.toLowerCase().startsWith('species:')) {
+          final parts = trimmedLine.split(':');
+          if (parts.length >= 2) {
+            species = parts[1].trim();
+          }
+        } else if (trimmedLine.toLowerCase().startsWith('health assessment:')) {
+          final parts = trimmedLine.split(':');
+          if (parts.length >= 2) {
+            healthAssessment = parts[1].trim();
+          }
+        } else if (trimmedLine.toLowerCase().startsWith('care recommendations:')) {
+          inCareRecommendations = true;
+          continue;
+        } else if (trimmedLine.toLowerCase().startsWith('interesting facts:') || 
+                   trimmedLine.toLowerCase().startsWith('description:')) {
+          inCareRecommendations = false;
+          continue;
+        } else if (inCareRecommendations && trimmedLine.isNotEmpty && 
+                   !trimmedLine.startsWith('-') && !trimmedLine.startsWith('•')) {
+          // Skip bullet points and empty lines
+          continue;
+        } else if (inCareRecommendations && trimmedLine.isNotEmpty) {
+          careRecs.add(trimmedLine);
+        }
+      }
+      
+      if (careRecs.isNotEmpty) {
+        careRecommendations = careRecs.join('\n');
+      }
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Plant Name
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.red.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.shade300),
+          ),
+          child: Text(
+            'Plant Name: $plantName',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.red.shade800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // 2. Species
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.red.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.shade300),
+          ),
+          child: Text(
+            'Species: $species',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.red.shade800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // 3. Health Assessment
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.red.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.shade300),
+          ),
+          child: Text(
+            'Health Assessment: $healthAssessment',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.red.shade800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // 4. Care Recommendations
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.red.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.shade300),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Care Recommendations:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red.shade800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                careRecommendations,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red.shade700,
+                  height: 1.3,
+                ),
+              ),
+            ],
           ),
         ),
       ],
