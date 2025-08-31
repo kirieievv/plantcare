@@ -2194,9 +2194,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         percentage = 50; // Default to moderate
       }
       
-      // Clamp to safe range to prevent any range errors
-      // Based on the error message, there seems to be a constraint of 0..68
-      return percentage.clamp(0, 68);
+      // Return full moisture percentage range (0-100)
+      return percentage;
     } catch (e) {
       print('Error parsing moisture level: $moistureLevel, error: $e');
       return 50; // Safe fallback
@@ -2275,7 +2274,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   String _getUnifiedHealthStatus() {
     print('🌱 Plant Details: Determining unified health status...');
     print('🌱 Plant healthStatus: ${_plant.healthStatus}');
-    print('🌱 Plant healthMessage: ${_plant.healthMessage?.substring(0, 100)}...');
+    print('🌱 Plant healthMessage: ${_plant.healthMessage != null ? (_plant.healthMessage!.length > 100 ? _plant.healthMessage!.substring(0, 100) + "..." : _plant.healthMessage!) : "null"}');
     
     // PRIORITY 1: Use the plant's stored health status (from health checks)
     if (_plant.healthStatus != null && _plant.healthStatus!.isNotEmpty) {

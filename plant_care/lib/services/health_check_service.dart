@@ -104,7 +104,7 @@ class HealthCheckService {
     if (imageUrl == null && healthCheck.imageBytes != null) {
       print('🌱 HealthCheckService: Image upload failed, but health check saved successfully');
       print('💡 Tip: The health check was saved without the image. You can retry the image upload later.');
-      print('🌱 HealthCheckService: Health check data saved: Status=${healthCheck.status}, Message=${healthCheck.message.substring(0, 50)}...');
+      print('🌱 HealthCheckService: Health check data saved: Status=${healthCheck.status}, Message=${healthCheck.message.length > 50 ? healthCheck.message.substring(0, 50) + "..." : healthCheck.message}');
     }
   }
 
