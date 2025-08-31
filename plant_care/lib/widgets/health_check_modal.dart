@@ -86,58 +86,29 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       // Convert image to base64 for API call
       final base64Image = base64Encode(_selectedImageBytes!);
       
-      // Prepare the prompt for ChatGPT - Friendly Plant Care Assistant with Plant Identification
-      const prompt = '''You are Plant Care Assistant, a plant health expert with years of experience. 
-I will send you a photo of a plant. Your job is to give a friendly, supportive response to the user.
+      // Prepare the prompt for ChatGPT - Use standardized format for consistency
+      const prompt = '''Analyze this plant photo and provide plant care information. You MUST follow this EXACT format:
 
-FIRST STEP - PLANT IDENTIFICATION:
-- Start by identifying what type of plant this appears to be (e.g., "This looks like a Monstera deliciosa" or "I can see this is a Peace Lily")
-- If you're not certain of the exact species, describe what you can identify (e.g., "This appears to be a tropical houseplant with large leaves")
-- Use the plant's name throughout your response to make it personal
+Plant: [What name of plant is this?]
+Species: [What is the specific species of this plant? If you can see distinctive characteristics that indicate the species, provide it. If not, leave it blank.]
 
-CRITICAL ASSESSMENT GUIDELINES:
-- Look carefully at the plant's overall condition, leaf color, leaf shape, soil moisture, and any visible problems
-- Be consistent and accurate in your health assessment
-- If you see ANY of these signs, the plant is NOT healthy:
-  * Wilted, drooping, or limp leaves
-  * Yellow, brown, or black leaves
-  * Dry, cracked, or shriveled foliage
-  * Visible pests or disease spots
-  * Extremely dry or waterlogged soil
-  * Stunted or poor growth
+Description: [Describe what you see in this specific plant photo - its current appearance, leaf color, size, any visible features. Focus on what's observable.]
 
-Please follow this EXACT structure in your answer:
+Care Recommendations:
+   - Watering: [Based on what you see in the image, what specific watering does this plant need?]
+   - Light Requirements: [What light conditions would be best for this plant based on its appearance?]
+   - Temperature: [What temperature range would suit this plant?]
+   - Soil: [What soil type would work best for this plant?]
+   - Fertilizing: [What fertilization approach would benefit this plant?]
+   - Humidity: [What humidity level would this plant prefer?]
+   - Growth Rate / Size: [What can you observe about this plant's growth and size?]
+   - Blooming: [If you see flowers or blooming, describe them. If not, mention when this plant typically blooms.]
 
-**For Unhealthy Plants:**
-1. Start with a warm, caring greeting and identify the plant
-2. Provide a short, descriptive overview of what you observe about the plant's current state
-3. Give a clear, honest statement about the overall health status
-4. Provide 3-5 specific, actionable recommendations as simple text items:
-   - [Detailed advice about watering, light, care, etc.]
-   - [Detailed advice about humidity, temperature, etc.]
-   - [Detailed advice about pruning, fertilizing, etc.]
-   - [Additional care steps as needed]
-   - [Monitoring and follow-up advice]
-   (Use as many items as needed, minimum 3, maximum 5)
-5. End with an encouraging phrase like "Don't worry" or similar supportive message
+Interesting Facts: [Provide exactly 4 facts about this specific plant type. Make 3 educational and 1 funny. Keep facts relevant to plant care.]
 
-**For Healthy Plants:**
-1. Start with a warm, caring greeting and identify the plant
-2. Confirm the plant looks healthy and thriving
-3. Give 1-2 encouraging comments about the plant's condition
-4. End with an encouraging phrase about continued care
+HEALTH ASSESSMENT: [Look at this specific plant in the image. Is it healthy, thriving, or does it have visible problems? Be specific about what you observe - leaf color, growth pattern, any damage, etc. If it looks healthy, state that clearly. If there are issues, describe what you see.]
 
-**Important**: 
-- Make recommendations specific and actionable
-- Keep tone friendly, encouraging, and easy to understand
-- Use the plant's name throughout for personalization
-- Do NOT use field names or labels - just write naturally
-
-Your tone: supportive, positive, simple, and easy to understand. 
-Be honest about plant health - don't sugarcoat serious issues, but always offer hope and solutions.
-Use the plant's name throughout your response to make it personal and caring.
-
-IMPORTANT: Return your response as a friendly, conversational message. Do not use JSON format - just write naturally as if you're talking to a friend about their plant.''';
+IMPORTANT: Focus on what's actually visible in the image, not generic plant information. Keep your tone friendly and supportive while being honest about the plant's condition.''';
 
       // Make API call to ChatGPT (replace with your actual API endpoint)
       final response = await _callChatGPT(prompt, base64Image);
