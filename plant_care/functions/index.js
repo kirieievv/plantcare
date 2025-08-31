@@ -70,9 +70,11 @@ Care Recommendations:
    - Blooming: [Flowering information if applicable]
 Interesting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.
 
-IMPORTANT: You MUST start with "Plant Name:" and "Species:" sections before the Description. Be confident in your plant identification - analyze the image carefully and provide the most likely plant name and species.
+IMPORTANT: You MUST start with "Plant Name:" and "Species:" sections before the Description. Analyze the image carefully and provide the most likely plant name and species. Be confident in your identification - if you can see plant features, provide the best possible identification rather than saying "unable to identify."
 
-HEALTH ASSESSMENT: Based on the plant's appearance, assess if it appears healthy, thriving, or if there are any visible problems. Be specific about what you observe regarding the plant's health status. If the plant looks healthy with no visible issues, clearly state that it appears healthy and thriving.`
+HEALTH ASSESSMENT: Based on the plant's appearance, assess if it appears healthy, thriving, or if there are any visible problems. Be specific about what you observe regarding the plant's health status. If the plant looks healthy with no visible issues, clearly state that it appears healthy and thriving.
+
+CRITICAL: Never say "I'm unable to identify the plant" if you can see plant features. Instead, provide your best identification based on what you observe. Only use "unable to identify" if the image shows no recognizable plant features at all.`
               },
               {
                 type: 'image_url',
