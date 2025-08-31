@@ -86,20 +86,69 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       // Convert image to base64 for API call
       final base64Image = base64Encode(_selectedImageBytes!);
       
-      // Use Firebase Function for unified AI analysis
-      final aiResponse = await ChatGPTService.analyzePlantPhoto(base64Image, isHealthCheck: true);
+      // Prepare the prompt for ChatGPT - Friendly Plant Care Assistant with Plant Identification
+      const prompt = '''You are Plant Care Assistant, a plant health expert with years of experience. 
+I will send you a photo of a plant. Your job is to give a friendly, supportive response to the user.
+
+FIRST STEP - PLANT IDENTIFICATION:
+- Start by identifying what type of plant this appears to be (e.g., "This looks like a Monstera deliciosa" or "I can see this is a Peace Lily")
+- If you're not certain of the exact species, describe what you can identify (e.g., "This appears to be a tropical houseplant with large leaves")
+- Use the plant's name throughout your response to make it personal
+
+CRITICAL ASSESSMENT GUIDELINES:
+- Look carefully at the plant's overall condition, leaf color, leaf shape, soil moisture, and any visible problems
+- Be consistent and accurate in your health assessment
+- If you see ANY of these signs, the plant is NOT healthy:
+  * Wilted, drooping, or limp leaves
+  * Yellow, brown, or black leaves
+  * Dry, cracked, or shriveled foliage
+  * Visible pests or disease spots
+  * Extremely dry or waterlogged soil
+  * Stunted or poor growth
+
+Please follow this EXACT structure in your answer:
+
+**For Unhealthy Plants:**
+1. Start with a warm, caring greeting and identify the plant
+2. Provide a short, descriptive overview of what you observe about the plant's current state
+3. Give a clear, honest statement about the overall health status
+4. Provide 3-5 specific, actionable recommendations as simple text items:
+   - [Detailed advice about watering, light, care, etc.]
+   - [Detailed advice about humidity, temperature, etc.]
+   - [Detailed advice about pruning, fertilizing, etc.]
+   - [Additional care steps as needed]
+   - [Monitoring and follow-up advice]
+   (Use as many items as needed, minimum 3, maximum 5)
+5. End with an encouraging phrase like "Don't worry" or similar supportive message
+
+**For Healthy Plants:**
+1. Start with a warm, caring greeting and identify the plant
+2. Confirm the plant looks healthy and thriving
+3. Give 1-2 encouraging comments about the plant's condition
+4. End with an encouraging phrase about continued care
+
+**Important**: 
+- Make recommendations specific and actionable
+- Keep tone friendly, encouraging, and easy to understand
+- Use the plant's name throughout for personalization
+- Do NOT use field names or labels - just write naturally
+
+Your tone: supportive, positive, simple, and easy to understand. 
+Be honest about plant health - don't sugarcoat serious issues, but always offer hope and solutions.
+Use the plant's name throughout your response to make it personal and caring.
+
+IMPORTANT: Return your response as a friendly, conversational message. Do not use JSON format - just write naturally as if you're talking to a friend about their plant.''';
+
+      // Make API call to ChatGPT (replace with your actual API endpoint)
+      final response = await _callChatGPT(prompt, base64Image);
       
-      if (aiResponse != null) {
-        // Extract the raw AI response and determine health status
-        final rawResponse = aiResponse['rawResponse'] ?? aiResponse['general_description'] ?? '';
-        final healthStatus = _analyzeTextForHealthStatus(rawResponse.toLowerCase());
-        
+      if (response != null) {
         // Create a health check record
         final healthCheckRecord = HealthCheckRecord(
           id: const Uuid().v4(),
           timestamp: DateTime.now(),
-          status: healthStatus,
-          message: rawResponse,
+          status: response['status'],
+          message: response['message'],
           imageUrl: null, // Will be set by the service after upload
           imageBytes: _selectedImageBytes, // Pass the actual image bytes
           metadata: {
@@ -128,11 +177,8 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
           }
           
           // Add image bytes to the response for immediate display
-          final responseWithImage = {
-            'status': healthStatus,
-            'message': rawResponse,
-            'imageBytes': _selectedImageBytes,
-          };
+          final responseWithImage = Map<String, dynamic>.from(response);
+          responseWithImage['imageBytes'] = _selectedImageBytes;
           
           print('🌱 Calling onHealthCheckComplete...');
           widget.onHealthCheckComplete(responseWithImage);
@@ -167,14 +213,96 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
     }
   }
 
+  Future<Map<String, dynamic>?> _callChatGPT(String prompt, String base64Image) async {
+    try {
+      // Import the ChatGPT service for actual API calls
+      // Note: You'll need to add this import at the top: import 'package:plant_care/services/chatgpt_service.dart';
+      
+      // Use the real ChatGPT service for plant health analysis
+      try {
+        final result = await ChatGPTService.analyzePlantHealth(base64Image, prompt);
+        
+        // Determine status based on the AI response content
+        final message = result['message'].toString().toLowerCase();
+        String status = 'ok'; // Default to healthy
+        
+        print('🌱 Health Check Modal: Analyzing AI response for health status...');
+        print('🌱 AI Message: ${result['message']}');
+        
+        // NEW APPROACH: Ask GPT directly for a simple health status
+        // Instead of trying to parse the text, we'll make a second API call
+        // to get a direct "Healthy" or "Issue" answer
+        
+        try {
+          // Make a second API call to get a direct health assessment
+          final healthAssessmentPrompt = '''
+Based on the plant photo analysis I just provided, give me ONLY a single word answer:
 
+Is this plant healthy or does it have issues?
+
+Respond with ONLY one of these two words:
+- "Healthy" (if the plant appears to be in good condition)
+- "Issue" (if the plant has visible problems, diseases, or health concerns)
+
+Do not provide any explanation, just the single word answer.
+''';
+
+          final healthAssessmentResult = await ChatGPTService.analyzePlantHealth(
+            base64Image, 
+            healthAssessmentPrompt
+          );
+          
+          final directAnswer = healthAssessmentResult['message'].toString().toLowerCase().trim();
+          print('🌱 GPT Direct Health Assessment: "$directAnswer"');
+          
+          // Parse the direct answer
+          if (directAnswer.contains('healthy')) {
+            status = 'ok';
+            print('🌱 FINAL STATUS: OK - GPT directly confirmed plant is healthy');
+          } else if (directAnswer.contains('issue')) {
+            status = 'issue';
+            print('🌱 FINAL STATUS: ISSUE - GPT directly confirmed plant has issues');
+          } else {
+            // Fallback to text analysis if direct answer is unclear
+            print('🌱 Direct answer unclear, falling back to text analysis...');
+            status = _analyzeTextForHealthStatus(message);
+          }
+          
+        } catch (e) {
+          print('🌱 Direct health assessment failed, falling back to text analysis: $e');
+          // Fallback to the old method if the direct approach fails
+          status = _analyzeTextForHealthStatus(message);
+        }
+        
+        print('🌱 Health Check Modal: Final status determined: $status');
+        
+        return {
+          "status": status,
+          "message": result['message'],
+        };
+      } catch (e) {
+        // Fallback to mock response if API fails
+        print('ChatGPT API failed, using fallback: $e');
+        return {
+          "status": "issue",
+          "message": "Hello friend! 🌿 I can see your Peace Lily, and I'm here to help! Looking at your plant, I can see it's been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your Peace Lily is experiencing significant stress, likely from underwatering or environmental conditions. Your Peace Lily is currently in poor health and needs immediate attention to recover. Here's what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it's recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don't worry, your Peace Lily is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you've got this! 🌱💪"
+        };
+      }
+      
+      // TODO: Replace with actual ChatGPT API call:
+      // return await ChatGPTService.analyzePlantHealth(base64Image, prompt);
+      
+    } catch (e) {
+      throw Exception('API call failed: $e');
+    }
+  }
 
   /// Fallback method to analyze text for health status
   /// This is used only if the direct GPT health assessment fails
   String _analyzeTextForHealthStatus(String message) {
     print('🌱 Fallback: Analyzing text for health status...');
     
-    // Check for problem indicators - but be more specific to avoid false positives
+    // Check for problem indicators
     final problemIndicators = [
       'wilted', 'drooping', 'yellow', 'brown', 'distress',
       'unhealthy', 'dying', 'dead', 'critical', 'urgent', 'emergency',
@@ -183,8 +311,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       'struggling', 'stress', 'fallen petals', 'drooping quite a bit',
       'not in the best health right now', 'problem', 'issue',
       'concern', 'damaged', 'sick', 'declining', 'overwatered',
-      'underwatered', 'root rot', 'pest'
-      // Removed 'disease' as it can appear in educational content about healthy plants
+      'underwatered', 'root rot', 'pest', 'disease'
     ];
 
     // Check for negative health statements
@@ -201,40 +328,10 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       'no problems', 'no issues', 'appears healthy',
       'looks good', 'doing well', 'in good shape',
       'beautiful', 'stunning', 'great condition',
-      'flourishing', 'lush', 'vibrant', 'excellent',
-      'strong', 'vigorous', 'well-maintained', 'properly cared for',
-      'showing good growth', 'developing well', 'progressing nicely',
-      'maintaining good health', 'stable condition', 'steady growth',
-      'good health', 'in good health', 'healthy appearance',
-      'thriving plant', 'well-cared for', 'proper care',
-      'optimal condition', 'prime condition', 'peak health'
+      'flourishing', 'lush', 'vibrant'
     ];
 
-    // First, check if the AI explicitly states the plant is healthy
-    // If so, trust that assessment and don't look for problem indicators
-    final explicitHealthStatements = [
-      'appears healthy', 'looks healthy', 'is healthy', 'healthy and thriving',
-      'no visible signs of damage', 'no visible signs of disease',
-      'shows no visible signs', 'appears to be healthy', 'looks to be healthy',
-      'healthy appearance', 'thriving condition', 'good health'
-    ];
-    
-    bool hasExplicitHealthStatement = false;
-    for (final statement in explicitHealthStatements) {
-      if (message.contains(statement)) {
-        print('🌱 Fallback: Found explicit health statement: "$statement"');
-        hasExplicitHealthStatement = true;
-        break;
-      }
-    }
-    
-    // If AI explicitly says plant is healthy, trust that assessment
-    if (hasExplicitHealthStatement) {
-      print('🌱 Fallback: Status = OK (AI explicitly states plant is healthy)');
-      return 'ok';
-    }
-    
-    // Check if ANY problem indicator is present (only if no explicit health statement)
+    // Check if ANY problem indicator is present
     bool hasProblems = false;
     for (final indicator in problemIndicators) {
       if (message.contains(indicator)) {
@@ -273,56 +370,8 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       print('🌱 Fallback: Status = OK (positive indicators found)');
       return 'ok';
     } else {
-      // If no clear problems or positive indicators, check if the plant looks generally healthy
-      // Look for neutral or slightly positive indicators
-      final neutralIndicators = [
-        'appears', 'looks', 'seems', 'appearing', 'looking',
-        'normal', 'typical', 'standard', 'regular', 'usual',
-        'growing', 'developing', 'progressing', 'thriving'
-      ];
-      
-      // Also check for general plant health indicators that suggest a healthy plant
-      final generalHealthIndicators = [
-        'flower', 'bloom', 'blooming', 'petals', 'leaves',
-        'green', 'foliage', 'growth', 'plant', 'healthy',
-        'good', 'fine', 'okay', 'alright', 'stable'
-      ];
-      
-      bool hasNeutralIndicators = false;
-      for (final indicator in neutralIndicators) {
-        if (message.contains(indicator)) {
-          print('🌱 Fallback: Found neutral indicator: "$indicator"');
-          hasNeutralIndicators = true;
-          break;
-        }
-      }
-      
-      // Check for general health indicators
-      bool hasGeneralHealthIndicators = false;
-      if (!hasNeutralIndicators) {
-        for (final indicator in generalHealthIndicators) {
-          if (message.contains(indicator)) {
-            print('🌱 Fallback: Found general health indicator: "$indicator"');
-            hasGeneralHealthIndicators = true;
-            break;
-          }
-        }
-      }
-      
-      if (hasNeutralIndicators || hasGeneralHealthIndicators) {
-        print('🌱 Fallback: Status = OK (indicators suggest healthy plant)');
-        return 'ok';
-      } else {
-        // Only default to issue if we truly can't determine health status
-        // Check if the message is too short or unclear
-        if (message.length < 20) {
-          print('🌱 Fallback: Status = OK (short message, likely healthy)');
-          return 'ok';
-        } else {
-          print('🌱 Fallback: Status = ISSUE (unclear status, defaulting to issue)');
-          return 'issue';
-        }
-      }
+      print('🌱 Fallback: Status = ISSUE (default to safety)');
+      return 'issue'; // Default to issue for safety
     }
   }
 

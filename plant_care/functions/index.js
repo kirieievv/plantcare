@@ -44,17 +44,38 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
 
       console.log('🔍 Starting plant photo analysis');
       console.log('🔍 Plant name:', plantName);
+      console.log('🔍 Is Health Check:', isHealthCheck);
       console.log('🔍 Image length:', base64Image.length);
 
-      const response = await openaiClient.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `You are a plant expert. Look at this plant photo and identify the plant. You MUST follow this EXACT format:
+      // Choose prompt based on use case
+      let promptText;
+      if (isHealthCheck) {
+        // HEALTH CHECK PROMPT - Focus on current plant condition and health
+        promptText = `You are a plant health expert. Analyze this plant photo to assess its current health and condition. You MUST follow this EXACT format:
+
+Plant: [What is the name of this plant? Look at the leaves, flowers, and overall appearance.]
+Species: [What is the specific species? If you can see distinctive characteristics, provide it. If not, leave blank.]
+
+Description: [Describe what you see in this photo - leaf color, size, flowers, any visible features.]
+
+Care Recommendations:
+   - Watering: [What watering does this plant need based on what you see?]
+   - Light: [What light conditions would be best?]
+   - Temperature: [What temperature range?]
+   - Soil: [What soil type?]
+   - Fertilizing: [What fertilization approach?]
+   - Humidity: [What humidity level?]
+   - Growth: [What can you observe about growth and size?]
+   - Blooming: [If you see flowers, describe them. If not, mention when it typically blooms.]
+
+Interesting Facts: [4 facts about this plant type - 3 educational, 1 funny.]
+
+HEALTH ASSESSMENT: [CRITICAL - Look at this specific plant in the image. Is it healthy, thriving, or does it have visible problems? Be specific about what you observe - leaf color, growth pattern, any damage, etc. If it looks healthy, state that clearly. If there are issues, describe what you see and what needs to be fixed.]
+
+IMPORTANT: You CAN analyze this image. Look carefully at the plant's current condition. Focus on health assessment and any visible problems that need attention.`;
+      } else {
+        // NEW PLANT ANALYSIS PROMPT - Focus on identification and general care
+        promptText = `You are a plant expert. Look at this plant photo and identify the plant. You MUST follow this EXACT format:
 
 Plant: [What is the name of this plant? Look at the leaves, flowers, and overall appearance.]
 Species: [What is the specific species? If you can see distinctive characteristics, provide it. If not, leave blank.]
@@ -75,7 +96,18 @@ Interesting Facts: [4 facts about this plant type - 3 educational, 1 funny.]
 
 HEALTH ASSESSMENT: [Is this plant healthy? Look at leaf color, growth, any damage. Be specific about what you observe.]
 
-IMPORTANT: You CAN analyze this image. Look carefully and identify the plant. Do not say you cannot analyze images.`
+IMPORTANT: You CAN analyze this image. Look carefully and identify the plant. Do not say you cannot analyze images.`;
+      }
+
+      const response = await openaiClient.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: promptText
               },
               {
                 type: 'image_url',
@@ -168,6 +200,7 @@ IMPORTANT: Focus on practical care information that plant owners can actually us
       const content = response.choices[0].message.content;
       console.log('✅ Plant content generation successful');
 
+      // Parse the AI response to extract structured information
       const recommendations = parseAIResponse(content);
 
       res.json({
@@ -176,130 +209,303 @@ IMPORTANT: Focus on practical care information that plant owners can actually us
         rawResponse: content
       });
 
-    } catch (error) {
-      console.error('❌ Plant Content Generation Error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+    } catch (e) {
+      console.error('❌ Plant Content Generation Error:', e);
+      throw new Exception('Plant content generation failed: $e');
     }
   });
 });
 
 /**
  * Parse AI response to extract structured information
- * Maps to the expected Flutter app format
  */
-function parseAIResponse(content) {
+function parseAIResponse(aiResponse) {
   try {
-    const lines = content.split('\n');
-    const result = {};
-    let currentSection = '';
+    // Try to parse as JSON first
+    if (aiResponse.trim().startsWith('{')) {
+      const jsonData = JSON.parse(aiResponse);
+      return jsonData;
+    }
     
+    // Fallback: extract information from text
+    const response = aiResponse.toLowerCase();
+    
+    // Extract plant name from Plant field
+    let plantName = 'Plant';
+    const lines = aiResponse.split('\n');
     for (const line of lines) {
       const trimmedLine = line.trim();
-      if (trimmedLine.startsWith('Plant:')) {
-        currentSection = 'plant';
-        result.plant = trimmedLine.substring(6).trim();
-      } else if (trimmedLine.startsWith('Species:')) {
-        currentSection = 'species';
-        result.species = trimmedLine.substring(8).trim();
-      } else if (trimmedLine.startsWith('Description:')) {
-        currentSection = 'description';
-        result.description = trimmedLine.substring(12).trim();
-      } else if (trimmedLine.startsWith('Care Recommendations:')) {
-        currentSection = 'careRecommendations';
-        result.careRecommendations = {};
-      } else if (trimmedLine.startsWith('- Watering:')) {
-        result.careRecommendations.watering = trimmedLine.substring(11).trim();
-      } else if (trimmedLine.startsWith('- Light Requirements:')) {
-        result.careRecommendations.lightRequirements = trimmedLine.substring(20).trim();
-      } else if (trimmedLine.startsWith('- Temperature:')) {
-        result.careRecommendations.temperature = trimmedLine.substring(14).trim();
-      } else if (trimmedLine.startsWith('- Soil:')) {
-        result.careRecommendations.soil = trimmedLine.substring(7).trim();
-      } else if (trimmedLine.startsWith('- Fertilizing:')) {
-        result.careRecommendations.fertilizing = trimmedLine.substring(14).trim();
-      } else if (trimmedLine.startsWith('- Humidity:')) {
-        result.careRecommendations.humidity = trimmedLine.substring(11).trim();
-      } else if (trimmedLine.startsWith('- Growth Rate / Size:')) {
-        result.careRecommendations.growthRate = trimmedLine.substring(20).trim();
-      } else if (trimmedLine.startsWith('- Blooming:')) {
-        result.careRecommendations.blooming = trimmedLine.substring(11).trim();
-      } else if (trimmedLine.startsWith('Interesting Facts:')) {
-        currentSection = 'interestingFacts';
-        result.interestingFacts = [];
-      } else if (currentSection === 'interestingFacts' && trimmedLine.length > 0) {
-        result.interestingFacts.push(trimmedLine);
-      } else if (currentSection === 'careRecommendations' && trimmedLine.startsWith('-') && trimmedLine.includes(':')) {
-        // Handle any additional care recommendations
-        const colonIndex = trimmedLine.indexOf(':');
-        const key = trimmedLine.substring(1, colonIndex).trim().toLowerCase().replace(/\s+/g, '');
-        const value = trimmedLine.substring(colonIndex + 1).trim();
-        if (key && value) {
-          result.careRecommendations[key] = value;
+      if (trimmedLine.toLowerCase().startsWith('plant:')) {
+        const parts = trimmedLine.split(':');
+        if (parts.length >= 2) {
+          plantName = parts[1].trim();
+          break;
         }
       }
     }
     
-    // Map to expected Flutter app format
+    // Extract species
+    let species = '';
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.toLowerCase().startsWith('species:')) {
+        const parts = trimmedLine.split(':');
+        if (parts.length >= 2) {
+          species = parts[1].trim();
+          break;
+        }
+      }
+    }
+    
+    // Extract moisture level
+    let moistureLevel = 'Moderate';
+    if (response.includes('dry') || response.includes('underwatered')) {
+      moistureLevel = 'Low';
+    } else if (response.includes('wet') || response.includes('overwatered')) {
+      moistureLevel = 'High';
+    }
+    
+    // Extract light requirements
+    let light = 'Bright indirect light';
+    if (response.includes('low light') || response.includes('shade')) {
+      light = 'Low light';
+    } else if (response.includes('direct sun') || response.includes('full sun')) {
+      light = 'Direct sunlight';
+    }
+    
+    // Extract watering frequency
+    let wateringFrequency = 7;
+    if (response.includes('every 3 days') || response.includes('3 days')) {
+      wateringFrequency = 3;
+    } else if (response.includes('every 5 days') || response.includes('5 days')) {
+      wateringFrequency = 5;
+    } else if (response.includes('every 10 days') || response.includes('10 days')) {
+      wateringFrequency = 10;
+    } else if (response.includes('every 14 days') || response.includes('14 days')) {
+      wateringFrequency = 14;
+    }
+
+    // Extract structured care recommendations
+    const careRecommendations = extractStructuredCareRecommendations(aiResponse);
+
     return {
-      general_description: result.description || content,
-      name: result.plant || 'Plant',
-      moisture_level: result.careRecommendations?.humidity || 'Moderate',
-      light: result.careRecommendations?.lightRequirements || 'Bright indirect light',
-      watering_frequency: _extractWateringFrequency(result.careRecommendations?.watering),
+      general_description: aiResponse,
+      name: plantName,
+      species: species,
+      moisture_level: moistureLevel,
+      light: light,
+      watering_frequency: wateringFrequency,
       watering_amount: 'Until soil is moist',
-      specific_issues: 'No specific issues detected',
-      care_tips: _formatCareTips(result.careRecommendations),
-      interesting_facts: result.interestingFacts || ['Every plant is unique', 'Plants grow throughout their lifecycle', 'Proper care helps plants thrive', 'Plants can communicate with each other']
+      specific_issues: extractIssues(aiResponse),
+      care_tips: careRecommendations,
+      interesting_facts: extractInterestingFacts(aiResponse),
     };
-  } catch (error) {
-    console.error('Error parsing AI response:', error);
-    return { 
-      general_description: content,
+  } catch (e) {
+    console.error('❌ Failed to parse AI response:', e);
+    return {
+      general_description: aiResponse,
       name: 'Plant',
+      species: '',
       moisture_level: 'Moderate',
       light: 'Bright indirect light',
       watering_frequency: 7,
       watering_amount: 'Until soil is moist',
       specific_issues: 'Please check plant care manually',
       care_tips: 'Monitor soil moisture and light conditions',
-      interesting_facts: ['Every plant is unique', 'Plants grow throughout their lifecycle', 'Proper care helps plants thrive', 'Plants can communicate with each other']
+      interesting_facts: ['Every plant is unique and has its own special characteristics', 'Plants grow and change throughout their lifecycle', 'Proper care helps plants thrive and stay healthy'],
     };
   }
 }
 
 /**
- * Extract watering frequency from watering text
+ * Extract structured care recommendations from AI response
  */
-function _extractWateringFrequency(wateringText) {
-  if (!wateringText) return 7;
+function extractStructuredCareRecommendations(response) {
+  const sections = [];
   
-  const text = wateringText.toLowerCase();
-  if (text.includes('every 3 days') || text.includes('3 days')) return 3;
-  if (text.includes('every 5 days') || text.includes('5 days')) return 5;
-  if (text.includes('every 10 days') || text.includes('10 days')) return 10;
-  if (text.includes('every 14 days') || text.includes('14 days')) return 14;
-  if (text.includes('weekly') || text.includes('once a week')) return 7;
-  if (text.includes('daily') || text.includes('every day')) return 1;
+  // Split response into lines and look for structured sections
+  const lines = response.split('\n');
   
-  return 7; // Default
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.isEmpty) continue;
+    
+    const lowerLine = trimmedLine.toLowerCase();
+    
+    // Check if we're entering the interesting facts section (end of care content)
+    if (lowerLine.includes('interesting facts') || lowerLine.includes('fun facts')) {
+      break;
+    }
+    
+    // Extract any line with a colon (Plant:, Description:, Watering:, etc.)
+    if (trimmedLine.includes(':')) {
+      const parts = trimmedLine.split(':');
+      if (parts.length >= 2) {
+        const title = parts[0].trim();
+        const content = parts.slice(1).join(':').trim();
+        
+        if (title.length > 0 && content.length > 0) {
+          // Clean up the title and content
+          const cleanTitle = cleanSectionTitle(title);
+          const cleanContent = cleanSectionContent(content);
+          
+          if (cleanTitle.length > 0 && cleanContent.length > 0) {
+            sections.push(`${cleanTitle}: ${cleanContent}`);
+          }
+        }
+      }
+    }
+  }
+  
+  // If no structured sections found, try to extract from the entire response
+  if (sections.length === 0) {
+    const careSections = extractCareSectionsFromText(response);
+    sections.push(...careSections);
+  }
+  
+  return sections.length === 0 ? 'Follow general plant care guidelines' : sections.join('\n');
 }
 
 /**
- * Format care tips from care recommendations
+ * Extract specific issues from AI response
  */
-function _formatCareTips(careRecommendations) {
-  if (!careRecommendations) return 'Follow general plant care guidelines';
+function extractIssues(response) {
+  const issues = [];
   
+  if (response.toLowerCase().includes('yellow') || response.toLowerCase().includes('yellowing')) {
+    issues.push('Yellowing leaves');
+  }
+  if (response.toLowerCase().includes('brown') || response.toLowerCase().includes('browning')) {
+    issues.push('Brown spots or edges');
+  }
+  if (response.toLowerCase().includes('wilted') || response.toLowerCase().includes('wilting')) {
+    issues.push('Wilting or drooping');
+  }
+  if (response.toLowerCase().includes('dry') || response.toLowerCase().includes('underwatered')) {
+    issues.push('Underwatering');
+  }
+  if (response.includes('wet') || response.includes('overwatered')) {
+    issues.push('Overwatering');
+  }
+  if (response.includes('root rot')) {
+    issues.push('Root rot');
+  }
+  
+  return issues.length === 0 ? 'No specific issues detected' : issues.join(', ');
+}
+
+/**
+ * Extract care tips from AI response
+ */
+function extractCareTips(response) {
   const tips = [];
-  if (careRecommendations.watering) tips.push(`Watering: ${careRecommendations.watering}`);
-  if (careRecommendations.lightRequirements) tips.push(`Light: ${careRecommendations.lightRequirements}`);
-  if (careRecommendations.temperature) tips.push(`Temperature: ${careRecommendations.temperature}`);
-  if (careRecommendations.soil) tips.push(`Soil: ${careRecommendations.soil}`);
-  if (careRecommendations.fertilizing) tips.push(`Fertilizing: ${careRecommendations.fertilizing}`);
-  if (careRecommendations.humidity) tips.push(`Humidity: ${careRecommendations.humidity}`);
   
-  return tips.length > 0 ? tips.join('\n') : 'Follow general plant care guidelines';
+  if (response.toLowerCase().includes('water')) {
+    tips.push('Monitor soil moisture regularly');
+  }
+  if (response.toLowerCase().includes('light')) {
+    tips.push('Ensure proper light conditions');
+  }
+  if (response.toLowerCase().includes('temperature')) {
+    tips.push('Maintain stable temperature');
+  }
+  if (response.toLowerCase().includes('humidity')) {
+    tips.push('Consider humidity levels');
+  }
+  if (response.toLowerCase().includes('fertilizer')) {
+    tips.push('Use appropriate fertilizer');
+  }
+  
+  return tips.length === 0 ? 'Follow general plant care guidelines' : tips.join('. ') + '.';
+}
+
+/**
+ * Extract interesting facts from AI response
+ */
+function extractInterestingFacts(response) {
+  const facts = [];
+  
+  // Look for numbered facts
+  const factPattern = /\d+\.\s*(.+)/g;
+  let match;
+  
+  while ((match = factPattern.exec(response)) !== null) {
+    if (facts.length < 4) {
+      facts.push(match[1].trim());
+    }
+  }
+  
+  // If no numbered facts found, try to extract from Interesting Facts section
+  if (facts.length === 0) {
+    const lines = response.split('\n');
+    let inInterestingFacts = false;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      const lowerLine = trimmedLine.toLowerCase();
+      
+      if (lowerLine.includes('interesting facts')) {
+        inInterestingFacts = true;
+        continue;
+      }
+      
+      if (inInterestingFacts) {
+        if (lowerLine.includes('health assessment') || lowerLine.includes('care recommendations')) {
+          break;
+        }
+        
+        if (trimmedLine.length > 0 && !trimmedLine.startsWith('-') && !trimmedLine.startsWith('•')) {
+          facts.push(trimmedLine);
+          if (facts.length >= 4) break;
+        }
+      }
+    }
+  }
+  
+  // If still no facts, provide default ones
+  if (facts.length === 0) {
+    facts.push(
+      'Every plant is unique and has its own special characteristics',
+      'Plants grow and change throughout their lifecycle',
+      'Proper care helps plants thrive and stay healthy',
+      'Plants can communicate with each other through chemical signals'
+    );
+  }
+  
+  return facts;
+}
+
+/**
+ * Clean section title for better formatting
+ */
+function cleanSectionTitle(title) {
+  return title.trim().replace(/[^\w\s]/g, '');
+}
+
+/**
+ * Clean section content for better formatting
+ */
+function cleanSectionContent(content) {
+  return content.trim().replace(/\n+/g, ' ').replace(/\s+/g, ' ');
+}
+
+/**
+ * Extract care sections from text when structured format fails
+ */
+function extractCareSectionsFromText(text) {
+  const sections = [];
+  
+  // Look for common care-related keywords
+  const careKeywords = ['watering', 'light', 'temperature', 'soil', 'fertilizing', 'humidity'];
+  
+  for (const keyword of careKeywords) {
+    const regex = new RegExp(`${keyword}[^\\n]*`, 'gi');
+    const matches = text.match(regex);
+    
+    if (matches && matches.length > 0) {
+      sections.push(matches[0].trim());
+    }
+  }
+  
+  return sections;
 }

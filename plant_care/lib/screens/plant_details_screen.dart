@@ -854,7 +854,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               ),
                               child: FractionallySizedBox(
                                 alignment: Alignment.centerLeft,
-              widthFactor: (moisturePercentage / 100).clamp(0.0, 1.0),
+              widthFactor: moisturePercentage / 100,
                                 child: Container(
                                   decoration: BoxDecoration(
                   color: Colors.green,
@@ -938,18 +938,31 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   Widget _buildAiCareCard() {
     if (_plant.healthMessage == null) return const SizedBox.shrink();
     
-    // Use the actual health status from the health check, not text parsing
-    // This is the correct way to determine if the plant needs help
-    final isBadAdvice = _plant.healthStatus?.toLowerCase() == 'issue' ||
+    // Check if the advice indicates problems
+    final advice = _plant.healthMessage!.toLowerCase();
+    final isBadAdvice = advice.contains('critical') || 
+                       advice.contains('dying') || 
+                       advice.contains('urgent') || 
+                       advice.contains('emergency') || 
+                       advice.contains('severe') || 
+                       advice.contains('serious problem') ||
+                       advice.contains('immediate attention') ||
+                       advice.contains('declining') ||
+                       advice.contains('unhealthy') ||
+                       advice.contains('yellow') ||
+                       advice.contains('brown') ||
+                       advice.contains('wilting') ||
+                       advice.contains('drooping') ||
+                       advice.contains('overwatered') ||
+                       advice.contains('underwatered') ||
+                       advice.contains('root rot') ||
+                       advice.contains('pest') ||
+                       advice.contains('disease') ||
+                       advice.contains('stress') ||
+                       advice.contains('problem') ||
+                       advice.contains('issue') ||
                        _plant.healthStatus?.toLowerCase() == 'critical' ||
                        _plant.healthStatus?.toLowerCase() == 'needs attention';
-    
-    // Debug logging to verify the logic
-    print('🌱 Plant Details: AI Care Card Logic:');
-    print('🌱 Plant healthStatus: ${_plant.healthStatus}');
-    print('🌱 Plant healthMessage length: ${_plant.healthMessage?.length}');
-    print('🌱 isBadAdvice calculated: $isBadAdvice');
-    print('🌱 Will show: ${isBadAdvice ? "Plant Needs Help!" : "Plant Care Assistant"}');
     
     return Container(
       width: double.infinity, // Full width for mobile
@@ -996,14 +1009,22 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 10),
           
-          // Content based on health status
-          if (isBadAdvice) ...[
-            // For unhealthy plants: Show structured content in specific order
-            _buildUnhealthyPlantSummary(),
-          ] else ...[
-            // For healthy plants: Show only essential information
-            _buildHealthyPlantSummary(),
-          ],
+          // Health Message - Full width with proper text wrapping
+          Container(
+            width: double.infinity,
+            child: Text(
+            _plant.healthMessage!,
+            style: TextStyle(
+                fontSize: 13,
+              color: isBadAdvice ? Colors.red.shade800 : Colors.grey.shade800,
+                height: 1.4, // Better line height for readability
+            ),
+              // Allow text to wrap naturally
+            maxLines: null,
+            overflow: TextOverflow.visible,
+              textAlign: TextAlign.left,
+            ),
+          ),
           
           // Add helpful tips for bad advice - more compact
           if (isBadAdvice) ...[
@@ -1197,203 +1218,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ],
       ),
     );
-    }
-  
-  // Healthy Plant Summary - Shows only essential info for healthy plants
-  Widget _buildHealthyPlantSummary() {
-    // Extract plant name and species from health message
-    String plantName = 'Plant';
-    String species = '';
-    String detailedHealthAssessment = 'Your plant is looking great!';
-    
-    if (_plant.healthMessage != null) {
-      final lines = _plant.healthMessage!.split('\n');
-      for (final line in lines) {
-        final trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase().startsWith('plant:')) {
-          final parts = trimmedLine.split(':');
-          if (parts.length >= 2) {
-            plantName = parts[1].trim();
-          }
-        } else if (trimmedLine.toLowerCase().startsWith('species:')) {
-          final parts = trimmedLine.split(':');
-          if (parts.length >= 2) {
-            species = parts[1].trim();
-          }
-        } else if (trimmedLine.toLowerCase().startsWith('health assessment:')) {
-          final parts = trimmedLine.split(':');
-          if (parts.length >= 2) {
-            detailedHealthAssessment = parts[1].trim();
-          }
-        }
-      }
-    }
-    
-    // Create a friendly, detailed health assessment
-    String friendlyAssessment = '';
-    if (detailedHealthAssessment.toLowerCase().contains('healthy') || 
-        detailedHealthAssessment.toLowerCase().contains('thriving') ||
-        detailedHealthAssessment.toLowerCase().contains('good')) {
-      friendlyAssessment = 'Your plant looks healthy and thriving! It has vibrant green leaves, strong growth, and shows no signs of disease or stress. You are doing well taking care of it! 🌱✨';
-    } else if (detailedHealthAssessment.toLowerCase().contains('no visible signs') ||
-               detailedHealthAssessment.toLowerCase().contains('appears healthy')) {
-      friendlyAssessment = 'Your plant appears healthy with no visible issues! The leaves look good, growth is steady, and overall condition is excellent. Keep up the great work! 🌱✨';
-    } else {
-      friendlyAssessment = 'Your plant is looking great! It shows healthy growth and good condition. You are doing well with your plant care routine! 🌱✨';
-    }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Plant Name
-        Text(
-          'Plant Name: $plantName',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.green.shade800,
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        // Species - Only show if not empty
-        if (species.isNotEmpty) ...[
-          Text(
-            'Species: $species',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.green.shade800,
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        
-        // Health Assessment (detailed and friendly)
-        Text(
-          'Health Assessment: $friendlyAssessment',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.green.shade700,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
   }
-  
-  // Unhealthy Plant Summary - Shows structured content for plants with issues
-  Widget _buildUnhealthyPlantSummary() {
-    // Extract information from health message
-    String plantName = 'Plant';
-    String species = '';
-    String healthAssessment = 'Health assessment not available';
-    String careRecommendations = 'Care recommendations not available';
-    
-    if (_plant.healthMessage != null) {
-      final lines = _plant.healthMessage!.split('\n');
-      bool inCareRecommendations = false;
-      List<String> careRecs = [];
-      
-      for (final line in lines) {
-        final trimmedLine = line.trim();
-        
-        if (trimmedLine.toLowerCase().startsWith('plant:')) {
-          final parts = trimmedLine.split(':');
-          if (parts.length >= 2) {
-            plantName = parts[1].trim();
-          }
-        } else if (trimmedLine.toLowerCase().startsWith('species:')) {
-          final parts = trimmedLine.split(':');
-          if (parts.length >= 2) {
-            species = parts[1].trim();
-          }
-        } else if (trimmedLine.toLowerCase().startsWith('health assessment:')) {
-          final parts = trimmedLine.split(':');
-          if (parts.length >= 2) {
-            healthAssessment = parts[1].trim();
-          }
-        } else if (trimmedLine.toLowerCase().startsWith('care recommendations:')) {
-          inCareRecommendations = true;
-          continue;
-        } else if (trimmedLine.toLowerCase().startsWith('interesting facts:') || 
-                   trimmedLine.toLowerCase().startsWith('description:')) {
-          inCareRecommendations = false;
-          continue;
-        } else if (inCareRecommendations && trimmedLine.isNotEmpty && 
-                   !trimmedLine.startsWith('-') && !trimmedLine.startsWith('•')) {
-          // Skip bullet points and empty lines
-          continue;
-        } else if (inCareRecommendations && trimmedLine.isNotEmpty) {
-          careRecs.add(trimmedLine);
-        }
-      }
-      
-      if (careRecs.isNotEmpty) {
-        careRecommendations = careRecs.join('\n');
-      }
-    }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 1. Plant Name
-        Text(
-          'Plant Name: $plantName',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.red.shade800,
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        // 2. Species - Only show if not empty
-        if (species.isNotEmpty) ...[
-          Text(
-            'Species: $species',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.red.shade800,
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        
-        // 3. Health Assessment
-        Text(
-          'Health Assessment: $healthAssessment',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.red.shade700,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        // 4. Care Recommendations
-        Text(
-          'Care Recommendations:',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.red.shade800,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          careRecommendations,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.red.shade700,
-            height: 1.3,
-          ),
-        ),
-      ],
-    );
-  }
-  
+
   // Care Recommendations Accordion
   Widget _buildDetailsAccordion() {
     // Show details for all plants, even new ones without AI data
@@ -2350,30 +2176,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   int _getMoisturePercentage(String? moistureLevel) {
     if (moistureLevel == null) return 50;
     
-    try {
-      final lowerLevel = moistureLevel.toLowerCase();
-      int percentage;
-      
-      if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) {
-        percentage = 10;
-      } else if (lowerLevel.contains('low') || lowerLevel.contains('dry')) {
-        percentage = 25;
-      } else if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) {
-        percentage = 50;
-      } else if (lowerLevel.contains('high') || lowerLevel.contains('moist')) {
-        percentage = 75;
-      } else if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) {
-        percentage = 90;
-      } else {
-        percentage = 50; // Default to moderate
-      }
-      
-      // Return full moisture percentage range (0-100)
-      return percentage;
-    } catch (e) {
-      print('Error parsing moisture level: $moistureLevel, error: $e');
-      return 50; // Safe fallback
-    }
+    final lowerLevel = moistureLevel.toLowerCase();
+    if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
+    if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 25;
+    if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 50;
+    if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 75;
+    if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 90;
+    
+    return 50; // Default to moderate
   }
   
   /// Format moisture level to match AI recommendations format
@@ -2448,7 +2258,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   String _getUnifiedHealthStatus() {
     print('🌱 Plant Details: Determining unified health status...');
     print('🌱 Plant healthStatus: ${_plant.healthStatus}');
-    print('🌱 Plant healthMessage: ${_plant.healthMessage != null ? (_plant.healthMessage!.length > 100 ? _plant.healthMessage!.substring(0, 100) + "..." : _plant.healthMessage!) : "null"}');
+    print('🌱 Plant healthMessage: ${_plant.healthMessage?.substring(0, 100)}...');
     
     // PRIORITY 1: Use the plant's stored health status (from health checks)
     if (_plant.healthStatus != null && _plant.healthStatus!.isNotEmpty) {

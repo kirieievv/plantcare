@@ -1,45 +1,74 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Service for interacting with Firebase Functions for AI plant analysis
+/// Service for interacting with OpenAI's ChatGPT API
 class ChatGPTService {
-  // Firebase Functions URLs
-  static const String _analyzePhotoUrl = 'https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto';
-  static const String _generateContentUrl = 'https://us-central1-plant-care-94574.cloudfunctions.net/generatePlantContent';
+  // API configuration
+  static String get _baseUrl => dotenv.env['OPENAI_BASE_URL'] ?? 'https://api.openai.com/v1';
+  static const String _model = 'gpt-4o';
   
-  /// Analyzes a plant photo using Firebase Functions
-  static Future<Map<String, dynamic>> analyzePlantPhoto(String base64Image, {bool isHealthCheck = false}) async {
+  // API key from environment variables
+  static String get _apiKey {
+    final key = dotenv.env['OPENAI_API_KEY'];
+    if (key == null || key.isEmpty) {
+      throw Exception('OPENAI_API_KEY environment variable is not set');
+    }
+    return key;
+  }
+  
+  /// Analyzes a plant photo using OpenAI's GPT-4 Vision API
+  static Future<Map<String, dynamic>> analyzePlantPhoto(String base64Image) async {
     try {
-      print('🔍 Starting plant photo analysis via Firebase Functions');
+      print('🔍 Starting plant photo analysis with model: $_model');
+      print('🔍 API Key length: ${_apiKey.length}');
       print('🔍 Base64 image length: ${base64Image.length}');
-      print('🔍 Is Health Check: $isHealthCheck');
       
       final response = await http.post(
-        Uri.parse(_analyzePhotoUrl),
+        Uri.parse('$_baseUrl/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiKey',
         },
         body: jsonEncode({
-          'base64Image': base64Image,
-          'isHealthCheck': isHealthCheck,
+          'model': _model,
+          'messages': [
+            {
+              'role': 'user',
+              'content': [
+                {
+                  'type': 'text',
+                  'text': r'Analyze this plant photo and provide detailed care recommendations. You MUST follow this EXACT format:\n\nPlant: [Identify the plant and provide the common name and scientific name if possible]\nDescription: [Provide a detailed description of the plant including its appearance, characteristics, and general information]\nCare Recommendations:\n   - Watering: [Specific watering instructions]\n   - Light Requirements: [Light needs]\n   - Temperature: [Temperature preferences]\n   - Soil: [Soil type and requirements]\n   - Fertilizing: [Fertilizer needs]\n   - Humidity: [Humidity requirements]\n   - Growth Rate / Size: [Growth characteristics]\n   - Blooming: [Flowering information if applicable]\nInteresting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.\n\nIMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.',
+                },
+                {
+                  'type': 'image_url',
+                  'image_url': {
+                    'url': 'data:image/jpeg;base64,$base64Image',
+                  },
+                },
+              ],
+            },
+          ],
+          'max_tokens': 1000,
+          'temperature': 0.7,
         }),
       );
       
       print('🔍 API Response Status: ${response.statusCode}');
+      print('🔍 API Response Headers: ${response.headers}');
       print('🔍 API Response Body: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final content = data['choices'][0]['message']['content'];
         
-        if (data['success'] == true) {
-          print('✅ Plant analysis successful');
-          // Use the working parsing logic from the old version
-          final rawResponse = data['rawResponse'] ?? data['recommendations']['general_description'] ?? '';
-          final recommendations = _parseAIResponse(rawResponse);
-          return recommendations;
-        } else {
-          throw Exception('AI analysis failed: ${data['error']}');
-        }
+        // Parse the AI response to extract structured information
+        final recommendations = _parseAIResponse(content);
+        
+        print('✅ Plant analysis successful');
+        print('✅ Extracted recommendations: $recommendations');
+        
+        return recommendations;
       } else {
         print('❌ API request failed with status: ${response.statusCode}');
         print('❌ Error response: ${response.body}');
@@ -56,35 +85,55 @@ class ChatGPTService {
     try {
       print('🔍 Generating AI content for existing plant: $plantName ($species)');
       
+      // Unified prompt for both image and text analysis
+      String prompt;
+      if (base64Image != null) {
+        prompt = 'Analyze this plant photo and provide detailed care recommendations. This is a $plantName. You MUST follow this EXACT format:\n\nPlant: [Identify the plant and provide the common name and scientific name if possible]\nDescription: [Provide a detailed description of the plant including its appearance, characteristics, and general information]\nCare Recommendations:\n   - Watering: [Specific watering instructions]\n   - Light Requirements: [Light needs]\n   - Temperature: [Temperature preferences]\n   - Soil: [Soil type and requirements]\n   - Fertilizing: [Fertilizer needs]\n   - Humidity: [Humidity requirements]\n   - Growth Rate / Size: [Growth characteristics]\n   - Blooming: [Flowering information if applicable]\nInteresting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.\n\nIMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.';
+      } else {
+        prompt = r'Provide detailed care recommendations for a $plantName. You MUST follow this EXACT format:\n\nPlant: [Identify the plant and provide the common name and scientific name if possible]\nDescription: [Provide a detailed description of the plant including its appearance, characteristics, and general information]\nCare Recommendations:\n   - Watering: [Specific watering instructions]\n   - Light Requirements: [Light needs]\n   - Temperature: [Temperature preferences]\n   - Soil: [Soil type and requirements]\n   - Fertilizing: [Fertilizer needs]\n   - Humidity: [Humidity requirements]\n   - Growth Rate / Size: [Growth characteristics]\n   - Blooming: [Flowering information if applicable]\nInteresting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.\n\nIMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.';
+      }
+      
+      // Use GPT-4o for both image and text analysis
       final response = await http.post(
-        Uri.parse(_generateContentUrl),
+        Uri.parse('$_baseUrl/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiKey',
         },
         body: jsonEncode({
-          'plantName': plantName,
-          'species': species,
+          'model': _model, // Always use GPT-4o
+          'messages': [
+            {
+              'role': 'user',
+              'content': base64Image != null 
+                ? [
+                    {
+                      'type': 'text',
+                      'text': prompt,
+                    },
+                    {
+                      'type': 'image_url',
+                      'image_url': {
+                        'url': 'data:image/jpeg;base64,$base64Image',
+                      },
+                    },
+                  ]
+                : prompt,
+            },
+          ],
+          'max_tokens': 1000,
+          'temperature': 0.7,
         }),
       );
       
-      print('🔍 API Response Status: ${response.statusCode}');
-      print('🔍 API Response Body: ${response.body}');
-      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
-        if (data['success'] == true) {
-          print('✅ Plant content generation successful');
-          // Use the working parsing logic from the old version
-          final rawResponse = data['rawResponse'] ?? data['recommendations']['general_description'] ?? '';
-          final recommendations = _parseAIResponse(rawResponse);
-          return recommendations;
-        } else {
-          throw Exception('AI content generation failed: ${data['error']}');
-        }
+        final content = data['choices'][0]['message']['content'];
+        final recommendations = _parseAIResponse(content);
+        print('✅ Plant content generation successful using GPT-4o');
+        return recommendations;
       } else {
-        print('❌ API request failed with status: ${response.statusCode}');
-        print('❌ Error response: ${response.body}');
+        print('❌ GPT-4o API request failed with status: ${response.statusCode}');
         throw Exception('Failed to generate plant content: ${response.statusCode}');
       }
     } catch (e) {
@@ -93,65 +142,121 @@ class ChatGPTService {
     }
   }
   
-  /// Analyzes plant health using Firebase Functions
+  /// Analyzes plant health using OpenAI's GPT-4 Vision API
   static Future<Map<String, dynamic>> analyzePlantHealth(String base64Image, String prompt) async {
     try {
-      print('🔍 Starting plant health analysis via Firebase Functions');
+      print('🔍 Starting plant health analysis with model: $_model');
+      print('🔍 API Key length: ${_apiKey.length}');
       print('🔍 Base64 image length: ${base64Image.length}');
       print('🔍 Prompt: $prompt');
       
       final response = await http.post(
-        Uri.parse(_analyzePhotoUrl),
+        Uri.parse('$_baseUrl/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiKey',
         },
         body: jsonEncode({
-          'base64Image': base64Image,
+          'model': _model,
+        'messages': [
+          {
+            'role': 'user',
+            'content': [
+              {
+                'type': 'text',
+                'text': prompt,
+              },
+              {
+                'type': 'image_url',
+                'image_url': {
+                  'url': 'data:image/jpeg;base64,$base64Image',
+                },
+              },
+            ],
+          },
+        ],
+          'max_tokens': 1000,
+          'temperature': 0.7,
         }),
       );
       
       print('🔍 API Response Status: ${response.statusCode}');
+      print('🔍 API Response Headers: ${response.headers}');
       print('🔍 API Response Body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final content = data['choices'][0]['message']['content'];
         
-        if (data['success'] == true) {
-          final rawResponse = data['rawResponse'] ?? '';
-          return {
-            'message': rawResponse,
-            'status': 'success',
-          };
-        } else {
-          throw Exception('AI analysis failed: ${data['error']}');
-        }
-      } else {
-        print('❌ API request failed with status: ${response.statusCode}');
-        print('❌ Error response: ${response.body}');
-        throw Exception('Failed to analyze plant health: ${response.statusCode}');
+        return {
+          'message': content,
+          'status': 'success',
+        };
       }
+      
+      throw Exception('Failed to analyze plant health: ${response.statusCode}');
     } catch (e) {
       print('❌ Plant Health Analysis Error: $e');
       throw Exception('Plant health analysis failed: $e');
     }
   }
   
-  /// Checks if the Firebase Functions are available
+  /// Checks if the ChatGPT API is available
   static Future<bool> isApiAvailable() async {
     try {
-      print('🔍 Checking Firebase Functions availability...');
+      print('🔍 Checking API availability...');
+      print('🔍 API Key length: ${_apiKey.length}');
       
       final response = await http.get(
-        Uri.parse(_analyzePhotoUrl),
+        Uri.parse('$_baseUrl/models'),
+        headers: {
+          'Authorization': 'Bearer $_apiKey',
+        },
       );
 
       print('🔍 API Check Response Status: ${response.statusCode}');
+      print('🔍 API Check Response Headers: ${response.headers}');
+      print('🔍 API Check Response Body: ${response.body}');
       
-      // 405 Method Not Allowed is expected for GET requests
-      return response.statusCode == 405;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final models = data['data'] as List;
+        final availableModels = models.map((m) => m['id']).toList();
+        
+        print('✅ API is available');
+        print('✅ Available models: $availableModels');
+        
+        return availableModels.contains(_model);
+      }
+      
+      print('❌ API check failed with status: ${response.statusCode}');
+      return false;
     } catch (e) {
       print('❌ API availability check failed: $e');
       return false;
+    }
+  }
+  
+  /// Gets available models for debugging
+  static Future<List<String>> getAvailableModels() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/models'),
+        headers: {
+          'Authorization': 'Bearer $_apiKey',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final models = data['data'] as List;
+        return models.map((m) => m['id'] as String).toList();
+      }
+      
+      return <String>[];
+    } catch (e) {
+      print('❌ Failed to get available models: $e');
+      return <String>[];
     }
   }
   
@@ -207,12 +312,12 @@ class ChatGPTService {
         wateringFrequency = 10;
       } else if (response.contains('every 14 days') || response.contains('14 days')) {
         wateringFrequency = 14;
-      }
+        }
 
       // Extract structured care recommendations
       final careRecommendations = _extractStructuredCareRecommendations(aiResponse);
 
-      return {
+        return {
         'general_description': aiResponse,
         'name': plantName,
         'moisture_level': moistureLevel,
@@ -301,10 +406,10 @@ class ChatGPTService {
     if (response.toLowerCase().contains('dry') || response.toLowerCase().contains('underwatered')) {
       issues.add('Underwatering');
     }
-    if (response.contains('wet') || response.contains('overwatered')) {
+    if (response.toLowerCase().contains('wet') || response.toLowerCase().contains('overwatered')) {
       issues.add('Overwatering');
     }
-    if (response.contains('root rot')) {
+    if (response.toLowerCase().contains('root rot')) {
       issues.add('Root rot');
     }
     
@@ -427,7 +532,7 @@ class ChatGPTService {
       }
     }
     
-    return facts.take(4).toList();
+      return facts.take(4).toList();
   }
 
   /// Cleans fact text by removing special characters and formatting
@@ -495,7 +600,7 @@ class ChatGPTService {
     if (response.toLowerCase().contains('flowering')) {
       info.add('flowering');
     }
-    if (response.contains('fruiting')) {
+    if (response.toLowerCase().contains('fruiting')) {
       info.add('fruiting');
     }
     
