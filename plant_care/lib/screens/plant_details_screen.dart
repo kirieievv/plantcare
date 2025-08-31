@@ -1203,14 +1203,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   Widget _buildHealthyPlantSummary() {
     // Extract plant name and species from health message
     String plantName = 'Plant';
-    String species = 'Species';
+    String species = '';
     String detailedHealthAssessment = 'Your plant is looking great!';
     
     if (_plant.healthMessage != null) {
       final lines = _plant.healthMessage!.split('\n');
       for (final line in lines) {
         final trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase().startsWith('plant name:')) {
+        if (trimmedLine.toLowerCase().startsWith('plant:')) {
           final parts = trimmedLine.split(':');
           if (parts.length >= 2) {
             plantName = parts[1].trim();
@@ -1256,16 +1256,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ),
         const SizedBox(height: 12),
         
-        // Species
-        Text(
-          'Species: $species',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.green.shade800,
+        // Species - Only show if not empty
+        if (species.isNotEmpty) ...[
+          Text(
+            'Species: $species',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.green.shade800,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
         
         // Health Assessment (detailed and friendly)
         Text(
@@ -1284,7 +1286,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   Widget _buildUnhealthyPlantSummary() {
     // Extract information from health message
     String plantName = 'Plant';
-    String species = 'Species';
+    String species = '';
     String healthAssessment = 'Health assessment not available';
     String careRecommendations = 'Care recommendations not available';
     
@@ -1296,7 +1298,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       for (final line in lines) {
         final trimmedLine = line.trim();
         
-        if (trimmedLine.toLowerCase().startsWith('plant name:')) {
+        if (trimmedLine.toLowerCase().startsWith('plant:')) {
           final parts = trimmedLine.split(':');
           if (parts.length >= 2) {
             plantName = parts[1].trim();
@@ -1346,16 +1348,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ),
         const SizedBox(height: 12),
         
-        // 2. Species
-        Text(
-          'Species: $species',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.red.shade800,
+        // 2. Species - Only show if not empty
+        if (species.isNotEmpty) ...[
+          Text(
+            'Species: $species',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.red.shade800,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
         
         // 3. Health Assessment
         Text(
