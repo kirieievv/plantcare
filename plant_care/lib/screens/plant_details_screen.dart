@@ -947,7 +947,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               ),
                               child: FractionallySizedBox(
                                 alignment: Alignment.centerLeft,
-              widthFactor: moisturePercentage / 100,
+              widthFactor: (moisturePercentage / 100).clamp(0.0, 1.0),
                                 child: Container(
                                   decoration: BoxDecoration(
                   color: Colors.green,
@@ -2269,6 +2269,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   int _getMoisturePercentage(String? moistureLevel) {
     if (moistureLevel == null) return 50;
     
+    // First, check if it's already a percentage number
+    final percentage = int.tryParse(moistureLevel);
+    if (percentage != null && percentage >= 0 && percentage <= 100) {
+      return percentage;
+    }
+    
+    // Fallback to text-based conversion
     final lowerLevel = moistureLevel.toLowerCase();
     if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
     if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 25;

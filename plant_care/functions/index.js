@@ -302,12 +302,45 @@ function parseAIResponse(aiResponse) {
       }
     }
     
-    // Extract moisture level
+    // Extract moisture level - look for percentage values first
     let moistureLevel = 'Moderate';
-    if (response.includes('dry') || response.includes('underwatered')) {
-      moistureLevel = 'Low';
-    } else if (response.includes('wet') || response.includes('overwatered')) {
-      moistureLevel = 'High';
+    
+    // Look for moisture field with percentage
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.toLowerCase().startsWith('moisture:')) {
+        const parts = trimmedLine.split(':');
+        if (parts.length >= 2) {
+          const moistureText = parts[1].trim();
+          // Extract percentage if present
+          const percentageMatch = moistureText.match(/(\d+)/);
+          if (percentageMatch) {
+            const percentage = parseInt(percentageMatch[1]);
+            if (percentage >= 0 && percentage <= 100) {
+              moistureLevel = percentage.toString();
+            }
+          } else {
+            // Fallback to text-based extraction
+            if (moistureText.toLowerCase().includes('dry') || moistureText.toLowerCase().includes('underwatered')) {
+              moistureLevel = '25';
+            } else if (moistureText.toLowerCase().includes('wet') || moistureText.toLowerCase().includes('overwatered')) {
+              moistureLevel = '75';
+            } else if (moistureText.toLowerCase().includes('moderate') || moistureText.toLowerCase().includes('medium')) {
+              moistureLevel = '50';
+            }
+          }
+        }
+        break;
+      }
+    }
+    
+    // Fallback to old text-based extraction if no moisture field found
+    if (moistureLevel == 'Moderate') {
+      if (response.includes('dry') || response.includes('underwatered')) {
+        moistureLevel = '25';
+      } else if (response.includes('wet') || response.includes('overwatered')) {
+        moistureLevel = '75';
+      }
     }
     
     // Extract light requirements
