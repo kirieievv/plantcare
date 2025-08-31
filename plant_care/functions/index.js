@@ -74,7 +74,7 @@ IMPORTANT: You MUST start with "Plant Name:" and "Species:" sections before the 
 
 HEALTH ASSESSMENT: Based on the plant's appearance, assess if it appears healthy, thriving, or if there are any visible problems. Be specific about what you observe regarding the plant's health status. If the plant looks healthy with no visible issues, clearly state that it appears healthy and thriving.
 
-CRITICAL: Never say "I'm unable to identify the plant" if you can see plant features. Instead, provide your best identification based on what you observe. Only use "unable to identify" if the image shows no recognizable plant features at all.`
+CRITICAL: Never say "I'm unable to identify the plant" or similar phrases. Always provide your best plant identification based on what you can observe in the image. Be confident and direct in your identification.`
               },
               {
                 type: 'image_url',

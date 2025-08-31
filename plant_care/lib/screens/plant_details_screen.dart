@@ -996,22 +996,27 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 10),
           
-          // Health Message - Full width with proper text wrapping
-          Container(
-            width: double.infinity,
-            child: Text(
-            _plant.healthMessage!,
-            style: TextStyle(
-                fontSize: 13,
-              color: isBadAdvice ? Colors.red.shade800 : Colors.grey.shade800,
-                height: 1.4, // Better line height for readability
+          // Content based on health status
+          if (isBadAdvice) ...[
+            // For unhealthy plants: Show full health message with care recommendations
+            Container(
+              width: double.infinity,
+              child: Text(
+                _plant.healthMessage!,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.red.shade800,
+                  height: 1.4,
+                ),
+                maxLines: null,
+                overflow: TextOverflow.visible,
+                textAlign: TextAlign.left,
+              ),
             ),
-              // Allow text to wrap naturally
-            maxLines: null,
-            overflow: TextOverflow.visible,
-              textAlign: TextAlign.left,
-            ),
-          ),
+          ] else ...[
+            // For healthy plants: Show only essential information
+            _buildHealthyPlantSummary(),
+          ],
           
           // Add helpful tips for bad advice - more compact
           if (isBadAdvice) ...[
@@ -1205,8 +1210,97 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ],
       ),
     );
+    }
+  
+  // Healthy Plant Summary - Shows only essential info for healthy plants
+  Widget _buildHealthyPlantSummary() {
+    // Extract plant name and species from health message
+    String plantName = 'Plant';
+    String species = 'Species';
+    
+    if (_plant.healthMessage != null) {
+      final lines = _plant.healthMessage!.split('\n');
+      for (final line in lines) {
+        final trimmedLine = line.trim();
+        if (trimmedLine.toLowerCase().startsWith('plant name:')) {
+          final parts = trimmedLine.split(':');
+          if (parts.length >= 2) {
+            plantName = parts[1].trim();
+          }
+        } else if (trimmedLine.toLowerCase().startsWith('species:')) {
+          final parts = trimmedLine.split(':');
+          if (parts.length >= 2) {
+            species = parts[1].trim();
+          }
+        }
+      }
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Plant Name
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.green.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.shade300),
+          ),
+          child: Text(
+            'Plant Name: $plantName',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.green.shade800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // Species
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.green.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.shade300),
+          ),
+          child: Text(
+            'Species: $species',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.green.shade800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // Health Assessment (friendly message)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.green.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.shade300),
+          ),
+          child: Text(
+            'Health Assessment: Your plant is looking great! Keep doing so good! 🌱✨',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.green.shade800,
+            ),
+          ),
+        ),
+      ],
+    );
   }
-
+  
   // Care Recommendations Accordion
   Widget _buildDetailsAccordion() {
     // Show details for all plants, even new ones without AI data
