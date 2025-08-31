@@ -54,27 +54,21 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
             content: [
               {
                 type: 'text',
-                text: `Analyze this plant photo and provide detailed care recommendations. ${plantName ? `This is a ${plantName}.` : ''} You MUST follow this EXACT format:
+                text: `Analyze this plant photo and provide ONLY the following information:
 
-Plant Name: [What is the name of the plant?]
-Species: [What is the specific species of this plant? If available, show it next to the plant name. If not, leave it blank.]
-Description: [Provide a detailed description of the plant including its appearance, characteristics, and general information]
-Care Recommendations:
-   - Watering: [Specific watering instructions]
-   - Light Requirements: [Light needs]
-   - Temperature: [Temperature preferences]
-   - Soil: [Soil type and requirements]
-   - Fertilizing: [Fertilizer needs]
-   - Humidity: [Humidity requirements]
-   - Growth Rate / Size: [Growth characteristics]
-   - Blooming: [Flowering information if applicable]
-Interesting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.
+Plant Name: [Be specific - what type of plant is this?]
+Species: [Scientific name if visible, otherwise leave blank]
 
-IMPORTANT: You MUST start with "Plant Name:" and "Species:" sections before the Description. Analyze the image carefully and provide the most likely plant name and species. Be confident in your identification - if you can see plant features, provide the best possible identification rather than saying "unable to identify."
+Health Assessment: [Is this plant healthy or does it have visible problems? Be specific about what you see.]
 
-HEALTH ASSESSMENT: Based on the plant's appearance, assess if it appears healthy, thriving, or if there are any visible problems. Be specific about what you observe regarding the plant's health status. If the plant looks healthy with no visible issues, clearly state that it appears healthy and thriving.
+Care Recommendations: [Based on the plant's current condition, what specific care does it need?]
 
-CRITICAL: Never say "I'm unable to identify the plant" or similar phrases. Always provide your best plant identification based on what you can observe in the image. Be confident and direct in your identification.`
+IMPORTANT: 
+- Be confident in your plant identification
+- Focus on what you can actually see in the image
+- If you can see plant features, identify them specifically
+- Only provide care recommendations relevant to the plant's current condition
+- Never say "unable to identify" - provide your best assessment based on visible features`
               },
               {
                 type: 'image_url',
@@ -138,22 +132,17 @@ exports.generatePlantContent = functions.https.onRequest((req, res) => {
         messages: [
           {
             role: 'user',
-            content: `Provide detailed care recommendations for a ${plantName}${species ? ` (${species})` : ''}. You MUST follow this EXACT format:
+            content: `Provide focused care recommendations for a ${plantName}${species ? ` (${species})` : ''}. Follow this format:
 
-Plant: [Identify the plant and provide the common name and scientific name if applicable]
-Description: [Provide a detailed description of the plant including its appearance, characteristics, and general information]
-Care Recommendations:
-   - Watering: [Specific watering instructions]
-   - Light Requirements: [Light needs]
-   - Temperature: [Temperature preferences]
-   - Soil: [Soil type and requirements]
-   - Fertilizing: [Fertilizer needs]
-   - Humidity: [Humidity requirements]
-   - Growth Rate / Size: [Growth characteristics]
-   - Blooming: [Flowering information if applicable]
-Interesting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.
+Plant Name: ${plantName}
+Species: ${species || 'Not specified'}
 
-IMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations.`
+Care Recommendations: [Provide specific care instructions for this plant type]
+
+IMPORTANT: 
+- Focus on practical care information
+- Provide actionable advice
+- Keep recommendations relevant and specific`
         }
         ],
         max_tokens: 1000,
@@ -193,58 +182,39 @@ function parseAIResponse(content) {
     
     for (const line of lines) {
       const trimmedLine = line.trim();
-      if (trimmedLine.startsWith('Plant:')) {
-        currentSection = 'plant';
-        result.plant = trimmedLine.substring(6).trim();
-      } else if (trimmedLine.startsWith('Description:')) {
-        currentSection = 'description';
-        result.description = trimmedLine.substring(12).trim();
+      if (trimmedLine.startsWith('Plant Name:')) {
+        currentSection = 'plantName';
+        result.plantName = trimmedLine.substring(12).trim();
+      } else if (trimmedLine.startsWith('Species:')) {
+        currentSection = 'species';
+        result.species = trimmedLine.substring(8).trim();
+      } else if (trimmedLine.startsWith('Health Assessment:')) {
+        currentSection = 'healthAssessment';
+        result.healthAssessment = trimmedLine.substring(19).trim();
       } else if (trimmedLine.startsWith('Care Recommendations:')) {
         currentSection = 'careRecommendations';
-        result.careRecommendations = {};
-      } else if (trimmedLine.startsWith('- Watering:')) {
-        result.careRecommendations.watering = trimmedLine.substring(11).trim();
-      } else if (trimmedLine.startsWith('- Light Requirements:')) {
-        result.careRecommendations.lightRequirements = trimmedLine.substring(20).trim();
-      } else if (trimmedLine.startsWith('- Temperature:')) {
-        result.careRecommendations.temperature = trimmedLine.substring(14).trim();
-      } else if (trimmedLine.startsWith('- Soil:')) {
-        result.careRecommendations.soil = trimmedLine.substring(7).trim();
-      } else if (trimmedLine.startsWith('- Fertilizing:')) {
-        result.careRecommendations.fertilizing = trimmedLine.substring(14).trim();
-      } else if (trimmedLine.startsWith('- Humidity:')) {
-        result.careRecommendations.humidity = trimmedLine.substring(11).trim();
-      } else if (trimmedLine.startsWith('- Growth Rate / Size:')) {
-        result.careRecommendations.growthRate = trimmedLine.substring(20).trim();
-      } else if (trimmedLine.startsWith('- Blooming:')) {
-        result.careRecommendations.blooming = trimmedLine.substring(11).trim();
-      } else if (trimmedLine.startsWith('Interesting Facts:')) {
-        currentSection = 'interestingFacts';
-        result.interestingFacts = [];
-      } else if (currentSection === 'interestingFacts' && trimmedLine.length > 0) {
-        result.interestingFacts.push(trimmedLine);
-      } else if (currentSection === 'careRecommendations' && trimmedLine.startsWith('-') && trimmedLine.includes(':')) {
-        // Handle any additional care recommendations
-        const colonIndex = trimmedLine.indexOf(':');
-        const key = trimmedLine.substring(1, colonIndex).trim().toLowerCase().replace(/\s+/g, '');
-        const value = trimmedLine.substring(colonIndex + 1).trim();
-        if (key && value) {
-          result.careRecommendations[key] = value;
+        result.careRecommendations = trimmedLine.substring(21).trim();
+      } else if (currentSection === 'careRecommendations' && trimmedLine.length > 0 && !trimmedLine.startsWith('IMPORTANT:')) {
+        // Append to care recommendations if we're in that section
+        if (result.careRecommendations) {
+          result.careRecommendations += ' ' + trimmedLine;
+        } else {
+          result.careRecommendations = trimmedLine;
         }
       }
     }
     
     // Map to expected Flutter app format
     return {
-      general_description: result.description || content,
-      name: result.plant || 'Plant',
-      moisture_level: result.careRecommendations?.humidity || 'Moderate',
-      light: result.careRecommendations?.lightRequirements || 'Bright indirect light',
-      watering_frequency: _extractWateringFrequency(result.careRecommendations?.watering),
+      general_description: result.healthAssessment || content,
+      name: result.plantName || 'Plant',
+      moisture_level: 'Moderate', // Default since we don't have specific humidity info
+      light: 'Bright indirect light', // Default since we don't have specific light info
+      watering_frequency: 7, // Default watering frequency
       watering_amount: 'Until soil is moist',
-      specific_issues: 'No specific issues detected',
-      care_tips: _formatCareTips(result.careRecommendations),
-      interesting_facts: result.interestingFacts || ['Every plant is unique', 'Plants grow throughout their lifecycle', 'Proper care helps plants thrive', 'Plants can communicate with each other']
+      specific_issues: result.healthAssessment?.includes('problem') || result.healthAssessment?.includes('issue') ? 'Plant needs attention' : 'No specific issues detected',
+      care_tips: result.careRecommendations || 'Monitor plant health and provide appropriate care',
+      interesting_facts: ['Every plant is unique', 'Plants grow throughout their lifecycle', 'Proper care helps plants thrive', 'Plants can communicate with each other']
     };
   } catch (error) {
     console.error('Error parsing AI response:', error);
