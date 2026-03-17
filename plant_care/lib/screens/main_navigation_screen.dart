@@ -8,6 +8,7 @@ import 'package:plant_care/services/navigation_service.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final User? user;
@@ -90,6 +91,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Check if screens are initialized
     if (_screens.isEmpty) {
       return Scaffold(
@@ -104,7 +107,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Authentication Error',
+                l10n.authenticationError,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -113,7 +116,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Please log in again to continue',
+                l10n.pleaseLoginAgain,
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey.shade600,
@@ -128,7 +131,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     (route) => false,
                   );
                 },
-                child: const Text('Go to Login'),
+                child: Text(l10n.goToLogin),
               ),
             ],
           ),
@@ -140,27 +143,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppTheme.white,
+          color: isDark ? const Color(0xFF161B22) : Colors.grey.shade100,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.shadowGrey.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.06),
               blurRadius: 8,
               offset: const Offset(0, -2),
-              spreadRadius: 0,
             ),
           ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.home_rounded, 'Home'),
-                _buildNavItem(1, Icons.list_alt_rounded, 'My Plants'),
-                _buildNavItem(2, Icons.add_circle_outline_rounded, 'Add Plant'),
-                _buildNavItem(3, Icons.person_outline_rounded, 'Profile'),
-                _buildNavItem(4, Icons.settings_outlined, 'Settings'),
+                _buildNavItem(0, Icons.home_outlined, l10n.home),
+                _buildNavItem(1, Icons.eco_outlined, l10n.myPlants),
+                _buildNavItem(2, Icons.add_circle_outlined, l10n.addPlant),
+                _buildNavItem(3, Icons.person_outlined, l10n.profile),
+                _buildNavItem(4, Icons.settings_outlined, l10n.settings),
               ],
             ),
           ),
@@ -171,7 +177,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-    
+    final greenLight = const Color(0xFF7BC67E);
+    final greenDark = const Color(0xFF5AB85D);
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -181,15 +189,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? AppTheme.accentGreen.withOpacity(0.1) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              gradient: isSelected
+                  ? LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [greenLight, greenDark],
+                    )
+                  : null,
+              color: isSelected ? null : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: greenDark.withOpacity(0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                        spreadRadius: 0,
+                      ),
+                    ]
+                  : null,
             ),
             child: Icon(
               icon,
-              color: isSelected ? AppTheme.accentGreen : AppTheme.darkGrey,
+              color: isSelected ? AppTheme.white : Colors.grey.shade600,
               size: 24,
             ),
           ),
@@ -197,9 +223,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? AppTheme.accentGreen : AppTheme.darkGrey,
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? AppTheme.greenDark : Colors.grey.shade700,
             ),
           ),
         ],

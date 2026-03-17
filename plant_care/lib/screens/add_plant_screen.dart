@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
-import 'package:plant_care/services/chatgpt_service.dart';
+import 'package:plant_care/services/image_upload_service.dart';
 import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/utils/responsive_layout.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:plant_care/l10n/app_localizations.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:math';
@@ -74,6 +76,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _aiPotSize;
   String? _aiGrowthStage;
   
+  // Scientific watering calculation fields
+  int? _wateringAmountMl;
+  List<int>? _wateringRangeMl;
+  int? _nextAfterWateringHours;
+  int? _nextCheckHours;
+  String? _wateringMode;
+  int? _nextWateringInDays;
+  bool _shouldWaterNow = false; // From AI watering_plan
+  
   // Refresh status
   bool _isRefreshing = false;
   String? _refreshStatus = 'error'; // Start with error status since we know API is failing
@@ -96,6 +107,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     'String of Hearts', 'Burro\'s Tail', 'Jade Necklace', 'Trailing Jade'
   ];
 
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
 
 
   @override
@@ -107,50 +120,18 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   void _generateRandomPlantName() {
     final random = Random();
     final randomName = _randomPlantNames[random.nextInt(_randomPlantNames.length)];
-    
     setState(() {
       _nameController.text = randomName;
     });
-    
-    // Show a fun message
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.auto_awesome,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Your plant is now called "$randomName"! 🌱',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppTheme.accentGreen,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-    }
   }
 
   Future<void> _pickImage() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
+        maxWidth: 900,
+        maxHeight: 1200, // 3:4 portrait
+        imageQuality: 90,
       );
       
       if (image != null) {
@@ -165,7 +146,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error picking image: $e'),
+          content: Text(l10n.errorPickingImage(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -179,7 +160,22 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
     try {
       final base64Image = base64Encode(imageBytes);
-      final recommendations = await ChatGPTService.analyzePlantPhoto(base64Image);
+      
+      // Call Firebase Function instead of OpenAI directly (CORS fix)
+      final response = await http.post(
+        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'base64Image': base64Image,
+        }),
+      );
+      
+      if (response.statusCode != 200) {
+        throw Exception(l10n.failedToAnalyzePlantPhoto(response.statusCode));
+      }
+      
+      final result = jsonDecode(response.body);
+      final recommendations = result['recommendations'] ?? {};
       
       print('🔍 AI Analysis Results:');
       print('🔍 general_description: ${recommendations['general_description']}');
@@ -199,25 +195,39 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiWateringAmount = recommendations['watering_amount'];
         _aiSpecificIssues = recommendations['specific_issues'];
         _aiCareTips = recommendations['care_tips'];
-        _aiInterestingFacts = recommendations['interesting_facts'];
+        
+        // Fix type casting for interesting_facts
+        _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList();
         
         // Extract plant size assessment data
         _aiPlantSize = recommendations['plant_size'];
         _aiPotSize = recommendations['pot_size'];
         _aiGrowthStage = recommendations['growth_stage'];
         
-        // Extract plant size assessment data
-        _aiPlantSize = recommendations['plant_size'];
-        _aiPotSize = recommendations['pot_size'];
-        _aiGrowthStage = recommendations['growth_stage'];
+        // New: per-plant, days-based watering interval from AI (species-specific structure)
+        final wateringPlan = recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
+        final nextDays = wateringPlan['next_watering_in_days'];
+        _nextWateringInDays = nextDays != null ? int.tryParse(nextDays.toString()) : null;
+        _shouldWaterNow = wateringPlan['should_water_now'] == true;
+        
+        // Extract amount_ml from watering_plan first (already clamped by backend), then fallback to legacy
+        _wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+        
+        // Extract scientific watering calculation data (legacy support)
+        _wateringRangeMl = recommendations['range_ml'] != null ? List<int>.from(recommendations['range_ml']) : null;
+        _nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        _nextCheckHours = recommendations['next_check_in_hours'];
+        _wateringMode = recommendations['mode'];
         
         _refreshStatus = 'success';
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('AI analysis completed! 🌱'),
+          SnackBar(
+            content: Text(l10n.aiAnalysisCompleted),
             backgroundColor: Colors.green,
           ),
         );
@@ -226,7 +236,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('AI analysis failed: $e'),
+            content: Text(l10n.aiAnalysisFailed(e.toString())),
             backgroundColor: Colors.orange,
           ),
         );
@@ -262,7 +272,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ API test error: $e'),
+            content: Text(l10n.apiTestError(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -281,7 +291,22 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
     try {
       final base64Image = base64Encode(_selectedImageBytes!);
-      final recommendations = await ChatGPTService.analyzePlantPhoto(base64Image);
+      
+      // Call Firebase Function instead of OpenAI directly (CORS fix)
+      final response = await http.post(
+        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'base64Image': base64Image,
+        }),
+      );
+      
+      if (response.statusCode != 200) {
+        throw Exception(l10n.failedToAnalyzePlantPhoto(response.statusCode));
+      }
+      
+      final result = jsonDecode(response.body);
+      final recommendations = result['recommendations'] ?? {};
       
       setState(() {
         _aiGeneralDescription = recommendations['general_description'];
@@ -292,14 +317,39 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiWateringAmount = recommendations['watering_amount'];
         _aiSpecificIssues = recommendations['specific_issues'];
         _aiCareTips = recommendations['care_tips'];
-        _aiInterestingFacts = recommendations['interesting_facts'];
+        
+        // Fix type casting for interesting_facts
+        _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList();
+        
+        // Extract plant size assessment data
+        _aiPlantSize = recommendations['plant_size'];
+        _aiPotSize = recommendations['pot_size'];
+        _aiGrowthStage = recommendations['growth_stage'];
+        
+        // New: per-plant, days-based watering interval from AI (species-specific structure)
+        final wateringPlan = recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
+        final nextDays = wateringPlan['next_watering_in_days'];
+        _nextWateringInDays = nextDays != null ? int.tryParse(nextDays.toString()) : null;
+        _shouldWaterNow = wateringPlan['should_water_now'] == true;
+        
+        // Extract amount_ml from watering_plan first (already clamped by backend), then fallback to legacy
+        _wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+        
+        // Extract scientific watering calculation data (legacy support)
+        _wateringRangeMl = recommendations['range_ml'] != null ? List<int>.from(recommendations['range_ml']) : null;
+        _nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        _nextCheckHours = recommendations['next_check_in_hours'];
+        _wateringMode = recommendations['mode'];
+        
         _refreshStatus = 'success';
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('AI analysis refreshed! 🔄'),
+          SnackBar(
+            content: Text(l10n.aiAnalysisRefreshed),
             backgroundColor: Colors.green,
           ),
         );
@@ -314,11 +364,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('AI analysis refresh failed: $e'),
+            content: Text(l10n.aiAnalysisRefreshFailed(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
-              label: 'Retry',
+              label: l10n.retry,
               onPressed: _refreshAnalysis,
               textColor: Colors.white,
             ),
@@ -348,7 +398,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Upload Plant Photo',
+            l10n.uploadPlantPhoto,
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.accentGreen.withOpacity(0.7),
@@ -392,28 +442,96 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     );
   }
   
+  /// Calculate light hours per day based on AI light requirements
+  String _calculateLightHours() {
+    if (_aiLight == null || _aiLight!.isEmpty) {
+      return l10n.notSpecified;
+    }
+    
+    final lightRequirement = _aiLight!.toLowerCase();
+    
+    // Extract hours if already specified as numbers
+    final hourPattern = RegExp(r'(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)');
+    final hourMatch = hourPattern.firstMatch(lightRequirement);
+    if (hourMatch != null) {
+      final hours = double.tryParse(hourMatch.group(1)!) ?? 0;
+      return '${hours.toInt()}';
+    }
+    
+    // Calculate based on light intensity descriptions
+    if (lightRequirement.contains('full sun') || lightRequirement.contains('direct sun')) {
+      return '6-8'; // Full sun plants need 6-8 hours of direct sunlight
+    } else if (lightRequirement.contains('partial sun') || lightRequirement.contains('morning sun')) {
+      return '4-6'; // Partial sun plants need 4-6 hours
+    } else if (lightRequirement.contains('partial shade') || lightRequirement.contains('filtered light')) {
+      return '2-4'; // Partial shade plants need 2-4 hours
+    } else if (lightRequirement.contains('bright indirect') || lightRequirement.contains('bright light')) {
+      return '8-12'; // Bright indirect light throughout the day
+    } else if (lightRequirement.contains('low light') || lightRequirement.contains('shade')) {
+      return '2-3'; // Low light plants need minimal direct light
+    } else if (lightRequirement.contains('medium light') || lightRequirement.contains('moderate light')) {
+      return '4-6'; // Medium light requirements
+    } else if (lightRequirement.contains('very bright') || lightRequirement.contains('high light')) {
+      return '10-12'; // Very bright light requirements
+    }
+    
+    // Default calculation based on plant species if available
+    final species = _aiName?.toLowerCase() ?? 'unknown';
+    
+    if (species.contains('succulent') || species.contains('cactus')) {
+      return '6-8'; // Most succulents need full sun
+    } else if (species.contains('pothos') || species.contains('philodendron')) {
+      return '4-6'; // Popular houseplants with moderate light needs
+    } else if (species.contains('snake plant') || species.contains('zz plant')) {
+      return '2-4'; // Low light tolerant plants
+    } else if (species.contains('fiddle leaf') || species.contains('monstera')) {
+      return '6-8'; // Bright light loving houseplants
+    } else if (species.contains('calathea') || species.contains('prayer plant')) {
+      return '4-6'; // Prefer bright indirect light
+    }
+    
+    // Default fallback
+    return '4-6';
+  }
+
   /// Convert moisture level text to percentage (0-100)
   int _getMoisturePercentage(String? moistureLevel) {
     if (moistureLevel == null) return 50;
     
     try {
-      final level = moistureLevel.toLowerCase();
-      int percentage;
-      
-      if (level.contains('low') || level.contains('dry')) {
-        percentage = 25;
-      } else if (level.contains('moderate') || level.contains('medium')) {
-        percentage = 50;
-      } else if (level.contains('high') || level.contains('wet') || level.contains('moist')) {
-        percentage = 75;
-      } else if (level.contains('very high') || level.contains('very wet')) {
-        percentage = 90;
-      } else {
-        percentage = 50; // Default to moderate
+      // First, check if it's already a percentage number
+      final percentage = int.tryParse(moistureLevel);
+      if (percentage != null && percentage >= 0 && percentage <= 100) {
+        return percentage;
       }
       
-      // Return full moisture percentage range (0-100)
-      return percentage;
+      // Check if it's a range like "40-60%"
+      final rangeMatch = RegExp(r'(\d+)\s*-\s*(\d+)').firstMatch(moistureLevel);
+      if (rangeMatch != null) {
+        final min = int.tryParse(rangeMatch.group(1) ?? '');
+        final max = int.tryParse(rangeMatch.group(2) ?? '');
+        if (min != null && max != null) {
+          return (min + max) ~/ 2; // Return midpoint
+        }
+      }
+      
+      // Fallback to text-based conversion
+      final level = moistureLevel.toLowerCase();
+      int percentageResult;
+      
+      if (level.contains('low') || level.contains('dry')) {
+        percentageResult = 25;
+      } else if (level.contains('moderate') || level.contains('medium')) {
+        percentageResult = 50;
+      } else if (level.contains('high') || level.contains('wet') || level.contains('moist')) {
+        percentageResult = 75;
+      } else if (level.contains('very high') || level.contains('very wet')) {
+        percentageResult = 90;
+      } else {
+        percentageResult = 50; // Default to moderate
+      }
+      
+      return percentageResult;
     } catch (e) {
       print('Error parsing moisture level: $moistureLevel, error: $e');
       return 50; // Safe fallback
@@ -422,37 +540,32 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   
   /// Format watering frequency to human-readable text
   String _formatWateringFrequency(String? frequency) {
-    if (frequency == null) return 'Once every 7 days';
+    if (frequency == null) return l10n.onceEvery7Days;
     
     try {
       final days = int.parse(frequency);
-      if (days == 1) return 'Once per day';
-      if (days == 2) return 'Once every 2 days';
-      if (days == 3) return 'Once every 3 days';
-      if (days == 4) return 'Once every 4 days';
-      if (days == 5) return 'Once every 5 days';
-      if (days == 6) return 'Once every 6 days';
-      if (days == 7) return 'Once per week';
-      if (days <= 14) return 'Once every $days days';
-      if (days <= 30) return 'Once every ${(days / 7).round()} weeks';
-      return 'Once every $days days';
+      if (days == 1) return l10n.oncePerDay;
+      if (days == 7) return l10n.oncePerWeek;
+      if (days <= 14) return l10n.onceEveryNDays(days);
+      if (days <= 30) return l10n.onceEveryNWeeks((days / 7).round());
+      return l10n.onceEveryNDays(days);
     } catch (e) {
-      return 'Once every 7 days';
+      return l10n.onceEvery7Days;
     }
   }
   
   /// Format moisture level to five gradations
   String _formatMoistureLevel(String? moistureLevel) {
-    if (moistureLevel == null) return 'Medium';
+    if (moistureLevel == null) return l10n.medium;
     
     final level = moistureLevel.toLowerCase();
-    if (level.contains('very low') || level.contains('extremely low') || level.contains('dry')) return 'Low';
-    if (level.contains('low') || level.contains('slightly low')) return 'Medium-Low';
-    if (level.contains('moderate') || level.contains('medium') || level.contains('average')) return 'Medium';
-    if (level.contains('high') || level.contains('slightly high') || level.contains('moist')) return 'Medium-High';
-    if (level.contains('very high') || level.contains('extremely high') || level.contains('wet') || level.contains('soggy')) return 'High';
+    if (level.contains('very low') || level.contains('extremely low') || level.contains('dry')) return l10n.low;
+    if (level.contains('low') || level.contains('slightly low')) return l10n.mediumLow;
+    if (level.contains('moderate') || level.contains('medium') || level.contains('average')) return l10n.medium;
+    if (level.contains('high') || level.contains('slightly high') || level.contains('moist')) return l10n.mediumHigh;
+    if (level.contains('very high') || level.contains('extremely high') || level.contains('wet') || level.contains('soggy')) return l10n.high;
     
-    return 'Medium'; // Default
+    return l10n.medium; // Default
   }
 
   Widget _buildCareCard(String title, String value, IconData icon, Color color, {int? moisturePercentage}) {
@@ -555,23 +668,28 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw Exception('User not authenticated');
+        throw Exception(l10n.userNotAuthenticated);
       }
 
       // Handle image selection - only use custom uploaded image
       if (_selectedImageBytes == null) {
-        throw Exception('Please upload a plant image');
+        throw Exception(l10n.pleaseUploadPlantImage);
       }
       
       // Require AI analysis before creating plant
       if (_aiGeneralDescription == null || _aiSpecificIssues == null) {
-        throw Exception('Please wait for AI analysis to complete before adding the plant');
+        throw Exception(l10n.pleaseWaitForAiAnalysisBeforeAddingPlant);
       }
-      
-      // Convert bytes to base64 data URL for storage
-      final base64String = base64Encode(_selectedImageBytes!);
-      final imageUrl = 'data:image/jpeg;base64,$base64String';
-      
+
+      // Upload image to Firebase Storage; store only the URL in Firestore (limit 1MB per field)
+      final plantName = _nameController.text.trim().isNotEmpty
+          ? _nameController.text.trim()
+          : (_aiName ?? l10n.plantLowercase);
+      final imageUrl = await ImageUploadService().uploadPlantImageFromBytes(
+        _selectedImageBytes!,
+        plantName,
+      );
+
       // Use AI-determined watering frequency or default to 7 days
       final wateringFreq = _aiWateringFrequency != null 
           ? int.tryParse(_aiWateringFrequency!) ?? 7 
@@ -595,12 +713,20 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         aiName: _aiName,
         aiMoistureLevel: _aiMoistureLevel,
         aiLight: _aiLight,
+        aiWateringAmount: _aiWateringAmount,
         aiSpecificIssues: _aiSpecificIssues,
         aiCareTips: _aiCareTips,
         interestingFacts: _aiInterestingFacts,
         aiPlantSize: _aiPlantSize,
         aiPotSize: _aiPotSize,
         aiGrowthStage: _aiGrowthStage,
+        wateringAmountMl: _wateringAmountMl,
+        wateringRangeMl: _wateringRangeMl,
+        nextAfterWateringHours: _nextAfterWateringHours,
+        nextCheckHours: _nextCheckHours,
+        wateringMode: _wateringMode,
+        wateringIntervalDays: _nextWateringInDays,
+        shouldWaterNow: _shouldWaterNow, // From AI analysis
         healthStatus: null, // No health status for new plants
         healthMessage: null, // No health message for new plants
         lastHealthCheck: null, // No health check for new plants
@@ -610,8 +736,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Plant added successfully! 🌱'),
+          SnackBar(
+            content: Text(l10n.plantAddedSuccessfully),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
@@ -673,7 +799,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding plant: $e'),
+            content: Text(l10n.errorAddingPlant(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -706,7 +832,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             ),
             const SizedBox(height: 8),
             // Input field with random name button (only for Plant Name)
-            if (label == 'Plant Name') ...[
+            if (label == l10n.plantName) ...[
               Row(
                 children: [
                   Expanded(
@@ -737,7 +863,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                         color: AppTheme.accentGreen,
                         size: 24,
                       ),
-                      tooltip: 'Generate random name',
+                      tooltip: l10n.generateRandomName,
                       padding: const EdgeInsets.all(12),
                     ),
                   ),
@@ -1011,7 +1137,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 Expanded(
                   child: _buildCareCard(
                     'Moisture',
-                    _aiMoistureLevel ?? 'Not specified',
+                    '${_getMoisturePercentage(_aiMoistureLevel)}%',
                     Icons.opacity,
                     AppTheme.accentGreen,
                   ),
@@ -1020,7 +1146,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 Expanded(
                   child: _buildCareCard(
                     'Light',
-                    _aiLight ?? 'Not specified',
+                    '${_calculateLightHours()} hours',
                     Icons.wb_sunny,
                     Colors.orange,
                   ),
@@ -1353,6 +1479,16 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
   /// Builds a single care section with title and content.
   Widget _buildCareSection(String title, String content) {
+    // Override content for Moisture and Light with numeric values
+    String displayContent = content;
+    if (title.toLowerCase() == 'moisture' && _aiMoistureLevel != null) {
+      // Use the same logic as the top card to get consistent moisture percentage
+      displayContent = '${_getMoisturePercentage(_aiMoistureLevel)}%';
+    } else if (title.toLowerCase() == 'light' && _aiLight != null) {
+      // Use calculated light hours instead of descriptive text
+      displayContent = '${_calculateLightHours()} hours per day';
+    }
+    
     // Transform title for display
     String displayTitle = title;
     if (title.toLowerCase().contains('1. plant identification') || title.toLowerCase().contains('plant identification')) {
@@ -1360,7 +1496,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     }
     
     // Split content into lines and clean each line
-    final contentLines = content.split('\n')
+    final contentLines = displayContent.split('\n')
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         .toList();
@@ -1560,27 +1696,28 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
+      body: SafeArea(
+        child: CustomScrollView(
         slivers: [
           // Header removed - clean interface
           
           // Form Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: ResponsiveLayout.getContentPadding(context),
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
                     // Plant Name Field
                     _buildInputCard(
-                      'Plant Name',
-                      'e.g., Monstera, Snake Plant',
+                      l10n.plantName,
+                      l10n.plantNameHint,
                       Icons.local_florist,
                       controller: _nameController,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a plant name';
+                          return l10n.pleaseEnterPlantName;
                         }
                         return null;
                       },
@@ -1627,8 +1764,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Text(
-                                    'Adding Plant...',
+                                  Text(
+                                    l10n.addingPlant,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -1649,8 +1786,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      const Text(
-                                        'Analyzing Photo...',
+                                      Text(
+                                        l10n.analyzingPhoto,
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -1658,8 +1795,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                       ),
                                     ],
                                   )
-                                : const Text(
-                                    'Add Plant',
+                                : Text(
+                                    l10n.addPlant,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -1676,6 +1813,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -1691,9 +1829,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       // Check if this line contains a care section (like "Watering: ...")
       if (trimmedLine.contains(':')) {
         final parts = trimmedLine.split(':');
-        if (parts.length == 2) {
+        if (parts.length >= 2) {
           final title = parts[0].trim();
-          final value = parts[1].trim();
+          final value = parts.sublist(1).join(':').trim();
           
           if (title.isNotEmpty && value.isNotEmpty) {
             // Add top padding only to the first section

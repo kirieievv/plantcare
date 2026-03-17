@@ -9,6 +9,12 @@ class UserModel {
   final DateTime? createdAt;
   final DateTime? lastLogin;
   final DateTime? updatedAt;
+  
+  // Notification settings
+  final String? timezone; // IANA timezone (e.g., "America/New_York")
+  final Map<String, String>? quietHours; // {start: "22:00", end: "08:00"}
+  final List<String> fcmTokens; // Array of FCM device tokens
+  final int maxPushesPerDay; // Default 3
 
   UserModel({
     required this.uid,
@@ -19,7 +25,12 @@ class UserModel {
     this.createdAt,
     this.lastLogin,
     this.updatedAt,
-  });
+    this.timezone,
+    this.quietHours,
+    List<String>? fcmTokens,
+    int? maxPushesPerDay,
+  })  : fcmTokens = fcmTokens ?? [],
+        maxPushesPerDay = maxPushesPerDay ?? 3;
 
   // Convert to Map for Firestore
   Map<String, dynamic> toMap() {
@@ -32,6 +43,10 @@ class UserModel {
       'createdAt': createdAt?.toIso8601String(),
       'lastLogin': lastLogin?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'timezone': timezone,
+      'quietHours': quietHours,
+      'fcmTokens': fcmTokens,
+      'maxPushesPerDay': maxPushesPerDay,
     };
   }
 
@@ -46,6 +61,14 @@ class UserModel {
       createdAt: _parseTimestamp(map['createdAt']),
       lastLogin: _parseTimestamp(map['lastLogin']),
       updatedAt: _parseTimestamp(map['updatedAt']),
+      timezone: map['timezone'],
+      quietHours: map['quietHours'] != null 
+          ? Map<String, String>.from(map['quietHours'])
+          : null,
+      fcmTokens: map['fcmTokens'] != null
+          ? List<String>.from(map['fcmTokens'])
+          : null,
+      maxPushesPerDay: map['maxPushesPerDay'],
     );
   }
 
@@ -72,6 +95,10 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastLogin,
     DateTime? updatedAt,
+    String? timezone,
+    Map<String, String>? quietHours,
+    List<String>? fcmTokens,
+    int? maxPushesPerDay,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -82,6 +109,10 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
       updatedAt: updatedAt ?? this.updatedAt,
+      timezone: timezone ?? this.timezone,
+      quietHours: quietHours ?? this.quietHours,
+      fcmTokens: fcmTokens ?? this.fcmTokens,
+      maxPushesPerDay: maxPushesPerDay ?? this.maxPushesPerDay,
     );
   }
 } 

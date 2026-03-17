@@ -29,8 +29,78 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>plant_care</title>
+  <title>Plant Care</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+  
+  <!-- Firebase Configuration -->
+  <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjt4yWHt8NSZ3R_sHIrjkHbZpHAwrDAnA",
+      authDomain: "plant-care-94574.firebaseapp.com",
+      projectId: "plant-care-94574",
+      storageBucket: "plant-care-94574.firebasestorage.app",
+      messagingSenderId: "1098415447936",
+      appId: "1:1098415447936:web:7b7a147531b6bb6b13ab65",
+      measurementId: "G-M06R3Q6JJM"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    
+    // Initialize Firebase Cloud Messaging and get a reference to the service
+    const messaging = firebase.messaging();
+    
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        .then((registration) => {
+          console.log('Service Worker registered successfully:', registration);
+        })
+        .catch((error) => {
+          console.log('Service Worker registration failed:', error);
+        });
+    }
+    
+    // Request permission for notifications
+    function requestNotificationPermission() {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+          // Get registration token
+          messaging.getToken({
+            vapidKey: 'BI0yI6i_be8uHYwHlGkuwK4w20TlouraY6LM5j0Y0_Gp2xrfMOKbC43GHx9y_fsILTrpEAmsbUE8UVVHZZpB9G4'
+          }).then((currentToken) => {
+            if (currentToken) {
+              console.log('FCM Token:', currentToken);
+              // Send the token to your server here
+            } else {
+              console.log('No registration token available.');
+            }
+          }).catch((err) => {
+            console.log('An error occurred while retrieving token. ', err);
+          });
+        } else {
+          console.log('Unable to get permission to notify.');
+        }
+      });
+    }
+    
+    // Listen for messages
+    messaging.onMessage((payload) => {
+      console.log('Message received. ', payload);
+      // Handle foreground messages here
+    });
+    
+    // Request permission when page loads
+    if ('Notification' in window) {
+      requestNotificationPermission();
+    }
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

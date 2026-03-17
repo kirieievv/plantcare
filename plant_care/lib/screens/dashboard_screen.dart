@@ -5,6 +5,7 @@ import 'package:plant_care/models/user_model.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/services/user_service.dart';
 import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/utils/responsive_layout.dart';
 import 'package:plant_care/widgets/plant_card.dart';
 import 'package:plant_care/screens/add_plant_screen.dart';
 import 'package:plant_care/screens/plant_details_screen.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 // KRV 2
 class DashboardScreen extends StatefulWidget {
   final User? user;
@@ -83,77 +85,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headingColor = isDark ? Colors.white : AppTheme.textPrimary;
     return Scaffold(
-      backgroundColor: AppTheme.lightGrey,
-      body: _isLoading
-          ? _buildShimmerLoading()
-          : CustomScrollView(
+      backgroundColor: isDark ? const Color(0xFF0F1115) : AppTheme.lightGrey,
+      body: SafeArea(
+        child: _isLoading
+            ? _buildShimmerLoading()
+            : CustomScrollView(
               slivers: [
                 // Header removed - clean interface
-                
-                // Temporary delete Foxglove button
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final success = await PlantService().deletePlantByName('Foxglove');
-                          if (success) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Foxglove plant deleted successfully!'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                              setState(() {}); // Refresh the screen
-                            }
-                          } else {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Foxglove plant not found or could not be deleted'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error deleting Foxglove plant: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.delete, color: Colors.white, size: 18),
-                      label: const Text('Delete Foxglove Plant', style: TextStyle(color: Colors.white, fontSize: 14)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
                 
                 // Your Garden Overview Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    padding: EdgeInsets.fromLTRB(
+                      ResponsiveLayout.getContentPadding(context).left,
+                      16,
+                      ResponsiveLayout.getContentPadding(context).right,
+                      24,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Your Garden Overview',
+                          l10n.yourGardenOverview,
                           style: AppTheme.headingMedium.copyWith(
-                            color: AppTheme.textPrimary,
+                            color: headingColor,
                           ),
                         ).animate().fadeIn(
                           duration: 600.ms,
@@ -162,22 +121,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         
                         const SizedBox(height: 20),
                         
-                        // Enhanced Garden Stats Cards
+                        // Enhanced Garden Stats Cards - always in one row
                         StreamBuilder<List<Plant>>(
                           stream: PlantService().getPlants(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return _buildShimmerStats();
                             }
-                            
+
                             final plants = snapshot.data ?? [];
-                            final plantsNeedingWater = plants.where((p) => 
-                              p.nextWatering.isBefore(DateTime.now())
-                            ).length;
-                            final healthyPlants = plants.where((p) => 
-                              p.nextWatering.isAfter(DateTime.now().add(const Duration(days: 1)))
-                            ).length;
-                            
+                            final plantsNeedingWater = plants.where((p) =>
+                                p.nextWatering.isBefore(DateTime.now())).length;
+                            final healthyPlants = plants.where((p) =>
+                                p.nextWatering.isAfter(DateTime.now().add(const Duration(days: 1)))).length;
+
                             return Row(
                               children: [
                                 Expanded(
@@ -221,7 +178,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Your Plants Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    padding: EdgeInsets.fromLTRB(
+                      ResponsiveLayout.getContentPadding(context).left,
+                      0,
+                      ResponsiveLayout.getContentPadding(context).right,
+                      24,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -281,10 +243,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       // Show success message
                                       if (mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Plant created successfully! 🌱'),
-                                            backgroundColor: Colors.green,
-                                            duration: Duration(seconds: 3),
+                                          SnackBar(
+                                            content: const Text('Plant created successfully! 🌱'),
+                                            backgroundColor: AppTheme.accentGreen,
+                                            duration: const Duration(seconds: 3),
                                           ),
                                         );
                                       }
@@ -359,7 +321,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         (context, index) {
                           final plant = plants[index];
                           return Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                            padding: EdgeInsets.fromLTRB(
+                              ResponsiveLayout.getContentPadding(context).left,
+                              0,
+                              ResponsiveLayout.getContentPadding(context).right,
+                              16,
+                            ),
                             child: PlantCard(
                               plant: plant,
                               onWater: () => PlantService().waterPlant(plant.id),
@@ -385,6 +352,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
+          ),
     );
   }
 

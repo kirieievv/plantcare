@@ -1,0 +1,247 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Soin des Plantes",
+  "loadingPlantCare": "Chargement de Soin des Plantes...",
+  "home": "Accueil",
+  "myPlants": "Mes Plantes",
+  "addPlant": "Ajouter une plante",
+  "profile": "Profil",
+  "settings": "Paramètres",
+  "authenticationError": "Erreur d'authentification",
+  "pleaseLoginAgain": "Veuillez vous reconnecter pour continuer",
+  "goToLogin": "Aller à la connexion",
+  "yourGardenOverview": "Aperçu de votre jardin",
+  "welcomeBack": "Bon retour !",
+  "createYourAccount": "Créez votre compte",
+  "fullName": "Nom complet",
+  "email": "E-mail",
+  "password": "Mot de passe",
+  "pleaseEnterYourName": "Veuillez saisir votre nom",
+  "pleaseEnterYourEmail": "Veuillez saisir votre e-mail",
+  "pleaseEnterValidEmail": "Veuillez saisir un e-mail valide",
+  "pleaseEnterYourPassword": "Veuillez saisir votre mot de passe",
+  "passwordAtLeast6": "Le mot de passe doit contenir au moins 6 caractères",
+  "rememberMe30Days": "Se souvenir de moi pendant 30 jours",
+  "logIn": "Se connecter",
+  "registration": "Inscription",
+  "dontHaveAccountRegistration": "Vous n'avez pas de compte ? Inscription",
+  "alreadyHaveAccountLogin": "Vous avez déjà un compte ? Se connecter",
+  "loggedIn": "Connecté",
+  "preferences": "Préférences",
+  "wateringReminders": "Rappels d'arrosage",
+  "getNotifiedWhenPlantsNeedWater": "Recevez une notification quand les plantes ont besoin d'eau",
+  "quietHours": "Heures calmes",
+  "maxNotificationsPerDay": "Max notifications par jour",
+  "notificationsCount": "{count} notifications",
+  "@notificationsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "theme": "Thème",
+  "light": "Clair",
+  "dark": "Sombre",
+  "testNotifications": "Tester les notifications",
+  "checkNotificationSetupAndPermissions": "Vérifier la configuration et les autorisations des notifications",
+  "language": "Langue",
+  "english": "English",
+  "spanish": "Español",
+  "french": "Français",
+  "savePreferences": "Enregistrer les préférences",
+  "account": "Compte",
+  "changePassword": "Changer le mot de passe",
+  "updateYourAccountPassword": "Mettez à jour le mot de passe de votre compte",
+  "signOut": "Se déconnecter",
+  "signOutOfYourAccount": "Se déconnecter de votre compte",
+  "preferencesSavedSuccessfully": "Préférences enregistrées avec succès !",
+  "errorSavingPreferences": "Erreur lors de l'enregistrement des préférences : {error}",
+  "@errorSavingPreferences": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "quietHoursUpdatedSuccessfully": "Heures calmes mises à jour avec succès !",
+  "changePasswordTitle": "Changer le mot de passe",
+  "currentPassword": "Mot de passe actuel",
+  "newPassword": "Nouveau mot de passe",
+  "confirmNewPassword": "Confirmer le nouveau mot de passe",
+  "enterCurrentPassword": "Saisissez votre mot de passe actuel",
+  "enterNewPassword": "Saisissez un nouveau mot de passe",
+  "newPasswordMustBeDifferent": "Le nouveau mot de passe doit être différent",
+  "confirmYourNewPassword": "Confirmez votre nouveau mot de passe",
+  "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "passwordChangedSuccessfully": "Mot de passe modifié avec succès.",
+  "errorChangingPassword": "Erreur lors du changement de mot de passe : {error}",
+  "@errorChangingPassword": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "signOutConfirmTitle": "Se déconnecter",
+  "signOutConfirmMessage": "Voulez-vous vraiment vous déconnecter ?",
+  "userLabel": "Utilisateur",
+  "nameCannotBeEmpty": "Le nom ne peut pas être vide",
+  "profileUpdatedSuccessfully": "Profil mis à jour avec succès !",
+  "errorUpdatingProfile": "Erreur lors de la mise à jour du profil : {error}",
+  "@errorUpdatingProfile": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "plantLover": "Passionné de plantes",
+  "profileInformation": "Informations du profil",
+  "bio": "Bio",
+  "bioHint": "Parlez-nous de votre parcours de soin des plantes...",
+  "location": "Localisation",
+  "locationHint": "Où se trouvent vos plantes ?",
+  "name": "Nom",
+  "notSet": "Non défini",
+  "accountInfo": "Infos du compte",
+  "memberSince": "Membre depuis",
+  "lastLogin": "Dernière connexion",
+  "notAvailable": "N/D",
+  "actions": "Actions",
+  "errorLabel": "Erreur",
+  "noPlantsYet": "Pas encore de plantes !",
+  "addFirstPlantToGetStarted": "Ajoutez votre première plante pour commencer",
+  "errorPickingImage": "Erreur lors de la sélection de l'image : {error}",
+  "@errorPickingImage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToAnalyzePlantPhoto": "Échec de l'analyse de la photo de la plante : {statusCode}",
+  "@failedToAnalyzePlantPhoto": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAnalysisCompleted": "Analyse IA terminée ! 🌱",
+  "aiAnalysisFailed": "Échec de l'analyse IA : {error}",
+  "@aiAnalysisFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "apiTestError": "Erreur de test API : {error}",
+  "@apiTestError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "aiAnalysisRefreshed": "Analyse IA actualisée ! 🔄",
+  "aiAnalysisRefreshFailed": "Échec de l'actualisation de l'analyse IA : {error}",
+  "@aiAnalysisRefreshFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "retry": "Réessayer",
+  "uploadPlantPhoto": "Téléverser une photo de plante",
+  "notSpecified": "Non spécifié",
+  "onceEvery7Days": "Une fois tous les 7 jours",
+  "oncePerDay": "Une fois par jour",
+  "oncePerWeek": "Une fois par semaine",
+  "onceEveryNDays": "Une fois tous les {days} jours",
+  "@onceEveryNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "onceEveryNWeeks": "Une fois toutes les {weeks} semaines",
+  "@onceEveryNWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "low": "Faible",
+  "mediumLow": "Moyen-faible",
+  "medium": "Moyen",
+  "mediumHigh": "Moyen-élevé",
+  "high": "Élevé",
+  "userNotAuthenticated": "Utilisateur non authentifié",
+  "pleaseUploadPlantImage": "Veuillez téléverser une image de plante",
+  "pleaseWaitForAiAnalysisBeforeAddingPlant": "Veuillez attendre la fin de l'analyse IA avant d'ajouter la plante",
+  "plantLowercase": "plante",
+  "plantAddedSuccessfully": "Plante ajoutée avec succès ! 🌱",
+  "errorAddingPlant": "Erreur lors de l'ajout de la plante : {error}",
+  "@errorAddingPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "generateRandomName": "Générer un nom aléatoire",
+  "plantName": "Nom de la plante",
+  "plantNameHint": "ex. : Monstera, Snake Plant",
+  "pleaseEnterPlantName": "Veuillez saisir un nom de plante",
+  "addingPlant": "Ajout de la plante...",
+  "analyzingPhoto": "Analyse de la photo...",
+  "plantUpdatedSuccessfully": "Plante mise à jour avec succès ! 🌱",
+  "errorUpdatingPlant": "Erreur lors de la mise à jour de la plante : {error}",
+  "@errorUpdatingPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "species": "Espèce",
+  "wateringFrequency": "Fréquence d'arrosage",
+  "everyNDays": "Tous les {days} jour(s)",
+  "@everyNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "pleaseSelectWateringFrequency": "Veuillez sélectionner la fréquence d'arrosage",
+  "notes": "Notes",
+  "saveChanges": "Enregistrer les modifications",
+  "loadingImage": "Chargement de l'image...",
+  "changeImage": "Changer l'image",
+  "errorDeletingPlant": "Erreur lors de la suppression de la plante : {error}",
+  "@errorDeletingPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "plantNotDueForWateringYet": "Cette plante n'est pas encore à arroser",
+  "errorBuildingPlantDetailsScreen": "Une erreur est survenue lors de la construction de PlantDetailsScreen : {error}",
+  "@errorBuildingPlantDetailsScreen": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "aiCare": "AI Care",
+  "aiAgent": "AI Agent",
+  "plantChatOpen": "Ouvrir le chat de la plante",
+  "plantChatTitle": "Chat sur {plantName}",
+  "@plantChatTitle": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "plantChatWelcome": "Bonjour ! Je suis votre assistant pour {plantName}. Demandez-moi tout sur l'arrosage, les signes de santé ou les prochaines actions.",
+  "@plantChatWelcome": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "plantChatInputHint": "Posez une question sur cette plante...",
+  "plantChatLoginAgain": "Veuillez vous reconnecter.",
+  "plantChatRequestFailed": "La requête du chat a échoué",
+  "plantChatCouldNotGenerateResponse": "Je n'ai pas pu générer de réponse. Veuillez réessayer.",
+  "plantChatConnectionError": "Un problème est survenu lors du contact avec l'assistant plante. Veuillez réessayer.",
+  "plantChatQuickWaterToday": "Puis-je arroser aujourd'hui ?",
+  "plantChatQuickYellowLeaves": "Pourquoi les feuilles jaunissent-elles ?",
+  "plantChatQuickWhatToDoNow": "Que dois-je faire maintenant ?"
+}

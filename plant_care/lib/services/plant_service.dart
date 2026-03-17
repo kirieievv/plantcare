@@ -1,11 +1,38 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/plant.dart';
 import '../services/auth_service.dart';
-import '../services/chatgpt_service.dart';
 
 class PlantService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'plants';
+  
+  /// Calculate next watering date with preferred time applied
+  /// This is the single source of truth for calculating nextWateringAt
+  static DateTime calculateNextWateringAt({
+    required DateTime from,
+    required int intervalDays,
+    String preferredTime = '18:00',
+  }) {
+    // Parse preferred time (HH:mm format)
+    final timeParts = preferredTime.split(':');
+    final hour = int.parse(timeParts[0]);
+    final minute = int.parse(timeParts[1]);
+    
+    // Add interval days to base date
+    var nextDue = from.add(Duration(days: intervalDays));
+    
+    // Apply preferred time (same day, just change hour/minute)
+    return DateTime(
+      nextDue.year,
+      nextDue.month,
+      nextDue.day,
+      hour,
+      minute,
+      0, // seconds
+      0, // milliseconds
+      0, // microseconds
+    );
+  }
 
   // Get all plants for current user
   Stream<List<Plant>> getPlants() {
@@ -108,7 +135,41 @@ class PlantService {
     final plantData = plant.toMap();
     plantData['userId'] = user.uid;
     
+    // Initialize notification fields if not already set
+    final now = DateTime.now();
+    final preferredTime = plantData['preferredTime'] ?? '18:00';
+    
+    // Get watering interval from AI (preferred) or fallback to frequency
+    int wateringIntervalDays = plantData['wateringIntervalDays'] ?? plantData['wateringFrequency'] ?? 7;
+    
+    // Get shouldWaterNow from plant (from AI analysis)
+    final shouldWaterNow = plantData['shouldWaterNow'] ?? false;
+    
+    // IMPORTANT: Use shared helper to calculate nextWateringAt with preferred time
+    // This ensures consistent calculation in AddPlant, HealthCheck, and WaterPlant flows
+    final nextDue = calculateNextWateringAt(
+      from: now,
+      intervalDays: wateringIntervalDays,
+      preferredTime: preferredTime,
+    );
+    
+    print('🌱 PlantService.addPlant: intervalDays=$wateringIntervalDays, shouldWaterNow=$shouldWaterNow, preferredTime=$preferredTime, nextDue=$nextDue');
+    
+    // Set next notification to 1 hour before due time
+    final nextNotification = nextDue.subtract(const Duration(hours: 1));
+    
+    plantData['lastWateredAt'] = plantData['lastWateredAt'] ?? now.toIso8601String();
+    plantData['wateringIntervalDays'] = wateringIntervalDays;
+    plantData['preferredTime'] = preferredTime;
+    plantData['shouldWaterNow'] = shouldWaterNow;
+    plantData['nextDueAt'] = nextDue.toIso8601String();
+    plantData['nextNotificationAt'] = nextNotification.toIso8601String();
+    plantData['notificationState'] = 'ok';
+    plantData['muted'] = false;
+    plantData['overdueStreak'] = 0;
+    
     final docRef = await _firestore.collection(_collection).add(plantData);
+    print('✅ PlantService: Added plant with notification scheduling');
     return docRef.id;
   }
 
@@ -185,79 +246,74 @@ class PlantService {
     }
   }
 
-  // Generate AI content for an existing plant
-  Future<void> generateAIContent(String plantId) async {
-    try {
-      print('🔍 PlantService: Generating AI content for plant $plantId');
-      
-      // Get the plant data
-      final doc = await _firestore.collection(_collection).doc(plantId).get();
-      if (!doc.exists) {
-        throw Exception('Plant not found');
-      }
-      
-      final data = doc.data()!;
-      final plant = Plant.fromMap({...data, 'id': doc.id});
-      
-      // Generate AI content
-      Map<String, dynamic> aiContent;
-      if (plant.imageUrl != null) {
-        // TODO: Convert image URL to base64 if needed
-        // For now, use text-only generation
-        aiContent = await ChatGPTService.generatePlantContent(
-          plant.name, 
-          plant.species
-        );
-      } else {
-        aiContent = await ChatGPTService.generatePlantContent(
-          plant.name, 
-          plant.species
-        );
-      }
-      
-      // Update the plant with AI-generated content
-      await _firestore.collection(_collection).doc(plantId).update({
-        'aiGeneralDescription': aiContent['general_description'],
-        'aiName': aiContent['name'],
-        'aiCareTips': aiContent['care_tips'],
-        'interestingFacts': aiContent['interesting_facts'],
-      });
-      
-      print('✅ PlantService: Successfully generated AI content for plant ${plant.name}');
-    } catch (e) {
-      print('❌ PlantService: Error generating AI content for plant $plantId: $e');
-      rethrow;
-    }
-  }
-
-  // Water a plant (update last watered date)
+  // Water a plant (update last watered date and record watering event)
   Future<void> waterPlant(String plantId) async {
     try {
+      final user = AuthService.currentUser;
+      if (user == null) {
+        print('⚠️ PlantService: Cannot water plant - user not authenticated');
+        throw Exception('User not authenticated');
+      }
       final now = DateTime.now();
       final docRef = _firestore.collection(_collection).doc(plantId);
-      
+
       await _firestore.runTransaction((transaction) async {
         try {
           final doc = await transaction.get(docRef);
           if (doc.exists) {
             final data = doc.data()!;
             data['id'] = doc.id;
-            
+
             // Validate required fields before parsing
             if (data['wateringFrequency'] == null) {
               print('⚠️ PlantService: Cannot water plant ${plantId} - missing wateringFrequency');
               return;
             }
-            
+
             final plant = Plant.fromMap(data);
-            final nextWatering = now.add(Duration(days: plant.wateringFrequency));
-            
+            // Use per-plant days interval (AI-derived where available)
+            final wateringIntervalDays = plant.wateringIntervalDays ?? plant.wateringFrequency;
+            final preferredTime = plant.preferredTime ?? '18:00';
+
+            // Calculate next due date using shared helper with preferred time
+            final nextDue = calculateNextWateringAt(
+              from: now,
+              intervalDays: wateringIntervalDays,
+              preferredTime: preferredTime,
+            );
+
+            // Set next notification to 1 hour before due time
+            final nextNotification = nextDue.subtract(const Duration(hours: 1));
+
+            // Calculate nextWatering for backward compatibility
+            final nextWatering = plant.wateringFrequency > 0
+                ? now.add(Duration(days: plant.wateringFrequency))
+                : nextDue;
+
             transaction.update(docRef, {
               'lastWatered': now.toIso8601String(),
               'nextWatering': nextWatering.toIso8601String(),
+              'lastWateredAt': now.toIso8601String(),
+              'nextDueAt': nextDue.toIso8601String(),
+              'nextNotificationAt': nextNotification.toIso8601String(),
+              'notificationState': 'ok',
+              'overdueStreak': 0,
+              'snoozedUntil': null,
+              'shouldWaterNow': false, // Reset after watering - next interval starts
             });
-            
+
+            // Record watering event for history (plantId, userId, timestamp, amountMl)
+            final eventRef = _firestore.collection('watering_events').doc();
+            transaction.set(eventRef, {
+              'plantId': plantId,
+              'userId': user.uid,
+              'timestamp': now.toIso8601String(),
+              'amountMl': plant.wateringAmountMl,
+            });
+
             print('✅ PlantService: Successfully watered plant ${plantId}');
+            print('   Next due: $nextDue');
+            print('   Next notification: $nextNotification');
           } else {
             print('⚠️ PlantService: Plant ${plantId} not found');
           }

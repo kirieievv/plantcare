@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:plant_care/utils/cloud_functions.dart';
 import 'dart:convert';
 
 class AuthService {
@@ -135,6 +137,97 @@ class AuthService {
     }
   }
 
+  // Request password reset PIN via Cloud Function.
+  static Future<void> requestPasswordResetPin(String email) async {
+    final response = await http.post(
+      Uri.parse(requestPasswordResetPinUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode >= 400) {
+      try {
+        final payload = jsonDecode(response.body) as Map<String, dynamic>;
+        throw payload['error']?.toString() ?? 'Failed to request reset code.';
+      } catch (_) {
+        throw 'Failed to request reset code.';
+      }
+    }
+  }
+
+  // Confirm PIN and reset password via Cloud Function.
+  static Future<void> resetPasswordWithPin({
+    required String email,
+    required String pin,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse(confirmPasswordResetPinUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'pin': pin,
+        'newPassword': newPassword,
+      }),
+    );
+
+    if (response.statusCode >= 400) {
+      try {
+        final payload = jsonDecode(response.body) as Map<String, dynamic>;
+        throw payload['error']?.toString() ?? 'Failed to reset password.';
+      } catch (_) {
+        throw 'Failed to reset password.';
+      }
+    }
+  }
+
+  // Verify PIN only (used by dedicated PIN screen).
+  static Future<void> verifyPasswordResetPin({
+    required String email,
+    required String pin,
+  }) async {
+    final response = await http.post(
+      Uri.parse(verifyPasswordResetPinUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'pin': pin,
+      }),
+    );
+
+    if (response.statusCode >= 400) {
+      try {
+        final payload = jsonDecode(response.body) as Map<String, dynamic>;
+        throw payload['error']?.toString() ?? 'Invalid verification code.';
+      } catch (_) {
+        throw 'Invalid verification code.';
+      }
+    }
+  }
+
+  // Change password after reauth with current password
+  static Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        throw 'User is not authenticated.';
+      }
+
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(newPassword);
+    } catch (e) {
+      throw _handleAuthError(e);
+    }
+  }
+
   // Handle Firebase Auth errors
   static String _handleAuthError(dynamic error) {
     print('Auth Error: $error'); // Debug logging
@@ -164,6 +257,8 @@ class AuthService {
           return 'Network error. Please check your internet connection.';
         case 'invalid-credential':
           return 'Invalid credentials provided.';
+        case 'requires-recent-login':
+          return 'Please sign in again and try changing your password.';
         default:
           return 'Authentication failed: ${error.message} (Code: ${error.code})';
       }
@@ -323,7 +418,6 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       return {
         'theme': prefs.getString('theme') ?? 'system',
-        'notifications_enabled': prefs.getBool('notifications_enabled') ?? true,
         'watering_reminders': prefs.getBool('watering_reminders') ?? true,
         'language': prefs.getString('language') ?? 'en',
         'timezone': prefs.getString('timezone') ?? 'UTC',

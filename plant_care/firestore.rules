@@ -1,6 +1,13 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Watering events: user can only create/read their own events
+    match /watering_events/{eventId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     // Allow read/write access to all documents for testing
     // WARNING: This is for development only - don't use in production!
     match /{document=**} {

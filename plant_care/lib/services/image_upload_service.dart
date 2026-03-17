@@ -1,10 +1,31 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ImageUploadService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  /// Upload plant image from bytes (e.g. from picker). Returns download URL.
+  /// Use this when adding a new plant to avoid storing base64 in Firestore.
+  Future<String> uploadPlantImageFromBytes(List<int> imageBytes, String plantName) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final safeName = plantName.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+    final baseName = safeName.isEmpty ? 'plant' : safeName.split(RegExp(r'\s+')).first;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = 'plants/${user.uid}/${baseName}_$timestamp.jpg';
+
+    final storageRef = _storage.ref().child(fileName);
+    final uploadTask = storageRef.putData(
+      imageBytes is Uint8List ? imageBytes : Uint8List.fromList(imageBytes),
+      SettableMetadata(contentType: 'image/jpeg'),
+    );
+    final snapshot = await uploadTask;
+    return await snapshot.ref.getDownloadURL();
+  }
 
   /// Upload a plant image to Firebase Storage
   Future<String> uploadPlantImage(File imageFile, String plantName) async {

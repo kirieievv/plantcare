@@ -3,24 +3,29 @@ import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'dart:convert';
 import 'dart:async';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:plant_care/utils/app_theme.dart';
-import 'package:plant_care/services/chatgpt_service.dart';
 import 'package:plant_care/services/health_check_service.dart';
+import 'package:plant_care/utils/cloud_functions.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:plant_care/models/plant.dart';
 import 'package:uuid/uuid.dart';
 
+enum HealthCheckAnalysisMode { aiCare, aiAgent }
+
 class HealthCheckModal extends StatefulWidget {
   final String plantId;
   final String plantName;
   final Function(Map<String, dynamic>) onHealthCheckComplete;
+  final HealthCheckAnalysisMode analysisMode;
 
   const HealthCheckModal({
     Key? key,
     required this.plantId,
     required this.plantName,
     required this.onHealthCheckComplete,
+    this.analysisMode = HealthCheckAnalysisMode.aiAgent,
   }) : super(key: key);
 
   @override
@@ -33,29 +38,95 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
   String? _errorMessage;
   final ImagePicker _picker = ImagePicker();
 
-  Future<void> _pickImage() async {
+  String get _analysisModeLabel {
+    return widget.analysisMode == HealthCheckAnalysisMode.aiCare ? 'AI Care' : 'AI Agent';
+  }
+
+  String get _analysisModeKey {
+    return widget.analysisMode == HealthCheckAnalysisMode.aiCare ? 'ai_care' : 'ai_agent';
+  }
+
+  /// Shows a centered dialog to choose image source (gallery/camera), so the choice UI is not at the top.
+  void _showImageSourceDialog() {
+    setState(() {
+      _errorMessage = null;
+    });
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Choose photo',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Icon(Icons.photo_library, color: AppTheme.accentGreen),
+                  title: const Text('Gallery'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImageFromSource(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.camera_alt, color: AppTheme.accentGreen),
+                  title: const Text('Camera'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImageFromSource(ImageSource.camera);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImageFromSource(ImageSource source) async {
     try {
-      setState(() {
-        _errorMessage = null;
-      });
-      
       final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 600, // Reduced from 800
-        maxHeight: 600, // Reduced from 800
-        imageQuality: 70, // Reduced from 85 for smaller file size
+        source: source,
+        maxWidth: 900,
+        maxHeight: 1200,
+        imageQuality: 90,
       );
-      
-      if (image != null) {
+      if (image != null && mounted) {
         final bytes = await image.readAsBytes();
         setState(() {
           _selectedImageBytes = bytes;
         });
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error picking image: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error picking image: $e';
+        });
+      }
     }
   }
 
@@ -74,7 +145,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
     
     // Add timeout to prevent infinite freezing
     Timer? timeoutTimer;
-    timeoutTimer = Timer(const Duration(seconds: 30), () {
+    timeoutTimer = Timer(const Duration(seconds: 60), () {
       if (mounted && _isAnalyzing) {
         setState(() {
           _errorMessage = 'Analysis timed out. Please try again.';
@@ -87,64 +158,32 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       // Convert image to base64 for API call
       final base64Image = base64Encode(_selectedImageBytes!);
       
-      // Prepare the prompt for ChatGPT - Friendly Plant Care Assistant with Plant Identification
-      const prompt = '''You are Plant Care Assistant, a plant health expert with years of experience. 
-I will send you a photo of a plant. Your job is to give a friendly, supportive response to the user.
-
-FIRST STEP - PLANT IDENTIFICATION:
-- Start by identifying what type of plant this appears to be (e.g., "This looks like a Monstera deliciosa" or "I can see this is a Peace Lily")
-- If you're not certain of the exact species, describe what you can identify (e.g., "This appears to be a tropical houseplant with large leaves")
-- Use the plant's name throughout your response to make it personal
-
-CRITICAL ASSESSMENT GUIDELINES:
-- Look carefully at the plant's overall condition, leaf color, leaf shape, soil moisture, and any visible problems
-- Be consistent and accurate in your health assessment
-- If you see ANY of these signs, the plant is NOT healthy:
-  * Wilted, drooping, or limp leaves
-  * Yellow, brown, or black leaves
-  * Dry, cracked, or shriveled foliage
-  * Visible pests or disease spots
-  * Extremely dry or waterlogged soil
-  * Stunted or poor growth
-
-Please follow this EXACT structure in your answer:
-
-**For Unhealthy Plants:**
-1. Start with a warm, caring greeting and identify the plant
-2. Provide a short, descriptive overview of what you observe about the plant's current state
-3. Give a clear, honest statement about the overall health status
-4. Provide 3-5 specific, actionable recommendations as simple text items:
-   - [Detailed advice about watering, light, care, etc.]
-   - [Detailed advice about humidity, temperature, etc.]
-   - [Detailed advice about pruning, fertilizing, etc.]
-   - [Additional care steps as needed]
-   - [Monitoring and follow-up advice]
-   (Use as many items as needed, minimum 3, maximum 5)
-5. End with an encouraging phrase like "Don't worry" or similar supportive message
-
-**For Healthy Plants:**
-1. Start with a warm, caring greeting and identify the plant
-2. Confirm the plant looks healthy and thriving
-3. Give 1-2 encouraging comments about the plant's condition
-4. End with an encouraging phrase about continued care
-
-**Important**: 
-- Make recommendations specific and actionable
-- Keep tone friendly, encouraging, and easy to understand
-- Use the plant's name throughout for personalization
-- Do NOT use field names or labels - just write naturally
-
-Your tone: supportive, positive, simple, and easy to understand. 
-Be honest about plant health - don't sugarcoat serious issues, but always offer hope and solutions.
-Use the plant's name throughout your response to make it personal and caring.
-
-IMPORTANT: Return your response as a friendly, conversational message. Do not use JSON format - just write naturally as if you're talking to a friend about their plant.''';
-
-      // Make API call to ChatGPT (replace with your actual API endpoint)
-      final response = await _callChatGPT(prompt, base64Image);
+      // Call Firebase Function for analysis (uses unified prompt)
+      final response = await _callChatGPT(base64Image);
       
       if (response != null) {
-        // Create a health check record
+        // Create a health check record (include watering recommendation in metadata for history)
+        final metadata = <String, dynamic>{
+          'analysisTimestamp': DateTime.now().toIso8601String(),
+          'analysisMode': response['analysisMode'] ?? _analysisModeKey,
+        };
+        if (response['agent'] is Map) {
+          final agent = Map<String, dynamic>.from(response['agent'] as Map);
+          metadata['retryCount'] = agent['attemptsUsed'];
+          metadata['tierUsed'] = agent['tierUsed'];
+          metadata['imagesUsed'] = agent['imagesUsed'];
+          metadata['escalationReason'] = agent['escalationReason'];
+          metadata['agentAccepted'] = agent['accepted'];
+          metadata['agentAttemptTrace'] = agent['attemptTrace'];
+          metadata['decisionTraceV2'] = agent['decisionTraceV2'];
+          metadata['agentContext'] = agent['context'];
+        }
+        if (response['amount_ml'] != null) {
+          metadata['recommendedAmountMl'] = response['amount_ml'];
+        }
+        if (response['watering_amount'] != null) {
+          metadata['watering_amount'] = response['watering_amount'];
+        }
         final healthCheckRecord = HealthCheckRecord(
           id: const Uuid().v4(),
           timestamp: DateTime.now(),
@@ -152,9 +191,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
           message: response['message'],
           imageUrl: null, // Will be set by the service after upload
           imageBytes: _selectedImageBytes, // Pass the actual image bytes
-          metadata: {
-            'analysisTimestamp': DateTime.now().toIso8601String(),
-          },
+          metadata: metadata,
         );
 
         // Save the health check record to the plant
@@ -214,67 +251,210 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
     }
   }
 
-  Future<Map<String, dynamic>?> _callChatGPT(String prompt, String base64Image) async {
+  Future<Map<String, dynamic>?> _callChatGPT(String base64Image) async {
     try {
-      // Use Firebase Functions directly for plant health analysis with plant size assessment
+      // Call Firebase Function for analysis (uses unified prompt)
       print('🌱 Health Check Modal: Calling Firebase Functions for AI analysis...');
+      print('🌱 Health Check Modal: Selected mode: $_analysisModeLabel ($_analysisModeKey)');
+      final bool isAgentMode = widget.analysisMode == HealthCheckAnalysisMode.aiAgent;
+      final String endpointUrl = isAgentMode ? analyzeHealthCheckAgentUrl : analyzePlantPhotoUrl;
+      print('🌱 Health Check Modal: Endpoint: $endpointUrl');
       
       final response = await http.post(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse(endpointUrl),
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'base64Image': base64Image,
-          'isHealthCheck': true,
+          if (isAgentMode) ...{
+            'plantId': widget.plantId,
+            'plantName': widget.plantName,
+            'userId': FirebaseAuth.instance.currentUser?.uid,
+          },
         }),
       );
       
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
-        print('✅ Firebase Function response: $result');
+        print('✅ Firebase Function response received');
+        print('🔍 Response keys: ${result.keys.toList()}');
+        final agentInfo = result['agent'];
+        
+        // Extract recommendations from the response (shared with AddPlant flow)
+        // Convert to proper Map<String, dynamic> to avoid type errors
+        final recommendationsRaw = result['recommendations'];
+        final recommendations = recommendationsRaw is Map 
+            ? Map<String, dynamic>.from(recommendationsRaw as Map) 
+            : <String, dynamic>{};
+        print('🔍 Recommendations keys: ${recommendations.keys.toList()}');
         
         // Extract plant size data from the AI response
-        final plantSize = result['plant_size'];
-        final potSize = result['pot_size'];
-        final growthStage = result['growth_stage'];
-        final moistureLevel = result['moisture_level'];
-        final light = result['light'];
+        final plantSize = recommendations['plant_size'] ?? result['plant_size'];
+        final potSize = recommendations['pot_size'] ?? result['pot_size'];
+        final growthStage = recommendations['growth_stage'] ?? result['growth_stage'];
+        
+        // Moisture / light and care recommendations (same structure as AddPlant)
+        final moistureLevel = recommendations['moisture_level'] ?? result['moisture_level'];
+        final light = recommendations['light'] ?? result['light'];
+        final careTips = recommendations['care_tips'];
+        final interestingFacts = recommendations['interesting_facts'];
+        
+        // Per-plant, days-based watering interval from AI (new species-specific structure)
+        // Fix: Properly convert LinkedMap to Map<String, dynamic>
+        final wateringPlanRaw = recommendations['watering_plan'];
+        final wateringPlan = wateringPlanRaw is Map 
+            ? Map<String, dynamic>.from(wateringPlanRaw as Map) 
+            : <String, dynamic>{};
+        // Extract from new watering_plan structure
+        final wateringIntervalDays = wateringPlan['next_watering_in_days'];
+        final shouldWaterNow = wateringPlan['should_water_now'] as bool?;
+        final reasonShort = wateringPlan['reason_short'] as String?;
+        
+        // Extract amount_ml from watering_plan first (already clamped by backend), then fallback to legacy
+        final wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+        
+        // Scientific watering calculation data (legacy support)
+        final wateringRangeMl = recommendations['range_ml'];
+        final nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        final nextCheckHours = recommendations['next_check_in_hours'];
+        final wateringMode = recommendations['mode'];
+        final wateringAmountText = recommendations['watering_amount'];
         final rawResponse = result['rawResponse'] ?? result['message'] ?? '';
+        
+        print('🌱 ========== HEALTH CHECK WATERING DATA ==========');
+        print('🌱 Health Check: watering_plan exists: ${wateringPlan.isNotEmpty}');
+        print('🌱 Health Check: watering_plan keys: ${wateringPlan.keys.toList()}');
+        print('🌱 Health Check: Extracted watering_plan=$wateringPlan');
+        print('🌱 Health Check: Per-plant watering_interval_days=$wateringIntervalDays (type: ${wateringIntervalDays.runtimeType})');
+        print('🌱 Health Check: next_after_watering_in_hours=$nextAfterWateringHours');
+        print('🌱 Health Check: mode=$wateringMode');
+        print('🌱 ================================================');
         
         // Determine health status from the AI response content
         String status = 'ok'; // Default to healthy
         
         print('🌱 Health Check Modal: Analyzing AI response for health status...');
-        print('🌱 AI Message: ${rawResponse.substring(0, rawResponse.length > 100 ? 100 : rawResponse.length)}...');
+        print('🌱 AI Message: ${rawResponse.substring(0, rawResponse.length > 200 ? 200 : rawResponse.length)}...');
         print('🌱 Plant Size: $plantSize, Pot Size: $potSize, Growth Stage: $growthStage');
         
-        // Simple health status determination based on AI response content
-        if (rawResponse.toLowerCase().contains('healthy') || 
-            rawResponse.toLowerCase().contains('thriving') ||
-            rawResponse.toLowerCase().contains('good condition') ||
-            rawResponse.toLowerCase().contains('no problems')) {
+        // Improved health status determination - prioritize positive indicators
+        // Look for strong positive indicators first
+        final lowerResponse = rawResponse.toLowerCase();
+        print('🌱 Lower response: ${lowerResponse.substring(0, lowerResponse.length > 200 ? 200 : lowerResponse.length)}...');
+        
+        // Debug: Check for specific phrases
+        print('🌱 Contains "appears healthy": ${lowerResponse.contains('appears healthy')}');
+        print('🌱 Contains "no signs of": ${lowerResponse.contains('no signs of')}');
+        print('🌱 Contains "disease": ${lowerResponse.contains('disease')}');
+        print('🌱 Contains "no signs of disease": ${lowerResponse.contains('no signs of disease')}');
+        
+        // Count positive vs negative indicators
+        final positiveIndicators = [
+          'healthy', 'thriving', 'good condition', 'no problems', 
+          'doing well', 'looking great', 'vibrant', 'robust'
+        ];
+        
+        final negativeIndicators = [
+          'unhealthy', 'dying', 'wilting', 'wilted', 'drooping',
+          'needs help', 'needs attention', 'struggling', 'stress',
+          'health issues', 'brown patches', 'brown spots', 'rot',
+          'disease', 'trauma', 'damage', 'problems', 'issues',
+          'declining', 'critical', 'urgent', 'emergency', 'severe'
+        ];
+        
+        // Check for strong positive indicators first (they override negative ones)
+        if (lowerResponse.contains('appears healthy') ||
+            lowerResponse.contains('shows healthy') || 
+            lowerResponse.contains('looking healthy') ||
+            lowerResponse.contains('is healthy') ||
+            lowerResponse.contains('thriving') ||
+            lowerResponse.contains('doing well') ||
+            lowerResponse.contains('no signs of') ||
+            lowerResponse.contains('no visible problems') ||
+            lowerResponse.contains('no issues')) {
+          print('🌱 Found strong positive indicator - setting status to ok');
           status = 'ok';
-        } else if (rawResponse.toLowerCase().contains('issue') ||
-                   rawResponse.toLowerCase().contains('problem') ||
-                   rawResponse.toLowerCase().contains('unhealthy') ||
-                   rawResponse.toLowerCase().contains('dying') ||
-                   rawResponse.toLowerCase().contains('yellow') ||
-                   rawResponse.toLowerCase().contains('brown') ||
-                   rawResponse.toLowerCase().contains('wilting')) {
+        }
+        // Check for strong negative indicators (only if no positive indicators found)
+        else if (lowerResponse.contains('appears to have some health issues') ||
+            lowerResponse.contains('has some health issues') ||
+            lowerResponse.contains('health issues') ||
+            lowerResponse.contains('brown patches') ||
+            lowerResponse.contains('brown spots') ||
+            lowerResponse.contains('rot') ||
+            lowerResponse.contains('disease') ||
+            lowerResponse.contains('trauma') ||
+            lowerResponse.contains('damage')) {
+          print('🌱 Found strong negative indicator - setting status to issue');
           status = 'issue';
+        } else {
+          // Count positive and negative indicators
+          int positiveCount = positiveIndicators.where((word) => lowerResponse.contains(word)).length;
+          int negativeCount = negativeIndicators.where((word) => lowerResponse.contains(word)).length;
+          
+          print('🌱 Positive indicators found: $positiveCount');
+          print('🌱 Negative indicators found: $negativeCount');
+          
+          // Debug: Show which specific indicators were found
+          final foundPositive = positiveIndicators.where((word) => lowerResponse.contains(word)).toList();
+          final foundNegative = negativeIndicators.where((word) => lowerResponse.contains(word)).toList();
+          print('🌱 Found positive indicators: $foundPositive');
+          print('🌱 Found negative indicators: $foundNegative');
+          
+          // If more positive than negative, plant is healthy
+          if (positiveCount > negativeCount) {
+            print('🌱 More positive than negative - setting status to ok');
+            status = 'ok';
+          } else if (negativeCount > 0) {
+            print('🌱 Found negative indicators - setting status to issue');
+          status = 'issue';
+          } else {
+            print('🌱 No clear indicators - defaulting to ok');
+            status = 'ok'; // Default to healthy if unclear
+          }
         }
         
+        // Plant Assistant: use AI block if present, else keep heuristic status
+        final plantAssistantRaw = recommendations['plant_assistant'];
+        final Map<String, dynamic>? plantAssistant = plantAssistantRaw is Map
+            ? Map<String, dynamic>.from(plantAssistantRaw as Map)
+            : null;
+        if (plantAssistant != null && plantAssistant['status'] != null) {
+          final paStatus = plantAssistant['status'].toString().toLowerCase();
+          if (paStatus == 'issue_detected') status = 'issue';
+          else if (paStatus == 'healthy') status = 'ok';
+        }
         print('🌱 Health Check Modal: Final status determined: $status');
-        
+        print('🌱 Health Check Modal: plant_assistant present: ${plantAssistant != null}');
+
+        // Store structured Plant Assistant JSON for card (no raw API dump)
+        final String messageForStorage = plantAssistant != null
+            ? jsonEncode(plantAssistant)
+            : rawResponse;
+
         return {
           "status": status,
-          "message": rawResponse,
+          "message": messageForStorage,
+          "analysisMode": _analysisModeKey,
+          "plant_assistant": plantAssistant,
           "plant_size": plantSize,
           "pot_size": potSize,
           "growth_stage": growthStage,
           "moisture_level": moistureLevel,
           "light": light,
+          "care_tips": careTips,
+          "interesting_facts": interestingFacts,
+          "amount_ml": wateringAmountMl,
+          "range_ml": wateringRangeMl,
+          "next_after_watering_in_hours": nextAfterWateringHours,
+          "next_check_in_hours": nextCheckHours,
+          "mode": wateringMode,
+          "watering_amount": wateringAmountText,
+          "watering_interval_days": wateringIntervalDays,
+          "should_water_now": shouldWaterNow,
+          "reason_short": reasonShort,
+          "agent": agentInfo,
         };
       } else {
         throw Exception('Firebase Function failed with status: ${response.statusCode}');
@@ -284,7 +464,8 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
       // Fallback to mock response if API fails
       return {
         "status": "issue",
-        "message": "Hello friend! 🌿 I can see your plant, and I'm here to help! Looking at your plant, I can see it's been through some tough times - the leaves are severely wilted and drooping, and the soil appears extremely dry. This suggests your plant is experiencing significant stress, likely from underwatering or environmental conditions. Your plant is currently in poor health and needs immediate attention to recover. Here's what I recommend: Give it a thorough but gentle watering - the soil looks extremely dry. Make sure the water drains properly and avoid overwatering. Move it to a spot with bright, indirect light while it's recovering. Avoid direct sun which can stress it further. Keep it in a comfortable, stable environment away from drafts or extreme temperature changes. Check if the pot has proper drainage and consider repotting if the soil is compacted. Trim away any completely dead or brown leaves to help the plant focus its energy on recovery. Check the soil moisture daily and adjust watering as needed. Don't worry, your plant is strong and with consistent care, it can definitely bounce back! Keep the faith and give it some extra love - you've got this! 🌱💪"
+        "analysisMode": _analysisModeKey,
+        "message": "Something went wrong. Please try analyzing the plant's health again."
       };
     }
   }
@@ -294,76 +475,66 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
   String _analyzeTextForHealthStatus(String message) {
     print('🌱 Fallback: Analyzing text for health status...');
     
-    // Check for problem indicators
-    final problemIndicators = [
-      'wilted', 'drooping', 'yellow', 'brown', 'distress',
-      'unhealthy', 'dying', 'dead', 'critical', 'urgent', 'emergency',
-      'severe', 'serious', 'turning yellow', 'brown spots',
-      'not in the best health', 'needs help', 'poor health',
-      'struggling', 'stress', 'fallen petals', 'drooping quite a bit',
-      'not in the best health right now', 'problem', 'issue',
-      'concern', 'damaged', 'sick', 'declining', 'overwatered',
-      'underwatered', 'root rot', 'pest', 'disease'
+    final lowerMessage = message.toLowerCase();
+    
+    // Strong positive indicators (about actual plant condition)
+    final strongPositiveIndicators = [
+      'shows healthy', 'looking healthy', 'appears healthy', 'is healthy',
+      'plant is thriving', 'plant looks great', 'doing well', 'in great shape',
+      'robust growth', 'vibrant and healthy', 'healthy growth'
     ];
-
-    // Check for negative health statements
-    final negativeStatements = [
-      'not healthy', 'not thriving', 'not doing well',
-      'not in good condition', 'not in good shape',
-      'has problems', 'has issues', 'needs attention',
-      'requires care', 'needs help', 'struggling'
-    ];
-
-    // Check for positive health indicators
+    
+    // Check for strong positive indicators first
+    for (final indicator in strongPositiveIndicators) {
+      if (lowerMessage.contains(indicator)) {
+        print('🌱 Fallback: Found strong positive indicator: "$indicator"');
+        return 'ok';
+      }
+    }
+    
+    // Moderate positive indicators
     final positiveIndicators = [
       'healthy', 'thriving', 'robust', 'good condition',
-      'no problems', 'no issues', 'appears healthy',
-      'looks good', 'doing well', 'in good shape',
-      'beautiful', 'stunning', 'great condition',
-      'flourishing', 'lush', 'vibrant'
+      'no problems', 'appears healthy', 'looks good',
+      'beautiful', 'flourishing', 'lush', 'vibrant'
     ];
 
-    // Check if ANY problem indicator is present
-    bool hasProblems = false;
-    for (final indicator in problemIndicators) {
-      if (message.contains(indicator)) {
-        print('🌱 Fallback: Found problem indicator: "$indicator"');
-        hasProblems = true;
-        break;
-      }
-    }
+    // Actual problem indicators (about plant condition, not general care advice)
+    final problemIndicators = [
+      'unhealthy', 'dying', 'dead', 'wilted', 'wilting', 'drooping',
+      'not in the best health', 'poor health', 'struggling', 'distressed',
+      'falling petals', 'not healthy', 'not thriving', 'not doing well',
+      'needs help', 'needs attention', 'requires immediate'
+    ];
 
-    // Check for negative statements
-    for (final statement in negativeStatements) {
-      if (message.contains(statement)) {
-        print('🌱 Fallback: Found negative statement: "$statement"');
-        hasProblems = true;
-        break;
-      }
-    }
-
-    // Check for positive indicators (only if no problems found)
-    bool hasPositiveIndicators = false;
-    if (!hasProblems) {
+    // Count indicators
+    int positiveCount = 0;
+    int problemCount = 0;
+    
       for (final indicator in positiveIndicators) {
-        if (message.contains(indicator)) {
+      if (lowerMessage.contains(indicator)) {
+        positiveCount++;
           print('🌱 Fallback: Found positive indicator: "$indicator"');
-          hasPositiveIndicators = true;
-          break;
-        }
+      }
+    }
+    
+    for (final indicator in problemIndicators) {
+      if (lowerMessage.contains(indicator)) {
+        problemCount++;
+        print('🌱 Fallback: Found problem indicator: "$indicator"');
       }
     }
 
-    // Determine final status
-    if (hasProblems) {
-      print('🌱 Fallback: Status = ISSUE (problems detected)');
-      return 'issue';
-    } else if (hasPositiveIndicators) {
-      print('🌱 Fallback: Status = OK (positive indicators found)');
+    // Determine final status based on counts
+    if (positiveCount > problemCount) {
+      print('🌱 Fallback: Status = OK (positive: $positiveCount, problems: $problemCount)');
       return 'ok';
+    } else if (problemCount > 0) {
+      print('🌱 Fallback: Status = ISSUE (positive: $positiveCount, problems: $problemCount)');
+      return 'issue';
     } else {
-      print('🌱 Fallback: Status = ISSUE (default to safety)');
-      return 'issue'; // Default to issue for safety
+      print('🌱 Fallback: Status = OK (default - no strong indicators found)');
+      return 'ok'; // Default to ok if unclear
     }
   }
 
@@ -659,7 +830,7 @@ IMPORTANT: Return your response as a friendly, conversational message. Do not us
                     // Upload Button with improved styling
                     Center(
                       child: ElevatedButton.icon(
-                        onPressed: _pickImage,
+                        onPressed: _showImageSourceDialog,
                         icon: Icon(
                           _selectedImageBytes != null ? Icons.refresh : Icons.upload,
                           color: Colors.white,

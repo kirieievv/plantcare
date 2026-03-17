@@ -5,7 +5,9 @@ class AppTheme {
   static const Color primaryBlue = Color(0xFF1976D2); // KLM Blue
   static const Color darkBlue = Color(0xFF0D47A1); // Dark Blue
   static const Color lightBlue = Color(0xFFE3F2FD); // Light Blue
-  static const Color accentGreen = Color(0xFF4CAF50); // Success Green
+  static const Color accentGreen = Color(0xFF4CAF50); // Success Green (кнопки, иконки, акценты)
+  static const Color greenDark = Color(0xFF2E7D32);  // Тёмно-зелёный (текст на зелёном фоне, подписи)
+  static const Color greenLightBg = Color(0xFFE8F5E9); // Светло-зелёный фон карточек
   static const Color white = Color(0xFFFFFFFF);
   static const Color lightGrey = Color(0xFFF8F9FA);
   static const Color mediumGrey = Color(0xFFE9ECEF);

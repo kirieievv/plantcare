@@ -7,7 +7,9 @@
       "http://localhost:8080",
       "http://127.0.0.1:*",
       "https://plant-care-94574.web.app",
-      "https://plant-care-94574.firebaseapp.com"
+      "https://plant-care-94574.firebaseapp.com",
+      "https://botanly.tech",
+      "https://www.botanly.tech"
     ],
     "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
     "maxAgeSeconds": 3600,

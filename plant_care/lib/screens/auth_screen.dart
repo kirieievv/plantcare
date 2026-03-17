@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart';
 import 'main_navigation_screen.dart'; // Added import for MainNavigationScreen
+import 'forgot_password_email_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   final bool isRegistration;
@@ -21,6 +22,7 @@ class _AuthScreenState extends State<AuthScreen> {
   
   late bool _isLogin;
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
   bool _rememberMe = true; // Default to true for better UX
   String _errorMessage = '';
 
@@ -94,8 +96,15 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
+  Future<void> _openForgotPasswordFlow() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ForgotPasswordEmailScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -139,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Plant Care',
+                                  l10n.appTitle,
                                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                     color: Colors.green.shade700,
                                     fontWeight: FontWeight.bold,
@@ -147,7 +156,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  _isLogin ? 'Welcome back!' : 'Create your account',
+                                  _isLogin ? l10n.welcomeBack : l10n.createYourAccount,
                                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                     color: Colors.grey.shade700,
                                     fontWeight: FontWeight.w600,
@@ -162,15 +171,15 @@ class _AuthScreenState extends State<AuthScreen> {
                           if (!_isLogin) ...[
                             TextFormField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Full Name',
-                                prefixIcon: Icon(Icons.person),
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: InputDecoration(
+                                labelText: l10n.fullName,
+                                prefixIcon: const Icon(Icons.person),
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your name';
+                                  return l10n.pleaseEnterYourName;
                                 }
                                 return null;
                               },
@@ -181,18 +190,18 @@ class _AuthScreenState extends State<AuthScreen> {
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: Icon(Icons.email),
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: InputDecoration(
+                              labelText: l10n.email,
+                              prefixIcon: const Icon(Icons.email),
+                              border: const OutlineInputBorder(),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your email';
+                                return l10n.pleaseEnterYourEmail;
                               }
                               if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                return 'Please enter a valid email';
+                                return l10n.pleaseEnterValidEmail;
                               }
                               return null;
                             },
@@ -201,19 +210,29 @@ class _AuthScreenState extends State<AuthScreen> {
 
                           TextFormField(
                             controller: _passwordController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: Icon(Icons.lock),
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            obscureText: !_isPasswordVisible,
+                            decoration: InputDecoration(
+                              labelText: l10n.password,
+                              prefixIcon: const Icon(Icons.lock),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
+                              ),
+                              border: const OutlineInputBorder(),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
+                                return l10n.pleaseEnterYourPassword;
                               }
                               if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
+                                return l10n.passwordAtLeast6;
                               }
                               return null;
                             },
@@ -233,11 +252,21 @@ class _AuthScreenState extends State<AuthScreen> {
                                   },
                                   activeColor: Colors.green.shade600,
                                 ),
-                                const Text(
-                                  'Remember me for 30 days',
-                                  style: TextStyle(fontSize: 14),
+                                Text(
+                                  l10n.rememberMe30Days,
+                                  style: const TextStyle(fontSize: 14),
                                 ),
                               ],
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _isLoading ? null : _openForgotPasswordFlow,
+                                child: Text(
+                                  'Forgot password?',
+                                  style: TextStyle(color: Colors.green.shade700, fontSize: 13),
+                                ),
+                              ),
                             ),
                           ],
                           
@@ -291,7 +320,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                     )
                                   : Text(
-                                      _isLogin ? 'Log in' : 'Registration',
+                                      _isLogin ? l10n.logIn : l10n.registration,
                                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                     ),
                             ),
@@ -304,8 +333,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               onPressed: _isLoading ? null : _toggleMode,
                               child: Text(
                                 _isLogin
-                                    ? 'Don\'t have an account? Registration'
-                                    : 'Already have an account? Log in',
+                                    ? l10n.dontHaveAccountRegistration
+                                    : l10n.alreadyHaveAccountLogin,
                                 style: TextStyle(color: Colors.green.shade600, fontSize: 14),
                               ),
                             ),

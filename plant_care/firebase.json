@@ -40,6 +40,6 @@
     ]
   },
   "storage": {
-    "rules": "q"
+    "rules": "storage.rules"
   }
 }

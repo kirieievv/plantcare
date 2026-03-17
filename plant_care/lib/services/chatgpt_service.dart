@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'watering_calculator_service.dart';
 
 /// Service for interacting with OpenAI's ChatGPT API
 class ChatGPTService {
@@ -17,13 +18,76 @@ class ChatGPTService {
     return key;
   }
   
-  /// Analyzes a plant photo using OpenAI's GPT-4 Vision API
-  static Future<Map<String, dynamic>> analyzePlantPhoto(String base64Image) async {
+  /// Generates AI content with image analysis
+  static Future<Map<String, dynamic>> generatePlantContent(String plantName, String species, {String? base64Image}) async {
     try {
-      print('🔍 Starting plant photo analysis with model: $_model');
-      print('🔍 API Key length: ${_apiKey.length}');
-      print('🔍 Base64 image length: ${base64Image.length}');
+      print('🔍 Generating AI content for: $plantName ($species)');
       
+      if (base64Image == null) {
+        throw Exception('Image is required for analysis');
+      }
+      
+      // Same unified prompt as Firebase Function
+      final prompt = 'Analyze this image to assess plant health and calculate scientific watering recommendations.\n\nCRITICAL: Provide precise measurements for watering calculations.\n\nName: [Plant name]\nSpecies: [Species if identifiable]\nDescription: [Visual description]\n\nWatering Calculation Data (REQUIRED):\n   - Pot Present: [yes/no - Is there a visible pot/container?]\n   - Pot Diameter: [X cm or inches - Measure the top inner diameter of the pot]\n   - Pot Height: [X cm or inches - Measure the visible pot height]\n   - Plant Height: [X cm or inches - Total height from soil to top]\n   - Canopy Diameter: [X cm or inches - Widest horizontal spread]\n   - Visual Soil State: [wet/moist/slightly_dry/dry/very_dry/not_visible - Assess soil moisture]\n   - Plant Profile: [succulent/succulent_large/tropical_broadleaf/herbaceous/woody_potted/large_palm_indoor - Classify the plant type]\n\nOther Care:\n   - Light: [Hours per day and intensity]\n   - Growth Stage: [Seedling/Young/Mature/Established]\n\nInteresting Facts: [4 facts]\n\nHEALTH ASSESSMENT: [Is it healthy? Any problems?]';
+      
+      return await _generatePlantContentWithRetry(base64Image, prompt);
+    } catch (e) {
+      print('❌ Plant Content Generation Error: $e');
+      throw Exception('Plant content generation failed: $e');
+    }
+  }
+  
+  /// Generates AI content with retry mechanism for measurement extraction
+  static Future<Map<String, dynamic>> _generatePlantContentWithRetry(String base64Image, String initialPrompt, {int maxRetries = 2}) async {
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      print('🔄 Attempt ${attempt + 1} of ${maxRetries + 1}');
+      
+      try {
+        String promptToUse = initialPrompt;
+        
+        // Use a more aggressive prompt on retry
+        if (attempt > 0) {
+          promptToUse = '''CRITICAL: You MUST provide ALL required measurements EXACTLY in this format:
+
+Pot Present: yes
+Pot Diameter: [NUMBER] cm
+Pot Height: [NUMBER] cm
+Plant Height: [NUMBER] cm
+Canopy Diameter: [NUMBER] cm
+Visual Soil State: dry
+Plant Profile: succulent
+
+If you cannot see a pot, use:
+Pot Present: no
+Plant Height: [NUMBER] cm
+Canopy Diameter: [NUMBER] cm
+Visual Soil State: dry
+Plant Profile: succulent
+
+Provide your analysis in this format:
+
+Name: [Plant name]
+Species: [Species if identifiable]
+Description: [Visual description]
+
+Watering Calculation Data (REQUIRED):
+   - Pot Present: [yes/no]
+   - Pot Diameter: [X] cm
+   - Pot Height: [X] cm
+   - Plant Height: [X] cm
+   - Canopy Diameter: [X] cm
+   - Visual Soil State: [wet/moist/slightly_dry/dry/very_dry/not_visible]
+   - Plant Profile: [succulent/succulent_large/tropical_broadleaf/herbaceous/woody_potted/large_palm_indoor]
+
+Other Care:
+   - Light: [Hours per day and intensity]
+   - Growth Stage: [Seedling/Young/Mature/Established]
+
+Interesting Facts: [4 facts]
+
+HEALTH ASSESSMENT: [Is it healthy? Any problems?]''';
+        }
+        
       final response = await http.post(
         Uri.parse('$_baseUrl/chat/completions'),
         headers: {
@@ -38,7 +102,7 @@ class ChatGPTService {
               'content': [
                 {
                   'type': 'text',
-                  'text': r'Analyze this plant photo and provide detailed care recommendations. You MUST follow this EXACT format:\n\nPlant: [Identify the plant and provide the common name and scientific name if possible]\nDescription: [Provide a detailed description of the plant including its appearance, characteristics, and general information]\nCare Recommendations:\n   - Watering: [Specific watering instructions]\n   - Light Requirements: [Light needs]\n   - Temperature: [Temperature preferences]\n   - Soil: [Soil type and requirements]\n   - Fertilizing: [Fertilizer needs]\n   - Humidity: [Humidity requirements]\n   - Growth Rate / Size: [Growth characteristics]\n   - Blooming: [Flowering information if applicable]\nInteresting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.\n\nIMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.',
+                    'text': promptToUse,
                 },
                 {
                   'type': 'image_url',
@@ -49,80 +113,8 @@ class ChatGPTService {
               ],
             },
           ],
-          'max_tokens': 1000,
-          'temperature': 0.7,
-        }),
-      );
-      
-      print('🔍 API Response Status: ${response.statusCode}');
-      print('🔍 API Response Headers: ${response.headers}');
-      print('🔍 API Response Body: ${response.body}');
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content = data['choices'][0]['message']['content'];
-        
-        // Parse the AI response to extract structured information
-        final recommendations = _parseAIResponse(content);
-        
-        print('✅ Plant analysis successful');
-        print('✅ Extracted recommendations: $recommendations');
-        
-        return recommendations;
-      } else {
-        print('❌ API request failed with status: ${response.statusCode}');
-        print('❌ Error response: ${response.body}');
-        throw Exception('Failed to analyze plant photo: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Plant Photo Analysis Error: $e');
-      throw Exception('Plant photo analysis failed: $e');
-    }
-  }
-  
-  /// Generates AI content for existing plants based on their basic information
-  static Future<Map<String, dynamic>> generatePlantContent(String plantName, String species, {String? base64Image}) async {
-    try {
-      print('🔍 Generating AI content for existing plant: $plantName ($species)');
-      
-      // Unified prompt for both image and text analysis
-      String prompt;
-      if (base64Image != null) {
-        prompt = 'Analyze this plant photo and provide detailed care recommendations. This is a $plantName. You MUST follow this EXACT format:\n\nPlant: [Identify the plant and provide the common name and scientific name if possible]\nDescription: [Provide a detailed description of the plant including its appearance, characteristics, and general information]\nCare Recommendations:\n   - Watering: [Specific watering instructions]\n   - Light Requirements: [Light needs]\n   - Temperature: [Temperature preferences]\n   - Soil: [Soil type and requirements]\n   - Fertilizing: [Fertilizer needs]\n   - Humidity: [Humidity requirements]\n   - Growth Rate / Size: [Growth characteristics]\n   - Blooming: [Flowering information if applicable]\nInteresting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.\n\nIMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.';
-      } else {
-        prompt = r'Provide detailed care recommendations for a $plantName. You MUST follow this EXACT format:\n\nPlant: [Identify the plant and provide the common name and scientific name if possible]\nDescription: [Provide a detailed description of the plant including its appearance, characteristics, and general information]\nCare Recommendations:\n   - Watering: [Specific watering instructions]\n   - Light Requirements: [Light needs]\n   - Temperature: [Temperature preferences]\n   - Soil: [Soil type and requirements]\n   - Fertilizing: [Fertilizer needs]\n   - Humidity: [Humidity requirements]\n   - Growth Rate / Size: [Growth characteristics]\n   - Blooming: [Flowering information if applicable]\nInteresting Facts: Provide exactly 4 facts about this plant type. Make 3 educational and 1 funny. Format as simple sentences without any special characters, numbers, or bullet points.\n\nIMPORTANT: You MUST start with "Plant:" and "Description:" sections before the Care Recommendations. If you cannot identify the exact plant, provide a general description based on what you can see in the image.';
-      }
-      
-      // Use GPT-4o for both image and text analysis
-      final response = await http.post(
-        Uri.parse('$_baseUrl/chat/completions'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
-        },
-        body: jsonEncode({
-          'model': _model, // Always use GPT-4o
-          'messages': [
-            {
-              'role': 'user',
-              'content': base64Image != null 
-                ? [
-                    {
-                      'type': 'text',
-                      'text': prompt,
-                    },
-                    {
-                      'type': 'image_url',
-                      'image_url': {
-                        'url': 'data:image/jpeg;base64,$base64Image',
-                      },
-                    },
-                  ]
-                : prompt,
-            },
-          ],
-          'max_tokens': 1000,
-          'temperature': 0.7,
+          'max_tokens': 3000,
+            'temperature': attempt == 0 ? 1.0 : 0.3, // Lower temperature on retry for more consistent formatting
         }),
       );
       
@@ -130,16 +122,35 @@ class ChatGPTService {
         final data = jsonDecode(response.body);
         final content = data['choices'][0]['message']['content'];
         final recommendations = _parseAIResponse(content);
-        print('✅ Plant content generation successful using GPT-4o');
+          
+          // Check if scientific calculation succeeded
+          if (recommendations.containsKey('amount_ml') && recommendations['amount_ml'] != null) {
+            print('✅ Plant content generation successful with measurements on attempt ${attempt + 1}');
         return recommendations;
+          } else {
+            print('⚠️ Attempt ${attempt + 1} failed: Scientific calculation returned null');
+            if (attempt < maxRetries) {
+              print('🔄 Retrying with more specific prompt...');
+              await Future.delayed(Duration(milliseconds: 500)); // Small delay before retry
+              continue;
+            } else {
+              throw Exception('Failed to extract required measurements after $maxRetries retries. Please try again or provide more detailed plant information.');
+            }
+          }
       } else {
-        print('❌ GPT-4o API request failed with status: ${response.statusCode}');
+        print('❌ gpt-4o API request failed with status: ${response.statusCode}');
         throw Exception('Failed to generate plant content: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Plant Content Generation Error: $e');
-      throw Exception('Plant content generation failed: $e');
+        if (attempt == maxRetries) {
+          rethrow;
+        }
+        print('⚠️ Attempt ${attempt + 1} failed: $e');
+        await Future.delayed(Duration(milliseconds: 500));
+      }
     }
+    
+    throw Exception('Failed to generate plant content after $maxRetries retries');
   }
   
   /// Analyzes plant health using OpenAI's GPT-4 Vision API
@@ -175,8 +186,8 @@ class ChatGPTService {
             ],
           },
         ],
-          'max_tokens': 1000,
-          'temperature': 0.7,
+          'max_tokens': 3000,
+          'temperature': 1.0,
         }),
       );
       
@@ -272,12 +283,13 @@ class ChatGPTService {
       // Fallback: extract information from text
       final response = aiResponse.toLowerCase();
       
-      // Extract plant name from Plant field
+      // Extract name from Name or Plant field
       String plantName = 'Plant';
       final lines = aiResponse.split('\n');
       for (final line in lines) {
         final trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase().startsWith('plant:')) {
+        final lowerLine = trimmedLine.toLowerCase();
+        if (lowerLine.startsWith('name:') || lowerLine.startsWith('plant:')) {
           final parts = trimmedLine.split(':');
           if (parts.length >= 2) {
             plantName = parts[1].trim();
@@ -302,20 +314,89 @@ class ChatGPTService {
         light = 'Direct sunlight';
       }
       
-      // Extract watering frequency
-      int wateringFrequency = 7;
-      if (response.contains('every 3 days') || response.contains('3 days')) {
+      // Extract watering frequency - more comprehensive detection
+      int wateringFrequency = 7; // Default fallback
+      
+      // Try to extract frequency pattern like "every X days" or "X days"
+      final frequencyPattern = RegExp(r'every\s*(\d+)\s*days?|(\d+)\s*days?', caseSensitive: false);
+      final frequencyMatch = frequencyPattern.firstMatch(response);
+      
+      if (frequencyMatch != null) {
+        // Check group 1 (every X days) or group 2 (X days)
+        final days = frequencyMatch.group(1) ?? frequencyMatch.group(2);
+        if (days != null) {
+          wateringFrequency = int.tryParse(days) ?? 7;
+        }
+      }
+      
+      // Also check for common patterns
+      if (response.contains('daily') || response.contains('every day') || response.contains('1 day')) {
+        wateringFrequency = 1;
+      } else if (response.contains('every 2 days') || response.contains('2 days')) {
+        wateringFrequency = 2;
+      } else if (response.contains('every 3 days') || response.contains('3 days')) {
         wateringFrequency = 3;
+      } else if (response.contains('every 4 days') || response.contains('4 days')) {
+        wateringFrequency = 4;
       } else if (response.contains('every 5 days') || response.contains('5 days')) {
         wateringFrequency = 5;
+      } else if (response.contains('every 6 days') || response.contains('6 days')) {
+        wateringFrequency = 6;
+      } else if (response.contains('every 7 days') || response.contains('7 days') || response.contains('weekly')) {
+        wateringFrequency = 7;
       } else if (response.contains('every 10 days') || response.contains('10 days')) {
         wateringFrequency = 10;
-      } else if (response.contains('every 14 days') || response.contains('14 days')) {
+      } else if (response.contains('every 14 days') || response.contains('14 days') || response.contains('biweekly')) {
         wateringFrequency = 14;
+      } else if (response.contains('every 21 days') || response.contains('21 days') || response.contains('3 weeks')) {
+        wateringFrequency = 21;
+      } else if (response.contains('monthly') || response.contains('every month') || response.contains('30 days')) {
+        wateringFrequency = 30;
+      }
+      
+      print('🌱 Extracted watering frequency: $wateringFrequency days');
+      
+      // Extract watering amount in milliliters
+      String wateringAmount = '200-400 ml'; // Default fallback
+      final mlPattern = RegExp(r'amount:\s*(\d+\s*-\s*\d+\s*ml)', caseSensitive: false);
+      final mlMatch = mlPattern.firstMatch(aiResponse);
+      if (mlMatch != null) {
+        wateringAmount = mlMatch.group(1)?.trim() ?? '200-400 ml';
+        print('🌱 Extracted watering amount: $wateringAmount');
+      } else {
+        // Try alternative patterns
+        final mlPattern2 = RegExp(r'(\d+)\s*-\s*(\d+)\s*ml', caseSensitive: false);
+        final mlMatch2 = mlPattern2.firstMatch(aiResponse);
+        if (mlMatch2 != null) {
+          wateringAmount = '${mlMatch2.group(1)}-${mlMatch2.group(2)} ml';
+          print('🌱 Extracted watering amount: $wateringAmount');
+        }
         }
 
       // Extract structured care recommendations
       final careRecommendations = _extractStructuredCareRecommendations(aiResponse);
+
+      // Extract fields for scientific watering calculation
+      final scientificWatering = _calculateScientificWatering(aiResponse, plantName);
+      
+      // Scientific watering calculation is REQUIRED - no fallback
+      if (scientificWatering != null) {
+        print('✅ Scientific watering calculated: ${scientificWatering['amount_ml']} ml, mode: ${scientificWatering['mode']}');
+      } else {
+        print('❌ Scientific watering calculation returned null');
+        // Return null so retry mechanism can trigger
+        return {
+          'general_description': aiResponse,
+          'name': plantName,
+          'moisture_level': moistureLevel,
+          'light': light,
+          'watering_frequency': wateringFrequency,
+          'watering_amount': null, // Signal failure
+          'specific_issues': _extractIssues(aiResponse),
+          'care_tips': careRecommendations,
+          'interesting_facts': _extractInterestingFacts(aiResponse),
+        };
+      }
 
         return {
         'general_description': aiResponse,
@@ -323,24 +404,17 @@ class ChatGPTService {
         'moisture_level': moistureLevel,
         'light': light,
         'watering_frequency': wateringFrequency,
-        'watering_amount': 'Until soil is moist',
+        'watering_amount': wateringAmount,
         'specific_issues': _extractIssues(aiResponse),
         'care_tips': careRecommendations,
         'interesting_facts': _extractInterestingFacts(aiResponse),
+        // Scientific watering calculation results
+        ...scientificWatering,
       };
     } catch (e) {
       print('❌ Failed to parse AI response: $e');
-      return {
-        'general_description': aiResponse,
-        'name': 'Plant',
-        'moisture_level': 'Moderate',
-        'light': 'Bright indirect light',
-        'watering_frequency': 7,
-        'watering_amount': 'Until soil is moist',
-        'specific_issues': 'Please check plant care manually',
-        'care_tips': 'Monitor soil moisture and light conditions',
-        'interesting_facts': ['Every plant is unique and has its own special characteristics', 'Plants grow and change throughout their lifecycle', 'Proper care helps plants thrive and stay healthy'],
-      };
+      // Re-throw to trigger retry mechanism
+      rethrow;
     }
   }
 
@@ -362,7 +436,7 @@ class ChatGPTService {
         break;
       }
       
-      // Extract any line with a colon (Plant:, Description:, Watering:, etc.)
+      // Extract any line with a colon (Name:, Description:, Watering:, etc.)
       if (trimmedLine.contains(':')) {
         final parts = trimmedLine.split(':');
         if (parts.length >= 2) {
@@ -414,6 +488,166 @@ class ChatGPTService {
     }
     
     return issues.isEmpty ? 'No specific issues detected' : issues.join(', ');
+  }
+  
+  /// Calculate scientific watering based on extracted AI data
+  static Map<String, dynamic>? _calculateScientificWatering(String aiResponse, String plantName) {
+    try {
+      print('🔍 Starting scientific watering calculation...');
+      
+      // Extract pot presence
+      final potPresentMatch = RegExp(r'Pot\s*Present:\s*(yes|no)', caseSensitive: false).firstMatch(aiResponse);
+      final hasPot = potPresentMatch?.group(1)?.toLowerCase() == 'yes';
+      print('🔍 Pot present: $hasPot');
+      
+      // Extract pot dimensions
+      double? potDiameter;
+      double? potHeight;
+      if (hasPot) {
+        final diameterMatch = RegExp(r'Pot\s*Diameter:\s*(\d+(?:\.\d+)?)\s*(cm|in)', caseSensitive: false).firstMatch(aiResponse);
+        if (diameterMatch != null) {
+          potDiameter = double.tryParse(diameterMatch.group(1)!);
+          final unit = diameterMatch.group(2)?.toLowerCase();
+          if (unit == 'in' && potDiameter != null) {
+            potDiameter = potDiameter! * 2.54; // Convert inches to cm
+          }
+        }
+        
+        final heightMatch = RegExp(r'Pot\s*Height:\s*(\d+(?:\.\d+)?)\s*(cm|in)', caseSensitive: false).firstMatch(aiResponse);
+        if (heightMatch != null) {
+          potHeight = double.tryParse(heightMatch.group(1)!);
+          final unit = heightMatch.group(2)?.toLowerCase();
+          if (unit == 'in' && potHeight != null) {
+            potHeight = potHeight! * 2.54; // Convert inches to cm
+          }
+        }
+        print('🔍 Pot dimensions: diameter=$potDiameter cm, height=$potHeight cm');
+      }
+      
+      // Extract plant dimensions
+      final plantHeightMatch = RegExp(r'Plant\s*Height:\s*(\d+(?:\.\d+)?)\s*(cm|in)', caseSensitive: false).firstMatch(aiResponse);
+      double? plantHeight;
+      if (plantHeightMatch != null) {
+        plantHeight = double.tryParse(plantHeightMatch.group(1)!);
+        final unit = plantHeightMatch.group(2)?.toLowerCase();
+        if (unit == 'in' && plantHeight != null) {
+          plantHeight = plantHeight! * 2.54;
+        }
+      }
+      
+      final canopyMatch = RegExp(r'Canopy\s*Diameter:\s*(\d+(?:\.\d+)?)\s*(cm|in)', caseSensitive: false).firstMatch(aiResponse);
+      double? canopyDiameter;
+      if (canopyMatch != null) {
+        canopyDiameter = double.tryParse(canopyMatch.group(1)!);
+        final unit = canopyMatch.group(2)?.toLowerCase();
+        if (unit == 'in' && canopyDiameter != null) {
+          canopyDiameter = canopyDiameter! * 2.54;
+        }
+      }
+      print('🔍 Plant dimensions: height=$plantHeight cm, canopy=$canopyDiameter cm');
+      
+      // Extract soil state
+      final soilStateMatch = RegExp(r'Visual\s*Soil\s*State:\s*(wet|moist|slightly_dry|dry|very_dry|not_visible)', caseSensitive: false).firstMatch(aiResponse);
+      final soilStateText = soilStateMatch?.group(1)?.toLowerCase();
+      print('🔍 Soil state: $soilStateText');
+      
+      // Extract profile
+      final profileMatch = RegExp(r'Plant\s*Profile:\s*(succulent|succulent_large|tropical_broadleaf|herbaceous|woody_potted|large_palm_indoor)', caseSensitive: false).firstMatch(aiResponse);
+      final profileText = profileMatch?.group(1)?.toLowerCase();
+      print('🔍 Plant profile: $profileText');
+      
+      // If we don't have enough data, return null
+      if (!hasPot && (plantHeight == null || canopyDiameter == null)) {
+        print('⚠️ Insufficient data for scientific watering calculation - no pot and missing plant dimensions');
+        return null;
+      }
+      
+      if (hasPot && (potDiameter == null || potHeight == null)) {
+        print('⚠️ Insufficient data for scientific watering calculation - has pot but missing pot dimensions');
+        return null;
+      }
+      
+      // Calculate effective volume
+      double effectiveVolumeMl;
+      if (hasPot && potDiameter != null && potHeight != null) {
+        final container = ContainerDimensions(
+          potDiameterCm: potDiameter!,
+          potHeightCm: potHeight!,
+        );
+        effectiveVolumeMl = WateringCalculatorService.calculatePotVolume(container);
+      } else if (plantHeight != null && canopyDiameter != null) {
+        final plantDims = PlantDimensions(
+          plantHeightCm: plantHeight!,
+          plantCanopyDiameterCm: canopyDiameter!,
+        );
+        effectiveVolumeMl = WateringCalculatorService.calculateEquivalentRootVolume(plantDims);
+      } else {
+        print('⚠️ Cannot calculate volume without dimensions');
+        return null;
+      }
+      
+      // Parse soil state
+      VisualSoilState soilState = VisualSoilState.notVisible;
+      if (soilStateText != null) {
+        switch (soilStateText) {
+          case 'wet':
+            soilState = VisualSoilState.wet;
+            break;
+          case 'moist':
+            soilState = VisualSoilState.moist;
+            break;
+          case 'slightly_dry':
+            soilState = VisualSoilState.slightlyDry;
+            break;
+          case 'dry':
+            soilState = VisualSoilState.dry;
+            break;
+          case 'very_dry':
+            soilState = VisualSoilState.veryDry;
+            break;
+          default:
+            soilState = VisualSoilState.notVisible;
+        }
+      }
+      
+      // Parse profile
+      PlantProfile profile = WateringCalculatorService.parsePlantProfile(plantName, null);
+      if (profileText != null) {
+        switch (profileText) {
+          case 'succulent':
+            profile = PlantProfile.succulent;
+            break;
+          case 'succulent_large':
+            profile = PlantProfile.succulentLarge;
+            break;
+          case 'tropical_broadleaf':
+            profile = PlantProfile.tropicalBroadleaf;
+            break;
+          case 'herbaceous':
+            profile = PlantProfile.herbaceous;
+            break;
+          case 'woody_potted':
+            profile = PlantProfile.woodyPotted;
+            break;
+          case 'large_palm_indoor':
+            profile = PlantProfile.largePalmIndoor;
+            break;
+        }
+      }
+      
+      // Calculate watering
+      final result = WateringCalculatorService.calculateWatering(
+        profile: profile,
+        soilState: soilState,
+        effectiveVolumeMl: effectiveVolumeMl,
+        hasPot: hasPot,
+      );
+      
+      return result.toMap();
+    } catch (e) {
+      print('❌ Error in scientific watering calculation: $e');
+      return null;
+    }
   }
   
   /// Extracts care tips from AI response

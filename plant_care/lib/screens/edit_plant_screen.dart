@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 import '../utils/app_theme.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -28,6 +29,8 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   bool _isImageLoading = false;
   String? _imagePath;
   File? _imageFile;
+
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -57,9 +60,9 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
+        maxWidth: 900,
+        maxHeight: 1200, // 3:4 portrait
+        imageQuality: 90,
       );
       
       if (image != null) {
@@ -85,7 +88,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text(l10n.errorPickingImage(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -126,8 +129,8 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Plant updated successfully! 🌱'),
+          SnackBar(
+            content: Text(l10n.plantUpdatedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -137,7 +140,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating plant: $e'),
+            content: Text(l10n.errorUpdatingPlant(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -167,7 +170,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'PLANT CARE',
+              l10n.appTitle.toUpperCase(),
               style: TextStyle(
                 color: AppTheme.accentGreen,
                 fontSize: 18,
@@ -225,8 +228,8 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _pickImage,
                   icon: const Icon(Icons.upload_rounded, size: 20),
-                  label: const Text(
-                    'Change Image',
+                  label: Text(
+                    l10n.changeImage,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -246,14 +249,14 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
               // Plant Name
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Plant Name *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.local_florist),
+                decoration: InputDecoration(
+                  labelText: '${l10n.plantName} *',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.local_florist),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a plant name';
+                    return l10n.pleaseEnterPlantName;
                   }
                   return null;
                 },
@@ -264,10 +267,10 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
               // Species
               TextFormField(
                 controller: _speciesController,
-                decoration: const InputDecoration(
-                  labelText: 'Species',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category),
+                decoration: InputDecoration(
+                  labelText: l10n.species,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.category),
                 ),
               ),
               
@@ -276,15 +279,15 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
               // Watering Frequency
               DropdownButtonFormField<int>(
                 value: _wateringFrequency,
-                decoration: const InputDecoration(
-                  labelText: 'Watering Frequency *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.water_drop),
+                decoration: InputDecoration(
+                  labelText: '${l10n.wateringFrequency} *',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.water_drop),
                 ),
                 items: List.generate(30, (index) => index + 1)
                     .map((days) => DropdownMenuItem(
                           value: days,
-                          child: Text('Every $days day${days == 1 ? '' : 's'}'),
+                          child: Text(l10n.everyNDays(days)),
                         ))
                     .toList(),
                 onChanged: (value) {
@@ -296,7 +299,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                 },
                 validator: (value) {
                   if (value == null || value < 1) {
-                    return 'Please select watering frequency';
+                    return l10n.pleaseSelectWateringFrequency;
                   }
                   return null;
                 },
@@ -307,10 +310,10 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
               // Notes
               TextFormField(
                 controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.note),
+                decoration: InputDecoration(
+                  labelText: l10n.notes,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.note),
                 ),
                 maxLines: 3,
               ),
@@ -323,7 +326,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _savePlant,
                   icon: const Icon(Icons.save),
-                  label: const Text('Save Changes'),
+                  label: Text(l10n.saveChanges),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -404,7 +407,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 8),
-            Text('Loading image...', style: TextStyle(color: Colors.grey)),
+            Text(l10n.loadingImage, style: const TextStyle(color: Colors.grey)),
           ],
         ),
       ),

@@ -4,6 +4,7 @@ import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_theme.dart';
 import 'auth_screen.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 
 import 'package:intl/intl.dart';
 
@@ -58,9 +59,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name cannot be empty')),
+        SnackBar(content: Text(l10n.nameCannotBeEmpty)),
       );
       return;
     }
@@ -78,29 +80,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
+        SnackBar(content: Text(l10n.profileUpdatedSuccessfully)),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating profile: $e')),
+        SnackBar(content: Text(l10n.errorUpdatingProfile(e.toString()))),
       );
     }
   }
 
   Future<void> _signOut() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: Text(l10n.signOutConfirmTitle),
+        content: Text(l10n.signOutConfirmMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign Out'),
+            child: Text(l10n.signOut),
           ),
         ],
       ),
@@ -119,14 +122,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1A1E24) : Colors.white;
+    final cardShadowColor = isDark ? Colors.black.withOpacity(0.35) : Colors.grey.withOpacity(0.1);
     return Scaffold(
-      backgroundColor: AppTheme.lightGrey,
+      backgroundColor: isDark ? const Color(0xFF0F1115) : AppTheme.lightGrey,
       // Header removed - clean interface
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                 children: [
                   // Profile Header - More compact
                   Container(
@@ -169,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _userProfile?.name ?? 'Plant Lover',
+                                _userProfile?.name ?? l10n.plantLover,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -214,11 +222,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: cardShadowColor,
                           spreadRadius: 1,
                           blurRadius: 8,
                           offset: const Offset(0, 2),
@@ -232,8 +240,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Icon(Icons.person, color: Colors.green.shade600, size: 20),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Profile Information',
+                            Text(
+                              l10n.profileInformation,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -246,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (_isEditing) ...[
                           // Name Field
                           _buildFormField(
-                            label: 'Full Name',
+                            label: l10n.fullName,
                             controller: _nameController,
                             icon: Icons.person,
                             enabled: _isEditing,
@@ -255,22 +263,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                           // Bio Field
                           _buildFormField(
-                            label: 'Bio',
+                            label: l10n.bio,
                             controller: _bioController,
                             icon: Icons.description,
                             enabled: _isEditing,
                             maxLines: 3,
-                            hint: 'Tell us about your plant care journey...',
+                            hint: l10n.bioHint,
                           ),
                           const SizedBox(height: 12),
 
                           // Location Field
                           _buildFormField(
-                            label: 'Location',
+                            label: l10n.location,
                             controller: _locationController,
                             icon: Icons.location_on,
                             enabled: _isEditing,
-                            hint: 'Where are your plants located?',
+                            hint: l10n.locationHint,
                           ),
                           const SizedBox(height: 16),
 
@@ -288,7 +296,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text('Save'),
+                                  child: Text(l10n.save),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -306,19 +314,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text('Cancel'),
+                                  child: Text(l10n.cancel),
                                 ),
                               ),
                             ],
                           ),
                         ] else ...[
-                          _buildInfoRow('Name', _userProfile?.name ?? 'Not set', Icons.person),
+                          _buildInfoRow(l10n.name, _userProfile?.name ?? l10n.notSet, Icons.person),
                           const SizedBox(height: 8),
                           if (_userProfile?.bio != null && _userProfile!.bio!.isNotEmpty) ...[
-                            _buildInfoRow('Bio', _userProfile!.bio!, Icons.description),
+                            _buildInfoRow(l10n.bio, _userProfile!.bio!, Icons.description),
                             const SizedBox(height: 8),
                           ],
-                          _buildInfoRow('Location', _userProfile?.location ?? 'Not set', Icons.location_on),
+                          _buildInfoRow(l10n.location, _userProfile?.location ?? l10n.notSet, Icons.location_on),
                         ],
                       ],
                     ),
@@ -329,11 +337,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: cardShadowColor,
                           spreadRadius: 1,
                           blurRadius: 8,
                           offset: const Offset(0, 2),
@@ -347,8 +355,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Icon(Icons.account_circle, color: Colors.green.shade600, size: 20),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Account Info',
+                            Text(
+                              l10n.accountInfo,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -358,18 +366,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 12),
                         _buildInfoRow(
-                          'Member Since',
+                          l10n.memberSince,
                           _userProfile?.createdAt != null
                               ? DateFormat('MMM yyyy').format(_userProfile!.createdAt!)
-                              : 'N/A',
+                              : l10n.notAvailable,
                           Icons.calendar_today,
                         ),
                         const SizedBox(height: 8),
                         _buildInfoRow(
-                          'Last Login',
+                          l10n.lastLogin,
                           _userProfile?.lastLogin != null
                               ? DateFormat('MMM dd, yyyy').format(_userProfile!.lastLogin!)
-                              : 'N/A',
+                              : l10n.notAvailable,
                           Icons.access_time,
                         ),
                       ],
@@ -381,11 +389,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: cardShadowColor,
                           spreadRadius: 1,
                           blurRadius: 8,
                           offset: const Offset(0, 2),
@@ -399,8 +407,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Icon(Icons.settings, color: Colors.green.shade600, size: 20),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Actions',
+                            Text(
+                              l10n.actions,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -411,7 +419,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 12),
                         ListTile(
                           leading: Icon(Icons.logout, color: Colors.red, size: 20),
-                          title: const Text('Sign Out', style: TextStyle(fontSize: 14)),
+                          title: Text(l10n.signOut, style: const TextStyle(fontSize: 14)),
                           contentPadding: EdgeInsets.zero,
                           onTap: _signOut,
                           shape: RoundedRectangleBorder(
@@ -424,6 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
+    ),
     );
   }
 
@@ -435,6 +444,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     int maxLines = 1,
     String? hint,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor = isDark ? Colors.white70 : Colors.grey[700];
+    final mutedFieldBg = isDark ? const Color(0xFF161B22) : Colors.grey.shade50;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -443,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: labelColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -467,7 +480,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               borderSide: BorderSide(color: Colors.green.shade600, width: 2),
             ),
             filled: !enabled,
-            fillColor: enabled ? null : Colors.grey.shade50,
+            fillColor: enabled ? null : mutedFieldBg,
           ),
         ),
       ],

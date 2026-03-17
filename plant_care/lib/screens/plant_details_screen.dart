@@ -12,9 +12,13 @@ import 'package:plant_care/widgets/health_check_modal.dart';
 import 'package:plant_care/widgets/plant_card.dart';
 import 'package:plant_care/widgets/health_alert.dart';
 import 'package:plant_care/widgets/health_gallery.dart';
+import 'package:plant_care/screens/plant_chat_screen.dart';
 import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/utils/responsive_layout.dart';
 import 'package:intl/intl.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 import 'dart:convert';
+import 'dart:async';
 
 class PlantDetailsScreen extends StatefulWidget {
   final Plant plant;
@@ -31,7 +35,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   bool _isLoading = false;
   bool _isDetailsExpanded = true; // Add state for details expansion
   int _currentCarouselPage = 0;
-  bool _isGeneratingAI = false; // Add state for AI content generation
+  Timer? _wateringCountdownTimer;
+  String? _wateringCountdownLabel;
+  HealthCheckAnalysisMode _selectedHealthCheckMode = HealthCheckAnalysisMode.aiAgent;
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
   
   @override
   void initState() {
@@ -41,6 +48,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     
     // Save navigation state so user returns to this page after reload
     _saveNavigationState();
+    _startWateringCountdownTimer();
   }
   
   Future<void> _saveNavigationState() async {
@@ -55,34 +63,190 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       builder: (context) => HealthCheckModal(
         plantId: _plant.id,
         plantName: _plant.name,
+        analysisMode: _selectedHealthCheckMode,
         onHealthCheckComplete: _handleHealthCheckComplete,
+      ),
+    );
+  }
+
+  void _openPlantChat() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlantChatScreen(plant: _plant),
       ),
     );
   }
 
   void _handleHealthCheckComplete(Map<String, dynamic> healthResult) async {
     try {
-      // Update plant with health check results and new AI analysis data
+      print('🌱 ========== RECALCULATING FROM NEW PHOTO ==========');
+      print('🌱 Health check result keys: ${healthResult.keys.toList()}');
+      
+      final now = DateTime.now();
+
+      // ========== RECALCULATE WATERING SCHEDULE FROM NEW PHOTO ==========
+      // PRIORITY 1: Extract from new species-specific watering_plan structure
+      int? newIntervalDays;
+      bool newShouldWaterNow = false;
+      
+      final dynamic daysFromAI = healthResult['watering_interval_days'];
+      if (daysFromAI != null) {
+        newIntervalDays = daysFromAI is int ? daysFromAI : int.tryParse(daysFromAI.toString());
+        newShouldWaterNow = healthResult['should_water_now'] == true;
+        print('🌱 New photo: watering_interval_days = $newIntervalDays, should_water_now = $newShouldWaterNow');
+      }
+
+      // PRIORITY 2: Fallback to legacy hours-based calculation if new structure not available
+      if (newIntervalDays == null || newIntervalDays <= 0) {
+        final String? mode = healthResult['mode'] as String?;
+        print('🌱 New photo: mode = $mode (legacy calculation)');
+
+        if (mode == 'recheck_only') {
+          final dynamic hrs = healthResult['next_check_in_hours'];
+          if (hrs != null) {
+            final intHours = hrs is int ? hrs : int.tryParse(hrs.toString());
+            if (intHours != null && intHours > 0) {
+              newIntervalDays = (intHours / 24).round().clamp(1, 60);
+              newShouldWaterNow = false; // Recheck mode means don't water now
+              print('🌱 New photo: Calculated interval from next_check_in_hours: $newIntervalDays days');
+            }
+          }
+        } else {
+          final dynamic hrs = healthResult['next_after_watering_in_hours'];
+          if (hrs != null) {
+            final intHours = hrs is int ? hrs : int.tryParse(hrs.toString());
+            if (intHours != null && intHours > 0) {
+              newIntervalDays = (intHours / 24).round().clamp(1, 60);
+              newShouldWaterNow = true; // After watering mode means should water now
+              print('🌱 New photo: Calculated interval from next_after_watering_in_hours: $newIntervalDays days');
+            }
+          }
+        }
+      }
+
+      // Calculate next watering date using shared helper with preferred time
+      DateTime? newNextDueAt;
+      DateTime? newNextWatering;
+      if (newIntervalDays != null && newIntervalDays > 0) {
+        // Use the same helper function as AddPlant and WaterPlant for consistency
+        final preferredTime = _plant.preferredTime ?? '18:00';
+        newNextDueAt = PlantService.calculateNextWateringAt(
+          from: now,
+          intervalDays: newIntervalDays,
+          preferredTime: preferredTime,
+        );
+        newNextWatering = newNextDueAt;
+        print('🌱 New photo: Calculated next watering date with preferred time: $newNextDueAt (in $newIntervalDays days, should_water_now: $newShouldWaterNow)');
+      }
+
+      // ========== EXTRACT VALUES FROM NEW PHOTO ANALYSIS ==========
+      // Extract moisture level from new photo - check both direct and nested paths
+      dynamic newMoistureLevel = healthResult['moisture_level'];
+      if (newMoistureLevel == null) {
+        // Try nested path if direct access fails
+        final careRecs = healthResult['care_recommendations'];
+        if (careRecs != null && careRecs is Map) {
+          newMoistureLevel = careRecs['moisture'];
+        }
+      }
+      print('🌱 New photo: moisture_level = $newMoistureLevel (type: ${newMoistureLevel.runtimeType})');
+      
+      // Extract light requirement from new photo - check both direct and nested paths
+      dynamic newLight = healthResult['light'];
+      if (newLight == null) {
+        final careRecs = healthResult['care_recommendations'];
+        if (careRecs != null && careRecs is Map) {
+          newLight = careRecs['light'];
+        }
+      }
+      print('🌱 New photo: light = $newLight (type: ${newLight.runtimeType})');
+      
+      // Extract watering amount from new photo
+      dynamic newWateringAmountMl = healthResult['amount_ml'];
+      dynamic newWateringRangeMl = healthResult['range_ml'];
+      print('🌱 New photo: wateringAmountMl = $newWateringAmountMl (type: ${newWateringAmountMl?.runtimeType}), rangeMl = $newWateringRangeMl');
+      
+      // Extract watering mode and intervals
+      final newWateringMode = healthResult['mode'];
+      dynamic newNextAfterWateringHours = healthResult['next_after_watering_in_hours'];
+      dynamic newNextCheckHours = healthResult['next_check_in_hours'];
+      print('🌱 New photo: mode = $newWateringMode, nextAfterWateringHours = $newNextAfterWateringHours, nextCheckHours = $newNextCheckHours');
+
+      // ========== UPDATE PLANT WITH NEW PHOTO ANALYSIS VALUES ==========
+      // Force update with new photo values - always use new values when provided
+      print('🌱 ========== BEFORE UPDATE ==========');
+      print('🌱 Current moisture: ${_plant.aiMoistureLevel}');
+      print('🌱 Current light: ${_plant.aiLight}');
+      print('🌱 Current watering amount: ${_plant.wateringAmountMl}ml');
+      
+      // Helper to check if value should be updated (not null or empty)
+      bool shouldUpdate(String? newValue) => newValue != null && newValue.toString().trim().isNotEmpty;
+      
       final updatedPlant = _plant.copyWith(
         healthStatus: healthResult['status'],
         healthMessage: healthResult['message'],
         lastHealthCheck: DateTime.now(),
-        // Update AI analysis data if available from health check
-        aiPlantSize: healthResult['plant_size'] ?? _plant.aiPlantSize,
-        aiPotSize: healthResult['pot_size'] ?? _plant.aiPotSize,
-        aiGrowthStage: healthResult['growth_stage'] ?? _plant.aiGrowthStage,
-        // Update other AI fields if available
-        aiMoistureLevel: healthResult['moisture_level'] ?? _plant.aiMoistureLevel,
-        aiLight: healthResult['light'] ?? _plant.aiLight,
+        // Update AI analysis data from new photo - FORCE update when available
+        aiPlantSize: shouldUpdate(healthResult['plant_size']) ? healthResult['plant_size'] : _plant.aiPlantSize,
+        aiPotSize: shouldUpdate(healthResult['pot_size']) ? healthResult['pot_size'] : _plant.aiPotSize,
+        aiGrowthStage: shouldUpdate(healthResult['growth_stage']) ? healthResult['growth_stage'] : _plant.aiGrowthStage,
+        // RECALCULATE moisture level from new photo - FORCE update
+        aiMoistureLevel: shouldUpdate(newMoistureLevel) ? newMoistureLevel : _plant.aiMoistureLevel,
+        // RECALCULATE light requirement from new photo - FORCE update
+        aiLight: shouldUpdate(newLight) ? newLight : _plant.aiLight,
+        // RECALCULATE watering amount from new photo - FORCE update
+        aiWateringAmount: shouldUpdate(healthResult['watering_amount']) ? healthResult['watering_amount'] : _plant.aiWateringAmount,
+        // Update care recommendations from new photo
+        aiCareTips: shouldUpdate(healthResult['care_tips']) ? healthResult['care_tips'] : _plant.aiCareTips,
+        interestingFacts: healthResult['interesting_facts'] != null
+            ? List<String>.from(healthResult['interesting_facts'])
+            : _plant.interestingFacts,
+        // RECALCULATE scientific watering calculation fields from new photo - FORCE update
+        wateringAmountMl: newWateringAmountMl != null 
+            ? (newWateringAmountMl is int 
+                ? newWateringAmountMl 
+                : (newWateringAmountMl is double 
+                    ? newWateringAmountMl.toInt() 
+                    : int.tryParse(newWateringAmountMl.toString())))
+            : _plant.wateringAmountMl,
+        wateringRangeMl: newWateringRangeMl != null 
+            ? (newWateringRangeMl is List 
+                ? List<int>.from(newWateringRangeMl.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0))
+                : _plant.wateringRangeMl)
+            : _plant.wateringRangeMl,
+        nextAfterWateringHours: newNextAfterWateringHours != null ? newNextAfterWateringHours : _plant.nextAfterWateringHours,
+        nextCheckHours: newNextCheckHours != null ? newNextCheckHours : _plant.nextCheckHours,
+        wateringMode: shouldUpdate(newWateringMode) ? newWateringMode : _plant.wateringMode,
+        // RECALCULATE next watering dates from new photo analysis - FORCE update
+        nextDueAt: newNextDueAt ?? _plant.nextDueAt,
+        nextWatering: newNextWatering ?? _plant.nextWatering,
+        wateringIntervalDays: newIntervalDays ?? _plant.wateringIntervalDays,
+        // Update shouldWaterNow from new photo analysis
+        shouldWaterNow: newShouldWaterNow,
       );
+      
+      print('🌱 ========== AFTER UPDATE ==========');
+      print('🌱 Updated moisture: ${updatedPlant.aiMoistureLevel}');
+      print('🌱 Updated light: ${updatedPlant.aiLight}');
+      print('🌱 Updated watering amount: ${updatedPlant.wateringAmountMl}ml');
+      print('🌱 Updated next watering: ${updatedPlant.nextWatering}');
+      print('🌱 Updated interval: ${updatedPlant.wateringIntervalDays} days');
+      print('🌱 ==================================');
 
       // Save to database
+      print('🌱 Saving updated plant to database...');
       await PlantService().updatePlant(updatedPlant);
+      print('✅ Plant saved successfully');
       
-      // Update local state
+      // Update local state immediately for snappy UI (DO NOT reload from DB - we have the latest)
       setState(() {
         _plant = updatedPlant;
       });
+      print('✅ Local state updated - UI should refresh now');
+      
+      // Update the watering countdown timer with new schedule
+      _updateWateringCountdown();
+      print('✅ Watering countdown timer updated');
 
         // Show success message
       if (mounted) {
@@ -128,7 +292,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating plant: $e'),
+            content: Text(l10n.errorUpdatingPlant(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -246,7 +410,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting plant: $e'),
+            content: Text(l10n.errorDeletingPlant(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -254,61 +418,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     }
   }
 
-  /// Generates AI content for the current plant
-  Future<void> _generateAIContent() async {
-    try {
-      setState(() {
-        _isGeneratingAI = true;
-      });
-
-      // Generate AI content using the plant service
-      await PlantService().generateAIContent(_plant.id);
-      
-      // Refresh the plant data to get the new AI content
-      await _refreshPlantData();
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'AI content generated successfully! 🌱',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      print('❌ Error generating AI content: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error generating AI content: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGeneratingAI = false;
-        });
-      }
-    }
+  @override
+  void dispose() {
+    _stopWateringCountdownTimer();
+    super.dispose();
   }
 
   /// Refreshes the plant data from the database
@@ -321,6 +434,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         setState(() {
           _plant = updatedPlant;
         });
+        // Ensure the countdown reflects the latest schedule
+        _updateWateringCountdown();
       }
     } catch (e) {
       print('❌ Error refreshing plant data: $e');
@@ -328,17 +443,29 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   }
 
   Future<void> _waterPlant() async {
-    try {
-      final updatedPlant = _plant.copyWith(
-        lastWatered: DateTime.now(),
-        nextWatering: DateTime.now().add(Duration(days: _plant.wateringFrequency)),
-      );
-
-      await PlantService().updatePlant(updatedPlant);
+    if (!_canWaterPlant()) {
+      // Show message that plant cannot be watered yet
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.plantNotDueForWateringYet),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
-        _plant = updatedPlant;
+      _isLoading = true;
     });
+
+    try {
+      // Use the new notification-aware watering method
+      await PlantService().waterPlant(_plant.id);
+      
+      // Refresh plant data to get updated notification schedule
+      await _refreshPlantData();
       
       if (mounted) {
         // Show success message
@@ -370,6 +497,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             margin: const EdgeInsets.all(16),
           ),
         );
+
+        // After watering, update the countdown so the disabled state shows a fresh timer
+        _updateWateringCountdown();
       }
     } catch (e) {
       if (mounted) {
@@ -406,9 +536,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   }
 
   Widget _buildPlaceholderImage() {
+    final height = (MediaQuery.of(context).size.height * 0.45).clamp(200.0, 400.0);
     return Container(
       width: double.infinity,
-      height: 400,
+      height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         color: Colors.grey.shade100,
@@ -457,7 +588,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return imageUrl.startsWith('data:image')
         ? Image.memory(
             base64Decode(imageUrl.split(',')[1]),
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
             isAntiAlias: true,
             errorBuilder: (context, error, stackTrace) {
@@ -468,7 +599,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         : imageUrl.startsWith('http')
             ? Image.network(
                 processedUrl,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 isAntiAlias: true,
                 loadingBuilder: (context, child, loadingProgress) {
@@ -512,120 +643,66 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return DateFormat('dd MMM yyyy').format(date);
   }
 
-  /// Calculate water amount based on plant type, size, and pot size from health check data
-  String _calculateWaterAmount() {
-    // Try to get data from the most recent health check first
-    final lastHealthCheck = _getLastHealthCheckData();
-    
-    if (lastHealthCheck != null) {
-      // Use health check data for more accurate calculation
-      final plantSize = lastHealthCheck['plantSize']?.toString().toLowerCase() ?? '';
-      final potSize = lastHealthCheck['potSize']?.toString().toLowerCase() ?? '';
-      final plantType = lastHealthCheck['plantType']?.toString().toLowerCase() ?? '';
-      
-      // Calculate based on pot size and plant size from health check
-      if (potSize.contains('large') || potSize.contains('big') || potSize.contains('10') || potSize.contains('12')) {
-        if (plantSize.contains('large') || plantSize.contains('mature')) {
-          return '4-5 cups'; // Large plant in large pot
-        } else if (plantSize.contains('medium')) {
-          return '3-4 cups'; // Medium plant in large pot
-        } else {
-          return '2-3 cups'; // Small plant in large pot
-        }
-      } else if (potSize.contains('medium') || potSize.contains('6') || potSize.contains('8')) {
-        if (plantSize.contains('large') || plantSize.contains('mature')) {
-          return '3-4 cups'; // Large plant in medium pot
-        } else if (plantSize.contains('medium')) {
-          return '2-3 cups'; // Medium plant in medium pot
-        } else {
-          return '1-2 cups'; // Small plant in medium pot
-        }
-      } else if (potSize.contains('small') || potSize.contains('4') || potSize.contains('mini')) {
-        if (plantSize.contains('large') || plantSize.contains('mature')) {
-          return '2-3 cups'; // Large plant in small pot (needs more frequent watering)
-        } else if (plantSize.contains('medium')) {
-          return '1-2 cups'; // Medium plant in small pot
-        } else {
-          return '1/2-1 cup'; // Small plant in small pot
-        }
-      }
-      
-      // Fallback based on plant type from health check
-      if (plantType.contains('succulent') || plantType.contains('cactus')) {
-        return '1/2-1 cup';
-      } else if (plantType.contains('herb') || plantType.contains('small')) {
-        return '1-2 cups';
-      } else if (plantType.contains('large') || plantType.contains('tree')) {
-        return '3-4 cups';
-      }
+  // Legacy watering calculation functions removed - now using scientific watering calculation from AI
+  
+  /// Get watering amount from AI data only
+  int? _getWateringAmount() {
+    if (_plant.wateringAmountMl != null && _plant.wateringAmountMl! > 0) {
+      return _plant.wateringAmountMl;
     }
-    
-    // Fallback to AI name if no health check data
-    if (_plant.aiName == null) {
-      return '1-2 cups'; // Default for unknown plants
-    }
-    
-    final plantName = _plant.aiName!.toLowerCase();
-    final species = _plant.species.toLowerCase();
-    
-    // Large plants that need more water
-    if (plantName.contains('monstera') || plantName.contains('fiddle leaf') || 
-        plantName.contains('bird of paradise') || plantName.contains('elephant ear')) {
-      return '3-4 cups';
-    }
-    
-    // Medium plants with moderate water needs
-    if (plantName.contains('calathea') || plantName.contains('prayer plant') ||
-        plantName.contains('philodendron') || plantName.contains('pothos') ||
-        plantName.contains('snake plant') || plantName.contains('zz plant')) {
-      return '2-3 cups';
-    }
-    
-    // Small plants or succulents
-    if (plantName.contains('succulent') || plantName.contains('cactus') ||
-        plantName.contains('aloe') || plantName.contains('jade')) {
-      return '1/2-1 cup';
-    }
-    
-    // Flowering plants
-    if (plantName.contains('orchid') || plantName.contains('rose') ||
-        plantName.contains('lily') || plantName.contains('daisy')) {
-      return '2-3 cups';
-    }
-    
-    // Herbs and small plants
-    if (plantName.contains('herb') || plantName.contains('basil') ||
-        plantName.contains('mint') || plantName.contains('rosemary')) {
-      return '1-2 cups';
-    }
-    
-    // Default based on species if available
-    if (species.contains('tree') || species.contains('large')) {
-      return '3-4 cups';
-    } else if (species.contains('small') || species.contains('mini')) {
-      return '1/2-1 cup';
-    }
-    
-    return '2-3 cups'; // Default moderate amount
+    return null;
   }
 
-  /// Get the most recent health check data for dynamic calculations
-  Map<String, dynamic>? _getLastHealthCheckData() {
-    try {
-      // Use the plant's AI analysis data for dynamic calculations
-      if (_plant.aiPlantSize != null || _plant.aiPotSize != null || _plant.aiGrowthStage != null) {
-        return {
-          'plantSize': _plant.aiPlantSize,
-          'potSize': _plant.aiPotSize,
-          'growthStage': _plant.aiGrowthStage,
-          'plantType': _plant.aiName,
-        };
-      }
-      return null;
-    } catch (e) {
-      print('❌ Error getting last health check data: $e');
-      return null;
+  /// Format watering amount as "200 ml (3/4 🥛)" — 1 cup = 250 ml
+  Widget _buildWateringAmountWithCups(int? amountMl, {double iconSize = 12, double fontSize = 10}) {
+    if (amountMl == null || amountMl <= 0) return const SizedBox.shrink();
+    const int mlPerCup = 250;
+    final cups = amountMl / mlPerCup;
+    // Дробь чашки: округление до четвертей, отображение символами ¼ ½ ¾
+    String cupFractionStr;
+    final quarters = (cups * 4).round();
+    if (quarters == 0) {
+      cupFractionStr = '0';
+    } else if (quarters % 4 == 0) {
+      cupFractionStr = '${quarters ~/ 4}';
+    } else if (quarters < 4) {
+      const fracs = ['', '¼', '½', '¾'];
+      cupFractionStr = fracs[quarters % 4];
+    } else {
+      const fracs = ['', '¼', '½', '¾'];
+      cupFractionStr = '${quarters ~/ 4}${fracs[quarters % 4]}';
     }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$amountMl ml',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade700,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '($cupFractionStr ',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade700,
+          ),
+        ),
+        Icon(Icons.local_drink, color: Colors.blue.shade600, size: iconSize),
+        Text(
+          ')',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade700,
+          ),
+        ),
+      ],
+    );
   }
 
   /// Get light type description
@@ -657,9 +734,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   // Key Metrics Cards
   Widget _buildNextWateringCard() {
-    final daysUntilWatering = _plant.nextWatering.difference(DateTime.now()).inDays;
-    final statusColor = daysUntilWatering < 0 ? Colors.red : daysUntilWatering <= 1 ? Colors.orange : Colors.green;
+    // Use scientific watering data if available
+    final wateringAmount = _plant.wateringAmountMl;
     
+    // Determine if we should show recheck or watering
+    final isRecheckMode = _plant.wateringMode == 'recheck_only' || 
+                         (_plant.wateringAmountMl != null && _plant.wateringAmountMl == 0);
+    
+    // When shouldWaterNow (e.g. issue + water now), show "Now" instead of future date
+    final nextWateringDate = isRecheckMode && _plant.nextCheckHours != null
+        ? DateTime.now().add(Duration(hours: _plant.nextCheckHours!))
+        : _plant.nextWatering;
+    final showNow = _plant.shouldWaterNow && !isRecheckMode;
+    final daysUntilWatering = nextWateringDate.difference(DateTime.now()).inDays;
+    final statusColor = showNow
+        ? Colors.green
+        : (daysUntilWatering < 0 ? Colors.red : daysUntilWatering <= 1 ? Colors.orange : Colors.green);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -677,13 +768,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       child: Column(
         children: [
           Icon(
-            Icons.water_drop,
+            isRecheckMode ? Icons.check_circle_outline : Icons.water_drop,
             color: statusColor,
             size: 24,
           ),
           const SizedBox(height: 8),
           Text(
-            'Watering',
+            isRecheckMode ? 'Check Plant' : 'Watering',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -693,7 +784,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            DateFormat('MMM dd').format(_plant.nextWatering),
+            showNow ? 'Now' : DateFormat('MMM dd').format(nextWateringDate),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -702,54 +793,28 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-          Text(
-            'every ${_plant.wateringFrequency} days',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
-          ),
           const SizedBox(height: 8),
-          // Water amount section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.local_dining,
-                      color: Colors.blue.shade600,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _calculateWaterAmount(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '(200ml cups)',
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: Colors.blue.shade600,
+          // Water amount section — FittedBox prevents overflow on narrow cards
+          Builder(
+            builder: (context) {
+              final calculatedAmount = _getWateringAmount();
+              if (calculatedAmount != null && calculatedAmount > 0) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
                   ),
-                ),
-              ],
-            ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: _buildWateringAmountWithCups(calculatedAmount, iconSize: 16, fontSize: 12),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
         ],
       ),
@@ -963,15 +1028,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                           children: [
                             Expanded(
                 child: ElevatedButton(
-                  onPressed: _waterPlant,
+                  onPressed: _canWaterPlant() ? _waterPlant : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade100,
-                    foregroundColor: Colors.green.shade700,
+                    backgroundColor: _canWaterPlant() ? Colors.green.shade100 : Colors.grey.shade200,
+                    foregroundColor: _canWaterPlant() ? Colors.green.shade700 : Colors.grey.shade500,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    // Disable hover effects when button is not clickable
+                    overlayColor: _canWaterPlant() ? null : Colors.transparent,
                   ),
                   child: Text(
                     'I have watered',
@@ -1010,7 +1077,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                    'Check plant',
+                    'Analyze Health',
                                 style: TextStyle(
                       fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -1027,44 +1094,41 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
-  // AI Care Card
+  // AI Care Card — structured Plant Assistant (healthy vs issue_detected)
   Widget _buildAiCareCard() {
-    if (_plant.healthMessage == null) return const SizedBox.shrink();
-    
-    // Check if the advice indicates problems
-    final advice = _plant.healthMessage!.toLowerCase();
-    final isBadAdvice = advice.contains('critical') || 
-                       advice.contains('dying') || 
-                       advice.contains('urgent') || 
-                       advice.contains('emergency') || 
-                       advice.contains('severe') || 
-                       advice.contains('serious problem') ||
-                       advice.contains('immediate attention') ||
-                       advice.contains('declining') ||
-                       advice.contains('unhealthy') ||
-                       advice.contains('yellow') ||
-                       advice.contains('brown') ||
-                       advice.contains('wilting') ||
-                       advice.contains('drooping') ||
-                       advice.contains('overwatered') ||
-                       advice.contains('underwatered') ||
-                       advice.contains('root rot') ||
-                       advice.contains('pest') ||
-                       advice.contains('disease') ||
-                       advice.contains('stress') ||
-                       advice.contains('problem') ||
-                       advice.contains('issue') ||
-                       _plant.healthStatus?.toLowerCase() == 'critical' ||
-                       _plant.healthStatus?.toLowerCase() == 'needs attention';
-    
+    if (_plant.healthMessage == null || _plant.healthMessage!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final pa = _tryParsePlantAssistant(_plant.healthMessage);
+    final bool isHealthy = pa != null
+        ? (pa['status']?.toString().toLowerCase() == 'healthy')
+        : (_plant.healthStatus == 'ok');
+    final bool hasStructured = pa != null &&
+        (pa['praise_phrase'] != null || pa['health_summary'] != null ||
+            pa['problem_name'] != null || pa['action_steps'] != null);
+
+    if (isHealthy) {
+      return _buildPlantAssistantHealthyCard(pa, hasStructured);
+    } else {
+      return _buildPlantAssistantIssueCard(pa, hasStructured);
+    }
+  }
+
+  Widget _buildPlantAssistantHealthyCard(Map<String, dynamic>? pa, bool hasStructured) {
+    final praise = hasStructured ? (pa!['praise_phrase']?.toString() ?? '') : '';
+    final summary = hasStructured ? (pa!['health_summary']?.toString() ?? '') : '';
+    final footer = hasStructured ? (pa!['maintenance_footer']?.toString() ?? '') : '';
+    final defaultPraise = 'Your plant is doing fine!';
+    final defaultFooter = 'Keep caring for your plant per the recommendations and log when you water.';
+
     return Container(
-      width: double.infinity, // Full width for mobile
-      margin: const EdgeInsets.symmetric(horizontal: 4), // Small margin to prevent edge overflow
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isBadAdvice ? Colors.red.shade50 : Colors.green.shade50,
+        color: Colors.green.shade50,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isBadAdvice ? Colors.red.shade200 : Colors.green.shade200),
+        border: Border.all(color: Colors.green.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -1076,24 +1140,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row - Fixed layout to prevent overflow
           Row(
             children: [
-              Icon(
-                isBadAdvice ? Icons.warning : Icons.eco,
-                color: isBadAdvice ? Colors.red.shade600 : Colors.green.shade600,
-                size: 18,
-              ),
+              Icon(Icons.eco, color: Colors.green.shade600, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  isBadAdvice ? 'Plant Needs Help!' : 'Plant Care Assistant',
-                style: TextStyle(
+                  'Plant Care Assistant',
+                  style: TextStyle(
                     fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: isBadAdvice ? Colors.red.shade700 : Colors.green.shade700,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
                   ),
-                  // Allow text to wrap to 2 lines if needed
                   maxLines: 2,
                   overflow: TextOverflow.visible,
                 ),
@@ -1101,27 +1159,117 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          
-          // Health Message - Full width with proper text wrapping
           Container(
             width: double.infinity,
-            child: Text(
-            _plant.healthMessage!,
-            style: TextStyle(
-                fontSize: 13,
-              color: isBadAdvice ? Colors.red.shade800 : Colors.grey.shade800,
-                height: 1.4, // Better line height for readability
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.shade100,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.shade300),
             ),
-              // Allow text to wrap naturally
-            maxLines: null,
-            overflow: TextOverflow.visible,
-              textAlign: TextAlign.left,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  praise.isNotEmpty ? praise : '🌱 $defaultPraise',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade800,
+                  ),
+                ),
+                if (summary.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    summary,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.green.shade700,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          
-          // Add helpful tips for bad advice - more compact
-          if (isBadAdvice) ...[
-            const SizedBox(height: 12),
+          if (footer.isNotEmpty || !hasStructured) ...[
+            const SizedBox(height: 10),
+            Text(
+              footer.isNotEmpty ? footer : defaultFooter,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade700,
+                height: 1.3,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          if (_plant.lastHealthCheck != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlantAssistantIssueCard(Map<String, dynamic>? pa, bool hasStructured) {
+    final problemName = hasStructured ? (pa!['problem_name']?.toString() ?? '') : '';
+    final problemDesc = hasStructured ? (pa!['problem_description']?.toString() ?? '') : '';
+    final severity = hasStructured ? (pa!['severity']?.toString() ?? '') : '';
+    final stepsRaw = hasStructured && pa!['action_steps'] != null ? pa['action_steps'] : null;
+    final List<String> actionSteps = stepsRaw is List
+        ? stepsRaw.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList()
+        : [];
+    final followUpDays = hasStructured ? (pa!['follow_up_days'] is int ? pa['follow_up_days'] as int? : int.tryParse(pa['follow_up_days']?.toString() ?? '')) : null;
+    final reassurance = hasStructured ? (pa!['reassurance']?.toString() ?? '') : '';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red.shade600, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Plant Needs Help!',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade700,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.visible,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (problemName.isNotEmpty || problemDesc.isNotEmpty) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -1133,75 +1281,150 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
+                  if (problemName.isNotEmpty)
+                    Text(
+                      problemName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade800,
+                      ),
+                    ),
+                  if (severity.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      severity == 'mild' ? 'Mild' : (severity == 'moderate' ? 'Moderate' : 'Serious'),
+                      style: TextStyle(
+                        fontSize: 11,
                         color: Colors.red.shade700,
-                        size: 14,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                        'Quick Help Tips',
-                        style: TextStyle(
-                            fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red.shade700,
-                          ),
-                        ),
+                    ),
+                  ],
+                  if (problemDesc.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      problemDesc,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.red.shade700,
+                        height: 1.3,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (actionSteps.isNotEmpty) ...[
+            Text(
+              'What to do now',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...actionSteps.take(5).map((s) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('• ', style: TextStyle(fontSize: 11, color: Colors.red.shade800)),
+                  Expanded(
                     child: Text(
-                    '• Check soil moisture - may need immediate watering\n'
-                    '• Move to appropriate lighting conditions\n'
-                    '• Remove any dead or yellowing leaves\n'
-                    '• Take a new health check photo to track progress\n'
-                    '• Consider repotting if roots are visible',
-                    style: TextStyle(
-                        fontSize: 10,
-                      color: Colors.red.shade800,
-                      height: 1.3,
-                      ),
-                      maxLines: null,
-                      overflow: TextOverflow.visible,
+                      s,
+                      style: TextStyle(fontSize: 11, color: Colors.red.shade800, height: 1.3),
                     ),
                   ),
                 ],
               ),
-            ),
+            )),
+            const SizedBox(height: 12),
           ],
-          
-          const SizedBox(height: 10),
-          if (_plant.lastHealthCheck != null)
-            Container(
-              width: double.infinity,
-              child: Text(
-            'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
-            style: TextStyle(
-                  fontSize: 10,
-              color: Colors.grey.shade500,
-              fontStyle: FontStyle.italic,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+          if (followUpDays != null && followUpDays > 0) ...[
+            Text(
+              'Check the plant again in $followUpDays days.',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
+            const SizedBox(height: 10),
+          ],
+          if (reassurance.isNotEmpty) ...[
+            Text(
+              reassurance,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.red.shade700,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (!hasStructured && _plant.healthMessage != null && _plant.healthMessage!.trim().isNotEmpty) ...[
+            Text(
+              _plant.healthMessage!.trim().startsWith('{')
+                  ? 'See Care Recommendations below for care tips.'
+                  : _plant.healthMessage!.length > 200
+                      ? '${_plant.healthMessage!.substring(0, 200).trim()}…'
+                      : _plant.healthMessage!,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.red.shade800,
+                height: 1.3,
+              ),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (_plant.lastHealthCheck != null)
+            Text(
+              'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
         ],
       ),
     );
   }
 
   // Care Section Cards
+  /// Returns true if [text] is null, empty, or a "no issues" phrase — block should be hidden.
+  static bool _isNoIssuesContent(String? text) {
+    if (text == null) return true;
+    final t = text.trim();
+    if (t.isEmpty) return true;
+    final lower = t.toLowerCase();
+    if (lower == 'none detected') return true;
+    if (lower == 'no specific issues detected') return true;
+    if (lower == 'no issues detected') return true;
+    if (lower == 'no issues') return true;
+    return false;
+  }
+
+  /// Species-specific care risks (2–3 items from add-plant AI). Not current health problems.
+  String? _getSpecificIssuesDisplayText() {
+    if (_isNoIssuesContent(_plant.aiSpecificIssues)) return null;
+    return _plant.aiSpecificIssues!.trim();
+  }
+
   Widget _buildIssuesCard() {
-    final issues = _plant.aiSpecificIssues;
-    if (issues == null || issues == 'None detected') {
+    final displayText = _getSpecificIssuesDisplayText();
+    if (displayText == null || displayText.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final lines = displayText.split('\n').map((s) => s.trim()).where((s) => s.isNotEmpty).take(3).toList();
+    if (lines.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -1224,13 +1447,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           Row(
             children: [
               Icon(
-                Icons.warning,
+                Icons.info_outline_rounded,
                 color: Colors.yellow.shade700,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
-                'Issues',
+                'Specific Issues',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -1240,79 +1463,42 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            issues,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.yellow.shade800,
-              height: 1.3,
+          ...lines.map(
+            (line) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '• ',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.yellow.shade800,
+                      height: 1.3,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      line,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.yellow.shade800,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
   
-  Widget _buildTipsCard() {
-    final tips = _plant.aiCareTips;
-    if (tips == null || tips == 'No specific tips') {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-        children: [
-          Icon(
-                Icons.lightbulb,
-                color: Colors.blue.shade600,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-          Text(
-                'Care Tips',
-            style: TextStyle(
-              fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-            Text(
-            tips,
-              style: TextStyle(
-              fontSize: 13,
-              color: Colors.blue.shade800,
-              height: 1.3,
-            ),
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
+  
   // Care Recommendations Accordion
   Widget _buildDetailsAccordion() {
     // Show details for all plants, even new ones without AI data
@@ -1404,40 +1590,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                             ..._buildStructuredCareSections(_plant.aiCareTips!),
                             const SizedBox(height: 16),
                           ] else ...[
-                            // Show button to generate AI content if not available
                             Text(
                               'AI-generated care recommendations are not available for this plant yet.',
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
                                 fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: _isGeneratingAI ? null : _generateAIContent,
-                                icon: _isGeneratingAI 
-                                  ? SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
-                                      ),
-                                    )
-                                  : Icon(Icons.auto_awesome, color: Colors.white),
-                                label: Text(
-                                  _isGeneratingAI ? 'Generating...' : 'Generate AI Recommendations',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.accentGreen,
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal:20),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -1503,34 +1660,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 fontSize: 14,
                 color: Colors.grey.shade700,
                 height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isGeneratingAI ? null : _generateAIContent,
-                icon: _isGeneratingAI 
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
-                      ),
-                    )
-                  : Icon(Icons.auto_awesome, color: Colors.white),
-                label: Text(
-                  _isGeneratingAI ? 'Generating...' : 'Generate AI Facts',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentGreen,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
               ),
             ),
           ],
@@ -1698,34 +1827,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             style: TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isGeneratingAI ? null : _generateAIContent,
-              icon: _isGeneratingAI 
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
-                    ),
-                  )
-                : Icon(Icons.auto_awesome, color: Colors.white),
-              label: Text(
-                _isGeneratingAI ? 'Generating...' : 'Generate AI Facts',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentGreen,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
             ),
           ),
         ],
@@ -2049,6 +2150,31 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
+  String _getAnalysisModeKey(HealthCheckRecord record) {
+    final metadata = record.metadata ?? const <String, dynamic>{};
+    final String? rawMode = metadata['analysisMode']?.toString().trim().toLowerCase();
+    if (rawMode != null && (rawMode == 'ai_agent' || rawMode == 'ai_care')) {
+      return rawMode;
+    }
+
+    // Backward-compatibility for older agent records without explicit mode key.
+    if (metadata.containsKey('agentContext') ||
+        metadata.containsKey('tierUsed') ||
+        metadata.containsKey('decisionTraceV2')) {
+      return 'ai_agent';
+    }
+
+    return 'ai_care';
+  }
+
+  String _getAnalysisModeLabel(HealthCheckRecord record) {
+    return _getAnalysisModeKey(record) == 'ai_agent' ? 'AI Agent' : 'AI Care';
+  }
+
+  Color _getAnalysisModeColor(HealthCheckRecord record) {
+    return _getAnalysisModeKey(record) == 'ai_agent' ? Colors.deepPurple : Colors.teal;
+  }
+
   Widget _buildHealthHistoryThumbnail(HealthCheckRecord record) {
     // Add null safety check for record
     if (record == null) {
@@ -2120,14 +2246,38 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Date
           Container(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              _formatHealthCheckDate(record.timestamp),
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
+            child: Column(
+              children: [
+                Text(
+                  _formatHealthCheckDate(record.timestamp),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getAnalysisModeColor(record).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: _getAnalysisModeColor(record).withOpacity(0.35),
+                    ),
+                  ),
+                  child: Text(
+                    _getAnalysisModeLabel(record),
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: _getAnalysisModeColor(record),
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -2275,6 +2425,16 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       return percentage;
     }
     
+    // Check if it's a range like "40-60%"
+    final rangeMatch = RegExp(r'(\d+)\s*-\s*(\d+)').firstMatch(moistureLevel);
+    if (rangeMatch != null) {
+      final min = int.tryParse(rangeMatch.group(1) ?? '');
+      final max = int.tryParse(rangeMatch.group(2) ?? '');
+      if (min != null && max != null) {
+        return (min + max) ~/ 2; // Return midpoint
+      }
+    }
+    
     // Fallback to text-based conversion
     final lowerLevel = moistureLevel.toLowerCase();
     if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
@@ -2353,12 +2513,122 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return hasProblems;
   }
 
+  /// Formats the next watering info as days only.
+  /// When shouldWaterNow (e.g. issue + need to water), returns "Now".
+  String _getNextWateringDisplay() {
+    if (_plant.shouldWaterNow) return 'Now';
+    final wateringDate = _getNextWateringDate();
+    final now = DateTime.now().toLocal();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(
+      wateringDate.year,
+      wateringDate.month,
+      wateringDate.day,
+    );
+    int diffDays = target.difference(today).inDays;
+    if (diffDays <= 0) diffDays = 1;
+    return diffDays == 1 ? 'Next in 1 day' : 'Next in $diffDays days';
+  }
+
+  /// Single source of truth for the next watering moment in the UI
+  DateTime _getNextWateringDate() {
+    return _plant.nextDueAt ?? _plant.nextWatering;
+  }
+
+  /// Starts a periodic timer to update the watering countdown once per minute
+  void _startWateringCountdownTimer() {
+    _wateringCountdownTimer?.cancel();
+    _updateWateringCountdown();
+    _wateringCountdownTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _updateWateringCountdown();
+    });
+  }
+
+  /// Stops the watering countdown timer
+  void _stopWateringCountdownTimer() {
+    _wateringCountdownTimer?.cancel();
+    _wateringCountdownTimer = null;
+  }
+
+  /// Updates the countdown label based on the plant's next watering time
+  void _updateWateringCountdown() {
+    if (!mounted) return;
+
+    // If shouldWaterNow is true, clear countdown (button will show "Water now")
+    if (_plant.shouldWaterNow) {
+      setState(() {
+        _wateringCountdownLabel = null;
+      });
+      return;
+    }
+
+    final wateringDate = _getNextWateringDate();
+    final now = DateTime.now().toLocal();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(
+      wateringDate.year,
+      wateringDate.month,
+      wateringDate.day,
+    );
+    
+    int diffDays = target.difference(today).inDays;
+
+    // If watering is due (or overdue), clear the countdown
+    if (diffDays <= 0) {
+      setState(() {
+        _wateringCountdownLabel = null;
+      });
+      return;
+    }
+    
+    // Days-only countdown (minimum 1 day)
+    if (diffDays <= 0) {
+      diffDays = 1;
+    }
+
+    final label = '$diffDays day${diffDays == 1 ? '' : 's'}';
+
+    setState(() {
+      _wateringCountdownLabel = label;
+    });
+  }
+
+  /// Checks if the plant can be watered (it's the watering day)
+  /// Check if plant should be watered now
+  /// Uses shouldWaterNow flag from AI analysis, or falls back to date comparison
+  bool _canWaterPlant() {
+    // PRIORITY 1: Use shouldWaterNow flag from AI analysis
+    if (_plant.shouldWaterNow) {
+      return true;
+    }
+    
+    // PRIORITY 2: Fallback to date-based check if flag not available
+    final now = DateTime.now();
+    final wateringDate = _getNextWateringDate();
+    return wateringDate.isBefore(now) || wateringDate.isAtSameMomentAs(now);
+  }
+  
+  /// Get button label based on shouldWaterNow state
+  String _getWateringButtonLabel() {
+    if (_plant.shouldWaterNow) {
+      return 'Watering done';
+    }
+    
+    // Show countdown or default label
+    if (_wateringCountdownLabel != null) {
+      return 'Next in $_wateringCountdownLabel';
+    }
+    
+    return 'I have watered';
+  }
+
   /// Gets the unified health status based on the plant's health data
   /// This is the single source of truth for all health status displays
   String _getUnifiedHealthStatus() {
     print('🌱 Plant Details: Determining unified health status...');
     print('🌱 Plant healthStatus: ${_plant.healthStatus}');
-    print('🌱 Plant healthMessage: ${_plant.healthMessage?.substring(0, 100)}...');
+    final healthMsg = _plant.healthMessage ?? '';
+    print('🌱 Plant healthMessage: ${healthMsg.length > 200 ? healthMsg.substring(0, 200) : healthMsg}...');
     
     // PRIORITY 1: Use the plant's stored health status (from health checks)
     if (_plant.healthStatus != null && _plant.healthStatus!.isNotEmpty) {
@@ -2437,6 +2707,66 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     // PRIORITY 3: Default for new plants or unclear status
     print('🌱 Status: NO STATUS (no health data available)');
     return 'No Status';
+  }
+
+  /// Parses healthMessage as Plant Assistant JSON; returns null if not valid structure.
+  Map<String, dynamic>? _tryParsePlantAssistant(String? message) {
+    if (message == null || message.isEmpty) return null;
+    final s = message.trim();
+    if (!s.startsWith('{')) return null;
+    try {
+      final map = jsonDecode(s) as Map<String, dynamic>;
+      if (map['status'] != null || map['praise_phrase'] != null || map['problem_name'] != null) {
+        return map;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Removes Interesting Facts section from health message for Plant Care Assistant block
+  String _removeInterestingFactsFromMessage(String message) {
+    // Split by "Interesting Facts:" and take only the first part
+    final parts = message.split('Interesting Facts:');
+    if (parts.length > 1) {
+      // Also remove any trailing content after Interesting Facts
+      final beforeFacts = parts[0].trim();
+      return beforeFacts;
+    }
+    return message;
+  }
+
+  /// Extracts Health Assessment section from health message
+  String _extractHealthAssessment(String message) {
+    // Look for "HEALTH ASSESSMENT:" section
+    if (message.contains('HEALTH ASSESSMENT:')) {
+      final parts = message.split('HEALTH ASSESSMENT:');
+      if (parts.length > 1) {
+        // Take everything after "HEALTH ASSESSMENT:" until the end or next section
+        final assessment = parts[1].trim();
+        return assessment;
+      }
+    }
+    return '';
+  }
+
+  /// Removes both Interesting Facts and Health Assessment from health message for Plant Needs Help block
+  String _removeFactsAndAssessmentFromMessage(String message) {
+    // First remove Interesting Facts section
+    String cleaned = message;
+    if (cleaned.contains('Interesting Facts:')) {
+      final parts = cleaned.split('Interesting Facts:');
+      cleaned = parts[0].trim();
+    }
+    
+    // Then remove Health Assessment section
+    if (cleaned.contains('HEALTH ASSESSMENT:')) {
+      final parts = cleaned.split('HEALTH ASSESSMENT:');
+      cleaned = parts[0].trim();
+    }
+    
+    return cleaned;
   }
 
   /// Gets the unified health status color based on the unified status
@@ -2628,7 +2958,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ],
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+            padding: EdgeInsets.fromLTRB(
+              ResponsiveLayout.getContentPadding(context).left,
+              40,
+              ResponsiveLayout.getContentPadding(context).right,
+              24,
+            ),
                 child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2699,6 +3034,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: true, // Allow content to extend behind system UI
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openPlantChat,
+        tooltip: l10n.plantChatOpen,
+        child: const Icon(Icons.chat_bubble_outline_rounded),
+      ),
       body: CustomScrollView(
         slivers: [
           // Hero Photo Section - Full width and to the top in portrait orientation
@@ -2830,7 +3171,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Unified Information Block - Plant name, health, and care info (NOW ABOVE THE IMAGE)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveLayout.getContentPadding(context).left,
+                24,
+                ResponsiveLayout.getContentPadding(context).right,
+                24,
+              ),
               child: _buildUnifiedInformationBlock(),
             ),
           ),
@@ -2838,7 +3184,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // AI Care Assistant (green card) - More compact for mobile
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveLayout.getContentPadding(context).left,
+                0,
+                ResponsiveLayout.getContentPadding(context).right,
+                16,
+              ),
               child: _buildAiCareCard(),
             ),
           ),
@@ -2846,23 +3197,31 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Care Section (Issues and Tips)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveLayout.getContentPadding(context).left,
+                0,
+                ResponsiveLayout.getContentPadding(context).right,
+                16,
+              ),
               child: _buildDetailsAccordion(),
             ),
           ),
           
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveLayout.getContentPadding(context).left,
+                0,
+                ResponsiveLayout.getContentPadding(context).right,
+                16,
+              ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  if (constraints.maxWidth < 500) {
+                  if (constraints.maxWidth < ResponsiveLayout.breakpointStackNarrow) {
                     // Stack vertically on narrow screens
                     return Column(
                       children: [
                         _buildIssuesCard(),
-                        const SizedBox(height: 16),
-                        _buildTipsCard(),
                       ],
                     );
                   } else {
@@ -2870,8 +3229,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     return Row(
                       children: [
                         Expanded(child: _buildIssuesCard()),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildTipsCard()),
                       ],
                     );
                   }
@@ -2883,7 +3240,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Health Check History (horizontal gallery)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced bottom padding
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveLayout.getContentPadding(context).left,
+                0,
+                ResponsiveLayout.getContentPadding(context).right,
+                16,
+              ),
               child: _buildHealthHistoryGallery(),
             ),
           ),
@@ -2891,7 +3253,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Delete Plant Button
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveLayout.getContentPadding(context).left,
+                0,
+                ResponsiveLayout.getContentPadding(context).right,
+                16,
+              ),
               child: Center(
                 child: SizedBox(
                   width: 80, // Further reduced to prevent overflow
@@ -2943,10 +3310,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       print('❌ Error building PlantDetailsScreen: $e');
       return Scaffold(
         appBar: AppBar(
-          title: Text('Error'),
+          title: Text(l10n.errorLabel),
         ),
         body: Center(
-          child: Text('An error occurred while building the PlantDetailsScreen: $e'),
+          child: Text(l10n.errorBuildingPlantDetailsScreen(e.toString())),
         ),
       );
     }
@@ -2957,19 +3324,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return MediaQuery.of(context).orientation == Orientation.portrait;
   }
   
-  /// Get hero image height based on orientation
-  /// ⚠️ IMPORTANT: This method ensures the hero image is full width and to the top in portrait mode
-  /// 
-  /// Portrait mode: 60% of screen height for immersive experience
-  /// Landscape mode: Fixed 400px height to maintain usability
-  /// 
-  /// This provides the optimal user experience for both orientations
+  /// Hero image block height: ~70% of screen so other blocks (name, status, etc.) are visible below.
   double _getHeroImageHeight(BuildContext context) {
-    if (_isPortrait(context)) {
-      return MediaQuery.of(context).size.height * 0.6; // 60% of screen height in portrait
-    } else {
-      return 400; // Fixed height in landscape
-    }
+    final size = MediaQuery.of(context).size;
+    return (size.height * 0.70).clamp(280.0, 700.0);
   }
 
   // Unified Information Block - Plant name, health, and care info
@@ -3010,6 +3368,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     // Health Status - Only show if there's a health check
@@ -3044,7 +3404,36 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   ],
                 ),
               ),
-              // Note: Page indicators are shown in the hero image section above
+              const SizedBox(width: 8),
+              SegmentedButton<HealthCheckAnalysisMode>(
+                segments: [
+                  ButtonSegment<HealthCheckAnalysisMode>(
+                    value: HealthCheckAnalysisMode.aiCare,
+                    label: Text(l10n.aiCare),
+                  ),
+                  ButtonSegment<HealthCheckAnalysisMode>(
+                    value: HealthCheckAnalysisMode.aiAgent,
+                    label: Text(l10n.aiAgent),
+                  ),
+                ],
+                selected: {_selectedHealthCheckMode},
+                onSelectionChanged: (Set<HealthCheckAnalysisMode> nextSelection) {
+                  if (nextSelection.isEmpty) return;
+                  setState(() {
+                    _selectedHealthCheckMode = nextSelection.first;
+                  });
+                },
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: WidgetStateProperty.all(
+                    const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           
@@ -3084,7 +3473,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        DateFormat('MMM dd').format(_plant.nextWatering),
+                        _plant.shouldWaterNow
+                            ? 'Now'
+                            : DateFormat('MMM dd').format(_getNextWateringDate()),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -3092,51 +3483,39 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'every ${_plant.wateringFrequency} days',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
+                      if (!_plant.shouldWaterNow) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _getNextWateringDisplay(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
+                      ],
                       const SizedBox(height: 6),
-                      // Water amount in cups
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.local_dining,
-                              color: Colors.blue.shade600,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              _calculateWaterAmount(),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
+                      // Water amount: cups (1 cup = 250 ml) + ml — FittedBox prevents overflow on narrow cards
+                      Builder(
+                        builder: (context) {
+                          final wateringAmount = _getWateringAmount();
+                          if (wateringAmount != null && wateringAmount > 0) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.blue.shade200),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '(200ml cups)',
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: Colors.blue.shade600,
-                        ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.center,
+                                child: _buildWateringAmountWithCups(wateringAmount, iconSize: 12, fontSize: 10),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
                       ),
                     ],
                   ),
@@ -3260,28 +3639,46 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Action Buttons Row
           Row(
             children: [
-              // "I have watered" Button
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _waterPlant,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accentGreen,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
+                  onPressed: (_isLoading || !_canWaterPlant()) ? null : _waterPlant,
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+                      if (states.contains(MaterialState.disabled)) return Colors.white;
+                      return AppTheme.accentGreen;
+                    }),
+                    foregroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+                      if (states.contains(MaterialState.disabled)) return Colors.grey.shade600;
+                      return Colors.white;
+                    }),
+                    padding: const MaterialStatePropertyAll(EdgeInsets.symmetric(vertical: 12)),
+                    shape: MaterialStateProperty.resolveWith<OutlinedBorder>((Set<MaterialState> states) {
+                      final borderColor = states.contains(MaterialState.disabled)
+                          ? Colors.grey.shade300
+                          : AppTheme.accentGreen.withOpacity(0.3);
+                      return RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: borderColor, width: 1),
+                      );
+                    }),
+                    elevation: MaterialStateProperty.resolveWith<double>((Set<MaterialState> states) {
+                      return states.contains(MaterialState.disabled) ? 0 : 2;
+                    }),
+                    overlayColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+                      return states.contains(MaterialState.disabled) ? Colors.transparent : null;
+                    }),
                   ),
                   icon: Icon(
                     Icons.water_drop,
                     size: 18,
+                    color: _canWaterPlant() ? null : Colors.grey.shade600,
                   ),
                   label: Text(
-                    'I have watered',
+                    _getWateringButtonLabel(),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
+                      color: _canWaterPlant() ? null : Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -3289,32 +3686,43 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               
               const SizedBox(width: 12),
               
-              // "Check plant" Button
+              // "Analyze Health" Button — с золотой тенью
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _openHealthCheckModal,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.red.shade600,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: Colors.red.shade200,
-                        width: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.shade400.withOpacity(0.4),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 2),
                       ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: _openHealthCheckModal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.red.shade600,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Colors.red.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
                     ),
-                    elevation: 1,
-                  ),
-                  icon: Icon(
-                    Icons.health_and_safety,
-                    size: 18,
-                  ),
-                  label: Text(
-                    'Check plant',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    icon: const Icon(Icons.health_and_safety, size: 18),
+                    label: const Text(
+                      'Analyze Health',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -3413,9 +3821,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       // Check if this line contains a care section (like "Watering: ...")
       if (trimmedLine.contains(':')) {
         final parts = trimmedLine.split(':');
-        if (parts.length == 2) {
+        if (parts.length >= 2) {
           final title = parts[0].trim();
-          final value = parts[1].trim();
+          final value = parts.sublist(1).join(':').trim(); // Join all parts after first colon
           
           if (title.isNotEmpty && value.isNotEmpty) {
             // Add top padding only to the first section
@@ -3441,6 +3849,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   /// Builds a single care section with title and content
   Widget _buildCareSection(String title, String content) {
+    final normalizedTitle = title.toLowerCase() == 'name' ? 'Cultivar' : title;
+    // Override content for Moisture and Light with numeric values
+    String displayContent = content;
+    if (normalizedTitle.toLowerCase() == 'moisture' && _plant.aiMoistureLevel != null) {
+      // Use the same logic as the top card to get consistent moisture percentage
+      displayContent = '${_getMoisturePercentage(_plant.aiMoistureLevel)}%';
+    } else if (normalizedTitle.toLowerCase() == 'light' && _plant.aiLight != null) {
+      // Use the calculated light hours instead of descriptive text
+      displayContent = '${_calculateLightHours()} hours per day';
+    }
+    
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3462,7 +3881,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-            title,
+            normalizedTitle,
             style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
@@ -3475,7 +3894,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         const SizedBox(height: 8),
           // Section content
           Text(
-            content,
+            displayContent,
             style: TextStyle(
             color: AppTheme.textSecondary,
               height: 1.4,
@@ -3569,9 +3988,10 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
 
 
   Widget _buildPlaceholderImage() {
+    final height = (MediaQuery.of(context).size.height * 0.45).clamp(200.0, 400.0);
     return Container(
       width: double.infinity,
-      height: 400,
+      height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         color: Colors.grey.shade100,
@@ -3620,7 +4040,7 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
     return imageUrl.startsWith('data:image')
         ? Image.memory(
             base64Decode(imageUrl.split(',')[1]),
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
             isAntiAlias: true,
             errorBuilder: (context, error, stackTrace) {
@@ -3631,7 +4051,7 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
         : imageUrl.startsWith('http')
             ? Image.network(
                 processedUrl,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 isAntiAlias: true,
                 loadingBuilder: (context, child, loadingProgress) {
@@ -3705,26 +4125,18 @@ class _PlantCarouselHeaderState extends State<PlantCarouselHeader> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isPortrait = size.height > size.width;
-    
-    // In portrait mode: 60% of screen height, in landscape: fixed 400px
-    final headerH = isPortrait ? size.height * 0.60 : 400.0;
-    final clampedH = headerH.clamp(260.0, 600.0); // Increased max height for portrait
-    
-    print('🌱 PlantCarouselHeader: Screen size: ${size.width}x${size.height}');
-    print('🌱 PlantCarouselHeader: Is portrait: $isPortrait');
-    print('🌱 PlantCarouselHeader: Calculated height: $headerH, clamped: $clampedH');
-    print('🌱 PlantCarouselHeader: Device width: ${MediaQuery.of(context).size.width}');
+    // ~70% of screen so name/status and other blocks are visible below
+    final clampedH = (size.height * 0.70).clamp(280.0, 700.0);
 
     return Container(
-      width: MediaQuery.of(context).size.width, // Explicit full device width
+      width: MediaQuery.of(context).size.width,
       height: clampedH,
-      margin: EdgeInsets.zero, // No margins
-      padding: EdgeInsets.zero, // No padding
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      color: Colors.grey.shade200,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Edge-to-edge PageView - Full width
           PageView.builder(
             controller: _controller,
             onPageChanged: (i) => setState(() => _index = i),
@@ -3732,28 +4144,34 @@ class _PlantCarouselHeaderState extends State<PlantCarouselHeader> {
             itemCount: widget.images.length,
             itemBuilder: (_, i) {
               return Container(
-                width: MediaQuery.of(context).size.width, // Explicit full width
+                width: MediaQuery.of(context).size.width,
                 height: clampedH,
-                child: Image.network(
-                  widget.images[i],
-                  fit: BoxFit.cover, // fill width, crop height
+                decoration: BoxDecoration(color: Colors.grey.shade200),
+                clipBehavior: Clip.hardEdge,
+                child: Transform.scale(
+                  scale: 1.25,
                   alignment: Alignment.center,
-                  width: MediaQuery.of(context).size.width, // Force full width
-                  height: clampedH, // Force full height
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: MediaQuery.of(context).size.width,
-                      height: clampedH,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: Colors.grey,
+                  child: Image.network(
+                    widget.images[i],
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    width: MediaQuery.of(context).size.width,
+                    height: clampedH,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: MediaQuery.of(context).size.width,
+                        height: clampedH,
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               );
             },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/utils/responsive_layout.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -25,8 +26,15 @@ class PlantCard extends StatefulWidget {
 class _PlantCardState extends State<PlantCard> {
   bool _isWatering = false;
 
+  /// Checks if the plant can be watered (it's the watering day)
+  bool _canWaterPlant() {
+    final now = DateTime.now();
+    final wateringDate = widget.plant.nextDueAt ?? widget.plant.nextWatering;
+    return wateringDate.isBefore(now) || wateringDate.isAtSameMomentAs(now);
+  }
+
   Future<void> _handleWater() async {
-    if (_isWatering || widget.onWater == null) return;
+    if (_isWatering || widget.onWater == null || !_canWaterPlant()) return;
 
     setState(() {
       _isWatering = true;
@@ -111,10 +119,12 @@ class _PlantCardState extends State<PlantCard> {
   @override
   Widget build(BuildContext context) {
     final daysUntilWatering = widget.plant.nextWatering.difference(DateTime.now()).inDays;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : AppTheme.textPrimary;
     
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 360;
+        final isCompact = constraints.maxWidth < ResponsiveLayout.breakpointCompact;
         
         return GlassmorphicContainer(
           width: double.infinity,
@@ -178,7 +188,7 @@ class _PlantCardState extends State<PlantCard> {
                           Text(
                             widget.plant.name,
                             style: AppTheme.headingSmall.copyWith(
-                              color: AppTheme.textPrimary,
+                              color: titleColor,
                               fontWeight: FontWeight.bold,
                             ),
                             maxLines: 1,
@@ -264,18 +274,26 @@ class _PlantCardState extends State<PlantCard> {
                         height: 48,
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentGreen.withOpacity(0.1),
+                          color: _canWaterPlant() 
+                              ? AppTheme.accentGreen.withOpacity(0.1)
+                              : Colors.grey.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: AppTheme.accentGreen.withOpacity(0.3),
+                            color: _canWaterPlant()
+                                ? AppTheme.accentGreen.withOpacity(0.3)
+                                : Colors.grey.withOpacity(0.3),
                             width: 1,
                           ),
                         ),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: _isWatering ? null : _handleWater,
+                            onTap: (_isWatering || !_canWaterPlant()) ? null : _handleWater,
                             borderRadius: BorderRadius.circular(24),
+                            // Disable hover effects when button is not clickable
+                            hoverColor: (_isWatering || !_canWaterPlant()) ? Colors.transparent : null,
+                            splashColor: (_isWatering || !_canWaterPlant()) ? Colors.transparent : null,
+                            highlightColor: (_isWatering || !_canWaterPlant()) ? Colors.transparent : null,
                             child: Center(
                               child: _isWatering
                                   ? SizedBox(
@@ -288,7 +306,9 @@ class _PlantCardState extends State<PlantCard> {
                                     )
                                   : Icon(
                                       Icons.water_drop,
-                                      color: AppTheme.accentGreen,
+                                      color: _canWaterPlant() 
+                                          ? AppTheme.accentGreen
+                                          : Colors.grey,
                                       size: 24,
                                     ),
                             ),
