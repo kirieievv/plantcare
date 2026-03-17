@@ -1,0 +1,15 @@
+.DS_Store
+.cursor/
+firebase-debug.log
+
+# Local workspace copies
+plant_care_dev/
+plant_care_clean/
+
+# Local secrets and recovery files
+twilio_2FA_recovery_code.txt
+plant-care-*.json
+*service-account*.json
+
+# Firebase local cache artifacts
+plant_care/.firebase/hosting.*.cache
