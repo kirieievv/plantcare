@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/models/smart_plant.dart';
 import 'package:plant_care/models/user_model.dart';
@@ -17,6 +19,7 @@ import 'package:plant_care/utils/app_theme.dart';
 import 'package:plant_care/utils/responsive_layout.dart';
 import 'package:intl/intl.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
+import 'package:plant_care/utils/cloud_functions.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -38,6 +41,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   Timer? _wateringCountdownTimer;
   String? _wateringCountdownLabel;
   HealthCheckAnalysisMode _selectedHealthCheckMode = HealthCheckAnalysisMode.aiAgent;
+  bool _isSendingTestWateringEmail = false;
   AppLocalizations get l10n => AppLocalizations.of(context)!;
   
   @override
@@ -75,6 +79,65 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         builder: (_) => PlantChatScreen(plant: _plant),
       ),
     );
+  }
+
+  Future<void> _sendTestWateringEmailNow() async {
+    if (_isSendingTestWateringEmail) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Please log in again to send test email.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSendingTestWateringEmail = true;
+    });
+
+    try {
+      final idToken = await user.getIdToken();
+      final response = await http.post(
+        Uri.parse(sendTestWateringReminderEmailUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: jsonEncode({
+          'plantId': _plant.id,
+          'userId': user.uid,
+          'stage': 'first_reminder',
+          'locale': Localizations.localeOf(context).languageCode,
+        }),
+      );
+
+      Map<String, dynamic> payload = {};
+      try {
+        payload = jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (_) {}
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          payload['success'] == true) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Test watering email queued.')),
+        );
+      } else {
+        final err = payload['error']?.toString() ?? 'Failed to send test email.';
+        messenger.showSnackBar(SnackBar(content: Text(err)));
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not send test email: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingTestWateringEmail = false;
+        });
+      }
+    }
   }
 
   void _handleHealthCheckComplete(Map<String, dynamic> healthResult) async {
@@ -3299,6 +3362,40 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
           ),
           
+          // Bottom padding - Increased for better mobile experience
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveLayout.getContentPadding(context).left,
+                0,
+                ResponsiveLayout.getContentPadding(context).right,
+                12,
+              ),
+              child: OutlinedButton.icon(
+                onPressed: _isSendingTestWateringEmail ? null : _sendTestWateringEmailNow,
+                icon: _isSendingTestWateringEmail
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.email_outlined),
+                label: Text(
+                  _isSendingTestWateringEmail
+                      ? 'Sending test email...'
+                      : (kDebugMode
+                          ? 'Send test watering email now'
+                          : 'Send test email'),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.deepOrange.shade700,
+                  side: BorderSide(color: Colors.deepOrange.shade300),
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+            ),
+          ),
+
           // Bottom padding - Increased for better mobile experience
           const SliverToBoxAdapter(
             child: SizedBox(height: 32), // Increased from 24 to 32

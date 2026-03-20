@@ -35,3 +35,9 @@ String get verifyPasswordResetPinUrl {
   final projectId = Firebase.app().options.projectId;
   return 'https://us-central1-$projectId.cloudfunctions.net/verifyPasswordResetPin';
 }
+
+/// Trigger a test watering reminder email immediately for a plant.
+String get sendTestWateringReminderEmailUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/sendTestWateringReminderEmail';
+}

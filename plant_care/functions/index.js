@@ -368,6 +368,141 @@ function toIso(value) {
   return String(value);
 }
 
+const WATERING_EMAIL_LEAD_MINUTES = 30;
+const WATERING_EMAIL_FOLLOW_UP_MINUTES = 30;
+const WATERING_EMAIL_MAX_DAYS = 4;
+const WATERING_EMAIL_MAX_REMINDERS = WATERING_EMAIL_MAX_DAYS * 2;
+const WATERING_EMAIL_STALE_BUFFER_MS = 20 * 60 * 1000;
+const WATERING_EMAIL_QUERY_LIMIT = 200;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function sanitizeLocale(value) {
+  const locale = String(value || 'en').trim().toLowerCase();
+  if (locale.startsWith('es')) return 'es';
+  if (locale.startsWith('fr')) return 'fr';
+  return 'en';
+}
+
+function buildReminderCycleId(plantId, nextDueAt) {
+  return `${plantId}:${nextDueAt.toISOString()}`;
+}
+
+function buildWateringEmailFallback({ stage, plantName, cultivar, userName, minutesToDue, minutesOverdue, locale }) {
+  const safePlantName = plantName || 'your plant';
+  const safeUserName = userName || 'there';
+  const cultivarHint = cultivar ? ` (${cultivar})` : '';
+
+  if (locale === 'es') {
+    if (stage === 'followup_reminder') {
+      const subject = `${safePlantName}: sigue pendiente el riego`;
+      const text = `Hola ${safeUserName}. Aun no registramos "I have watered" para ${safePlantName}${cultivarHint}. Si ya regaste, marca el boton en la app. Si no, riega cuando puedas.`;
+      const html = `<p>Hola ${safeUserName},</p><p>Aun no registramos <strong>I have watered</strong> para <strong>${safePlantName}${cultivarHint}</strong>.</p><p>Si ya regaste, marca el boton en la app. Si no, riega cuando puedas.</p><p>- Plant Care</p>`;
+      return { subject, text, html };
+    }
+    const dueLabel = Number.isFinite(minutesToDue) ? `${minutesToDue} min` : '30 min';
+    const subject = `${safePlantName}: riego en ${dueLabel}`;
+    const text = `Hola ${safeUserName}. Recordatorio: ${safePlantName}${cultivarHint} deberia regarse en aproximadamente ${dueLabel}. Despues de regar, pulsa "I have watered" en la app.`;
+    const html = `<p>Hola ${safeUserName},</p><p>Recordatorio: <strong>${safePlantName}${cultivarHint}</strong> deberia regarse en aproximadamente <strong>${dueLabel}</strong>.</p><p>Despues de regar, pulsa <strong>I have watered</strong> en la app.</p><p>- Plant Care</p>`;
+    return { subject, text, html };
+  }
+
+  if (locale === 'fr') {
+    if (stage === 'followup_reminder') {
+      const subject = `${safePlantName}: arrosage toujours en attente`;
+      const text = `Bonjour ${safeUserName}. Nous n'avons pas encore recu "I have watered" pour ${safePlantName}${cultivarHint}. Si vous avez deja arrose, confirmez-le dans l'app. Sinon, arrosez quand possible.`;
+      const html = `<p>Bonjour ${safeUserName},</p><p>Nous n'avons pas encore recu <strong>I have watered</strong> pour <strong>${safePlantName}${cultivarHint}</strong>.</p><p>Si vous avez deja arrose, confirmez-le dans l'app. Sinon, arrosez quand possible.</p><p>- Plant Care</p>`;
+      return { subject, text, html };
+    }
+    const dueLabel = Number.isFinite(minutesToDue) ? `${minutesToDue} min` : '30 min';
+    const subject = `${safePlantName}: arrosage dans ${dueLabel}`;
+    const text = `Bonjour ${safeUserName}. Rappel: ${safePlantName}${cultivarHint} devrait etre arrose dans environ ${dueLabel}. Apres arrosage, appuyez sur "I have watered" dans l'app.`;
+    const html = `<p>Bonjour ${safeUserName},</p><p>Rappel: <strong>${safePlantName}${cultivarHint}</strong> devrait etre arrose dans environ <strong>${dueLabel}</strong>.</p><p>Apres arrosage, appuyez sur <strong>I have watered</strong> dans l'app.</p><p>- Plant Care</p>`;
+    return { subject, text, html };
+  }
+
+  if (stage === 'followup_reminder') {
+    const overdueLabel = Number.isFinite(minutesOverdue) ? `${minutesOverdue} min` : '30 min';
+    const subject = `${safePlantName}: watering still pending`;
+    const text = `Hi ${safeUserName}. We still do not see "I have watered" for ${safePlantName}${cultivarHint}. It is about ${overdueLabel} past due. If you already watered, please tap the button in the app.`;
+    const html = `<p>Hi ${safeUserName},</p><p>We still do not see <strong>I have watered</strong> for <strong>${safePlantName}${cultivarHint}</strong>.</p><p>It is about <strong>${overdueLabel}</strong> past due. If you already watered, please tap the button in the app.</p><p>- Plant Care</p>`;
+    return { subject, text, html };
+  }
+
+  const dueLabel = Number.isFinite(minutesToDue) ? `${minutesToDue} min` : '30 min';
+  const subject = `${safePlantName}: watering in ${dueLabel}`;
+  const text = `Hi ${safeUserName}. Reminder: ${safePlantName}${cultivarHint} is due for watering in about ${dueLabel}. After watering, please tap "I have watered" in the app.`;
+  const html = `<p>Hi ${safeUserName},</p><p>Reminder: <strong>${safePlantName}${cultivarHint}</strong> is due for watering in about <strong>${dueLabel}</strong>.</p><p>After watering, please tap <strong>I have watered</strong> in the app.</p><p>- Plant Care</p>`;
+  return { subject, text, html };
+}
+
+function buildWateringEmailPrompt(input) {
+  const payload = {
+    locale: input.locale,
+    stage: input.stage,
+    plantName: input.plantName,
+    cultivar: input.cultivar || null,
+    userName: input.userName || null,
+    minutesToDue: input.minutesToDue ?? null,
+    minutesOverdue: input.minutesOverdue ?? null,
+    recommendedAmountMl: input.recommendedAmountMl ?? null,
+  };
+
+  return `You generate short watering reminder emails for Plant Care app.
+Return ONLY valid JSON:
+{
+  "subject": "string",
+  "text": "string",
+  "html": "string"
+}
+
+Rules:
+- Language locale="${input.locale}".
+- Stage is "${input.stage}".
+- Mention the plant name naturally.
+- Keep it concise and friendly.
+- No markdown.
+- Subject max 60 chars.
+- Text max 320 chars.
+- HTML must be simple <p> blocks only.
+- Include exact button label: "I have watered".
+- Do not invent scientific claims.
+
+Input JSON:
+${JSON.stringify(payload, null, 2)}`;
+}
+
+async function generateWateringEmailWithAI(input) {
+  const fallback = buildWateringEmailFallback(input);
+  try {
+    const openaiClient = await initializeOpenAI();
+    if (!openaiClient || !openaiClient.apiKey) return fallback;
+
+    const response = await openaiClient.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
+      max_tokens: 260,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: 'You are a concise email copywriter. Output JSON only.' },
+        { role: 'user', content: buildWateringEmailPrompt(input) },
+      ],
+    });
+
+    const content = response?.choices?.[0]?.message?.content;
+    if (!content) return fallback;
+    const parsed = JSON.parse(content);
+    const subject = String(parsed.subject || '').trim();
+    const text = String(parsed.text || '').trim();
+    const html = String(parsed.html || '').trim();
+    if (!subject || !text || !html) return fallback;
+    if (subject.length > 100 || text.length > 1200 || html.length > 6000) return fallback;
+    return { subject, text, html };
+  } catch (e) {
+    console.warn('⚠️ Watering email AI generation failed, fallback used:', e.message);
+    return fallback;
+  }
+}
+
 async function loadHealthCheckAgentContext(plantId, userId) {
   const db = admin.firestore();
   const context = {
@@ -1347,6 +1482,113 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       return res.status(500).json({
         success: false,
         error: error.message,
+      });
+    }
+  });
+});
+
+exports.sendTestWateringReminderEmail = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+
+      const {
+        plantId,
+        userId,
+        stage = 'first_reminder',
+        locale,
+      } = req.body || {};
+
+      if (!plantId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'plantId and userId are required',
+        });
+      }
+
+      if (stage !== 'first_reminder' && stage !== 'followup_reminder') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid stage. Use first_reminder or followup_reminder.',
+        });
+      }
+
+      const authHeader = String(req.headers.authorization || '');
+      const bearerToken = authHeader.startsWith('Bearer ')
+        ? authHeader.slice('Bearer '.length).trim()
+        : '';
+      if (!bearerToken) {
+        return res.status(401).json({ success: false, error: 'Missing bearer token.' });
+      }
+
+      let decoded;
+      try {
+        decoded = await admin.auth().verifyIdToken(bearerToken);
+      } catch (_) {
+        return res.status(401).json({ success: false, error: 'Invalid auth token.' });
+      }
+
+      if (!decoded || decoded.uid !== userId) {
+        return res.status(403).json({ success: false, error: 'User mismatch.' });
+      }
+
+      const db = admin.firestore();
+      const plantDoc = await db.collection('plants').doc(plantId).get();
+      if (!plantDoc.exists) {
+        return res.status(404).json({ success: false, error: 'Plant not found.' });
+      }
+
+      const plantData = plantDoc.data() || {};
+      if (plantData.userId !== userId) {
+        return res.status(403).json({ success: false, error: 'Plant access denied.' });
+      }
+
+      const userDoc = await db.collection('users').doc(userId).get();
+      const userData = userDoc.exists ? (userDoc.data() || {}) : {};
+      const userRecord = await admin.auth().getUser(userId);
+      const email = userData.email || userRecord.email || null;
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({ success: false, error: 'No valid user email found.' });
+      }
+
+      const nextDueAt = toDateSafe(plantData.nextDueAt || plantData.nextWatering) || new Date(Date.now() + 30 * 60 * 1000);
+      const now = new Date();
+      const minutesToDue = Math.max(0, Math.round((nextDueAt.getTime() - now.getTime()) / 60000));
+      const minutesOverdue = Math.max(0, Math.round((now.getTime() - nextDueAt.getTime()) / 60000));
+
+      const emailCopy = await generateWateringEmailWithAI({
+        stage,
+        locale: sanitizeLocale(locale || userData.locale || userData.language || 'en'),
+        plantName: plantData.name || 'your plant',
+        cultivar: plantData.aiName || plantData.species || null,
+        userName: userData.name || userRecord.displayName || null,
+        minutesToDue,
+        minutesOverdue,
+        recommendedAmountMl: plantData.wateringAmountMl || null,
+      });
+
+      await db.collection('mail').add({
+        to: email,
+        message: {
+          subject: emailCopy.subject,
+          text: emailCopy.text,
+          html: emailCopy.html,
+        },
+      });
+
+      return res.json({
+        success: true,
+        queued: true,
+        stage,
+        to: email,
+      });
+    } catch (error) {
+      console.error('sendTestWateringReminderEmail error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Could not queue test watering email.',
       });
     }
   });
@@ -2615,3 +2857,214 @@ function extractCareSectionsFromText(text) {
   
   return sections;
 }
+
+exports.processWateringEmailReminders = functions.pubsub
+  .schedule('every 10 minutes')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = new Date();
+    const preWindowMs = WATERING_EMAIL_LEAD_MINUTES * 60 * 1000;
+    const followWindowMs = WATERING_EMAIL_FOLLOW_UP_MINUTES * 60 * 1000;
+    const horizon = new Date(now.getTime() + preWindowMs);
+    const staleCutoff = new Date(now.getTime() - WATERING_EMAIL_MAX_DAYS * DAY_MS);
+    const nowIso = now.toISOString();
+    const userCache = new Map();
+
+    function getReminderTime(nextDueAt, index) {
+      const day = Math.floor(index / 2);
+      const isPre = index % 2 === 0;
+      const baseTime = nextDueAt.getTime() + day * DAY_MS;
+      return new Date(isPre ? baseTime - preWindowMs : baseTime + followWindowMs);
+    }
+
+    async function getUserInfo(uid) {
+      if (userCache.has(uid)) return userCache.get(uid);
+      let info = { email: null, locale: 'en', name: null };
+      try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        const data = userDoc.exists ? (userDoc.data() || {}) : {};
+        info = {
+          email: data.email || data.emailLower || null,
+          locale: sanitizeLocale(data.locale || data.language || 'en'),
+          name: data.name || data.displayName || null,
+        };
+      } catch (_) {}
+
+      if (!info.email) {
+        try {
+          const userRecord = await admin.auth().getUser(uid);
+          info.email = userRecord.email || null;
+          info.name = info.name || userRecord.displayName || null;
+        } catch (_) {}
+      }
+
+      userCache.set(uid, info);
+      return info;
+    }
+
+    function toDateOrNull(value) {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      if (typeof value === 'string') {
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      if (value.toDate) {
+        try {
+          return value.toDate();
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    function hasWateredSince(data, threshold) {
+      const lastWatered = toDateOrNull(data.lastWateredAt || data.lastWatered);
+      if (!lastWatered || !threshold) return false;
+      return lastWatered.getTime() >= threshold.getTime();
+    }
+
+    const candidatesSnap = await db
+      .collection('plants')
+      .where('nextDueAt', '>=', staleCutoff.toISOString())
+      .where('nextDueAt', '<=', horizon.toISOString())
+      .limit(WATERING_EMAIL_QUERY_LIMIT)
+      .get();
+
+    let sent = 0;
+    let skipped = 0;
+
+    for (const doc of candidatesSnap.docs) {
+      const data = doc.data() || {};
+      const uid = data.userId;
+      if (!uid || data.muted === true) {
+        skipped += 1;
+        continue;
+      }
+
+      const nextDueAt = toDateOrNull(data.nextDueAt || data.nextWatering);
+      if (!nextDueAt) {
+        skipped += 1;
+        continue;
+      }
+
+      const cycleId = buildReminderCycleId(doc.id, nextDueAt);
+
+      let remindersSentCount;
+      if (data.reminderCycleId === cycleId) {
+        if (typeof data.remindersSentCount === 'number') {
+          remindersSentCount = data.remindersSentCount;
+        } else if (data.reminderFollowUpSentAt) {
+          remindersSentCount = 2;
+        } else if (data.reminderFirstSentAt) {
+          remindersSentCount = 1;
+        } else {
+          remindersSentCount = 0;
+        }
+      } else {
+        remindersSentCount = 0;
+      }
+
+      if (remindersSentCount >= WATERING_EMAIL_MAX_REMINDERS) {
+        skipped += 1;
+        continue;
+      }
+
+      const cycleStart = new Date(nextDueAt.getTime() - preWindowMs);
+      if (hasWateredSince(data, cycleStart)) {
+        if (data.reminderCycleId === cycleId && data.reminderStage !== 'completed') {
+          await doc.ref.update({
+            reminderCycleId: cycleId,
+            reminderStage: 'completed',
+            notificationState: 'ok',
+            reminderLastCheckedAt: nowIso,
+          });
+        }
+        skipped += 1;
+        continue;
+      }
+
+      while (remindersSentCount < WATERING_EMAIL_MAX_REMINDERS) {
+        const rt = getReminderTime(nextDueAt, remindersSentCount);
+        if (now.getTime() > rt.getTime() + WATERING_EMAIL_STALE_BUFFER_MS) {
+          remindersSentCount++;
+        } else {
+          break;
+        }
+      }
+
+      if (remindersSentCount >= WATERING_EMAIL_MAX_REMINDERS) {
+        await doc.ref.update({
+          reminderCycleId: cycleId,
+          remindersSentCount: WATERING_EMAIL_MAX_REMINDERS,
+          reminderStage: 'completed',
+          reminderLastCheckedAt: nowIso,
+        });
+        skipped += 1;
+        continue;
+      }
+
+      const nextReminderTime = getReminderTime(nextDueAt, remindersSentCount);
+      if (now.getTime() < nextReminderTime.getTime()) {
+        skipped += 1;
+        continue;
+      }
+
+      const userInfo = await getUserInfo(uid);
+      if (!userInfo.email || !isValidEmail(userInfo.email)) {
+        console.warn(`⚠️ Reminder skipped: missing valid email for uid=${uid}`);
+        skipped += 1;
+        continue;
+      }
+
+      const isPre = remindersSentCount % 2 === 0;
+      const stage = isPre ? 'first_reminder' : 'followup_reminder';
+      const dayNum = Math.floor(remindersSentCount / 2) + 1;
+
+      const locale = sanitizeLocale(userInfo.locale);
+      const minutesToDue = Math.max(0, Math.round((nextDueAt.getTime() - now.getTime()) / 60000));
+      const minutesOverdue = Math.max(0, Math.round((now.getTime() - nextDueAt.getTime()) / 60000));
+      const plantName = data.name || 'your plant';
+      const cultivar = data.aiName || data.species || null;
+
+      const emailCopy = await generateWateringEmailWithAI({
+        stage,
+        locale,
+        plantName,
+        cultivar,
+        userName: userInfo.name || null,
+        minutesToDue,
+        minutesOverdue,
+        recommendedAmountMl: data.wateringAmountMl || null,
+      });
+
+      await db.collection('mail').add({
+        to: userInfo.email,
+        message: {
+          subject: emailCopy.subject,
+          text: emailCopy.text,
+          html: emailCopy.html,
+        },
+      });
+
+      const newCount = remindersSentCount + 1;
+      await doc.ref.update({
+        reminderCycleId: cycleId,
+        remindersSentCount: newCount,
+        reminderLastSentAt: nowIso,
+        reminderLastCheckedAt: nowIso,
+        reminderStage: newCount >= WATERING_EMAIL_MAX_REMINDERS ? 'completed' : (isPre ? 'pre_sent' : 'post_sent'),
+        notificationState: isPre ? 'due' : 'overdue',
+      });
+
+      sent += 1;
+      console.log(`📧 Reminder #${newCount}/${WATERING_EMAIL_MAX_REMINDERS} (day ${dayNum}, ${isPre ? 'pre' : 'post'}) sent for plant ${doc.id}`);
+    }
+
+    console.log(
+      `✅ processWateringEmailReminders done: sent=${sent}, skipped=${skipped}, scanned=${candidatesSnap.size}`
+    );
+    return null;
+  });
