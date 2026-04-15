@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/notification_test.dart';
 import '../utils/web_push_tester.dart';
-import '../utils/web_notification_helper.dart';
+import '../utils/web_notification_helper_stub.dart'
+    if (dart.library.html) '../utils/web_notification_helper.dart';
 
 class NotificationTestScreen extends StatefulWidget {
   const NotificationTestScreen({super.key});

@@ -4,6 +4,13 @@ const OpenAI = require('openai');
 const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
 
+// ── AI Model Configuration ──────────────────────────────────────────
+// Change this single line to switch between models.
+// Supported: 'gpt-4o-mini', 'gpt-4o', 'gpt-4.1', 'gpt-5.1', etc.
+const AI_MODEL = 'gpt-5.1';
+const TOKEN_PARAM = AI_MODEL.startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens';
+// ─────────────────────────────────────────────────────────────────────
+
 // Initialize Firebase Admin
 admin.initializeApp();
 
@@ -370,10 +377,15 @@ function toIso(value) {
 
 const WATERING_EMAIL_LEAD_MINUTES = 30;
 const WATERING_EMAIL_FOLLOW_UP_MINUTES = 30;
-const WATERING_EMAIL_MAX_DAYS = 4;
-const WATERING_EMAIL_MAX_REMINDERS = WATERING_EMAIL_MAX_DAYS * 2;
+/** Firestore query lower bound for nextDueAt (exclude ancient rows). */
+const WATERING_EMAIL_STALE_LOOKBACK_DAYS = 3650;
+/** No fixed day-cap on reminder cycles — continues until the user waters. */
+const WATERING_EMAIL_MAX_REMINDERS = 100000;
+/** Max stale-slot catch-up steps per plant per invocation (avoids timeouts). */
+const WATERING_EMAIL_STALE_CATCHUP_MAX_STEPS = 40;
 const WATERING_EMAIL_STALE_BUFFER_MS = 20 * 60 * 1000;
 const WATERING_EMAIL_QUERY_LIMIT = 200;
+const FCM_WATERING_MULTICAST_MAX = 500;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function sanitizeLocale(value) {
@@ -478,9 +490,9 @@ async function generateWateringEmailWithAI(input) {
     if (!openaiClient || !openaiClient.apiKey) return fallback;
 
     const response = await openaiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: AI_MODEL,
       temperature: 0.3,
-      max_tokens: 260,
+      [TOKEN_PARAM]: 260,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: 'You are a concise email copywriter. Output JSON only.' },
@@ -953,6 +965,50 @@ Rules:
 `;
 }
 
+// ── Wikipedia plant image search ──────────────────────────────────
+function wikiImageSearch(scientificName) {
+  const https = require('https');
+  const slug = scientificName.replace(/\s+/g, '_');
+  const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug)}`;
+
+  return new Promise((resolve) => {
+    https.get(url, { headers: { 'User-Agent': 'PlantCareApp/1.0' } }, (resp) => {
+      let data = '';
+      resp.on('data', (chunk) => { data += chunk; });
+      resp.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed.thumbnail?.source || null);
+        } catch (e) { resolve(null); }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
+exports.searchPlantImages = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      const { speciesNames } = req.body;
+      if (!speciesNames || !Array.isArray(speciesNames) || speciesNames.length === 0) {
+        return res.status(400).json({ error: 'speciesNames array is required' });
+      }
+
+      const results = await Promise.all(
+        speciesNames.map(async (name) => {
+          const imageUrl = await wikiImageSearch(name);
+          return { name, imageUrl };
+        })
+      );
+
+      res.json({ results });
+    } catch (error) {
+      console.error('❌ searchPlantImages error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+});
+
+// ── Plant photo analysis (with top-3 species identification) ──────
 exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
   return cors(req, res, async () => {
     try {
@@ -964,7 +1020,7 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
         throw new Error('OPENAI_API_KEY is not configured');
       }
 
-      const { base64Image } = req.body;
+      const { base64Image, userHint, confirmedSpecies } = req.body;
 
       if (!base64Image) {
         return res.status(400).json({ error: 'Base64 image is required' });
@@ -972,13 +1028,133 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
 
       console.log('🔍 Starting image analysis');
       console.log('🔍 Image length:', base64Image.length);
-      console.log('🔍 Image preview (first 50 chars):', base64Image.substring(0, 50));
-      console.log('🔍 Image preview (last 50 chars):', base64Image.substring(base64Image.length - 50));
+      if (userHint) console.log('🔍 User hint:', userHint);
+      if (confirmedSpecies) console.log('🔍 Confirmed species:', confirmedSpecies);
 
-      // New species-specific watering calculation prompt
-      const promptText = `Your goal is to determine, for this specific plant, based only on:
+      // ── STEP 1: If species is already confirmed, skip identification ──
+      if (confirmedSpecies) {
+        console.log('🔍 Species confirmed, fetching full recommendations for:', confirmedSpecies);
+        const fullPrompt = buildFullAnalysisPrompt(confirmedSpecies);
+        const imageUrl = `data:image/jpeg;base64,${base64Image}`;
 
-the species you identify from the photo,
+        const response = await openaiClient.chat.completions.create({
+          model: AI_MODEL,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: fullPrompt },
+              { type: 'image_url', image_url: { url: imageUrl } },
+            ],
+          }],
+          [TOKEN_PARAM]: 3000,
+          temperature: 0.5,
+        });
+
+        const content = response.choices[0].message.content;
+        let recommendations = parseAIResponse(content);
+        recommendations = normalizeRecommendations(recommendations, req.body || {});
+
+        return res.json({ success: true, recommendations, rawResponse: content });
+      }
+
+      // ── STEP 2: Identify top 3 species candidates ──
+      const identifyPrompt = buildSpeciesIdentificationPrompt(userHint);
+      const imageUrl = `data:image/jpeg;base64,${base64Image}`;
+
+      const idResponse = await openaiClient.chat.completions.create({
+        model: AI_MODEL,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: identifyPrompt },
+            { type: 'image_url', image_url: { url: imageUrl } },
+          ],
+        }],
+        [TOKEN_PARAM]: 1000,
+        temperature: 0.7,
+      });
+
+      const idContent = idResponse.choices[0].message.content;
+      console.log('🔍 Species identification response:', idContent);
+
+      let speciesCandidates;
+      try {
+        const cleaned = idContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        speciesCandidates = JSON.parse(cleaned);
+      } catch (e) {
+        console.error('❌ Failed to parse species candidates:', e.message);
+        speciesCandidates = { top_3_species: [{ scientific_name: 'Unknown', common_name: 'Unknown plant', confidence: 0.5, visual_hint: 'Could not identify' }] };
+      }
+
+      // Fetch images from Wikipedia for each candidate
+      if (speciesCandidates.top_3_species) {
+        await Promise.all(
+          speciesCandidates.top_3_species.map(async (sp) => {
+            sp.image_url = await wikiImageSearch(sp.scientific_name);
+          })
+        );
+      }
+
+      return res.json({
+        success: true,
+        step: 'identification',
+        speciesCandidates: speciesCandidates.top_3_species || [],
+      });
+
+    } catch (error) {
+      console.error('❌ Plant Photo Analysis Error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+});
+
+function buildSpeciesIdentificationPrompt(userHint) {
+  const hintLine = userHint
+    ? `The user suggests this might be: "${userHint}". Consider this hint but still rely on your visual analysis.`
+    : '';
+
+  return `Analyze this plant photo and identify the TOP 3 most likely species.
+${hintLine}
+
+Return ONLY valid JSON (no markdown, no explanations):
+{
+  "top_3_species": [
+    {
+      "scientific_name": "Genus species",
+      "common_name": "Common name in English",
+      "confidence": 0.95,
+      "visual_hint": "Brief 1-sentence description of key visual features that distinguish this species"
+    },
+    {
+      "scientific_name": "...",
+      "common_name": "...",
+      "confidence": 0.7,
+      "visual_hint": "..."
+    },
+    {
+      "scientific_name": "...",
+      "common_name": "...",
+      "confidence": 0.4,
+      "visual_hint": "..."
+    }
+  ]
+}
+
+Rules:
+- confidence is 0.0–1.0, must decrease from first to third
+- scientific_name must be real botanical names (Genus species format)
+- common_name should be the most widely used English common name
+- visual_hint should describe what makes this species look like the photo
+- Always return exactly 3 candidates, even if uncertain
+- If the photo is unclear, still provide your best guesses with lower confidence`;
+}
+
+function buildFullAnalysisPrompt(confirmedSpecies) {
+  return `This plant has been identified as: ${confirmedSpecies}.
+
+Your goal is to determine, for this specific plant, based only on:
+
+the species you identify from the photo (confirmed as ${confirmedSpecies}),
 the visible soil condition,
 the pot size and pot material (if visible),
 the plant's size and leaf type,
@@ -988,7 +1164,7 @@ how many whole days remain until the next watering.
 You must return only a JSON object following the schema below.
 
 General Rules
-1. Base the calculation on the actual species, not on generic categories
+1. Base the calculation on the confirmed species: ${confirmedSpecies}
 
 Use your internal botanical knowledge:
 - how often THIS species is usually watered indoors in a pot
@@ -997,7 +1173,6 @@ Use your internal botanical knowledge:
 - what watering interval is normal for its physiology
 
 Do NOT use or output any categories like "succulent", "tropical", etc.
-You may think in those terms internally, but do not return them.
 
 2. Adjust the interval using the photo
 
@@ -1009,256 +1184,42 @@ Use factors only if visible; if not visible, safely skip them:
 - whether plant appears indoors or outdoors
 - light intensity in the photo (bright / medium / dim)
 
-Never require a rephoto if something is missing.
-
 3. Watering Logic
-
-You must determine:
 - should_water_now (boolean)
 - next_watering_in_days (integer 1–60)
+- If should water now, next_watering_in_days = days until the watering after this one.
+- If should not water now, next_watering_in_days = days from today.
 
-Interpretation:
-- If the plant should be watered now, next_watering_in_days means how many days until the watering after this one.
-- If the plant should not be watered now, next_watering_in_days means the number of days from today.
-
-4. Output Constraints
-
-Always return whole days only (no hours, no decimals).
-The interval must be species-specific — different plants should get different values.
-Minimum allowed: 1 day
-Maximum allowed: 60 days
-Never output hours, minutes, timestamps or dates. Only days.
-
-Output Schema (strict)
+4. Output: whole days only, 1–60 range.
 
 Return ONLY a JSON object:
-
 {
-  "species": {
-    "user_species_name": "string|null",
-    "ai_species_guess": "string",
-    "species_confidence": 0.0
-  },
-  "soil": {
-    "visual_state": "very_dry|dry|slightly_dry|moist|wet|not_visible",
-    "moisture_current_pct": 0
-  },
-  "watering_plan": {
-    "should_water_now": true,
-    "next_watering_in_days": 0,
-    "amount_ml": 250,
-    "reason_short": "string"
-  },
+  "species": { "user_species_name": null, "ai_species_guess": "${confirmedSpecies}", "species_confidence": 1.0 },
+  "soil": { "visual_state": "...", "moisture_current_pct": 0 },
+  "watering_plan": { "should_water_now": false, "next_watering_in_days": 7, "amount_ml": 250, "reason_short": "..." },
   "care_recommendations": {
-    "name": "exact plant name from image",
-    "general_description": "detailed description of what you see",
-    "moisture": "40-60%",
-    "water": "specific water recommendations",
-    "light": "4-6 hours",
-    "temperature": "optimal temperature range",
-    "fertilizer": "fertilizer schedule and type",
-    "soil": "soil type recommendations",
-    "growth_rate": "expected growth rate and mature size",
-    "toxicity": "toxicity level for humans and pets",
-    "placement": "ideal placement in home or garden",
-    "personality": "plant personality traits"
+    "name": "${confirmedSpecies}", "general_description": "...", "moisture": "...", "water": "...",
+    "light": "...", "temperature": "...", "fertilizer": "...", "soil": "...",
+    "growth_rate": "...", "toxicity": "...", "placement": "...", "personality": "..."
   },
-  "other_care": {
-    "growth_stage": "Seedling/Young/Mature/Established"
-  },
-  "interesting_facts": ["fact 1", "fact 2", "fact 3", "fact 4"],
-  "specific_issues": ["risk 1", "risk 2", "max 3 items"],
-  "health_assessment": "describe plant health condition",
+  "other_care": { "growth_stage": "Seedling/Young/Mature/Established" },
+  "interesting_facts": ["...", "...", "...", "..."],
+  "specific_issues": ["...", "...", "..."],
+  "health_assessment": "...",
   "plant_assistant": {
-    "status": "healthy or issue_detected",
-    "praise_phrase": "Short positive phrase for user, e.g. Great job! (when healthy)",
-    "health_summary": "2-3 sentences: current state, leaves, soil, tone, no disease signs (when healthy)",
-    "maintenance_footer": "Calm reminder: keep caring per recommendations, log watering (when healthy)",
-    "problem_name": "Problem title (when issue_detected)",
-    "problem_description": "Brief description of what is wrong (when issue_detected)",
-    "severity": "mild or moderate or serious (when issue_detected)",
-    "action_steps": ["Step 1", "Step 2", "max 3-5 concrete actions (when issue_detected)"],
-    "follow_up_days": 5,
-    "reassurance": "Short supportive line, e.g. plant can recover (when issue_detected)"
+    "status": "healthy or issue_detected", "praise_phrase": "...", "health_summary": "...",
+    "maintenance_footer": "...", "problem_name": "...", "problem_description": "...",
+    "severity": "mild/moderate/serious", "action_steps": ["..."], "follow_up_days": 5, "reassurance": "..."
   }
 }
 
-Plant assistant rules: Set status to "healthy" if plant looks fine, else "issue_detected". For healthy: fill praise_phrase, health_summary, maintenance_footer; leave problem_* empty or minimal. For issue_detected: fill problem_name, problem_description, severity (mild=5-7 days, moderate=3-5, serious=2-3), action_steps (3-5 concrete steps), follow_up_days (5-7 mild, 3-5 moderate, 2-3 serious), reassurance. Use same language as health_assessment.
+Plant assistant rules: "healthy" if plant looks fine, else "issue_detected".
+specific_issues: 2-3 SPECIES-SPECIFIC CARE RISKS (not current problems).
+amount_ml: 50-1500 for normal pots, up to 2500 for very large containers.
+In care_recommendations.name, use "${confirmedSpecies}".
 
-specific_issues rules: Array of 2–3 short strings. These are SPECIES-SPECIFIC CARE RISKS (potential issues), NOT current health problems. Examples: "Sensitive to overwatering", "Avoid direct midday sun", "Sensitive to drafts", "Does not tolerate dry air". Short, concrete, no extra text. What the user should watch to avoid harming this species.
-
-Additional Rules:
-- species_confidence = a value 0.0–1.0
-- moisture_current_pct = approximate surface moisture (0–100)
-- reason_short = one sentence explaining the logic (for debugging)
-
-Water amount rules:
-- You must output "amount_ml" as a single integer representing how much water to give in ONE watering event.
-- Think in terms of pot volume. Typical safe watering amount for potted plants is about 10–20% of the soil volume.
-- Very small pots (under 0.5 L) → 50–150 ml.
-- Medium pots (0.5–3 L) → 100–500 ml.
-- Large pots (3–15 L) → 300–1500 ml.
-- Very large containers (clearly huge outdoor tubs) → up to 2500 ml.
-- Hard limits:
-  - amount_ml MUST be between 50 and 1500 ml for normal potted plants.
-  - ONLY if the plant is in a visibly very large container, you MAY go up to 2500 ml.
-  - NEVER return more than 2500 ml.
-  - If your internal estimate is higher, still cap the value and mention this in reason_short.
-- Always prefer a conservative, safe amount that avoids overwatering.
-
-Reasoning Guidance (internal-only):
-Consider:
-- Typical watering interval for the species (5–10 days, 10–20 days, etc.)
-- Smaller pot → dries faster → fewer days
-- Fabric/terracotta pot → dries faster
-- Bright light → dries faster
-- Thick/succulent-like leaves → longer intervals
-- Large plant in small pot → dries very fast
-- Soil very dry → shorter interval
-- Soil moist/wet → longer interval
-
-But output only the required JSON.
-
-Return Format: Return ONLY JSON. No text. No markdown. No explanations outside the JSON block.`;
-
-      console.log('🔍 Sending to OpenAI with image_url format');
-      const imageUrl = `data:image/jpeg;base64,${base64Image}`;
-      console.log('🔍 Image URL preview:', imageUrl.substring(0, 100) + '...');
-
-      // Retry mechanism for JSON parsing
-      let content;
-      let recommendations;
-      let attempts = 0;
-      const maxAttempts = 2;
-      
-      while (attempts <= maxAttempts) {
-        attempts++;
-        console.log(`🔄 Attempt ${attempts} of ${maxAttempts + 1}`);
-        
-        // Use more strict prompt on retry
-        let currentPrompt = promptText;
-        if (attempts > 1) {
-          currentPrompt = `CRITICAL: You MUST respond with ONLY valid JSON, no markdown, no explanations. Return species-specific watering interval in whole days (1-60).
-
-{
-  "species": {
-    "user_species_name": null,
-    "ai_species_guess": "exact plant species name",
-    "species_confidence": 0.9
-  },
-  "soil": {
-    "visual_state": "very_dry|dry|slightly_dry|moist|wet|not_visible",
-    "moisture_current_pct": 50
-  },
-  "watering_plan": {
-    "should_water_now": false,
-    "next_watering_in_days": 7,
-    "amount_ml": 250,
-    "reason_short": "Species-specific interval based on visible conditions"
-  },
-  "care_recommendations": {
-    "name": "actual plant name",
-    "general_description": "what you see",
-    "moisture": "40-60%",
-    "water": "specific watering guidance",
-    "light": "4-6 hours",
-    "temperature": "temperature range",
-    "fertilizer": "fertilizer schedule",
-    "soil": "soil type",
-    "growth_rate": "growth info",
-    "toxicity": "safety info",
-    "placement": "placement advice",
-    "personality": "plant traits"
-  },
-  "other_care": {
-    "growth_stage": "Seedling/Young/Mature/Established"
-  },
-  "interesting_facts": ["fact 1", "fact 2", "fact 3", "fact 4"],
-  "specific_issues": ["risk 1", "risk 2"],
-  "health_assessment": "health status",
-  "plant_assistant": {
-    "status": "healthy or issue_detected",
-    "praise_phrase": "string",
-    "health_summary": "string",
-    "maintenance_footer": "string",
-    "problem_name": "string",
-    "problem_description": "string",
-    "severity": "mild or moderate or serious",
-    "action_steps": ["string"],
-    "follow_up_days": 5,
-    "reassurance": "string"
-  }
-}`;
-        }
-        
-        const response = await openaiClient.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: currentPrompt
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: imageUrl,
-                  },
-                },
-              ],
-            },
-          ],
-          max_tokens: 3000,
-          temperature: attempts > 1 ? 0.3 : 1.0,
-        });
-
-        content = response.choices[0].message.content;
-        console.log(`✅ Plant analysis successful (attempt ${attempts})`);
-        console.log('🔍 AI Response preview:', content.substring(0, 500) + '...');
-        console.log('🔍 Full AI Response:', content);
-
-        // Parse the AI response to extract structured information
-        recommendations = parseAIResponse(content);
-        
-        // Check if we got valid watering plan data (new schema) or scientific watering data (old schema)
-        const hasNewWateringPlan = recommendations && recommendations.watering_plan && recommendations.watering_plan.next_watering_in_days !== undefined;
-        const hasOldWateringData = recommendations && recommendations.amount_ml !== undefined;
-        
-        if (hasNewWateringPlan || hasOldWateringData) {
-          console.log('✅ Valid JSON with watering data parsed successfully');
-          if (hasNewWateringPlan) {
-            console.log('✅ Using new species-specific watering plan');
-          } else {
-            console.log('✅ Using legacy scientific watering calculation');
-          }
-          break;
-        } else if (attempts <= maxAttempts) {
-          console.log('⚠️ Missing watering data, retrying...');
-        } else {
-          console.log('❌ Failed to get valid watering data after all retries');
-        }
-      }
-
-      // Normalize AI recommendations into days-based watering plan per plant.
-      recommendations = normalizeRecommendations(recommendations, req.body || {});
-
-      res.json({
-        success: true,
-        recommendations,
-        rawResponse: content
-      });
-
-    } catch (error) {
-      console.error('❌ Plant Photo Analysis Error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-});
+Return ONLY JSON. No text. No markdown.`;
+}
 
 exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
   return cors(req, res, async () => {
@@ -1299,9 +1260,9 @@ exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
         );
 
         const response = await openaiClient.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: AI_MODEL,
           messages: [{ role: 'user', content: contentBlocks }],
-          max_tokens: 3000,
+          [TOKEN_PARAM]: 3000,
           temperature: isRetry ? 0.3 : 0.8,
         });
 
@@ -1451,9 +1412,9 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       ];
 
       const response = await openaiClient.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: AI_MODEL,
         messages,
-        max_tokens: 900,
+        [TOKEN_PARAM]: 900,
         temperature: 0.4,
       });
 
@@ -1595,353 +1556,7 @@ exports.sendTestWateringReminderEmail = functions.https.onRequest((req, res) => 
 });
 
 /**
- * Cron job to send watering reminder notifications
- * Runs every 5 minutes to check for plants that need watering reminders
- */
-exports.sendWateringReminders = functions.pubsub
-  .schedule('every 5 minutes')
-  .timeZone('UTC')
-  .onRun(async (context) => {
-    try {
-      console.log('🔔 Starting watering reminder check...');
-      
-      const now = admin.firestore.Timestamp.now();
-      const nowDate = now.toDate();
-      const db = admin.firestore();
-      
-      // Query plants that need notifications
-      // - nextNotificationAt <= now
-      // - not muted
-      // - snoozedUntil is null or in the past
-      const plantsSnapshot = await db.collection('plants')
-        .where('nextNotificationAt', '<=', nowDate.toISOString())
-        .where('muted', '==', false)
-        .get();
-      
-      if (plantsSnapshot.empty) {
-        console.log('✅ No plants need watering reminders at this time');
-        return null;
-      }
-      
-      console.log(`🌱 Found ${plantsSnapshot.docs.length} potential plants for reminders`);
-      
-      // Group plants by user
-      const userPlants = {};
-      
-      for (const plantDoc of plantsSnapshot.docs) {
-        const plant = plantDoc.data();
-        const plantId = plantDoc.id;
-        
-        // Check if snoozed
-        if (plant.snoozedUntil) {
-          const snoozedUntil = new Date(plant.snoozedUntil);
-          if (snoozedUntil > nowDate) {
-            console.log(`⏰ Plant ${plant.name} is snoozed until ${snoozedUntil}`);
-            continue;
-          }
-        }
-        
-        const userId = plant.userId;
-        if (!userId) continue;
-        
-        if (!userPlants[userId]) {
-          userPlants[userId] = [];
-        }
-        
-        userPlants[userId].push({
-          id: plantId,
-          ...plant,
-        });
-      }
-      
-      console.log(`👥 Processing reminders for ${Object.keys(userPlants).length} users`);
-      
-      // Process each user's plants
-      const promises = Object.entries(userPlants).map(([userId, plants]) =>
-        sendUserReminders(db, userId, plants, nowDate)
-      );
-      
-      await Promise.all(promises);
-      
-      console.log('✅ Watering reminders sent successfully');
-      return null;
-    } catch (error) {
-      console.error('❌ Error sending watering reminders:', error);
-      return null;
-    }
-  });
-
-/**
- * Send reminders for a specific user's plants
- */
-async function sendUserReminders(db, userId, plants, nowDate) {
-  try {
-    // Get user data
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      console.log(`⚠️ User ${userId} not found`);
-      return;
-    }
-    
-    const userData = userDoc.data();
-    const fcmTokens = userData.fcmTokens || [];
-    
-    if (fcmTokens.length === 0) {
-      console.log(`⚠️ User ${userId} has no FCM tokens`);
-      return;
-    }
-    
-    // Check daily push limit
-    const maxPushes = userData.maxPushesPerDay || 3;
-    const pushCountToday = await getDailyPushCount(db, userId, nowDate);
-    
-    if (pushCountToday >= maxPushes) {
-      console.log(`⚠️ User ${userId} has reached daily push limit (${maxPushes})`);
-      // Roll notifications to next day
-      await rollNotificationsToNextDay(db, plants, userData);
-      return;
-    }
-    
-    // Get user's timezone and quiet hours
-    const timezone = userData.timezone || 'UTC';
-    const quietHours = userData.quietHours || null;
-    
-    // Filter plants based on quiet hours
-    const plantsToNotify = await filterByQuietHours(plants, nowDate, timezone, quietHours, db);
-    
-    if (plantsToNotify.length === 0) {
-      console.log(`⚠️ All plants for user ${userId} are in quiet hours`);
-      return;
-    }
-    
-    // Batch notifications if multiple plants trigger within 1 hour
-    const shouldBatch = plantsToNotify.length > 1;
-    
-    if (shouldBatch) {
-      await sendBatchedNotification(fcmTokens, plantsToNotify, userId, db);
-    } else {
-      await sendSingleNotification(fcmTokens, plantsToNotify[0], userId, db);
-    }
-    
-    // Increment daily push count
-    await incrementDailyPushCount(db, userId, nowDate);
-    
-    // Update plant schedules
-    await updatePlantSchedules(db, plantsToNotify, nowDate);
-    
-  } catch (error) {
-    console.error(`❌ Error sending reminders for user ${userId}:`, error);
-  }
-}
-
-/**
- * Get the number of pushes sent to a user today
- */
-async function getDailyPushCount(db, userId, nowDate) {
-  const startOfDay = new Date(nowDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  
-  const countDoc = await db.collection('notification_counts')
-    .doc(`${userId}_${startOfDay.toISOString().split('T')[0]}`)
-    .get();
-  
-  return countDoc.exists ? (countDoc.data().count || 0) : 0;
-}
-
-/**
- * Increment daily push count for a user
- */
-async function incrementDailyPushCount(db, userId, nowDate) {
-  const startOfDay = new Date(nowDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const docId = `${userId}_${startOfDay.toISOString().split('T')[0]}`;
-  
-  await db.collection('notification_counts').doc(docId).set({
-    userId,
-    date: startOfDay.toISOString(),
-    count: admin.firestore.FieldValue.increment(1),
-  }, { merge: true });
-}
-
-/**
- * Filter plants based on quiet hours
- */
-async function filterByQuietHours(plants, nowDate, timezone, quietHours, db) {
-  if (!quietHours || !quietHours.start || !quietHours.end) {
-    return plants; // No quiet hours configured
-  }
-  
-  // Convert current time to user's timezone
-  const nowHour = nowDate.getUTCHours(); // Simplified - in production, use proper timezone conversion
-  const nowMinute = nowDate.getUTCMinutes();
-  const nowTime = `${String(nowHour).padStart(2, '0')}:${String(nowMinute).padStart(2, '0')}`;
-  
-  const { start, end } = quietHours;
-  
-  // Check if current time is in quiet hours
-  const isQuietTime = isTimeInRange(nowTime, start, end);
-  
-  if (isQuietTime) {
-    console.log(`🔇 Current time ${nowTime} is in quiet hours (${start} - ${end})`);
-    
-    // Shift notifications to end of quiet hours
-    for (const plant of plants) {
-      const endOfQuietHours = parseTimeToDate(nowDate, end);
-      await db.collection('plants').doc(plant.id).update({
-        nextNotificationAt: endOfQuietHours.toISOString(),
-      });
-    }
-    
-    return []; // Don't send notifications now
-  }
-  
-  return plants;
-}
-
-/**
- * Check if a time is within a range
- */
-function isTimeInRange(time, start, end) {
-  // Simple comparison (doesn't handle overnight ranges perfectly)
-  if (start <= end) {
-    return time >= start && time < end;
-  } else {
-    // Overnight range (e.g., 22:00 - 08:00)
-    return time >= start || time < end;
-  }
-}
-
-/**
- * Parse time string to Date
- */
-function parseTimeToDate(baseDate, timeStr) {
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  const date = new Date(baseDate);
-  date.setHours(hours, minutes, 0, 0);
-  return date;
-}
-
-/**
- * Roll notifications to next day at preferred time
- */
-async function rollNotificationsToNextDay(db, plants, userData) {
-  const batch = db.batch();
-  
-  for (const plant of plants) {
-    const preferredTime = plant.preferredTime || '18:00';
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const [hours, minutes] = preferredTime.split(':').map(Number);
-    tomorrow.setHours(hours, minutes, 0, 0);
-    
-    const plantRef = db.collection('plants').doc(plant.id);
-    batch.update(plantRef, {
-      nextNotificationAt: tomorrow.toISOString(),
-    });
-  }
-  
-  await batch.commit();
-  console.log(`📅 Rolled ${plants.length} notifications to next day`);
-}
-
-/**
- * Send a batched notification for multiple plants
- */
-async function sendBatchedNotification(fcmTokens, plants, userId, db) {
-  const plantCount = plants.length;
-  const firstPlant = plants[0];
-  const secondPlant = plants.length > 1 ? plants[1] : null;
-  
-  let body = '';
-  if (plantCount === 2) {
-    body = `${firstPlant.name} and ${secondPlant.name} need water`;
-  } else {
-    body = `${firstPlant.name}, ${secondPlant.name} and ${plantCount - 2} more need water`;
-  }
-  
-  const message = {
-    notification: {
-      title: `${plantCount} plants need water`,
-      body: body,
-    },
-    data: {
-      type: 'batched_reminder',
-      plantCount: String(plantCount),
-      userId: userId,
-    },
-    tokens: fcmTokens,
-  };
-  
-  try {
-    const response = await admin.messaging().sendMulticast(message);
-    console.log(`✅ Batched notification sent to user ${userId}: ${response.successCount} successful, ${response.failureCount} failed`);
-    
-    // Remove invalid tokens
-    await removeInvalidTokens(db, userId, fcmTokens, response);
-  } catch (error) {
-    console.error(`❌ Error sending batched notification:`, error);
-  }
-}
-
-/**
- * Send a single plant notification
- */
-async function sendSingleNotification(fcmTokens, plant, userId, db) {
-  const state = plant.notificationState || 'ok';
-  
-  let title = '';
-  let body = '';
-  
-  if (state === 'overdue') {
-    const streak = plant.overdueStreak || 0;
-    if (streak === 0) {
-      title = `${plant.name} is thirsty`;
-      body = `It's been a while since watering. Please check on your plant.`;
-    } else if (streak === 1) {
-      title = `${plant.name} really needs water`;
-      body = `Your plant hasn't been watered in a while. Time to give it some love!`;
-    } else {
-      title = `🆘 ${plant.name} is very thirsty!`;
-      body = `Please water your plant soon to keep it healthy.`;
-    }
-  } else if (state === 'due') {
-    title = `Time to water ${plant.name}`;
-    body = `Your plant is ready for its scheduled watering.`;
-  } else {
-    // Pre-due reminder
-    title = `Heads-up: ${plant.name} needs water soon`;
-    body = `Your plant will need water in about 1 hour.`;
-  }
-  
-  const message = {
-    notification: {
-      title: title,
-      body: body,
-    },
-    data: {
-      type: 'single_reminder',
-      plantId: plant.id,
-      plantName: plant.name,
-      state: state,
-      action: 'open_plant',
-    },
-    tokens: fcmTokens,
-  };
-  
-  try {
-    const response = await admin.messaging().sendMulticast(message);
-    console.log(`✅ Notification sent for ${plant.name}: ${response.successCount} successful, ${response.failureCount} failed`);
-    
-    // Remove invalid tokens
-    await removeInvalidTokens(db, userId, fcmTokens, response);
-  } catch (error) {
-    console.error(`❌ Error sending notification for ${plant.name}:`, error);
-  }
-}
-
-/**
- * Remove invalid FCM tokens from user document
+ * Remove invalid FCM tokens from the fcm_tokens collection
  */
 async function removeInvalidTokens(db, userId, tokens, response) {
   const invalidTokens = [];
@@ -1958,94 +1573,182 @@ async function removeInvalidTokens(db, userId, tokens, response) {
   
   if (invalidTokens.length > 0) {
     console.log(`🗑️ Removing ${invalidTokens.length} invalid tokens for user ${userId}`);
-    
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens),
-    });
-  }
-}
 
-/**
- * Update plant schedules after sending notifications
- */
-async function updatePlantSchedules(db, plants, nowDate) {
-  const batch = db.batch();
-  
-  for (const plant of plants) {
-    const plantRef = db.collection('plants').doc(plant.id);
-    const state = plant.notificationState || 'ok';
-    const nextDueAt = plant.nextDueAt ? new Date(plant.nextDueAt) : null;
-    
-    let updates = {};
-    
-    if (state === 'ok') {
-      // Pre-due reminder sent, schedule due reminder
-      updates = {
-        nextNotificationAt: nextDueAt?.toISOString() || nowDate.toISOString(),
-        notificationState: 'due',
-      };
-    } else if (state === 'due') {
-      // Due reminder sent, schedule first overdue reminder (D+1)
-      const tomorrow = new Date(nextDueAt || nowDate);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      const preferredTime = plant.preferredTime || '18:00';
-      const [hours, minutes] = preferredTime.split(':').map(Number);
-      tomorrow.setHours(hours, minutes, 0, 0);
-      
-      updates = {
-        nextNotificationAt: tomorrow.toISOString(),
-        notificationState: 'overdue',
-        overdueStreak: 1,
-      };
-    } else if (state === 'overdue') {
-      // Schedule next overdue reminder
-      const streak = plant.overdueStreak || 0;
-      const nextStreakDay = getNextOverdueDay(streak + 1);
-      
-      if (nextStreakDay === null) {
-        // Stop sending after D+7
-        console.log(`🛑 Stopping overdue reminders for ${plant.name} (streak: ${streak + 1})`);
-        updates = {
-          overdueStreak: streak + 1,
-        };
-      } else {
-        const nextReminder = new Date(nextDueAt || nowDate);
-        nextReminder.setDate(nextReminder.getDate() + nextStreakDay);
-        
-        const preferredTime = plant.preferredTime || '18:00';
-        const [hours, minutes] = preferredTime.split(':').map(Number);
-        nextReminder.setHours(hours, minutes, 0, 0);
-        
-        updates = {
-          nextNotificationAt: nextReminder.toISOString(),
-          overdueStreak: streak + 1,
-        };
+    const batch = db.batch();
+    for (const token of invalidTokens) {
+      batch.delete(db.collection('fcm_tokens').doc(token));
+    }
+    await batch.commit();
+
+    const userRef = db.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    if (userSnap.exists) {
+      const arr = userSnap.data().fcmTokens;
+      if (Array.isArray(arr)) {
+        const next = arr.filter((t) => !invalidTokens.includes(String(t)));
+        if (next.length !== arr.length) {
+          await userRef.update({ fcmTokens: next });
+        }
       }
     }
-    
-    batch.update(plantRef, updates);
   }
-  
-  await batch.commit();
-  console.log(`📅 Updated schedules for ${plants.length} plants`);
+}
+
+function truncateForFcmNotification(s, maxLen) {
+  const t = String(s || '').trim().replace(/\s+/g, ' ');
+  if (t.length <= maxLen) return t;
+  return `${t.slice(0, maxLen - 1)}…`;
 }
 
 /**
- * Get next overdue reminder day based on streak
- * Returns null if we should stop sending reminders
+ * FCM for the same watering reminder slot as email (shared subject/text).
  */
-function getNextOverdueDay(streak) {
-  // D+1, D+2, D+3, D+7, then stop
-  const schedule = [1, 2, 3, 7];
-  
-  if (streak >= schedule.length) {
-    return null; // Stop sending
+async function sendWateringReminderPushMulticast(
+  db,
+  userId,
+  tokens,
+  plantId,
+  plantName,
+  emailCopy,
+  stage
+) {
+  if (!tokens || tokens.length === 0) return 0;
+  let successTotal = 0;
+  for (let i = 0; i < tokens.length; i += FCM_WATERING_MULTICAST_MAX) {
+    const chunk = tokens.slice(i, i + FCM_WATERING_MULTICAST_MAX);
+    const title = truncateForFcmNotification(emailCopy.subject, 100);
+    const body = truncateForFcmNotification(emailCopy.text, 240);
+    const message = {
+      notification: { title, body },
+      data: {
+        type: 'watering_reminder',
+        stage: String(stage),
+        plantId: String(plantId),
+        plantName: String(plantName || 'Plant'),
+        action: 'open_plant',
+      },
+      android: { priority: 'high' },
+      apns: {
+        headers: { 'apns-priority': '10' },
+        payload: { aps: { sound: 'default' } },
+      },
+      tokens: chunk,
+    };
+    try {
+      const response = await admin.messaging().sendMulticast(message);
+      successTotal += response.successCount;
+      if (response.failureCount > 0) {
+        const firstErr = response.responses.find((r) => !r.success)?.error;
+        console.warn(
+          `⚠️ FCM watering reminder partial failure user=${userId} ok=${response.successCount} fail=${response.failureCount} first=${firstErr?.code || firstErr?.message || firstErr}`
+        );
+      }
+      await removeInvalidTokens(db, userId, chunk, response);
+    } catch (e) {
+      console.error('❌ FCM watering reminder send error:', e.message);
+    }
   }
-  
-  return schedule[streak];
+  return successTotal;
 }
+
+/**
+ * On-demand HTTP function to validate and clean up stale FCM tokens
+ * from the fcm_tokens collection. For each token document it sends a
+ * dry-run message; tokens no longer registered with FCM are deleted.
+ *
+ * Call via: https://<region>-<project>.cloudfunctions.net/cleanupStaleFCMTokens
+ */
+exports.cleanupStaleFCMTokens = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    try {
+      const db = admin.firestore();
+      const tokenSnap = await db.collection('fcm_tokens').get();
+
+      let totalTokensChecked = 0;
+      let totalTokensRemoved = 0;
+
+      for (const tokenDoc of tokenSnap.docs) {
+        const token = tokenDoc.id;
+        totalTokensChecked++;
+        try {
+          await admin.messaging().send(
+            { token, notification: { title: 'test' } },
+            true // dryRun
+          );
+        } catch (err) {
+          const code = err.code || '';
+          if (
+            code === 'messaging/invalid-registration-token' ||
+            code === 'messaging/registration-token-not-registered' ||
+            code === 'messaging/invalid-argument'
+          ) {
+            await tokenDoc.ref.delete();
+            totalTokensRemoved++;
+            console.log(`🗑️ Deleted stale token for user ${tokenDoc.data().userId}`);
+          }
+        }
+      }
+
+      const summary = {
+        success: true,
+        tokensChecked: totalTokensChecked,
+        tokensRemoved: totalTokensRemoved,
+      };
+      console.log('✅ cleanupStaleFCMTokens finished:', summary);
+      res.status(200).json(summary);
+    } catch (error) {
+      console.error('❌ cleanupStaleFCMTokens error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+});
+
+/**
+ * One-time migration: copy fcmTokens[] from each user doc into the
+ * dedicated fcm_tokens collection (doc ID = token, body = { userId }).
+ * Safe to run multiple times — uses set() which is idempotent.
+ *
+ * Call via: https://<region>-<project>.cloudfunctions.net/migrateFcmTokens
+ */
+exports.migrateFcmTokens = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    try {
+      const db = admin.firestore();
+      const usersSnap = await db.collection('users').get();
+
+      let usersProcessed = 0;
+      let tokensMigrated = 0;
+
+      for (const userDoc of usersSnap.docs) {
+        const data = userDoc.data();
+        const tokens = data.fcmTokens || [];
+        if (tokens.length === 0) continue;
+
+        usersProcessed++;
+        const batch = db.batch();
+        for (const token of tokens) {
+          batch.set(db.collection('fcm_tokens').doc(token), {
+            userId: userDoc.id,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          tokensMigrated++;
+        }
+        await batch.commit();
+      }
+
+      const summary = {
+        success: true,
+        usersProcessed,
+        tokensMigrated,
+      };
+      console.log('✅ migrateFcmTokens finished:', summary);
+      res.status(200).json(summary);
+    } catch (error) {
+      console.error('❌ migrateFcmTokens error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+});
 
 /**
  * Calculate scientific watering - simplified version without full implementation
@@ -2858,6 +2561,10 @@ function extractCareSectionsFromText(text) {
   return sections;
 }
 
+/**
+ * Watering reminders: same schedule for email (mail collection) and FCM.
+ * User prefs: users.{uid}.wateringReminderChannels { email, push } (default both true).
+ */
 exports.processWateringEmailReminders = functions.pubsub
   .schedule('every 10 minutes')
   .timeZone('Etc/UTC')
@@ -2867,9 +2574,10 @@ exports.processWateringEmailReminders = functions.pubsub
     const preWindowMs = WATERING_EMAIL_LEAD_MINUTES * 60 * 1000;
     const followWindowMs = WATERING_EMAIL_FOLLOW_UP_MINUTES * 60 * 1000;
     const horizon = new Date(now.getTime() + preWindowMs);
-    const staleCutoff = new Date(now.getTime() - WATERING_EMAIL_MAX_DAYS * DAY_MS);
+    const staleCutoff = new Date(now.getTime() - WATERING_EMAIL_STALE_LOOKBACK_DAYS * DAY_MS);
     const nowIso = now.toISOString();
     const userCache = new Map();
+    const fcmTokenCache = new Map();
 
     function getReminderTime(nextDueAt, index) {
       const day = Math.floor(index / 2);
@@ -2880,14 +2588,24 @@ exports.processWateringEmailReminders = functions.pubsub
 
     async function getUserInfo(uid) {
       if (userCache.has(uid)) return userCache.get(uid);
-      let info = { email: null, locale: 'en', name: null };
+      let info = {
+        email: null,
+        locale: 'en',
+        name: null,
+        channels: { email: true, push: true },
+      };
       try {
         const userDoc = await db.collection('users').doc(uid).get();
         const data = userDoc.exists ? (userDoc.data() || {}) : {};
+        const ch = data.wateringReminderChannels || {};
         info = {
           email: data.email || data.emailLower || null,
           locale: sanitizeLocale(data.locale || data.language || 'en'),
           name: data.name || data.displayName || null,
+          channels: {
+            email: ch.email !== false,
+            push: ch.push !== false,
+          },
         };
       } catch (_) {}
 
@@ -2901,6 +2619,36 @@ exports.processWateringEmailReminders = functions.pubsub
 
       userCache.set(uid, info);
       return info;
+    }
+
+    async function getFcmTokensForUser(uid) {
+      if (fcmTokenCache.has(uid)) return fcmTokenCache.get(uid);
+      const snap = await db.collection('fcm_tokens').where('userId', '==', uid).get();
+      const seen = new Set();
+      const tokens = [];
+      for (const d of snap.docs) {
+        if (!seen.has(d.id)) {
+          seen.add(d.id);
+          tokens.push(d.id);
+        }
+      }
+      try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          const arr = userDoc.data().fcmTokens;
+          if (Array.isArray(arr)) {
+            for (const t of arr) {
+              const s = typeof t === 'string' ? t.trim() : '';
+              if (s.length > 20 && !seen.has(s)) {
+                seen.add(s);
+                tokens.push(s);
+              }
+            }
+          }
+        }
+      } catch (_) {}
+      fcmTokenCache.set(uid, tokens);
+      return tokens;
     }
 
     function toDateOrNull(value) {
@@ -2933,7 +2681,8 @@ exports.processWateringEmailReminders = functions.pubsub
       .limit(WATERING_EMAIL_QUERY_LIMIT)
       .get();
 
-    let sent = 0;
+    let slotsCompleted = 0;
+    let fcmDeliveredTotal = 0;
     let skipped = 0;
 
     for (const doc of candidatesSnap.docs) {
@@ -2986,10 +2735,15 @@ exports.processWateringEmailReminders = functions.pubsub
         continue;
       }
 
+      let staleCatchupSteps = 0;
       while (remindersSentCount < WATERING_EMAIL_MAX_REMINDERS) {
         const rt = getReminderTime(nextDueAt, remindersSentCount);
         if (now.getTime() > rt.getTime() + WATERING_EMAIL_STALE_BUFFER_MS) {
           remindersSentCount++;
+          staleCatchupSteps += 1;
+          if (staleCatchupSteps > WATERING_EMAIL_STALE_CATCHUP_MAX_STEPS) {
+            break;
+          }
         } else {
           break;
         }
@@ -3013,8 +2767,27 @@ exports.processWateringEmailReminders = functions.pubsub
       }
 
       const userInfo = await getUserInfo(uid);
-      if (!userInfo.email || !isValidEmail(userInfo.email)) {
-        console.warn(`⚠️ Reminder skipped: missing valid email for uid=${uid}`);
+      const { channels } = userInfo;
+      if (!channels.email && !channels.push) {
+        skipped += 1;
+        continue;
+      }
+
+      const hasValidEmail = !!(userInfo.email && isValidEmail(userInfo.email));
+      const fcmTokens = channels.push ? await getFcmTokensForUser(uid) : [];
+      const canTryEmail = channels.email && hasValidEmail;
+      const canTryPush = channels.push && fcmTokens.length > 0;
+
+      if (channels.push && fcmTokens.length === 0) {
+        console.warn(
+          `⚠️ Watering reminder: push enabled but no fcm_tokens for uid=${uid} plant=${doc.id}`
+        );
+      }
+
+      if (!canTryEmail && !canTryPush) {
+        console.warn(
+          `⚠️ Reminder skipped: no delivery path for uid=${uid} (channels email=${channels.email}, push=${channels.push})`
+        );
         skipped += 1;
         continue;
       }
@@ -3040,14 +2813,43 @@ exports.processWateringEmailReminders = functions.pubsub
         recommendedAmountMl: data.wateringAmountMl || null,
       });
 
-      await db.collection('mail').add({
-        to: userInfo.email,
-        message: {
-          subject: emailCopy.subject,
-          text: emailCopy.text,
-          html: emailCopy.html,
-        },
-      });
+      let mailQueued = false;
+      if (canTryEmail) {
+        try {
+          await db.collection('mail').add({
+            to: userInfo.email,
+            message: {
+              subject: emailCopy.subject,
+              text: emailCopy.text,
+              html: emailCopy.html,
+            },
+          });
+          mailQueued = true;
+        } catch (e) {
+          console.error(`❌ mail queue failed for plant ${doc.id}:`, e.message);
+        }
+      }
+
+      let pushSuccess = 0;
+      if (canTryPush) {
+        pushSuccess = await sendWateringReminderPushMulticast(
+          db,
+          uid,
+          fcmTokens,
+          doc.id,
+          plantName,
+          emailCopy,
+          stage
+        );
+      }
+
+      const delivered = mailQueued || pushSuccess > 0;
+      if (!delivered) {
+        skipped += 1;
+        continue;
+      }
+
+      fcmDeliveredTotal += pushSuccess;
 
       const newCount = remindersSentCount + 1;
       await doc.ref.update({
@@ -3059,12 +2861,14 @@ exports.processWateringEmailReminders = functions.pubsub
         notificationState: isPre ? 'due' : 'overdue',
       });
 
-      sent += 1;
-      console.log(`📧 Reminder #${newCount}/${WATERING_EMAIL_MAX_REMINDERS} (day ${dayNum}, ${isPre ? 'pre' : 'post'}) sent for plant ${doc.id}`);
+      slotsCompleted += 1;
+      console.log(
+        `📬 Reminder slot #${newCount} (day ${dayNum}, ${isPre ? 'pre' : 'post'}) plant=${doc.id} mail=${mailQueued ? 'yes' : 'no'} fcm_ok=${pushSuccess}`
+      );
     }
 
     console.log(
-      `✅ processWateringEmailReminders done: sent=${sent}, skipped=${skipped}, scanned=${candidatesSnap.size}`
+      `✅ processWateringEmailReminders done: slots=${slotsCompleted}, fcm_devices_ok=${fcmDeliveredTotal}, skipped=${skipped}, scanned=${candidatesSnap.size}`
     );
     return null;
   });

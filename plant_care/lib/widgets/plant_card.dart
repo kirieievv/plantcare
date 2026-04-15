@@ -118,7 +118,10 @@ class _PlantCardState extends State<PlantCard> {
 
   @override
   Widget build(BuildContext context) {
-    final daysUntilWatering = widget.plant.nextWatering.difference(DateTime.now()).inDays;
+    final wateringDate = widget.plant.nextDueAt ?? widget.plant.nextWatering;
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final target = DateTime(wateringDate.year, wateringDate.month, wateringDate.day);
+    final daysUntilWatering = target.difference(today).inDays;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : AppTheme.textPrimary;
     
@@ -393,12 +396,16 @@ class _PlantCardState extends State<PlantCard> {
   }
 
   Color _getWateringStatusColor() {
-    if (widget.plant.nextWatering.isBefore(DateTime.now())) {
-      return Colors.red; // Overdue
-    } else if (widget.plant.nextWatering.difference(DateTime.now()).inDays <= 1) {
-      return Colors.orange; // Water soon
+    final wateringDate = widget.plant.nextDueAt ?? widget.plant.nextWatering;
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final target = DateTime(wateringDate.year, wateringDate.month, wateringDate.day);
+    final days = target.difference(today).inDays;
+    if (days < 0) {
+      return Colors.red;
+    } else if (days <= 1) {
+      return Colors.orange;
     } else {
-      return AppTheme.accentGreen; // Healthy
+      return AppTheme.accentGreen;
     }
   }
 

@@ -26,7 +26,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Load environment variables
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: "assets/.env");
   
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -192,6 +192,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
         if (currentUser != null) {
           // Initialize notification service for logged-in user
           await NotificationService().initialize();
+          // Re-check FCM token on every cold start in case
+          // the previous attempt failed (e.g. APNs wasn't ready).
+          await NotificationService().ensureFCMTokenRegistered();
           
           setState(() {
             _user = currentUser;
@@ -204,22 +207,25 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // Listen to Firebase auth state changes
       FirebaseAuth.instance.authStateChanges().listen((User? user) async {
         if (user != null) {
-          // User signed in, save cookie
           AuthService.refreshAuthCookie();
-          
-          // Initialize notification service
           await NotificationService().initialize();
+          // Same as cold-start path: APNs/FCM token is often ready only after login.
+          await NotificationService().ensureFCMTokenRegistered();
         }
-        setState(() {
-          _user = user;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _user = user;
+            _isLoading = false;
+          });
+        }
       });
     } catch (e) {
       print('Error checking auth state: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

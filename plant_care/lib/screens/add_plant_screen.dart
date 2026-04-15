@@ -60,6 +60,14 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   bool _isAnalyzing = false;
   final ImagePicker _picker = ImagePicker();
 
+  // Species identification flow
+  List<Map<String, dynamic>> _speciesCandidates = [];
+  bool _showSpeciesSelection = false;
+  bool _showManualInput = false;
+  final _manualSpeciesController = TextEditingController();
+  String? _confirmedSpecies;
+  bool _isFetchingFullAnalysis = false;
+
   // AI-generated care recommendations
   String? _aiGeneralDescription;
   String? _aiName;
@@ -114,6 +122,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _manualSpeciesController.dispose();
     super.dispose();
   }
 
@@ -153,21 +162,25 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     }
   }
 
-  Future<void> _analyzePlantPhoto(Uint8List imageBytes) async {
+  Future<void> _analyzePlantPhoto(Uint8List imageBytes, {String? userHint}) async {
     setState(() {
       _isAnalyzing = true;
+      _showSpeciesSelection = false;
+      _speciesCandidates = [];
+      _confirmedSpecies = null;
+      _showManualInput = false;
     });
 
     try {
       final base64Image = base64Encode(imageBytes);
       
-      // Call Firebase Function instead of OpenAI directly (CORS fix)
+      final body = <String, dynamic>{'base64Image': base64Image};
+      if (userHint != null) body['userHint'] = userHint;
+
       final response = await http.post(
         Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'base64Image': base64Image,
-        }),
+        body: jsonEncode(body),
       );
       
       if (response.statusCode != 200) {
@@ -175,6 +188,17 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       }
       
       final result = jsonDecode(response.body);
+
+      if (result['step'] == 'identification') {
+        final candidates = (result['speciesCandidates'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+        setState(() {
+          _speciesCandidates = candidates;
+          _showSpeciesSelection = true;
+          _isAnalyzing = false;
+        });
+        return;
+      }
+
       final recommendations = result['recommendations'] ?? {};
       
       print('🔍 AI Analysis Results:');
@@ -281,6 +305,91 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     }
   }
 
+  Future<void> _confirmSpecies(String scientificName) async {
+    if (_selectedImageBytes == null) return;
+
+    setState(() {
+      _confirmedSpecies = scientificName;
+      _showSpeciesSelection = false;
+      _isFetchingFullAnalysis = true;
+      _isAnalyzing = true;
+    });
+
+    try {
+      final base64Image = base64Encode(_selectedImageBytes!);
+
+      final response = await http.post(
+        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'base64Image': base64Image,
+          'confirmedSpecies': scientificName,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get analysis: ${response.statusCode}');
+      }
+
+      final result = jsonDecode(response.body);
+      final recommendations = result['recommendations'] ?? {};
+      final care = recommendations['care_recommendations'] as Map<String, dynamic>? ?? {};
+
+      setState(() {
+        _aiGeneralDescription = recommendations['general_description'] ?? care['general_description'];
+        _aiName = recommendations['name'] ?? care['name'] ?? scientificName;
+        _aiMoistureLevel = recommendations['moisture_level'] ?? care['moisture'];
+        _aiLight = recommendations['light'] ?? care['light'];
+
+        final wateringPlan = recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
+        final nextDays = wateringPlan['next_watering_in_days'];
+        _nextWateringInDays = nextDays != null ? int.tryParse(nextDays.toString()) : null;
+        _aiWateringFrequency = _nextWateringInDays?.toString() ?? recommendations['watering_frequency']?.toString();
+        _aiWateringAmount = recommendations['watering_amount'] ?? care['water'];
+        _wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+        _shouldWaterNow = wateringPlan['should_water_now'] == true;
+
+        _aiSpecificIssues = (recommendations['specific_issues'] is List)
+            ? (recommendations['specific_issues'] as List).join('\n')
+            : recommendations['specific_issues']?.toString();
+        _aiCareTips = recommendations['care_tips'] ?? care['soil'];
+        _aiInterestingFacts = (recommendations['interesting_facts'] is List)
+            ? List<String>.from(recommendations['interesting_facts'])
+            : null;
+
+        _aiPlantSize = recommendations['plant_size'];
+        _aiPotSize = recommendations['pot_size'];
+        _aiGrowthStage = recommendations['growth_stage'] ?? recommendations['other_care']?['growth_stage'];
+
+        _wateringRangeMl = recommendations['range_ml'] != null ? List<int>.from(recommendations['range_ml']) : null;
+        _nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        _nextCheckHours = recommendations['next_check_in_hours'];
+        _wateringMode = recommendations['mode'];
+
+        _refreshStatus = 'success';
+        _isFetchingFullAnalysis = false;
+        _isAnalyzing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isFetchingFullAnalysis = false;
+        _isAnalyzing = false;
+        _refreshStatus = 'error';
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _retryWithManualInput() {
+    final query = _manualSpeciesController.text.trim();
+    if (query.isEmpty || _selectedImageBytes == null) return;
+    _analyzePlantPhoto(_selectedImageBytes!, userHint: query);
+  }
+
   Future<void> _refreshAnalysis() async {
     if (_selectedImageBytes == null) return;
     
@@ -292,13 +401,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     try {
       final base64Image = base64Encode(_selectedImageBytes!);
       
-      // Call Firebase Function instead of OpenAI directly (CORS fix)
+      final body = <String, dynamic>{'base64Image': base64Image};
+      if (_confirmedSpecies != null) body['confirmedSpecies'] = _confirmedSpecies;
+
       final response = await http.post(
         Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'base64Image': base64Image,
-        }),
+        body: jsonEncode(body),
       );
       
       if (response.statusCode != 200) {
@@ -306,38 +415,46 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       }
       
       final result = jsonDecode(response.body);
+
+      if (result['step'] == 'identification') {
+        final candidates = (result['speciesCandidates'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+        setState(() {
+          _speciesCandidates = candidates;
+          _showSpeciesSelection = true;
+          _isRefreshing = false;
+          _refreshStatus = 'success';
+        });
+        return;
+      }
+
       final recommendations = result['recommendations'] ?? {};
       
       setState(() {
-        _aiGeneralDescription = recommendations['general_description'];
-        _aiName = recommendations['name'];
-        _aiMoistureLevel = recommendations['moisture_level'];
-        _aiLight = recommendations['light'];
-        _aiWateringFrequency = recommendations['watering_frequency']?.toString();
-        _aiWateringAmount = recommendations['watering_amount'];
-        _aiSpecificIssues = recommendations['specific_issues'];
-        _aiCareTips = recommendations['care_tips'];
+        _aiGeneralDescription = recommendations['general_description'] ?? recommendations['care_recommendations']?['general_description'];
+        _aiName = recommendations['name'] ?? recommendations['care_recommendations']?['name'];
+        _aiMoistureLevel = recommendations['moisture_level'] ?? recommendations['care_recommendations']?['moisture'];
+        _aiLight = recommendations['light'] ?? recommendations['care_recommendations']?['light'];
+        _aiWateringFrequency = recommendations['watering_frequency']?.toString() ?? recommendations['watering_plan']?['next_watering_in_days']?.toString();
+        _aiWateringAmount = recommendations['watering_amount'] ?? recommendations['care_recommendations']?['water'];
+        _aiSpecificIssues = (recommendations['specific_issues'] is List)
+            ? (recommendations['specific_issues'] as List).join('\n')
+            : recommendations['specific_issues']?.toString();
+        _aiCareTips = recommendations['care_tips'] ?? recommendations['care_recommendations']?['soil'];
         
-        // Fix type casting for interesting_facts
         _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList();
         
-        // Extract plant size assessment data
         _aiPlantSize = recommendations['plant_size'];
         _aiPotSize = recommendations['pot_size'];
-        _aiGrowthStage = recommendations['growth_stage'];
+        _aiGrowthStage = recommendations['growth_stage'] ?? recommendations['other_care']?['growth_stage'];
         
-        // New: per-plant, days-based watering interval from AI (species-specific structure)
         final wateringPlan = recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
         final nextDays = wateringPlan['next_watering_in_days'];
         _nextWateringInDays = nextDays != null ? int.tryParse(nextDays.toString()) : null;
         _shouldWaterNow = wateringPlan['should_water_now'] == true;
-        
-        // Extract amount_ml from watering_plan first (already clamped by backend), then fallback to legacy
         _wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
         
-        // Extract scientific watering calculation data (legacy support)
         _wateringRangeMl = recommendations['range_ml'] != null ? List<int>.from(recommendations['range_ml']) : null;
         _nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
         _nextCheckHours = recommendations['next_check_in_hours'];
@@ -1692,7 +1809,231 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   }
 
 
-  
+  Widget _buildSpeciesSelectionCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.search, color: AppTheme.accentGreen, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Is this your plant?',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'We found these options — pick the one that matches',
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          ..._speciesCandidates.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final sp = entry.value;
+            final confidence = ((sp['confidence'] ?? 0) * 100).round();
+            final imageUrl = sp['image_url'] as String?;
+            return Padding(
+              padding: EdgeInsets.only(bottom: idx < _speciesCandidates.length - 1 ? 12 : 0),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _confirmSpecies(sp['scientific_name'] ?? sp['common_name'] ?? 'Unknown'),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.accentGreen.withOpacity(0.3), width: 1.5),
+                      borderRadius: BorderRadius.circular(16),
+                      color: AppTheme.accentGreen.withOpacity(0.04),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: imageUrl != null
+                              ? Image.network(
+                                  imageUrl,
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 72, height: 72,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentGreen.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(Icons.eco, color: AppTheme.accentGreen, size: 32),
+                                  ),
+                                )
+                              : Container(
+                                  width: 72, height: 72,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentGreen.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(Icons.eco, color: AppTheme.accentGreen, size: 32),
+                                ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                sp['common_name'] ?? sp['scientific_name'] ?? '?',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                sp['scientific_name'] ?? '',
+                                style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textSecondary),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                sp['visual_hint'] ?? '',
+                                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentGreen.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$confidence%',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accentGreen),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+          if (!_showManualInput)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _showManualInput = true),
+                icon: Icon(Icons.edit, size: 18),
+                label: Text('None of these'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondary,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          if (_showManualInput) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Type the plant name and we\'ll try again',
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _manualSpeciesController,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Monstera deliciosa',
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: AppTheme.accentGreen, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _retryWithManualInput(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _retryWithManualInput,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  child: const Icon(Icons.search, size: 22),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFullAnalysisLoadingCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          SizedBox(
+            width: 48, height: 48,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Analyzing ${_confirmedSpecies ?? "plant"}...',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Getting care recommendations',
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1730,9 +2071,21 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     _buildImageUploadCard(),
                     
                     const SizedBox(height: 24),
-                    
+
+                    // Species Selection Step
+                    if (_showSpeciesSelection) ...[
+                      _buildSpeciesSelectionCard(),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Full analysis loading
+                    if (_isFetchingFullAnalysis) ...[
+                      _buildFullAnalysisLoadingCard(),
+                      const SizedBox(height: 24),
+                    ],
+
                     // AI Analysis Results
-                    if (_aiGeneralDescription != null) ...[
+                    if (_aiGeneralDescription != null && !_showSpeciesSelection && !_isFetchingFullAnalysis) ...[
                       _buildAIResultsCard(),
                       const SizedBox(height: 24),
                     ],
@@ -1741,9 +2094,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: (_isLoading || _isAnalyzing || _aiGeneralDescription == null) ? null : _addPlant,
+                        onPressed: (_isLoading || _isAnalyzing || _isFetchingFullAnalysis || _showSpeciesSelection || _aiGeneralDescription == null) ? null : _addPlant,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: (_isLoading || _isAnalyzing || _aiGeneralDescription == null) ? Colors.grey.shade400 : AppTheme.accentGreen,
+                          backgroundColor: (_isLoading || _isAnalyzing || _isFetchingFullAnalysis || _showSpeciesSelection || _aiGeneralDescription == null) ? Colors.grey.shade400 : AppTheme.accentGreen,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           shape: RoundedRectangleBorder(

@@ -22,6 +22,13 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   bool _initialized = false;
+  bool _tokenRegistered = false;
+  /// Last Firebase uid for which we saved the current device token to Firestore.
+  String? _registeredTokenUserId;
+  String? _currentToken;
+
+  static const int _maxTokenRetries = 3;
+  static const Duration _retryDelay = Duration(seconds: 3);
 
   /// Initialize FCM and local notifications
   Future<void> initialize() async {
@@ -39,8 +46,10 @@ class NotificationService {
       // Request notification permissions
       await _requestPermissions();
 
-      // Get and register FCM token
-      await _registerFCMToken();
+      // Get and register FCM token (with retries)
+      await _registerFCMTokenWithRetry();
+      // Second pass: on iOS APNs is sometimes still null after the first 3 attempts.
+      await ensureFCMTokenRegistered();
 
       // Listen for token refresh
       _fcm.onTokenRefresh.listen(_onTokenRefresh);
@@ -53,6 +62,16 @@ class NotificationService {
     } catch (e) {
       print('❌ NotificationService: Error during initialization: $e');
     }
+  }
+
+  /// Public method to ensure the FCM token is registered.
+  /// Safe to call multiple times — skips if token is already saved.
+  /// Useful on every app launch and after sign-up/sign-in.
+  Future<void> ensureFCMTokenRegistered() async {
+    final user = AuthService.currentUser;
+    if (user == null) return;
+    if (_tokenRegistered && _registeredTokenUserId == user.uid) return;
+    await _registerFCMTokenWithRetry();
   }
 
   /// Initialize local notifications plugin
@@ -116,21 +135,38 @@ class NotificationService {
     }
   }
 
-  /// Get FCM token and register it with Firestore
-  Future<void> _registerFCMToken() async {
+  /// Try to register the FCM token with retries.
+  /// On iOS the APNs token may not be available immediately after launch,
+  /// so we retry a few times with a delay.
+  Future<void> _registerFCMTokenWithRetry() async {
+    for (int attempt = 1; attempt <= _maxTokenRetries; attempt++) {
+      final success = await _registerFCMToken();
+      if (success) return;
+
+      if (attempt < _maxTokenRetries) {
+        print('🔄 NotificationService: Retry $attempt/$_maxTokenRetries '
+            'in ${_retryDelay.inSeconds}s...');
+        await Future.delayed(_retryDelay);
+      }
+    }
+    print('⚠️ NotificationService: Could not register FCM token after '
+        '$_maxTokenRetries attempts. Will rely on onTokenRefresh.');
+  }
+
+  /// Get FCM token and register it with Firestore.
+  /// Returns true if the token was successfully saved.
+  Future<bool> _registerFCMToken() async {
     try {
       final user = AuthService.currentUser;
       if (user == null) {
         print('⚠️ NotificationService: No user logged in, skipping token registration');
-        return;
+        return false;
       }
 
       String? token;
       
-      // For web platform, we need to handle token generation differently
       if (kIsWeb) {
         try {
-          // Request permission first
           final settings = await _fcm.requestPermission(
             alert: true,
             badge: true,
@@ -139,77 +175,81 @@ class NotificationService {
           );
           
           if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-            // For web, we might need to wait a bit for the token
             await Future.delayed(const Duration(seconds: 2));
             token = await _fcm.getToken();
           } else {
             print('❌ NotificationService: Web notification permission not granted');
-            return;
+            return false;
           }
         } catch (e) {
           print('❌ NotificationService: Error getting web token: $e');
-          return;
+          return false;
         }
+      } else if (!kIsWeb && Platform.isIOS) {
+        // On iOS, wait for the APNs token before requesting FCM token
+        String? apnsToken = await _fcm.getAPNSToken();
+        if (apnsToken == null) {
+          print('⏳ NotificationService: APNs token not ready, waiting...');
+          await Future.delayed(const Duration(seconds: 2));
+          apnsToken = await _fcm.getAPNSToken();
+        }
+        if (apnsToken == null) {
+          print('❌ NotificationService: APNs token still not available');
+          return false;
+        }
+        print('✅ NotificationService: APNs token available');
+        token = await _fcm.getToken();
       } else {
-        // For mobile platforms
         token = await _fcm.getToken();
       }
 
       if (token == null) {
         print('❌ NotificationService: Failed to get FCM token');
-        return;
+        return false;
       }
 
       print('🔔 NotificationService: FCM Token: ${token.substring(0, 20)}...');
 
-      // Store token in Firestore
-      await _addTokenToFirestore(user.uid, token);
+      await _saveTokenToCollection(user.uid, token);
+      _currentToken = token;
+      _tokenRegistered = true;
+      _registeredTokenUserId = user.uid;
+      return true;
     } catch (e) {
       print('❌ NotificationService: Error registering FCM token: $e');
+      return false;
     }
   }
 
-  /// Add FCM token to user's Firestore document
-  Future<void> _addTokenToFirestore(String userId, String token) async {
+  /// Save FCM token to the dedicated fcm_tokens collection.
+  /// Each token is a document keyed by the token string itself,
+  /// so one token can only belong to one user — duplicates are impossible.
+  Future<void> _saveTokenToCollection(String userId, String token) async {
     try {
-      final userDoc = _firestore.collection('users').doc(userId);
-      
-      await _firestore.runTransaction((transaction) async {
-        final snapshot = await transaction.get(userDoc);
-        
-        List<String> tokens = [];
-        if (snapshot.exists && snapshot.data()?['fcmTokens'] != null) {
-          tokens = List<String>.from(snapshot.data()!['fcmTokens']);
-        }
-
-        // Only add if not already present
-        if (!tokens.contains(token)) {
-          tokens.add(token);
-          transaction.set(
-            userDoc,
-            {
-              'fcmTokens': tokens,
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true),
-          );
-          print('✅ NotificationService: FCM token added to Firestore');
-        } else {
-          print('ℹ️ NotificationService: FCM token already registered');
-        }
+      await _firestore.collection('fcm_tokens').doc(token).set({
+        'userId': userId,
+        'createdAt': FieldValue.serverTimestamp(),
       });
+      print('✅ NotificationService: FCM token saved to fcm_tokens collection');
     } catch (e) {
-      print('❌ NotificationService: Error adding token to Firestore: $e');
+      print('❌ NotificationService: Error saving token to collection: $e');
     }
   }
 
-  /// Handle token refresh
+  /// Handle token refresh — delete old token doc, create new one
   Future<void> _onTokenRefresh(String newToken) async {
     print('🔔 NotificationService: FCM token refreshed');
     final user = AuthService.currentUser;
-    if (user != null) {
-      await _addTokenToFirestore(user.uid, newToken);
+    if (user == null) return;
+
+    final oldToken = _currentToken;
+    if (oldToken != null && oldToken != newToken) {
+      await _firestore.collection('fcm_tokens').doc(oldToken).delete();
     }
+    await _saveTokenToCollection(user.uid, newToken);
+    _currentToken = newToken;
+    _registeredTokenUserId = user.uid;
+    _tokenRegistered = true;
   }
 
   /// Remove FCM token from Firestore (e.g., on logout)
@@ -219,28 +259,15 @@ class NotificationService {
       if (user == null) return;
 
       final token = await _fcm.getToken();
-      if (token == null) return;
+      if (token != null) {
+        await _firestore.collection('fcm_tokens').doc(token).delete();
+        print('✅ NotificationService: FCM token removed from fcm_tokens');
+      }
 
-      final userDoc = _firestore.collection('users').doc(user.uid);
-      
-      await _firestore.runTransaction((transaction) async {
-        final snapshot = await transaction.get(userDoc);
-        
-        if (snapshot.exists && snapshot.data()?['fcmTokens'] != null) {
-          List<String> tokens = List<String>.from(snapshot.data()!['fcmTokens']);
-          tokens.remove(token);
-          
-          transaction.update(userDoc, {
-            'fcmTokens': tokens,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-          
-          print('✅ NotificationService: FCM token removed from Firestore');
-        }
-      });
-
-      // Delete token from FCM
       await _fcm.deleteToken();
+      _currentToken = null;
+      _tokenRegistered = false;
+      _registeredTokenUserId = null;
     } catch (e) {
       print('❌ NotificationService: Error removing FCM token: $e');
     }
@@ -351,9 +378,11 @@ class NotificationService {
       case 'snooze':
         await _snoozePlantReminder(plantId);
         break;
+      case 'open_plant':
+        print('ℹ️ NotificationService: open_plant for $plantId (type=${data['type']})');
+        break;
       default:
         print('ℹ️ NotificationService: Opening plant details for $plantId');
-        // Navigation will be handled by the app
         break;
     }
   }

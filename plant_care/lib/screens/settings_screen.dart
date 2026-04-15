@@ -8,7 +8,6 @@ import '../services/notification_service.dart';
 import '../services/theme_service.dart';
 import '../utils/app_theme.dart';
 import 'auth_screen.dart';
-import 'notification_test_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final User user;
@@ -20,15 +19,17 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _wateringReminders = true;
   String _selectedTheme = 'light';
   String _selectedLanguage = 'en';
   bool _isLoading = false;
+
+  /// Synced to Firestore for Cloud Functions (processWateringEmailReminders).
+  bool _reminderEmail = true;
+  bool _reminderPush = true;
   
   // Notification settings
   String _quietHoursStart = '22:00';
   String _quietHoursEnd = '08:00';
-  int _maxPushesPerDay = 3;
 
   @override
   void initState() {
@@ -49,7 +50,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ? rawLanguage!
               : 'en';
       setState(() {
-        _wateringReminders = preferences['watering_reminders'] ?? true;
         _selectedTheme = normalizedTheme;
         _selectedLanguage = normalizedLanguage;
       });
@@ -60,6 +60,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   
   Future<void> _loadNotificationSettings() async {
     try {
+      final prefs = await AuthService.getUserPreferences();
+      final legacyReminders = prefs['watering_reminders'] ?? true;
+
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.user.uid)
@@ -67,14 +70,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
       
       if (userDoc.exists) {
         final data = userDoc.data();
+        final ch = data?['wateringReminderChannels'];
         setState(() {
           _quietHoursStart = data?['quietHours']?['start'] ?? '22:00';
           _quietHoursEnd = data?['quietHours']?['end'] ?? '08:00';
-          _maxPushesPerDay = data?['maxPushesPerDay'] ?? 3;
+          if (ch is Map) {
+            _reminderEmail = ch['email'] != false;
+            _reminderPush = ch['push'] != false;
+          } else {
+            _reminderEmail = legacyReminders;
+            _reminderPush = legacyReminders;
+          }
+        });
+      } else {
+        setState(() {
+          _reminderEmail = legacyReminders;
+          _reminderPush = legacyReminders;
         });
       }
     } catch (e) {
       print('Error loading notification settings: $e');
+    }
+  }
+
+  Future<void> _persistReminderChannels() async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(widget.user.uid).set(
+        {
+          'wateringReminderChannels': {
+            'email': _reminderEmail,
+            'push': _reminderPush,
+          },
+        },
+        SetOptions(merge: true),
+      );
+      await AuthService.saveUserPreferences({
+        'watering_reminders': _reminderEmail || _reminderPush,
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save reminder channels: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -86,10 +126,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       await AuthService.saveUserPreferences({
-        'watering_reminders': _wateringReminders,
+        'watering_reminders': _reminderEmail || _reminderPush,
         'theme': _selectedTheme,
         'language': _selectedLanguage,
       });
+
+      await FirebaseFirestore.instance.collection('users').doc(widget.user.uid).set(
+        {
+          'wateringReminderChannels': {
+            'email': _reminderEmail,
+            'push': _reminderPush,
+          },
+        },
+        SetOptions(merge: true),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,45 +167,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _editQuietHours() async {
-    final l10n = AppLocalizations.of(context)!;
-    TimeOfDay? start = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(
-        hour: int.parse(_quietHoursStart.split(':')[0]),
-        minute: int.parse(_quietHoursStart.split(':')[1]),
+  int _hourFrom(String value) => int.tryParse(value.split(':').first) ?? 0;
+
+  int _minuteFrom(String value) => int.tryParse(value.split(':').last) ?? 0;
+
+  String _formatTime(int hour, int minute) =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  Future<void> _openQuietHoursEditor() async {
+    final result = await Navigator.of(context).push<Map<String, String>>(
+      MaterialPageRoute(
+        builder: (context) => _QuietHoursEditorScreen(
+          initialStart: _quietHoursStart,
+          initialEnd: _quietHoursEnd,
+        ),
       ),
-      helpText: 'Select Quiet Hours Start',
     );
-    
-    if (start == null) return;
-    
-    TimeOfDay? end = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(
-        hour: int.parse(_quietHoursEnd.split(':')[0]),
-        minute: int.parse(_quietHoursEnd.split(':')[1]),
-      ),
-      helpText: 'Select Quiet Hours End',
-    );
-    
-    if (end == null) return;
-    
-    final startStr = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
-    final endStr = '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-    
+
+    if (result == null) return;
+
+    final start = result['start'];
+    final end = result['end'];
+    if (start == null || end == null) return;
+
+    await _updateQuietHours(newStart: start, newEnd: end);
+  }
+
+  Future<void> _updateQuietHours({
+    String? newStart,
+    String? newEnd,
+  }) async {
+    final start = newStart ?? _quietHoursStart;
+    final end = newEnd ?? _quietHoursEnd;
+
     setState(() {
-      _quietHoursStart = startStr;
-      _quietHoursEnd = endStr;
+      _quietHoursStart = start;
+      _quietHoursEnd = end;
     });
-    
-    await NotificationService().updateQuietHours(startStr, endStr);
-    
-    if (mounted) {
+
+    try {
+      await NotificationService().updateQuietHours(start, end);
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.quietHoursUpdatedSuccessfully),
-          backgroundColor: Colors.green,
+          content: Text('Failed to update quiet hours: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -316,6 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
+      await NotificationService().removeFCMToken();
       await AuthService.signOut();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -432,15 +490,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
-                    // Watering Reminders
+                    // Watering reminders (email + push — used by Cloud Functions)
+                    Text(
+                      l10n.wateringReminders,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.getNotifiedWhenPlantsNeedWater,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     SwitchListTile(
-                      title: Text(l10n.wateringReminders),
-                      subtitle: Text(l10n.getNotifiedWhenPlantsNeedWater),
-                      value: _wateringReminders,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Email'),
+                      subtitle: const Text('Watering reminder emails'),
+                      value: _reminderEmail,
                       onChanged: (value) {
                         setState(() {
-                          _wateringReminders = value;
+                          _reminderEmail = value;
                         });
+                        _persistReminderChannels();
+                      },
+                      activeColor: Colors.green,
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Push notifications'),
+                      subtitle: const Text('Alerts in the app (iOS / Android)'),
+                      value: _reminderPush,
+                      onChanged: (value) {
+                        setState(() {
+                          _reminderPush = value;
+                        });
+                        _persistReminderChannels();
                       },
                       activeColor: Colors.green,
                     ),
@@ -452,32 +541,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: Text(l10n.quietHours),
                       subtitle: Text('$_quietHoursStart - $_quietHoursEnd'),
                       trailing: const Icon(Icons.edit),
-                      onTap: _editQuietHours,
-                    ),
-                    
-                    const Divider(),
-                    
-                    // Max notifications per day
-                    ListTile(
-                      title: Text(l10n.maxNotificationsPerDay),
-                      subtitle: Text(l10n.notificationsCount(_maxPushesPerDay)),
-                      trailing: DropdownButton<int>(
-                        value: _maxPushesPerDay,
-                        items: const [
-                          DropdownMenuItem(value: 1, child: Text('1')),
-                          DropdownMenuItem(value: 3, child: Text('3')),
-                          DropdownMenuItem(value: 5, child: Text('5')),
-                          DropdownMenuItem(value: 10, child: Text('10')),
-                        ],
-                        onChanged: (value) async {
-                          if (value != null) {
-                            setState(() {
-                              _maxPushesPerDay = value;
-                            });
-                            await NotificationService().updateMaxPushesPerDay(value);
-                          }
-                        },
-                      ),
+                      onTap: _openQuietHoursEditor,
                     ),
                     
                     const Divider(),
@@ -486,38 +550,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       title: Text(l10n.theme),
                       subtitle: Text(_selectedTheme == 'dark' ? l10n.dark : l10n.light),
-                      trailing: DropdownButton<String>(
-                        value: _selectedTheme,
-                        items: [
-                          DropdownMenuItem(value: 'light', child: Text(l10n.light)),
-                          DropdownMenuItem(value: 'dark', child: Text(l10n.dark)),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedTheme = value;
-                            });
-                            ThemeService.setThemePreference(value);
-                          }
-                        },
+                      trailing: Theme(
+                        data: Theme.of(context).copyWith(
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedTheme,
+                          focusColor: Colors.transparent,
+                          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                          items: [
+                            DropdownMenuItem(value: 'light', child: Text(l10n.light)),
+                            DropdownMenuItem(value: 'dark', child: Text(l10n.dark)),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedTheme = value;
+                              });
+                              ThemeService.setThemePreference(value);
+                              FocusManager.instance.primaryFocus?.unfocus();
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    
-                    const Divider(),
-                    
-                    // Notification Test
-                    ListTile(
-                      title: Text(l10n.testNotifications),
-                      subtitle: Text(l10n.checkNotificationSetupAndPermissions),
-                      trailing: const Icon(Icons.notifications_active),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const NotificationTestScreen(),
-                          ),
-                        );
-                      },
                     ),
                     
                     const Divider(),
@@ -530,21 +588,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           : _selectedLanguage == 'es' 
                               ? l10n.spanish
                               : l10n.french),
-                      trailing: DropdownButton<String>(
-                        value: _selectedLanguage,
-                        items: [
-                          DropdownMenuItem(value: 'en', child: Text(l10n.english)),
-                          DropdownMenuItem(value: 'es', child: Text(l10n.spanish)),
-                          DropdownMenuItem(value: 'fr', child: Text(l10n.french)),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedLanguage = value;
-                            });
-                            LanguageService.setLanguage(value);
-                          }
-                        },
+                      trailing: Theme(
+                        data: Theme.of(context).copyWith(
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedLanguage,
+                          focusColor: Colors.transparent,
+                          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                          items: [
+                            DropdownMenuItem(value: 'en', child: Text(l10n.english)),
+                            DropdownMenuItem(value: 'es', child: Text(l10n.spanish)),
+                            DropdownMenuItem(value: 'fr', child: Text(l10n.french)),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedLanguage = value;
+                              });
+                              LanguageService.setLanguage(value);
+                              FocusManager.instance.primaryFocus?.unfocus();
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -615,4 +684,181 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
     );
   }
-} 
+}
+
+class _QuietHoursEditorScreen extends StatefulWidget {
+  final String initialStart;
+  final String initialEnd;
+
+  const _QuietHoursEditorScreen({
+    required this.initialStart,
+    required this.initialEnd,
+  });
+
+  @override
+  State<_QuietHoursEditorScreen> createState() => _QuietHoursEditorScreenState();
+}
+
+class _QuietHoursEditorScreenState extends State<_QuietHoursEditorScreen> {
+  late int _startHour;
+  late int _startMinute;
+  late int _endHour;
+  late int _endMinute;
+
+  @override
+  void initState() {
+    super.initState();
+    _startHour = _hourFrom(widget.initialStart);
+    _startMinute = _minuteFrom(widget.initialStart);
+    _endHour = _hourFrom(widget.initialEnd);
+    _endMinute = _minuteFrom(widget.initialEnd);
+  }
+
+  static int _hourFrom(String value) => int.tryParse(value.split(':').first) ?? 0;
+
+  static int _minuteFrom(String value) => int.tryParse(value.split(':').last) ?? 0;
+
+  static String _formatTime(int hour, int minute) =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  Widget _buildTimeDropdown({
+    required int value,
+    required List<int> options,
+    required ValueChanged<int?> onChanged,
+    double width = 84,
+  }) {
+    return SizedBox(
+      width: width,
+      child: DropdownButtonFormField<int>(
+        value: value,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          border: const OutlineInputBorder(),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+        items: options
+            .map(
+              (n) => DropdownMenuItem<int>(
+                value: n,
+                child: Text(n.toString().padLeft(2, '0')),
+              ),
+            )
+            .toList(),
+        onChanged: (selected) {
+          onChanged(selected);
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuietHoursRow({
+    required String label,
+    required int hour,
+    required int minute,
+    required ValueChanged<int?> onHourChanged,
+    required ValueChanged<int?> onMinuteChanged,
+  }) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 52,
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+        ),
+        _buildTimeDropdown(
+          value: hour,
+          options: List<int>.generate(24, (index) => index),
+          onChanged: onHourChanged,
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            ':',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+        ),
+        _buildTimeDropdown(
+          value: minute,
+          options: List<int>.generate(12, (index) => index * 5),
+          onChanged: onMinuteChanged,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.quietHours),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildQuietHoursRow(
+                  label: 'Start',
+                  hour: _startHour,
+                  minute: _startMinute,
+                  onHourChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _startHour = value);
+                  },
+                  onMinuteChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _startMinute = value);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildQuietHoursRow(
+                  label: 'End',
+                  hour: _endHour,
+                  minute: _endMinute,
+                  onHourChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _endHour = value);
+                  },
+                  onMinuteChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _endMinute = value);
+                  },
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop({
+                        'start': _formatTime(_startHour, _startMinute),
+                        'end': _formatTime(_endHour, _endMinute),
+                      });
+                    },
+                    child: Text(l10n.save),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

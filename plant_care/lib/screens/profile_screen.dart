@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../utils/app_theme.dart';
 import 'auth_screen.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
@@ -110,6 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirmed == true) {
+      await NotificationService().removeFCMToken();
       await AuthService.signOut();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(

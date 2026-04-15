@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 import '../services/auth_service.dart';
-import 'main_navigation_screen.dart'; // Added import for MainNavigationScreen
+import '../services/notification_service.dart';
+import 'main_navigation_screen.dart';
 import 'forgot_password_email_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
   
   late bool _isLogin;
   bool _isLoading = false;
@@ -37,6 +40,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -65,13 +69,17 @@ class _AuthScreenState extends State<AuthScreen> {
         print('Signup completed successfully for user: ${userCredential.user?.uid}');
       }
 
-      // Only navigate if we reach this point without errors
+      // Initialize notifications (requests permission + registers FCM token)
+      // before navigating away, so the iOS permission dialog appears in context.
+      await NotificationService().initialize();
+
       if (mounted) {
+        TextInput.finishAutofillContext(shouldSave: true);
         print('Navigating to MainNavigationScreen...');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => MainNavigationScreen(
             user: FirebaseAuth.instance.currentUser,
-            initialIndex: 0, // Start at home tab
+            initialIndex: 0,
           )),
         );
       }
@@ -134,7 +142,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     padding: const EdgeInsets.all(20),
                     child: Form(
                       key: _formKey,
-                      child: Column(
+                        child: AutofillGroup(
+                          child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Plant Care logo and title inside form container
@@ -171,6 +180,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           if (!_isLogin) ...[
                             TextFormField(
                               controller: _nameController,
+                              autofillHints: const [AutofillHints.name],
                               decoration: InputDecoration(
                                 labelText: l10n.fullName,
                                 prefixIcon: const Icon(Icons.person),
@@ -190,6 +200,12 @@ class _AuthScreenState extends State<AuthScreen> {
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [
+                              AutofillHints.username,
+                              AutofillHints.email,
+                            ],
+                            onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
                             decoration: InputDecoration(
                               labelText: l10n.email,
                               prefixIcon: const Icon(Icons.email),
@@ -210,19 +226,33 @@ class _AuthScreenState extends State<AuthScreen> {
 
                           TextFormField(
                             controller: _passwordController,
+                            focusNode: _passwordFocusNode,
                             obscureText: !_isPasswordVisible,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: _isLogin
+                                ? const [AutofillHints.password]
+                                : const [AutofillHints.newPassword],
+                            onFieldSubmitted: (_) {
+                              if (!_isLoading) {
+                                _submitForm();
+                              }
+                            },
                             decoration: InputDecoration(
                               labelText: l10n.password,
                               prefixIcon: const Icon(Icons.lock),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                              suffixIcon: Focus(
+                                canRequestFocus: false,
+                                skipTraversal: true,
+                                child: IconButton(
+                                  icon: Icon(
+                                    _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    _isPasswordVisible = !_isPasswordVisible;
-                                  });
-                                },
                               ),
                               border: const OutlineInputBorder(),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -340,7 +370,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                           ),
                         ],
-                      ),
+                      )),
                     ),
                   ),
                 ),

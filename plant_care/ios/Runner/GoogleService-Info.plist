@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.plantCare</string>
+	<string>tech.botanly.plantcare</string>
 	<key>PROJECT_ID</key>
 	<string>plant-care-94574</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1098415447936:ios:63c699985c464ec413ab65</string>
+	<string>1:1098415447936:ios:24d98694a475ec5c13ab65</string>
 </dict>
 </plist>

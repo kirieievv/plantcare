@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'web_notification_helper.dart';
+import 'web_notification_helper_stub.dart'
+    if (dart.library.html) 'web_notification_helper.dart';
 
 /// Utility class for testing push notifications
 class NotificationTest {
