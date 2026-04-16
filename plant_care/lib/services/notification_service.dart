@@ -221,16 +221,31 @@ class NotificationService {
     }
   }
 
-  /// Save FCM token to the dedicated fcm_tokens collection.
-  /// Each token is a document keyed by the token string itself,
-  /// so one token can only belong to one user — duplicates are impossible.
+  /// Save FCM token to the dedicated fcm_tokens collection and update
+  /// summary fields on the user document so it's visible in Firestore.
   Future<void> _saveTokenToCollection(String userId, String token) async {
     try {
+      final now = FieldValue.serverTimestamp();
       await _firestore.collection('fcm_tokens').doc(token).set({
         'userId': userId,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': now,
       });
-      print('✅ NotificationService: FCM token saved to fcm_tokens collection');
+
+      // Count how many tokens this user now has.
+      final snap = await _firestore
+          .collection('fcm_tokens')
+          .where('userId', isEqualTo: userId)
+          .get();
+      final count = snap.docs.length;
+      final preview = token.length > 20 ? token.substring(0, 20) : token;
+
+      await _firestore.collection('users').doc(userId).set({
+        'lastFcmTokenAt': now,
+        'lastFcmTokenPreview': preview,
+        'fcmTokenCount': count,
+      }, SetOptions(merge: true));
+
+      print('✅ NotificationService: FCM token saved (total $count for user)');
     } catch (e) {
       print('❌ NotificationService: Error saving token to collection: $e');
     }

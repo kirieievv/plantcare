@@ -195,7 +195,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
           // Re-check FCM token on every cold start in case
           // the previous attempt failed (e.g. APNs wasn't ready).
           await NotificationService().ensureFCMTokenRegistered();
-          
+          // Delayed retry: on iOS APNs token may arrive a few seconds
+          // after the app becomes active — give it one more chance.
+          Future.delayed(const Duration(seconds: 5), () {
+            NotificationService().ensureFCMTokenRegistered();
+          });
+
           setState(() {
             _user = currentUser;
             _isLoading = false;
