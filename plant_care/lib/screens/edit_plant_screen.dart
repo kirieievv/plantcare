@@ -282,7 +282,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                 decoration: InputDecoration(
                   labelText: '${l10n.wateringFrequency} *',
                   border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.water_drop),
+                  prefixIcon: const Icon(Icons.waterDrop),
                 ),
                 items: List.generate(30, (index) => index + 1)
                     .map((days) => DropdownMenuItem(
@@ -408,6 +408,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
             CircularProgressIndicator(),
             SizedBox(height: 8),
             Text(l10n.loadingImage, style: const TextStyle(color: Colors.grey)),
+            
           ],
         ),
       ),

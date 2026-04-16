@@ -49,6 +49,7 @@
   "english": "English",
   "spanish": "Español",
   "french": "Français",
+  "german": "Deutsch",
   "savePreferences": "Save Preferences",
   "account": "Account",
   "changePassword": "Change Password",
@@ -243,5 +244,161 @@
   "plantChatConnectionError": "Something went wrong while contacting the plant assistant. Please try again.",
   "plantChatQuickWaterToday": "Can I water today?",
   "plantChatQuickYellowLeaves": "Why are leaves turning yellow?",
-  "plantChatQuickWhatToDoNow": "What should I do now?"
+  "plantChatQuickWhatToDoNow": "What should I do now?",
+  "splashTagline": "Your smart plant companion",
+  "getStarted": "Get Started",
+  "splashDescription": "Monitor your plants, get personalised care tips,\nand track their health — all in one place.",
+  "forgotPassword": "Forgot password?",
+  "resetYourPassword": "Reset your password",
+  "enterEmailForCode": "Enter your account email to receive a verification code.",
+  "sendCode": "Send code",
+  "enterVerificationCode": "Enter verification code",
+  "weSentACodeTo": "We sent a 6-digit code to",
+  "verificationCodeSentAgain": "Verification code sent again.",
+  "resendCodeInSeconds": "Resend code in {seconds}s",
+  "@resendCodeInSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resendCode": "Resend code",
+  "setNewPassword": "Set a new password",
+  "confirmPassword": "Confirm password",
+  "updatePassword": "Update password",
+  "passwordResetSuccess": "Password reset successfully. Please sign in.",
+  "totalPlants": "Total Plants",
+  "needWater": "Need Water",
+  "healthy": "Healthy",
+  "yourPlants": "Your Plants",
+  "plantCreatedSuccessfully": "Plant created successfully! 🌱",
+  "reminderEmail": "Email",
+  "reminderEmailSubtitle": "Watering reminder emails",
+  "pushNotifications": "Push notifications",
+  "pushNotificationsSubtitle": "Alerts in the app (iOS / Android)",
+  "wateringOverdueNDays": "Overdue {days}d",
+  "@wateringOverdueNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "wateringToday": "Watering today",
+  "wateringTomorrow": "Watering tomorrow",
+  "wateringInNDays": "Watering in {days}d",
+  "@wateringInNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "plantWateredSuccess": "{plantName} has been watered! 💧",
+  "@plantWateredSuccess": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "errorWateringPlant": "Error watering plant: {error}",
+  "@errorWateringPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "healthIssueDetected": "Health Issue Detected",
+  "recommendedActionsLabel": "Recommended Actions:",
+  "healthAlertNote": "This alert will remain visible until a subsequent health check returns OK",
+  "addHealthCheckTooltip": "Add Health Check",
+  "noHealthChecksYet": "No health checks yet",
+  "uploadPhotosToTrackHealth": "Upload photos to track your plant's health over time",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "nDaysAgo": "{days} days ago",
+  "@nDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "healthStatusOk": "OK",
+  "healthStatusIssue": "Issue",
+  "assistantTyping": "Assistant is typing...",
+  "chatSourceLabel": "Source: {source}",
+  "@chatSourceLabel": {
+    "placeholders": {
+      "source": {}
+    }
+  },
+  "chatSourceKnowledgeBase": "Knowledge Base",
+  "chatSourceContext": "Context",
+  "chatSourceAgent": "Agent",
+  "choosePhoto": "Choose photo",
+  "gallery": "Gallery",
+  "camera": "Camera",
+  "analyzeHealth": "Analyze Health",
+  "analyzing": "Analyzing...",
+  "imageReadyForAnalysis": "Image uploaded successfully! Ready for health analysis.",
+  "healthCheckTitle": "Health Check",
+  "healthCheckHistoryTitle": "Health Check History",
+  "healthCheckUploadHint": "Upload a photo of {plantName} for AI health analysis",
+  "@healthCheckUploadHint": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "deletePlant": "Delete Plant",
+  "deletePlantConfirm": "Are you sure you want to delete this plant?",
+  "delete": "Delete",
+  "iHaveWatered": "I have watered",
+  "soilMoisture": "Soil Moisture",
+  "lightLabel": "Light",
+  "perDay": "per day",
+  "hoursLabel": "hours",
+  "careRecommendationsTitle": "Care Recommendations",
+  "interestingFactsTitle": "Interesting Facts",
+  "noCareRecommendationsYet": "AI-generated care recommendations are not available for this plant yet.",
+  "noInterestingFactsYet": "AI-generated interesting facts are not available for this plant yet.",
+  "noDescriptionYet": "No description available yet.",
+  "swipeToSeeMore": "Swipe to see more",
+  "uploadPhotosForHealthHistory": "Upload photos to track your plant's health",
+  "plantDeletedMessage": "Plant \"{plantName}\" has been deleted",
+  "@plantDeletedMessage": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "noImageAvailable": "No Image Available",
+  "addPhotoToSeeYourPlant": "Add a photo to see your plant here",
+  "isThisYourPlant": "Is this your plant?",
+  "speciesPickSubtitle": "We found these options — pick the one that matches",
+  "noneOfThese": "None of these",
+  "typePlantNameRetry": "Type the plant name and we'll try again",
+  "gettingCareRecommendations": "Getting care recommendations",
+  "imageUploadedAnalysisComplete": "Image uploaded successfully! AI analysis complete.",
+  "aiCareRecommendationsHeader": "AI Care Recommendations",
+  "aiReady": "AI Ready",
+  "checkPlantButton": "Check Plant",
+  "plantCareAssistantTitle": "Plant Care Assistant",
+  "plantNeedsHelp": "Plant Needs Help!",
+  "whatToDoNow": "What to do now",
+  "wateringLabel": "Watering",
+  "nowLabel": "Now",
+  "nextIn1Day": "Next in 1 day",
+  "nextInNDays": "Next in {days} days",
+  "@nextInNDays": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "wateringDone": "Watering done",
+  "moistureDry": "Dry",
+  "moistureWet": "Wet",
+  "moistureLevelVeryDry": "Very dry",
+  "moistureLevelDry": "Dry",
+  "moistureLevelSlightlyMoist": "Slightly moist",
+  "moistureLevelMoist": "Moist",
+  "moistureLevelVeryMoist": "Very moist"
 }

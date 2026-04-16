@@ -178,7 +178,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (userHint != null) body['userHint'] = userHint;
 
       final response = await http.post(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse('https://us-central1-plant-care-dev-0001.cloudfunctions.net/analyzePlantPhoto'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
@@ -276,7 +276,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     try {
       // Test Firebase Functions connectivity
       final response = await http.get(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse('https://us-central1-plant-care-dev-0001.cloudfunctions.net/analyzePlantPhoto'),
       );
       
       if (mounted) {
@@ -319,7 +319,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final base64Image = base64Encode(_selectedImageBytes!);
 
       final response = await http.post(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse('https://us-central1-plant-care-dev-0001.cloudfunctions.net/analyzePlantPhoto'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'base64Image': base64Image,
@@ -405,7 +405,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (_confirmedSpecies != null) body['confirmedSpecies'] = _confirmedSpecies;
 
       final response = await http.post(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse('https://us-central1-plant-care-dev-0001.cloudfunctions.net/analyzePlantPhoto'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
@@ -1084,8 +1084,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
-                                      'Analyzing...',
-                                      style: TextStyle(
+                                      l10n.analyzing,
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
                                         fontSize: 16,
@@ -1112,7 +1112,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   color: Colors.white,
                 ),
                 label: Text(
-                  _selectedImageBytes != null ? 'Change Image' : 'Upload Image',
+                  _selectedImageBytes != null ? l10n.changeImage : l10n.uploadPlantPhoto,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -1151,7 +1151,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Image uploaded successfully! AI analysis complete.',
+                        l10n.imageUploadedAnalysisComplete,
                         style: TextStyle(
                           color: AppTheme.accentGreen,
                           fontWeight: FontWeight.w500,
@@ -1201,11 +1201,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 const SizedBox(width: 16), // Increased spacing
                 Expanded(
                   child: Text(
-                    'AI Care Recommendations',
-                    style: TextStyle(
+                    l10n.aiCareRecommendationsHeader,
+                    style: const TextStyle(
                       fontSize: 18, // Reduced from 20 to 18 for better UI balance
                       fontWeight: FontWeight.w600, // Reduced from bold to w600
-                      color: AppTheme.textPrimary,
+                      color: Color(0xFF1B3A1B),
                       height: 1.2, // Better line height
                     ),
                   ),
@@ -1231,7 +1231,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'AI Ready',
+                        l10n.aiReady,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700, // Increased weight
@@ -1253,7 +1253,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               children: [
                 Expanded(
                   child: _buildCareCard(
-                    'Moisture',
+                    l10n.soilMoisture,
                     '${_getMoisturePercentage(_aiMoistureLevel)}%',
                     Icons.opacity,
                     AppTheme.accentGreen,
@@ -1262,8 +1262,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildCareCard(
-                    'Light',
-                    '${_calculateLightHours()} hours',
+                    l10n.lightLabel,
+                    '${_calculateLightHours()} ${l10n.hoursLabel}',
                     Icons.wb_sunny,
                     Colors.orange,
                   ),
@@ -1361,7 +1361,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Care Recommendations',
+                              l10n.careRecommendationsTitle,
                               style: TextStyle(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w800,
@@ -1464,7 +1464,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               ),
               const SizedBox(width: 10),
               Text(
-                'Care Recommendations',
+                l10n.careRecommendationsTitle,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: AppTheme.accentGreen,
@@ -1755,7 +1755,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Interesting Facts',
+              l10n.interestingFactsTitle,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -1828,7 +1828,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Is this your plant?',
+                  l10n.isThisYourPlant,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
                 ),
               ),
@@ -1836,7 +1836,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'We found these options — pick the one that matches',
+            l10n.speciesPickSubtitle,
             style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 16),
@@ -1937,7 +1937,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               child: OutlinedButton.icon(
                 onPressed: () => setState(() => _showManualInput = true),
                 icon: Icon(Icons.edit, size: 18),
-                label: Text('None of these'),
+                label: Text(l10n.noneOfThese),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.textSecondary,
                   side: BorderSide(color: Colors.grey.shade300),
@@ -1949,7 +1949,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           if (_showManualInput) ...[
             const SizedBox(height: 4),
             Text(
-              'Type the plant name and we\'ll try again',
+              l10n.typePlantNameRetry,
               style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 8),
@@ -2026,7 +2026,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Getting care recommendations',
+            l10n.gettingCareRecommendations,
             style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
           ),
         ],

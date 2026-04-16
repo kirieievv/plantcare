@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
@@ -92,6 +93,7 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('de'),
     Locale('en'),
     Locale('es'),
     Locale('fr')
@@ -348,6 +350,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Français'**
   String get french;
+
+  /// No description provided for @german.
+  ///
+  /// In en, this message translates to:
+  /// **'Deutsch'**
+  String get german;
 
   /// No description provided for @savePreferences.
   ///
@@ -960,6 +968,105 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What should I do now?'**
   String get plantChatQuickWhatToDoNow;
+
+  String get splashTagline;
+  String get getStarted;
+  String get splashDescription;
+  String get forgotPassword;
+  String get resetYourPassword;
+  String get enterEmailForCode;
+  String get sendCode;
+  String get enterVerificationCode;
+  String get weSentACodeTo;
+  String get verificationCodeSentAgain;
+  String resendCodeInSeconds(int seconds);
+  String get resendCode;
+  String get setNewPassword;
+  String get confirmPassword;
+  String get updatePassword;
+  String get passwordResetSuccess;
+  String get totalPlants;
+  String get needWater;
+  String get healthy;
+  String get yourPlants;
+  String get plantCreatedSuccessfully;
+  String get reminderEmail;
+  String get reminderEmailSubtitle;
+  String get pushNotifications;
+  String get pushNotificationsSubtitle;
+  String wateringOverdueNDays(int days);
+  String get wateringToday;
+  String get wateringTomorrow;
+  String wateringInNDays(int days);
+  String plantWateredSuccess(Object plantName);
+  String errorWateringPlant(Object error);
+  String get healthIssueDetected;
+  String get recommendedActionsLabel;
+  String get healthAlertNote;
+  String get addHealthCheckTooltip;
+  String get noHealthChecksYet;
+  String get uploadPhotosToTrackHealth;
+  String get today;
+  String get yesterday;
+  String nDaysAgo(int days);
+  String get healthStatusOk;
+  String get healthStatusIssue;
+  String get assistantTyping;
+  String chatSourceLabel(Object source);
+  String get chatSourceKnowledgeBase;
+  String get chatSourceContext;
+  String get chatSourceAgent;
+  String get choosePhoto;
+  String get gallery;
+  String get camera;
+  String get analyzeHealth;
+  String get analyzing;
+  String get imageReadyForAnalysis;
+  String get healthCheckTitle;
+  String get healthCheckHistoryTitle;
+  String healthCheckUploadHint(Object plantName);
+  String get deletePlant;
+  String get deletePlantConfirm;
+  String get delete;
+  String get iHaveWatered;
+  String get soilMoisture;
+  String get lightLabel;
+  String get perDay;
+  String get hoursLabel;
+  String get careRecommendationsTitle;
+  String get interestingFactsTitle;
+  String get noCareRecommendationsYet;
+  String get noInterestingFactsYet;
+  String get noDescriptionYet;
+  String get swipeToSeeMore;
+  String get uploadPhotosForHealthHistory;
+  String plantDeletedMessage(Object plantName);
+  String get noImageAvailable;
+  String get addPhotoToSeeYourPlant;
+  String get isThisYourPlant;
+  String get speciesPickSubtitle;
+  String get noneOfThese;
+  String get typePlantNameRetry;
+  String get gettingCareRecommendations;
+  String get imageUploadedAnalysisComplete;
+  String get aiCareRecommendationsHeader;
+  String get aiReady;
+  String get checkPlantButton;
+  String get plantCareAssistantTitle;
+  String get plantNeedsHelp;
+  String get whatToDoNow;
+  String get wateringLabel;
+  String get nowLabel;
+  String get nextIn1Day;
+  String nextInNDays(int days);
+  String get wateringDone;
+  String get moistureDry;
+  String get moistureWet;
+  String get moistureLevelVeryDry;
+  String get moistureLevelDry;
+  String get moistureLevelSlightlyMoist;
+  String get moistureLevelMoist;
+  String get moistureLevelVeryMoist;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -971,7 +1078,7 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'es', 'fr'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['de', 'en', 'es', 'fr'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -982,6 +1089,7 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
 
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'de': return AppLocalizationsDe();
     case 'en': return AppLocalizationsEn();
     case 'es': return AppLocalizationsEs();
     case 'fr': return AppLocalizationsFr();

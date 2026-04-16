@@ -46,7 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           (rawTheme == 'dark' || rawTheme == 'light') ? rawTheme! : 'light';
       final rawLanguage = preferences['language'] as String?;
       final normalizedLanguage =
-          (rawLanguage == 'en' || rawLanguage == 'es' || rawLanguage == 'fr')
+          (rawLanguage == 'en' || rawLanguage == 'es' || rawLanguage == 'fr' || rawLanguage == 'de')
               ? rawLanguage!
               : 'en';
       setState(() {
@@ -509,8 +509,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 8),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Email'),
-                      subtitle: const Text('Watering reminder emails'),
+                      title: Text(l10n.reminderEmail),
+                      subtitle: Text(l10n.reminderEmailSubtitle),
                       value: _reminderEmail,
                       onChanged: (value) {
                         setState(() {
@@ -522,8 +522,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Push notifications'),
-                      subtitle: const Text('Alerts in the app (iOS / Android)'),
+                      title: Text(l10n.pushNotifications),
+                      subtitle: Text(l10n.pushNotificationsSubtitle),
                       value: _reminderPush,
                       onChanged: (value) {
                         setState(() {
@@ -571,6 +571,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _selectedTheme = value;
                               });
                               ThemeService.setThemePreference(value);
+                              AuthService.saveUserPreferences({'theme': value});
                               FocusManager.instance.primaryFocus?.unfocus();
                             }
                           },
@@ -583,11 +584,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // Language Selection
                     ListTile(
                       title: Text(l10n.language),
-                      subtitle: Text(_selectedLanguage == 'en' 
+                      subtitle: Text(_selectedLanguage == 'en'
                           ? l10n.english
-                          : _selectedLanguage == 'es' 
+                          : _selectedLanguage == 'es'
                               ? l10n.spanish
-                              : l10n.french),
+                              : _selectedLanguage == 'fr'
+                                  ? l10n.french
+                                  : l10n.german),
                       trailing: Theme(
                         data: Theme.of(context).copyWith(
                           splashColor: Colors.transparent,
@@ -600,6 +603,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           focusColor: Colors.transparent,
                           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
                           items: [
+                            DropdownMenuItem(value: 'de', child: Text(l10n.german)),
                             DropdownMenuItem(value: 'en', child: Text(l10n.english)),
                             DropdownMenuItem(value: 'es', child: Text(l10n.spanish)),
                             DropdownMenuItem(value: 'fr', child: Text(l10n.french)),
@@ -610,6 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _selectedLanguage = value;
                               });
                               LanguageService.setLanguage(value);
+                              AuthService.saveUserPreferences({'language': value});
                               FocusManager.instance.primaryFocus?.unfocus();
                             }
                           },
@@ -617,26 +622,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Save Preferences Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _savePreferences,
-                icon: const Icon(Icons.save),
-                label: Text(l10n.savePreferences),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                 ),
               ),
             ),
@@ -684,7 +669,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
     );
   }
-}
+} 
 
 class _QuietHoursEditorScreen extends StatefulWidget {
   final String initialStart;

@@ -49,6 +49,7 @@
   "english": "English",
   "spanish": "Español",
   "french": "Français",
+  "german": "Deutsch",
   "savePreferences": "Guardar preferencias",
   "account": "Cuenta",
   "changePassword": "Cambiar contraseña",
@@ -243,5 +244,161 @@
   "plantChatConnectionError": "Algo salió mal al contactar al asistente de plantas. Inténtalo de nuevo.",
   "plantChatQuickWaterToday": "¿Puedo regar hoy?",
   "plantChatQuickYellowLeaves": "¿Por qué se ponen amarillas las hojas?",
-  "plantChatQuickWhatToDoNow": "¿Qué debo hacer ahora?"
+  "plantChatQuickWhatToDoNow": "¿Qué debo hacer ahora?",
+  "splashTagline": "Tu compañero inteligente de plantas",
+  "getStarted": "Comenzar",
+  "splashDescription": "Supervisa tus plantas, obtén consejos de cuidado personalizados\ny sigue su salud — todo en un solo lugar.",
+  "forgotPassword": "¿Olvidaste tu contraseña?",
+  "resetYourPassword": "Restablecer tu contraseña",
+  "enterEmailForCode": "Introduce el correo de tu cuenta para recibir un código de verificación.",
+  "sendCode": "Enviar código",
+  "enterVerificationCode": "Introduce el código de verificación",
+  "weSentACodeTo": "Enviamos un código de 6 dígitos a",
+  "verificationCodeSentAgain": "Código de verificación enviado de nuevo.",
+  "resendCodeInSeconds": "Reenviar código en {seconds}s",
+  "@resendCodeInSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resendCode": "Reenviar código",
+  "setNewPassword": "Establecer una nueva contraseña",
+  "confirmPassword": "Confirmar contraseña",
+  "updatePassword": "Actualizar contraseña",
+  "passwordResetSuccess": "Contraseña restablecida con éxito. Por favor, inicia sesión.",
+  "totalPlants": "Plantas totales",
+  "needWater": "Necesitan agua",
+  "healthy": "Saludables",
+  "yourPlants": "Tus plantas",
+  "plantCreatedSuccessfully": "¡Planta creada con éxito! 🌱",
+  "reminderEmail": "Correo electrónico",
+  "reminderEmailSubtitle": "Correos de recordatorio de riego",
+  "pushNotifications": "Notificaciones push",
+  "pushNotificationsSubtitle": "Alertas en la app (iOS / Android)",
+  "wateringOverdueNDays": "Atrasado {days}d",
+  "@wateringOverdueNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "wateringToday": "Riego hoy",
+  "wateringTomorrow": "Riego mañana",
+  "wateringInNDays": "Riego en {days}d",
+  "@wateringInNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "plantWateredSuccess": "¡{plantName} ha sido regada! 💧",
+  "@plantWateredSuccess": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "errorWateringPlant": "Error al regar la planta: {error}",
+  "@errorWateringPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "healthIssueDetected": "Problema de salud detectado",
+  "recommendedActionsLabel": "Acciones recomendadas:",
+  "healthAlertNote": "Esta alerta permanecerá visible hasta que una revisión de salud posterior indique OK",
+  "addHealthCheckTooltip": "Agregar revisión de salud",
+  "noHealthChecksYet": "Aún no hay revisiones de salud",
+  "uploadPhotosToTrackHealth": "Sube fotos para seguir la salud de tu planta a lo largo del tiempo",
+  "today": "Hoy",
+  "yesterday": "Ayer",
+  "nDaysAgo": "Hace {days} días",
+  "@nDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "healthStatusOk": "OK",
+  "healthStatusIssue": "Problema",
+  "assistantTyping": "El asistente está escribiendo...",
+  "chatSourceLabel": "Fuente: {source}",
+  "@chatSourceLabel": {
+    "placeholders": {
+      "source": {}
+    }
+  },
+  "chatSourceKnowledgeBase": "Base de conocimiento",
+  "chatSourceContext": "Contexto",
+  "chatSourceAgent": "Agente",
+  "choosePhoto": "Elegir foto",
+  "gallery": "Galería",
+  "camera": "Cámara",
+  "analyzeHealth": "Analizar salud",
+  "analyzing": "Analizando...",
+  "imageReadyForAnalysis": "¡Imagen subida con éxito! Lista para el análisis de salud.",
+  "healthCheckTitle": "Revisión de salud",
+  "healthCheckHistoryTitle": "Historial de salud",
+  "healthCheckUploadHint": "Sube una foto de {plantName} para el análisis de salud por IA",
+  "@healthCheckUploadHint": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "deletePlant": "Eliminar planta",
+  "deletePlantConfirm": "¿Estás seguro de que quieres eliminar esta planta?",
+  "delete": "Eliminar",
+  "iHaveWatered": "He regado",
+  "soilMoisture": "Humedad del suelo",
+  "lightLabel": "Luz",
+  "perDay": "por día",
+  "hoursLabel": "horas",
+  "careRecommendationsTitle": "Recomendaciones de cuidado",
+  "interestingFactsTitle": "Datos interesantes",
+  "noCareRecommendationsYet": "Las recomendaciones de cuidado generadas por IA aún no están disponibles para esta planta.",
+  "noInterestingFactsYet": "Los datos interesantes generados por IA aún no están disponibles para esta planta.",
+  "noDescriptionYet": "Aún no hay descripción disponible.",
+  "swipeToSeeMore": "Desliza para ver más",
+  "uploadPhotosForHealthHistory": "Sube fotos para seguir la salud de tu planta",
+  "plantDeletedMessage": "La planta \"{plantName}\" ha sido eliminada",
+  "@plantDeletedMessage": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "noImageAvailable": "No hay imagen disponible",
+  "addPhotoToSeeYourPlant": "Agrega una foto para ver tu planta aquí",
+  "isThisYourPlant": "¿Es esta tu planta?",
+  "speciesPickSubtitle": "Encontramos estas opciones — elige la que corresponde",
+  "noneOfThese": "Ninguna de estas",
+  "typePlantNameRetry": "Escribe el nombre de la planta e intentaremos de nuevo",
+  "gettingCareRecommendations": "Obteniendo recomendaciones de cuidado",
+  "imageUploadedAnalysisComplete": "¡Imagen subida con éxito! Análisis de IA completo.",
+  "aiCareRecommendationsHeader": "Recomendaciones de cuidado de IA",
+  "aiReady": "IA lista",
+  "checkPlantButton": "Revisar planta",
+  "plantCareAssistantTitle": "Asistente de cuidado de plantas",
+  "plantNeedsHelp": "¡La planta necesita ayuda!",
+  "whatToDoNow": "Qué hacer ahora",
+  "wateringLabel": "Riego",
+  "nowLabel": "Ahora",
+  "nextIn1Day": "Siguiente en 1 día",
+  "nextInNDays": "Siguiente en {days} días",
+  "@nextInNDays": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "wateringDone": "Riego completado",
+  "moistureDry": "Seco",
+  "moistureWet": "Húmedo",
+  "moistureLevelVeryDry": "Muy seco",
+  "moistureLevelDry": "Seco",
+  "moistureLevelSlightlyMoist": "Ligeramente húmedo",
+  "moistureLevelMoist": "Húmedo",
+  "moistureLevelVeryMoist": "Muy húmedo"
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:plant_care/utils/responsive_layout.dart';
@@ -57,7 +58,7 @@ class _PlantCardState extends State<PlantCard> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '${widget.plant.name} has been watered! 💧',
+                  AppLocalizations.of(context)!.plantWateredSuccess(widget.plant.name),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -89,7 +90,7 @@ class _PlantCardState extends State<PlantCard> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Error watering plant: $e',
+                  AppLocalizations.of(context)!.errorWateringPlant(e),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -410,14 +411,15 @@ class _PlantCardState extends State<PlantCard> {
   }
 
   String _getWateringStatusText(int days) {
+    final l10n = AppLocalizations.of(context)!;
     if (days < 0) {
-      return 'Overdue ${days.abs()}d';
+      return l10n.wateringOverdueNDays(days.abs());
     } else if (days == 0) {
-      return 'Watering today';
+      return l10n.wateringToday;
     } else if (days == 1) {
-      return 'Watering tomorrow';
+      return l10n.wateringTomorrow;
     } else {
-      return 'Watering in ${days}d';
+      return l10n.wateringInNDays(days);
     }
   }
 } 

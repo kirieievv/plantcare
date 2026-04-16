@@ -128,6 +128,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1A1E24) : Colors.white;
     final cardShadowColor = isDark ? Colors.black.withOpacity(0.35) : Colors.grey.withOpacity(0.1);
+    final labelColor = isDark ? Colors.white70 : Colors.grey[700];
+    final mutedFieldBg = isDark ? const Color(0xFF161B22) : Colors.grey.shade50;
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F1115) : AppTheme.lightGrey,
       // Header removed - clean interface

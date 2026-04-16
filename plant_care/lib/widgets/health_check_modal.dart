@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:plant_care/services/health_check_service.dart';
 import 'package:plant_care/utils/cloud_functions.dart';
@@ -75,7 +76,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Choose photo',
+                  AppLocalizations.of(context)!.choosePhoto,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -85,7 +86,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
                 const SizedBox(height: 20),
                 ListTile(
                   leading: Icon(Icons.photo_library, color: AppTheme.accentGreen),
-                  title: const Text('Gallery'),
+                  title: Text(AppLocalizations.of(context)!.gallery),
                   onTap: () {
                     Navigator.of(context).pop();
                     _pickImageFromSource(ImageSource.gallery);
@@ -93,7 +94,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
                 ),
                 ListTile(
                   leading: Icon(Icons.camera_alt, color: AppTheme.accentGreen),
-                  title: const Text('Camera'),
+                  title: Text(AppLocalizations.of(context)!.camera),
                   onTap: () {
                     Navigator.of(context).pop();
                     _pickImageFromSource(ImageSource.camera);
@@ -256,6 +257,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
       // Call Firebase Function for analysis (uses unified prompt)
       print('🌱 Health Check Modal: Calling Firebase Functions for AI analysis...');
       print('🌱 Health Check Modal: Selected mode: $_analysisModeLabel ($_analysisModeKey)');
+
       final bool isAgentMode = widget.analysisMode == HealthCheckAnalysisMode.aiAgent;
       final String endpointUrl = isAgentMode ? analyzeHealthCheckAgentUrl : analyzePlantPhotoUrl;
       print('🌱 Health Check Modal: Endpoint: $endpointUrl');
@@ -267,6 +269,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
         },
         body: jsonEncode({
           'base64Image': base64Image,
+          // Agent mode uses context fields; AI Care endpoint ignores extra fields safely.
           if (isAgentMode) ...{
             'plantId': widget.plantId,
             'plantName': widget.plantName,
@@ -560,7 +563,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
           if (!isIPhoneSE) ...[
             const SizedBox(height: 8),
             Text(
-              'Upload Plant Photo',
+              AppLocalizations.of(context)!.uploadPlantPhoto,
               style: TextStyle(
                 fontSize: 14,
                 color: AppTheme.accentGreen.withOpacity(0.7),
@@ -576,6 +579,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // Detect iPhone SE and other small screens
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -658,7 +662,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(
-                          'Health Check',
+                          l10n.healthCheckTitle,
                           style: TextStyle(
                             fontSize: isIPhoneSE ? 18 : 22,
                             fontWeight: FontWeight.bold,
@@ -717,7 +721,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Upload a photo of ${widget.plantName} for AI health analysis',
+                            l10n.healthCheckUploadHint(widget.plantName),
                             style: TextStyle(
                               fontSize: isIPhoneSE ? 12 : 14,
                               color: AppTheme.accentGreen,
@@ -837,7 +841,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
                           size: 18,
                         ),
                         label: Text(
-                          _selectedImageBytes != null ? 'Change Image' : 'Upload Image',
+                          _selectedImageBytes != null ? l10n.changeImage : l10n.uploadPlantPhoto,
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -899,7 +903,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'Image uploaded successfully! Ready for health analysis.',
+                                l10n.imageReadyForAnalysis,
                                 style: TextStyle(
                                   color: AppTheme.accentGreen,
                                   fontWeight: FontWeight.w600,
@@ -934,7 +938,7 @@ class _HealthCheckModalState extends State<HealthCheckModal> {
                                   size: 20,
                                 ),
                           label: Text(
-                            _isAnalyzing ? 'Analyzing...' : 'Analyze Health',
+                            _isAnalyzing ? l10n.analyzing : l10n.analyzeHealth,
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,

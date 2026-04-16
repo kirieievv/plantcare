@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plant_care/l10n/app_localizations.dart';
 
 class HealthAlert extends StatelessWidget {
   final String problem;
@@ -12,6 +13,7 @@ class HealthAlert extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(16),
@@ -34,7 +36,7 @@ class HealthAlert extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Health Issue Detected',
+                  l10n.healthIssueDetected,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -69,7 +71,7 @@ class HealthAlert extends StatelessWidget {
           
           // Indicators Title
           Text(
-            'Recommended Actions:',
+            l10n.recommendedActionsLabel,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -129,7 +131,7 @@ class HealthAlert extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'This alert will remain visible until a subsequent health check returns OK',
+                    l10n.healthAlertNote,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.orange.shade700,

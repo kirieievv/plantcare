@@ -26,7 +26,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Load environment variables
-  await dotenv.load(fileName: "assets/.env");
+  await dotenv.load(fileName: ".env");
   
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
       ),
       scaffoldBackgroundColor: const Color(0xFFF8F9FA),
       useMaterial3: true,
-      fontFamily: GoogleFonts.inter().fontFamily,
+      fontFamily: GoogleFonts.lato().fontFamily,
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -98,7 +98,7 @@ class MyApp extends StatelessWidget {
       ),
       scaffoldBackgroundColor: const Color(0xFF0F1115),
       useMaterial3: true,
-      fontFamily: GoogleFonts.inter().fontFamily,
+      fontFamily: GoogleFonts.lato().fontFamily,
       cardTheme: const CardThemeData(
         elevation: 0,
         color: Color(0xFF1A1E24),
@@ -149,6 +149,7 @@ class MyApp extends StatelessWidget {
           themeMode: themeMode,
           locale: locale,
           supportedLocales: const [
+            Locale('de'),
             Locale('en'),
             Locale('es'),
             Locale('fr'),

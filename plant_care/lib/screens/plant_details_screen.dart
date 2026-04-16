@@ -6,6 +6,7 @@ import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/models/smart_plant.dart';
 import 'package:plant_care/models/user_model.dart';
 import 'package:plant_care/screens/main_navigation_screen.dart';
+import 'package:plant_care/screens/plant_chat_screen.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/services/health_check_service.dart';
 import 'package:plant_care/services/navigation_service.dart';
@@ -14,9 +15,9 @@ import 'package:plant_care/widgets/health_check_modal.dart';
 import 'package:plant_care/widgets/plant_card.dart';
 import 'package:plant_care/widgets/health_alert.dart';
 import 'package:plant_care/widgets/health_gallery.dart';
-import 'package:plant_care/screens/plant_chat_screen.dart';
 import 'package:plant_care/utils/app_theme.dart';
 import 'package:plant_care/utils/responsive_layout.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/utils/cloud_functions.dart';
@@ -39,7 +40,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   bool _isDetailsExpanded = true; // Add state for details expansion
   int _currentCarouselPage = 0;
   Timer? _wateringCountdownTimer;
-  String? _wateringCountdownLabel;
+  int? _wateringCountdownDays;
   HealthCheckAnalysisMode _selectedHealthCheckMode = HealthCheckAnalysisMode.aiAgent;
   bool _isSendingTestWateringEmail = false;
   AppLocalizations get l10n => AppLocalizations.of(context)!;
@@ -76,7 +77,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   void _openPlantChat() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => PlantChatScreen(plant: _plant),
+        builder: (context) => PlantChatScreen(plant: _plant),
       ),
     );
   }
@@ -377,7 +378,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Delete Plant',
+                l10n.deletePlant,
                 style: TextStyle(
                   color: Colors.red.shade700,
                   fontWeight: FontWeight.bold,
@@ -386,14 +387,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ],
           ),
           content: Text(
-            'Are you sure you want to delete "${_plant.name}"? This action cannot be undone and will permanently remove the plant and all its health check history.',
+            l10n.deletePlantConfirm,
             style: TextStyle(fontSize: 16),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Cancel',
+                l10n.cancel,
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: 16,
@@ -410,7 +411,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 foregroundColor: Colors.white,
               ),
               child: Text(
-                'Delete',
+                l10n.delete,
                 style: TextStyle(fontSize: 16),
               ),
             ),
@@ -442,7 +443,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Plant "${_plant.name}" has been deleted',
+                  l10n.plantDeletedMessage(_plant.name),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -543,7 +544,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '${_plant.name} has been watered! 💧',
+                  l10n.plantWateredSuccess(_plant.name),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -577,7 +578,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Error watering plant: $e',
+                  l10n.errorWateringPlant(e),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -617,7 +618,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Image Available',
+            l10n.noImageAvailable,
             style: TextStyle(
               fontSize: 18,
               color: Colors.grey.shade600,
@@ -626,7 +627,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add a photo to see your plant here',
+            l10n.addPhotoToSeeYourPlant,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade500,
@@ -837,7 +838,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            isRecheckMode ? 'Check Plant' : 'Watering',
+            isRecheckMode ? l10n.checkPlantButton : l10n.wateringLabel,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -847,7 +848,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            showNow ? 'Now' : DateFormat('MMM dd').format(nextWateringDate),
+            showNow ? l10n.nowLabel : DateFormat('MMM dd').format(nextWateringDate),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -960,7 +961,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Light',
+            l10n.lightLabel,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -970,7 +971,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_calculateLightHours()} hours',
+            '${_calculateLightHours()} ${l10n.hoursLabel}',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -980,7 +981,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'per day',
+            l10n.perDay,
             style: TextStyle(
               fontSize: 11,
               color: Colors.grey.shade600,
@@ -1038,7 +1039,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Moisture',
+            l10n.soilMoisture,
                                       style: TextStyle(
               fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -1104,7 +1105,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     overlayColor: _canWaterPlant() ? null : Colors.transparent,
                   ),
                   child: Text(
-                    'I have watered',
+                    l10n.iHaveWatered,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1140,7 +1141,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                    'Analyze Health',
+                    l10n.analyzeHealth,
                                 style: TextStyle(
                       fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -1209,7 +1210,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Plant Care Assistant',
+                  l10n.plantCareAssistantTitle,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -1382,7 +1383,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ],
           if (actionSteps.isNotEmpty) ...[
             Text(
-              'What to do now',
+              l10n.whatToDoNow,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -1615,10 +1616,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-              'Care Recommendations',
-              style: TextStyle(
-                            fontSize: 19, // Increased size
-                            fontWeight: FontWeight.w800, // Made bolder
+              l10n.careRecommendationsTitle,
+              style: GoogleFonts.lato(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
                 color: AppTheme.accentGreen,
                             letterSpacing: -0.3,
                           ),
@@ -1654,7 +1655,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                             const SizedBox(height: 16),
                           ] else ...[
                             Text(
-                              'AI-generated care recommendations are not available for this plant yet.',
+                              l10n.noCareRecommendationsYet,
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
                                 fontSize: 14,
@@ -1706,19 +1707,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Interesting Facts',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.accentGreen,
-                  ),
-                ),
-              ],
+            Text(
+              l10n.interestingFactsTitle,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.accentGreen,
+              ),
             ),
+            ],
+          ),
             const SizedBox(height: 12),
             Text(
-              'AI-generated interesting facts are not available for this plant yet.',
+              l10n.noInterestingFactsYet,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade700,
@@ -1753,7 +1754,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Interesting Facts',
+                l10n.interestingFactsTitle,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -1837,7 +1838,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.lato(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: AppTheme.accentGreen,
@@ -1847,7 +1848,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         const SizedBox(height: 6),
         Text(
           cleanedValue,
-          style: TextStyle(
+          style: GoogleFonts.lato(
             fontSize: 14,
             color: AppTheme.textSecondary,
             height: 1.5,
@@ -1875,8 +1876,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Interesting Facts',
-                style: TextStyle(
+                l10n.interestingFactsTitle,
+                style: GoogleFonts.lato(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.accentGreen,
@@ -1887,7 +1888,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           const SizedBox(height: 12),
           Text(
             'AI-generated interesting facts are not available for this plant yet.',
-            style: TextStyle(
+            style: GoogleFonts.lato(
               color: AppTheme.textSecondary,
               fontSize: 14,
             ),
@@ -1909,8 +1910,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Interesting Facts',
-              style: TextStyle(
+              l10n.interestingFactsTitle,
+              style: GoogleFonts.lato(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.accentGreen,
@@ -1938,7 +1939,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               children: [
                 Text(
                   '• ',
-                  style: TextStyle(
+                  style: GoogleFonts.lato(
                     fontSize: 16,
                     color: AppTheme.accentGreen,
                     fontWeight: FontWeight.bold,
@@ -1947,7 +1948,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 Expanded(
                   child: Text(
                     _cleanMarkdownContent(fact),
-                    style: TextStyle(
+                    style: GoogleFonts.lato(
                       fontSize: 14,
                       color: AppTheme.textSecondary,
                       height: 1.4,
@@ -2029,7 +2030,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Health Check History',
+                l10n.healthCheckHistoryTitle,
                 style: TextStyle(
                     fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -2115,7 +2116,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Swipe to see more',
+                        l10n.swipeToSeeMore,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.blue.shade400,
@@ -2146,7 +2147,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'No health checks yet',
+          l10n.noHealthChecksYet,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -2155,7 +2156,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-            'Upload photos to track your plant\'s health',
+            l10n.uploadPhotosForHealthHistory,
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade500,
@@ -2509,6 +2510,66 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return 50; // Default to moderate
   }
   
+  /// Dot-scale widget: Dry ○──○──○──●──○ Wet
+  Widget _buildMoistureDotScale(int activeDot) {
+    const dotCount = 5;
+    const activeColor = Color(0xFF2E7D32);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(dotCount, (i) {
+            final isActive = i == activeDot;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (i > 0)
+                  Container(width: 6, height: 1.5, color: Colors.grey.shade600),
+                Container(
+                  width: isActive ? 10 : 6,
+                  height: isActive ? 10 : 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isActive ? activeColor : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+        const SizedBox(height: 3),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(l10n.moistureDry, style: TextStyle(fontSize: 8, color: Colors.grey.shade600)),
+            Text(l10n.moistureWet, style: TextStyle(fontSize: 8, color: Colors.grey.shade600)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Maps percentage to 5-level label
+  String _getMoistureLabel(int percentage) {
+    if (percentage <= 15) return l10n.moistureLevelVeryDry;
+    if (percentage <= 35) return l10n.moistureLevelDry;
+    if (percentage <= 54) return l10n.moistureLevelSlightlyMoist;
+    if (percentage <= 74) return l10n.moistureLevelMoist;
+    return l10n.moistureLevelVeryMoist;
+  }
+
+  /// Returns active dot index (0–4) for the scale widget
+  int _getMoistureDotIndex(int percentage) {
+    if (percentage <= 15) return 0;
+    if (percentage <= 35) return 1;
+    if (percentage <= 54) return 2;
+    if (percentage <= 74) return 3;
+    return 4;
+  }
+
   /// Format moisture level to match AI recommendations format
   String _formatMoistureLevel(String? moistureLevel) {
     if (moistureLevel == null) return 'Medium';
@@ -2579,7 +2640,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   /// Formats the next watering info as days only.
   /// When shouldWaterNow (e.g. issue + need to water), returns "Now".
   String _getNextWateringDisplay() {
-    if (_plant.shouldWaterNow) return 'Now';
+    if (_plant.shouldWaterNow) return l10n.nowLabel;
     final wateringDate = _getNextWateringDate();
     final now = DateTime.now().toLocal();
     final today = DateTime(now.year, now.month, now.day);
@@ -2590,7 +2651,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
     int diffDays = target.difference(today).inDays;
     if (diffDays <= 0) diffDays = 1;
-    return diffDays == 1 ? 'Next in 1 day' : 'Next in $diffDays days';
+    return diffDays == 1 ? l10n.nextIn1Day : l10n.nextInNDays(diffDays);
   }
 
   /// Single source of truth for the next watering moment in the UI
@@ -2620,7 +2681,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     // If shouldWaterNow is true, clear countdown (button will show "Water now")
     if (_plant.shouldWaterNow) {
       setState(() {
-        _wateringCountdownLabel = null;
+        _wateringCountdownDays = null;
       });
       return;
     }
@@ -2639,7 +2700,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     // If watering is due (or overdue), clear the countdown
     if (diffDays <= 0) {
       setState(() {
-        _wateringCountdownLabel = null;
+        _wateringCountdownDays = null;
       });
       return;
     }
@@ -2649,10 +2710,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       diffDays = 1;
     }
 
-    final label = '$diffDays day${diffDays == 1 ? '' : 's'}';
-
     setState(() {
-      _wateringCountdownLabel = label;
+      _wateringCountdownDays = diffDays;
     });
   }
 
@@ -2674,15 +2733,15 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   /// Get button label based on shouldWaterNow state
   String _getWateringButtonLabel() {
     if (_plant.shouldWaterNow) {
-      return 'Watering done';
+      return l10n.wateringDone;
     }
     
     // Show countdown or default label
-    if (_wateringCountdownLabel != null) {
-      return 'Next in $_wateringCountdownLabel';
+    if (_wateringCountdownDays != null) {
+      return _wateringCountdownDays == 1 ? l10n.nextIn1Day : l10n.nextInNDays(_wateringCountdownDays!);
     }
     
-    return 'I have watered';
+    return l10n.iHaveWatered;
   }
 
   /// Gets the unified health status based on the plant's health data
@@ -3097,12 +3156,15 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: true, // Allow content to extend behind system UI
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: FloatingActionButton(
         onPressed: _openPlantChat,
         tooltip: l10n.plantChatOpen,
-        child: const Icon(Icons.chat_bubble_outline_rounded),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.chat_bubble_rounded),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: CustomScrollView(
         slivers: [
           // Hero Photo Section - Full width and to the top in portrait orientation
@@ -3348,7 +3410,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         ),
                         const SizedBox(width: 3), // Minimal spacing
                         Text(
-                          'Delete',
+                          l10n.delete,
                           style: TextStyle(
                             fontSize: 11, // Further reduced font size
                             fontWeight: FontWeight.w400, // Lighter weight
@@ -3362,39 +3424,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             ),
           ),
           
-          // Bottom padding - Increased for better mobile experience
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveLayout.getContentPadding(context).left,
-                0,
-                ResponsiveLayout.getContentPadding(context).right,
-                12,
-              ),
-              child: OutlinedButton.icon(
-                onPressed: _isSendingTestWateringEmail ? null : _sendTestWateringEmailNow,
-                icon: _isSendingTestWateringEmail
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.email_outlined),
-                label: Text(
-                  _isSendingTestWateringEmail
-                      ? 'Sending test email...'
-                      : (kDebugMode
-                          ? 'Send test watering email now'
-                          : 'Send test email'),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.deepOrange.shade700,
-                  side: BorderSide(color: Colors.deepOrange.shade300),
-                  minimumSize: const Size.fromHeight(44),
-                ),
-              ),
-            ),
-          ),
 
           // Bottom padding - Increased for better mobile experience
           const SliverToBoxAdapter(
@@ -3505,24 +3534,16 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               SegmentedButton<HealthCheckAnalysisMode>(
                 segments: [
                   ButtonSegment<HealthCheckAnalysisMode>(
-                    value: HealthCheckAnalysisMode.aiCare,
-                    label: Text(l10n.aiCare),
-                  ),
-                  ButtonSegment<HealthCheckAnalysisMode>(
                     value: HealthCheckAnalysisMode.aiAgent,
                     label: Text(l10n.aiAgent),
                   ),
                 ],
-                selected: {_selectedHealthCheckMode},
-                onSelectionChanged: (Set<HealthCheckAnalysisMode> nextSelection) {
-                  if (nextSelection.isEmpty) return;
-                  setState(() {
-                    _selectedHealthCheckMode = nextSelection.first;
-                  });
-                },
+                selected: {HealthCheckAnalysisMode.aiAgent},
+                onSelectionChanged: (_) {},
                 style: ButtonStyle(
                   visualDensity: VisualDensity.compact,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
                   textStyle: WidgetStateProperty.all(
                     const TextStyle(
                       fontSize: 11,
@@ -3560,7 +3581,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Watering',
+                        l10n.wateringLabel,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -3571,7 +3592,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       const SizedBox(height: 4),
                       Text(
                         _plant.shouldWaterNow
-                            ? 'Now'
+                            ? l10n.nowLabel
                             : DateFormat('MMM dd').format(_getNextWateringDate()),
                         style: TextStyle(
                           fontSize: 14,
@@ -3642,7 +3663,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Light',
+                        l10n.lightLabel,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -3652,7 +3673,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_calculateLightHours()} hours',
+                        '${_calculateLightHours()} ${l10n.hoursLabel}',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -3662,7 +3683,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'per day',
+                        l10n.perDay,
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey.shade600,
@@ -3679,7 +3700,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               // Moisture Card
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -3689,17 +3710,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     ),
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.opacity,
-                        color: Colors.green.shade600,
-                        size: 20,
-                      ),
-                      const SizedBox(height: 8),
+                      Icon(Icons.opacity, color: Colors.green.shade600, size: 18),
+                      const SizedBox(height: 4),
                       Text(
-                        'Moisture',
+                        l10n.soilMoisture,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey.shade700,
                         ),
@@ -3707,22 +3725,22 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
+                        _getMoistureLabel(_getMoisturePercentage(_plant.aiMoistureLevel)),
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
                           color: Colors.green.shade700,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
+                      _buildMoistureDotScale(
+                        _getMoistureDotIndex(_getMoisturePercentage(_plant.aiMoistureLevel)),
+                      ),
+                      const SizedBox(height: 2),
                       Text(
-                        _formatMoistureLevel(_plant.aiMoistureLevel),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
-                        ),
-                        textAlign: TextAlign.center,
+                        '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
+                        style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
                       ),
                     ],
                   ),
@@ -3814,9 +3832,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       shadowColor: Colors.transparent,
                     ),
                     icon: const Icon(Icons.health_and_safety, size: 18),
-                    label: const Text(
-                      'Analyze Health',
-                      style: TextStyle(
+                    label: Text(
+                      l10n.analyzeHealth,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -3946,10 +3964,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   /// Builds a single care section with title and content
   Widget _buildCareSection(String title, String content) {
-    final normalizedTitle = title.toLowerCase() == 'name' ? 'Cultivar' : title;
+    final normalizedTitle = title.toLowerCase() == 'name'
+        ? 'Cultivar'
+        : title.toLowerCase() == 'moisture'
+            ? 'Soil Moisture'
+            : title;
     // Override content for Moisture and Light with numeric values
     String displayContent = content;
-    if (normalizedTitle.toLowerCase() == 'moisture' && _plant.aiMoistureLevel != null) {
+    if ((normalizedTitle.toLowerCase() == 'moisture' || normalizedTitle.toLowerCase() == 'soil moisture') && _plant.aiMoistureLevel != null) {
       // Use the same logic as the top card to get consistent moisture percentage
       displayContent = '${_getMoisturePercentage(_plant.aiMoistureLevel)}%';
     } else if (normalizedTitle.toLowerCase() == 'light' && _plant.aiLight != null) {
@@ -3979,7 +4001,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             Expanded(
               child: Text(
             normalizedTitle,
-            style: TextStyle(
+            style: GoogleFonts.lato(
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
                   fontSize: 16,
@@ -3992,7 +4014,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           // Section content
           Text(
             displayContent,
-            style: TextStyle(
+            style: GoogleFonts.lato(
             color: AppTheme.textSecondary,
               height: 1.4,
             fontSize: 14,
@@ -4086,6 +4108,7 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
 
   Widget _buildPlaceholderImage() {
     final height = (MediaQuery.of(context).size.height * 0.45).clamp(200.0, 400.0);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       height: height,
@@ -4103,7 +4126,7 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Image Available',
+            l10n.noImageAvailable,
             style: TextStyle(
               fontSize: 18,
               color: Colors.grey.shade600,
@@ -4112,7 +4135,7 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add a photo to see your plant here',
+            l10n.addPhotoToSeeYourPlant,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade500,

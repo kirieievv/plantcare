@@ -139,7 +139,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Expanded(
                                   child: _buildStatCard(
-                                    'Total Plants',
+                                    l10n.totalPlants,
                                     '${plants.length}',
                                     Icons.eco,
                                     AppTheme.accentGreen,
@@ -149,7 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: _buildStatCard(
-                                    'Need Water',
+                                    l10n.needWater,
                                     '$plantsNeedingWater',
                                     Icons.water_drop,
                                     Colors.orange,
@@ -159,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: _buildStatCard(
-                                    'Healthy',
+                                    l10n.healthy,
                                     '$healthyPlants',
                                     Icons.check_circle,
                                     AppTheme.accentGreen,
@@ -191,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Your Plants',
+                              l10n.yourPlants,
                               style: AppTheme.headingMedium.copyWith(
                                 color: AppTheme.textPrimary,
                               ),
@@ -244,7 +244,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       if (mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: const Text('Plant created successfully! 🌱'),
+                                            content: Text(l10n.plantCreatedSuccessfully),
                                             backgroundColor: AppTheme.accentGreen,
                                             duration: const Duration(seconds: 3),
                                           ),
@@ -254,9 +254,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   }
                                 },
                                 icon: const Icon(Icons.add, color: Colors.white),
-                                label: const Text(
-                                  'Add Plant',
-                                  style: TextStyle(color: Colors.white),
+                                label: Text(
+                                  l10n.addPlant,
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.transparent,
@@ -478,6 +478,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: GlassmorphicContainer(
@@ -513,14 +514,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No plants yet!',
+              l10n.noPlantsYet,
               style: AppTheme.headingMedium.copyWith(
                 color: AppTheme.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add your first plant to get started',
+              l10n.addFirstPlantToGetStarted,
               style: AppTheme.bodyMedium.copyWith(
                 color: AppTheme.textSecondary,
               ),

@@ -137,6 +137,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get french => 'Français';
 
   @override
+  String get german => 'Deutsch';
+
+  @override
   String get savePreferences => 'Save Preferences';
 
   @override
@@ -475,4 +478,274 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plantChatQuickWhatToDoNow => 'What should I do now?';
+
+  @override
+  String get splashTagline => 'Your smart plant companion';
+
+  @override
+  String get getStarted => 'Get Started';
+
+  @override
+  String get splashDescription => 'Monitor your plants, get personalised care tips,\nand track their health — all in one place.';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get resetYourPassword => 'Reset your password';
+
+  @override
+  String get enterEmailForCode => 'Enter your account email to receive a verification code.';
+
+  @override
+  String get sendCode => 'Send code';
+
+  @override
+  String get enterVerificationCode => 'Enter verification code';
+
+  @override
+  String get weSentACodeTo => 'We sent a 6-digit code to';
+
+  @override
+  String get verificationCodeSentAgain => 'Verification code sent again.';
+
+  @override
+  String resendCodeInSeconds(int seconds) => 'Resend code in ${seconds}s';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String get setNewPassword => 'Set a new password';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get updatePassword => 'Update password';
+
+  @override
+  String get passwordResetSuccess => 'Password reset successfully. Please sign in.';
+
+  @override
+  String get totalPlants => 'Total Plants';
+
+  @override
+  String get needWater => 'Need Water';
+
+  @override
+  String get healthy => 'Healthy';
+
+  @override
+  String get yourPlants => 'Your Plants';
+
+  @override
+  String get plantCreatedSuccessfully => 'Plant created successfully! 🌱';
+
+  @override
+  String get reminderEmail => 'Email';
+
+  @override
+  String get reminderEmailSubtitle => 'Watering reminder emails';
+
+  @override
+  String get pushNotifications => 'Push notifications';
+
+  @override
+  String get pushNotificationsSubtitle => 'Alerts in the app (iOS / Android)';
+
+  @override
+  String wateringOverdueNDays(int days) => 'Overdue ${days}d';
+
+  @override
+  String get wateringToday => 'Watering today';
+
+  @override
+  String get wateringTomorrow => 'Watering tomorrow';
+
+  @override
+  String wateringInNDays(int days) => 'Watering in ${days}d';
+
+  @override
+  String plantWateredSuccess(Object plantName) => '$plantName has been watered! 💧';
+
+  @override
+  String errorWateringPlant(Object error) => 'Error watering plant: $error';
+
+  @override
+  String get healthIssueDetected => 'Health Issue Detected';
+
+  @override
+  String get recommendedActionsLabel => 'Recommended Actions:';
+
+  @override
+  String get healthAlertNote => 'This alert will remain visible until a subsequent health check returns OK';
+
+  @override
+  String get addHealthCheckTooltip => 'Add Health Check';
+
+  @override
+  String get noHealthChecksYet => 'No health checks yet';
+
+  @override
+  String get uploadPhotosToTrackHealth => 'Upload photos to track your plant\'s health over time';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String nDaysAgo(int days) => '$days days ago';
+
+  @override
+  String get healthStatusOk => 'OK';
+
+  @override
+  String get healthStatusIssue => 'Issue';
+
+  @override
+  String get assistantTyping => 'Assistant is typing...';
+
+  @override
+  String chatSourceLabel(Object source) => 'Source: $source';
+
+  @override
+  String get chatSourceKnowledgeBase => 'Knowledge Base';
+
+  @override
+  String get chatSourceContext => 'Context';
+
+  @override
+  String get chatSourceAgent => 'Agent';
+
+  @override
+  String get choosePhoto => 'Choose photo';
+
+  @override
+  String get gallery => 'Gallery';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get analyzeHealth => 'Analyze Health';
+
+  @override
+  String get analyzing => 'Analyzing...';
+
+  @override
+  String get imageReadyForAnalysis => 'Image uploaded successfully! Ready for health analysis.';
+
+  @override
+  String get healthCheckTitle => 'Health Check';
+
+  @override
+  String get healthCheckHistoryTitle => 'Health Check History';
+
+  @override
+  String healthCheckUploadHint(Object plantName) => 'Upload a photo of $plantName for AI health analysis';
+
+  @override
+  String get deletePlant => 'Delete Plant';
+
+  @override
+  String get deletePlantConfirm => 'Are you sure you want to delete this plant?';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get iHaveWatered => 'I have watered';
+
+  @override
+  String get soilMoisture => 'Soil Moisture';
+
+  @override
+  String get lightLabel => 'Light';
+
+  @override
+  String get perDay => 'per day';
+
+  @override
+  String get hoursLabel => 'hours';
+
+  @override
+  String get careRecommendationsTitle => 'Care Recommendations';
+
+  @override
+  String get interestingFactsTitle => 'Interesting Facts';
+
+  @override
+  String get noCareRecommendationsYet => 'AI-generated care recommendations are not available for this plant yet.';
+
+  @override
+  String get noInterestingFactsYet => 'AI-generated interesting facts are not available for this plant yet.';
+
+  @override
+  String get noDescriptionYet => 'No description available yet.';
+
+  @override
+  String get swipeToSeeMore => 'Swipe to see more';
+
+  @override
+  String get uploadPhotosForHealthHistory => 'Upload photos to track your plant\'s health';
+
+  @override
+  String plantDeletedMessage(Object plantName) => 'Plant "$plantName" has been deleted';
+
+  @override
+  String get noImageAvailable => 'No Image Available';
+
+  @override
+  String get addPhotoToSeeYourPlant => 'Add a photo to see your plant here';
+
+  @override
+  String get isThisYourPlant => 'Is this your plant?';
+
+  @override
+  String get speciesPickSubtitle => 'We found these options — pick the one that matches';
+
+  @override
+  String get noneOfThese => 'None of these';
+
+  @override
+  String get typePlantNameRetry => 'Type the plant name and we\'ll try again';
+
+  @override
+  String get gettingCareRecommendations => 'Getting care recommendations';
+
+  @override
+  String get imageUploadedAnalysisComplete => 'Image uploaded successfully! AI analysis complete.';
+
+  @override
+  String get aiCareRecommendationsHeader => 'AI Care Recommendations';
+
+  @override
+  String get aiReady => 'AI Ready';
+
+  @override
+  String get checkPlantButton => 'Check Plant';
+
+  @override
+  String get plantCareAssistantTitle => 'Plant Care Assistant';
+
+  @override
+  String get plantNeedsHelp => 'Plant Needs Help!';
+
+  @override
+  String get whatToDoNow => 'What to do now';
+  String get wateringLabel => 'Watering';
+  String get nowLabel => 'Now';
+  String get nextIn1Day => 'Next in 1 day';
+  String nextInNDays(int days) => 'Next in $days days';
+  String get wateringDone => 'Watering done';
+  String get moistureDry => 'Dry';
+  String get moistureWet => 'Wet';
+  String get moistureLevelVeryDry => 'Very dry';
+  String get moistureLevelDry => 'Dry';
+  String get moistureLevelSlightlyMoist => 'Slightly moist';
+  String get moistureLevelMoist => 'Moist';
+  String get moistureLevelVeryMoist => 'Very moist';
 }

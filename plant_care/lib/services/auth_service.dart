@@ -146,12 +146,12 @@ class AuthService {
     );
 
     if (response.statusCode >= 400) {
+      var errorMsg = 'Failed to request reset code.';
       try {
         final payload = jsonDecode(response.body) as Map<String, dynamic>;
-        throw payload['error']?.toString() ?? 'Failed to request reset code.';
-      } catch (_) {
-        throw 'Failed to request reset code.';
-      }
+        errorMsg = payload['error']?.toString() ?? errorMsg;
+      } catch (_) {}
+      throw errorMsg;
     }
   }
 
@@ -172,12 +172,12 @@ class AuthService {
     );
 
     if (response.statusCode >= 400) {
+      var errorMsg = 'Failed to reset password.';
       try {
         final payload = jsonDecode(response.body) as Map<String, dynamic>;
-        throw payload['error']?.toString() ?? 'Failed to reset password.';
-      } catch (_) {
-        throw 'Failed to reset password.';
-      }
+        errorMsg = payload['error']?.toString() ?? errorMsg;
+      } catch (_) {}
+      throw errorMsg;
     }
   }
 
@@ -196,12 +196,12 @@ class AuthService {
     );
 
     if (response.statusCode >= 400) {
+      var errorMsg = 'Invalid verification code.';
       try {
         final payload = jsonDecode(response.body) as Map<String, dynamic>;
-        throw payload['error']?.toString() ?? 'Invalid verification code.';
-      } catch (_) {
-        throw 'Invalid verification code.';
-      }
+        errorMsg = payload['error']?.toString() ?? errorMsg;
+      } catch (_) {}
+      throw errorMsg;
     }
   }
 

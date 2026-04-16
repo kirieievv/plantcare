@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 
-/// Base URL for Cloud Functions. Uses current Firebase project selected by app config.
+/// Base URL for Cloud Functions. Uses current Firebase project so dev folder
+/// calls dev project's functions after FlutterFire configure.
 String get analyzePlantPhotoUrl {
   final projectId = Firebase.app().options.projectId;
   return 'https://us-central1-$projectId.cloudfunctions.net/analyzePlantPhoto';

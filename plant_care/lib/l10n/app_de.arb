@@ -1,0 +1,404 @@
+{
+  "@@locale": "de",
+  "appTitle": "Pflanzenpflege",
+  "loadingPlantCare": "Pflanzenpflege wird geladen...",
+  "home": "Startseite",
+  "myPlants": "Meine Pflanzen",
+  "addPlant": "Pflanze hinzufügen",
+  "profile": "Profil",
+  "settings": "Einstellungen",
+  "authenticationError": "Authentifizierungsfehler",
+  "pleaseLoginAgain": "Bitte melden Sie sich erneut an, um fortzufahren",
+  "goToLogin": "Zur Anmeldung",
+  "yourGardenOverview": "Übersicht Ihres Gartens",
+  "welcomeBack": "Willkommen zurück!",
+  "createYourAccount": "Konto erstellen",
+  "fullName": "Vollständiger Name",
+  "email": "E-Mail",
+  "password": "Passwort",
+  "pleaseEnterYourName": "Bitte geben Sie Ihren Namen ein",
+  "pleaseEnterYourEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein",
+  "pleaseEnterValidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+  "pleaseEnterYourPassword": "Bitte geben Sie Ihr Passwort ein",
+  "passwordAtLeast6": "Das Passwort muss mindestens 6 Zeichen lang sein",
+  "rememberMe30Days": "30 Tage angemeldet bleiben",
+  "logIn": "Anmelden",
+  "registration": "Registrierung",
+  "dontHaveAccountRegistration": "Noch kein Konto? Registrierung",
+  "alreadyHaveAccountLogin": "Bereits ein Konto? Anmelden",
+  "loggedIn": "Angemeldet",
+  "preferences": "Einstellungen",
+  "wateringReminders": "Bewässerungserinnerungen",
+  "getNotifiedWhenPlantsNeedWater": "Benachrichtigung erhalten, wenn Pflanzen Wasser brauchen",
+  "quietHours": "Ruhestunden",
+  "maxNotificationsPerDay": "Max. Benachrichtigungen pro Tag",
+  "notificationsCount": "{count} Benachrichtigungen",
+  "@notificationsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "theme": "Design",
+  "light": "Hell",
+  "dark": "Dunkel",
+  "testNotifications": "Benachrichtigungen testen",
+  "checkNotificationSetupAndPermissions": "Benachrichtigungseinrichtung und Berechtigungen prüfen",
+  "language": "Sprache",
+  "english": "English",
+  "spanish": "Español",
+  "french": "Français",
+  "german": "Deutsch",
+  "savePreferences": "Einstellungen speichern",
+  "account": "Konto",
+  "changePassword": "Passwort ändern",
+  "updateYourAccountPassword": "Kontpasswort aktualisieren",
+  "signOut": "Abmelden",
+  "signOutOfYourAccount": "Von Ihrem Konto abmelden",
+  "preferencesSavedSuccessfully": "Einstellungen erfolgreich gespeichert!",
+  "errorSavingPreferences": "Fehler beim Speichern der Einstellungen: {error}",
+  "@errorSavingPreferences": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "quietHoursUpdatedSuccessfully": "Ruhestunden erfolgreich aktualisiert!",
+  "changePasswordTitle": "Passwort ändern",
+  "currentPassword": "Aktuelles Passwort",
+  "newPassword": "Neues Passwort",
+  "confirmNewPassword": "Neues Passwort bestätigen",
+  "enterCurrentPassword": "Aktuelles Passwort eingeben",
+  "enterNewPassword": "Neues Passwort eingeben",
+  "newPasswordMustBeDifferent": "Das neue Passwort muss sich vom alten unterscheiden",
+  "confirmYourNewPassword": "Neues Passwort bestätigen",
+  "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "passwordChangedSuccessfully": "Passwort erfolgreich geändert.",
+  "errorChangingPassword": "Fehler beim Ändern des Passworts: {error}",
+  "@errorChangingPassword": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "signOutConfirmTitle": "Abmelden",
+  "signOutConfirmMessage": "Möchten Sie sich wirklich abmelden?",
+  "userLabel": "Benutzer",
+  "nameCannotBeEmpty": "Name darf nicht leer sein",
+  "profileUpdatedSuccessfully": "Profil erfolgreich aktualisiert!",
+  "errorUpdatingProfile": "Fehler beim Aktualisieren des Profils: {error}",
+  "@errorUpdatingProfile": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "plantLover": "Pflanzenliebhaber",
+  "profileInformation": "Profilinformationen",
+  "bio": "Bio",
+  "bioHint": "Erzählen Sie uns von Ihrer Pflanzenpflege-Erfahrung...",
+  "location": "Standort",
+  "locationHint": "Wo befinden sich Ihre Pflanzen?",
+  "name": "Name",
+  "notSet": "Nicht festgelegt",
+  "accountInfo": "Kontoinformationen",
+  "memberSince": "Mitglied seit",
+  "lastLogin": "Letzte Anmeldung",
+  "notAvailable": "N/V",
+  "actions": "Aktionen",
+  "errorLabel": "Fehler",
+  "noPlantsYet": "Noch keine Pflanzen!",
+  "addFirstPlantToGetStarted": "Fügen Sie Ihre erste Pflanze hinzu, um zu beginnen",
+  "errorPickingImage": "Fehler beim Auswählen des Bildes: {error}",
+  "@errorPickingImage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToAnalyzePlantPhoto": "Analyse des Pflanzenfotos fehlgeschlagen: {statusCode}",
+  "@failedToAnalyzePlantPhoto": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAnalysisCompleted": "KI-Analyse abgeschlossen! 🌱",
+  "aiAnalysisFailed": "KI-Analyse fehlgeschlagen: {error}",
+  "@aiAnalysisFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "apiTestError": "API-Testfehler: {error}",
+  "@apiTestError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "aiAnalysisRefreshed": "KI-Analyse aktualisiert! 🔄",
+  "aiAnalysisRefreshFailed": "Aktualisierung der KI-Analyse fehlgeschlagen: {error}",
+  "@aiAnalysisRefreshFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "retry": "Erneut versuchen",
+  "uploadPlantPhoto": "Pflanzenfoto hochladen",
+  "notSpecified": "Nicht angegeben",
+  "onceEvery7Days": "Einmal alle 7 Tage",
+  "oncePerDay": "Einmal täglich",
+  "oncePerWeek": "Einmal wöchentlich",
+  "onceEveryNDays": "Einmal alle {days} Tage",
+  "@onceEveryNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "onceEveryNWeeks": "Einmal alle {weeks} Wochen",
+  "@onceEveryNWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "low": "Niedrig",
+  "mediumLow": "Mittel-Niedrig",
+  "medium": "Mittel",
+  "mediumHigh": "Mittel-Hoch",
+  "high": "Hoch",
+  "userNotAuthenticated": "Benutzer nicht authentifiziert",
+  "pleaseUploadPlantImage": "Bitte laden Sie ein Pflanzenbild hoch",
+  "pleaseWaitForAiAnalysisBeforeAddingPlant": "Bitte warten Sie, bis die KI-Analyse abgeschlossen ist, bevor Sie die Pflanze hinzufügen",
+  "plantLowercase": "pflanze",
+  "plantAddedSuccessfully": "Pflanze erfolgreich hinzugefügt! 🌱",
+  "errorAddingPlant": "Fehler beim Hinzufügen der Pflanze: {error}",
+  "@errorAddingPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "generateRandomName": "Zufälligen Namen generieren",
+  "plantName": "Pflanzenname",
+  "plantNameHint": "z. B. Monstera, Sansevierie",
+  "pleaseEnterPlantName": "Bitte geben Sie einen Pflanzennamen ein",
+  "addingPlant": "Pflanze wird hinzugefügt...",
+  "analyzingPhoto": "Foto wird analysiert...",
+  "plantUpdatedSuccessfully": "Pflanze erfolgreich aktualisiert! 🌱",
+  "errorUpdatingPlant": "Fehler beim Aktualisieren der Pflanze: {error}",
+  "@errorUpdatingPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "species": "Art",
+  "wateringFrequency": "Bewässerungshäufigkeit",
+  "everyNDays": "Alle {days} Tag(e)",
+  "@everyNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "pleaseSelectWateringFrequency": "Bitte wählen Sie die Bewässerungshäufigkeit",
+  "notes": "Notizen",
+  "saveChanges": "Änderungen speichern",
+  "loadingImage": "Bild wird geladen...",
+  "changeImage": "Bild ändern",
+  "errorDeletingPlant": "Fehler beim Löschen der Pflanze: {error}",
+  "@errorDeletingPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "plantNotDueForWateringYet": "Diese Pflanze muss noch nicht bewässert werden",
+  "errorBuildingPlantDetailsScreen": "Fehler beim Laden des Pflanzendetailbildschirms: {error}",
+  "@errorBuildingPlantDetailsScreen": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "aiCare": "KI-Pflege",
+  "aiAgent": "KI-Agent",
+  "plantChatOpen": "Pflanzenchat öffnen",
+  "plantChatTitle": "Chat über {plantName}",
+  "@plantChatTitle": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "plantChatWelcome": "Hallo! Ich bin Ihr Pflanzenassistent für {plantName}. Fragen Sie mich alles über Bewässerung, Gesundheitszeichen oder was als Nächstes zu tun ist.",
+  "@plantChatWelcome": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "plantChatInputHint": "Fragen Sie über diese Pflanze...",
+  "plantChatLoginAgain": "Bitte melden Sie sich erneut an.",
+  "plantChatRequestFailed": "Chat-Anfrage fehlgeschlagen",
+  "plantChatCouldNotGenerateResponse": "Ich konnte keine Antwort generieren. Bitte versuchen Sie es erneut.",
+  "plantChatConnectionError": "Beim Kontaktieren des Pflanzenassistenten ist etwas schiefgelaufen. Bitte versuchen Sie es erneut.",
+  "plantChatQuickWaterToday": "Kann ich heute gießen?",
+  "plantChatQuickYellowLeaves": "Warum werden die Blätter gelb?",
+  "plantChatQuickWhatToDoNow": "Was soll ich jetzt tun?",
+  "splashTagline": "Dein intelligenter Pflanzenbegleiter",
+  "getStarted": "Loslegen",
+  "splashDescription": "Beobachte deine Pflanzen, erhalte personalisierte Pflegetipps\nund verfolge ihre Gesundheit — alles an einem Ort.",
+  "forgotPassword": "Passwort vergessen?",
+  "resetYourPassword": "Passwort zurücksetzen",
+  "enterEmailForCode": "Gib deine Konto-E-Mail-Adresse ein, um einen Bestätigungscode zu erhalten.",
+  "sendCode": "Code senden",
+  "enterVerificationCode": "Bestätigungscode eingeben",
+  "weSentACodeTo": "Wir haben einen 6-stelligen Code gesendet an",
+  "verificationCodeSentAgain": "Bestätigungscode erneut gesendet.",
+  "resendCodeInSeconds": "Code in {seconds}s erneut senden",
+  "@resendCodeInSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resendCode": "Code erneut senden",
+  "setNewPassword": "Neues Passwort festlegen",
+  "confirmPassword": "Passwort bestätigen",
+  "updatePassword": "Passwort aktualisieren",
+  "passwordResetSuccess": "Passwort erfolgreich zurückgesetzt. Bitte melden Sie sich an.",
+  "totalPlants": "Pflanzen gesamt",
+  "needWater": "Brauchen Wasser",
+  "healthy": "Gesund",
+  "yourPlants": "Deine Pflanzen",
+  "plantCreatedSuccessfully": "Pflanze erfolgreich erstellt! 🌱",
+  "reminderEmail": "E-Mail",
+  "reminderEmailSubtitle": "E-Mails zur Bewässerungserinnerung",
+  "pushNotifications": "Push-Benachrichtigungen",
+  "pushNotificationsSubtitle": "Benachrichtigungen in der App (iOS / Android)",
+  "wateringOverdueNDays": "Überfällig {days}T",
+  "@wateringOverdueNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "wateringToday": "Gießen heute",
+  "wateringTomorrow": "Gießen morgen",
+  "wateringInNDays": "Gießen in {days}T",
+  "@wateringInNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "plantWateredSuccess": "{plantName} wurde gegossen! 💧",
+  "@plantWateredSuccess": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "errorWateringPlant": "Fehler beim Gießen der Pflanze: {error}",
+  "@errorWateringPlant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "healthIssueDetected": "Gesundheitsproblem erkannt",
+  "recommendedActionsLabel": "Empfohlene Maßnahmen:",
+  "healthAlertNote": "Diese Warnung bleibt sichtbar, bis ein späterer Gesundheitscheck OK ergibt",
+  "addHealthCheckTooltip": "Gesundheitscheck hinzufügen",
+  "noHealthChecksYet": "Noch keine Gesundheitschecks",
+  "uploadPhotosToTrackHealth": "Lade Fotos hoch, um die Gesundheit deiner Pflanze im Laufe der Zeit zu verfolgen",
+  "today": "Heute",
+  "yesterday": "Gestern",
+  "nDaysAgo": "Vor {days} Tagen",
+  "@nDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "healthStatusOk": "OK",
+  "healthStatusIssue": "Problem",
+  "assistantTyping": "Assistent schreibt...",
+  "chatSourceLabel": "Quelle: {source}",
+  "@chatSourceLabel": {
+    "placeholders": {
+      "source": {}
+    }
+  },
+  "chatSourceKnowledgeBase": "Wissensdatenbank",
+  "chatSourceContext": "Kontext",
+  "chatSourceAgent": "Agent",
+  "choosePhoto": "Foto wählen",
+  "gallery": "Galerie",
+  "camera": "Kamera",
+  "analyzeHealth": "Gesundheit analysieren",
+  "analyzing": "Analysieren...",
+  "imageReadyForAnalysis": "Bild erfolgreich hochgeladen! Bereit für die Gesundheitsanalyse.",
+  "healthCheckTitle": "Gesundheitscheck",
+  "healthCheckHistoryTitle": "Gesundheitscheck-Verlauf",
+  "healthCheckUploadHint": "Lade ein Foto von {plantName} für die KI-Gesundheitsanalyse hoch",
+  "@healthCheckUploadHint": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "deletePlant": "Pflanze löschen",
+  "deletePlantConfirm": "Möchten Sie diese Pflanze wirklich löschen?",
+  "delete": "Löschen",
+  "iHaveWatered": "Ich habe gegossen",
+  "soilMoisture": "Bodenfeuchtigkeit",
+  "lightLabel": "Licht",
+  "perDay": "pro Tag",
+  "hoursLabel": "Stunden",
+  "careRecommendationsTitle": "Pflegeempfehlungen",
+  "interestingFactsTitle": "Interessante Fakten",
+  "noCareRecommendationsYet": "KI-generierte Pflegeempfehlungen sind für diese Pflanze noch nicht verfügbar.",
+  "noInterestingFactsYet": "KI-generierte interessante Fakten sind für diese Pflanze noch nicht verfügbar.",
+  "noDescriptionYet": "Noch keine Beschreibung verfügbar.",
+  "swipeToSeeMore": "Wischen für mehr",
+  "uploadPhotosForHealthHistory": "Lade Fotos hoch, um die Gesundheit deiner Pflanze zu verfolgen",
+  "plantDeletedMessage": "Pflanze \"{plantName}\" wurde gelöscht",
+  "@plantDeletedMessage": {
+    "placeholders": {
+      "plantName": {}
+    }
+  },
+  "noImageAvailable": "Kein Bild verfügbar",
+  "addPhotoToSeeYourPlant": "Füge ein Foto hinzu, um deine Pflanze hier zu sehen",
+  "isThisYourPlant": "Ist das Ihre Pflanze?",
+  "speciesPickSubtitle": "Wir haben diese Optionen gefunden — wählen Sie die passende",
+  "noneOfThese": "Keine davon",
+  "typePlantNameRetry": "Gib den Pflanzennamen ein und wir versuchen es erneut",
+  "gettingCareRecommendations": "Pflegeempfehlungen werden abgerufen",
+  "imageUploadedAnalysisComplete": "Bild erfolgreich hochgeladen! KI-Analyse abgeschlossen.",
+  "aiCareRecommendationsHeader": "KI-Pflegeempfehlungen",
+  "aiReady": "KI bereit",
+  "checkPlantButton": "Pflanze prüfen",
+  "plantCareAssistantTitle": "Pflanzenpflege-Assistent",
+  "plantNeedsHelp": "Pflanze braucht Hilfe!",
+  "whatToDoNow": "Was jetzt zu tun ist",
+  "wateringLabel": "Bewässerung",
+  "nowLabel": "Jetzt",
+  "nextIn1Day": "Nächste in 1 Tag",
+  "nextInNDays": "Nächste in {days} Tagen",
+  "@nextInNDays": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "wateringDone": "Bewässerung abgeschlossen",
+  "moistureDry": "Trocken",
+  "moistureWet": "Feucht",
+  "moistureLevelVeryDry": "Sehr trocken",
+  "moistureLevelDry": "Trocken",
+  "moistureLevelSlightlyMoist": "Leicht feucht",
+  "moistureLevelMoist": "Feucht",
+  "moistureLevelVeryMoist": "Sehr feucht"
+}

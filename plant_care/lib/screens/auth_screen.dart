@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import 'main_navigation_screen.dart';
 import 'forgot_password_email_screen.dart';
 
+const Color _dark = Color(0xFF1B3A1B);
+const Color _mid = Color(0xFF2E6030);
+
 class AuthScreen extends StatefulWidget {
   final bool isRegistration;
-  
+
   const AuthScreen({super.key, required this.isRegistration});
 
   @override
@@ -22,11 +26,11 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _passwordFocusNode = FocusNode();
-  
+
   late bool _isLogin;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
-  bool _rememberMe = true; // Default to true for better UX
+  bool _rememberMe = true;
   String _errorMessage = '';
 
   @override
@@ -65,22 +69,20 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text,
           name: _nameController.text.trim(),
         );
-        
         print('Signup completed successfully for user: ${userCredential.user?.uid}');
       }
 
-      // Initialize notifications (requests permission + registers FCM token)
-      // before navigating away, so the iOS permission dialog appears in context.
       await NotificationService().initialize();
 
       if (mounted) {
         TextInput.finishAutofillContext(shouldSave: true);
-        print('Navigating to MainNavigationScreen...');
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => MainNavigationScreen(
-            user: FirebaseAuth.instance.currentUser,
-            initialIndex: 0,
-          )),
+          MaterialPageRoute(
+            builder: (context) => MainNavigationScreen(
+              user: FirebaseAuth.instance.currentUser,
+              initialIndex: 0,
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -110,83 +112,117 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  InputDecoration _fieldDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.lato(color: _dark.withOpacity(0.6), fontSize: 14),
+      prefixIcon: Icon(icon, color: _dark.withOpacity(0.5), size: 20),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.6),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: _dark.withOpacity(0.2)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: _dark.withOpacity(0.2)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: _dark.withOpacity(0.6), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Colors.green.shade100,
-              Colors.green.shade50,
+              Color(0xFFD6EDD6),
+              Color(0xFFF5FAF5),
+              Color(0xFFE8F5E8),
             ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).padding.bottom + 20,
-            ),
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                child: Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+          child: Column(
+            children: [
+              // Back button row
+              Padding(
+                padding: const EdgeInsets.only(left: 8, top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new, color: _dark.withOpacity(0.7), size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Form(
-                      key: _formKey,
-                        child: AutofillGroup(
-                          child: Column(
+                ),
+              ),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Form(
+                    key: _formKey,
+                    child: AutofillGroup(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Plant Care logo and title inside form container
+                          const SizedBox(height: 8),
+
+                          // Botanly wordmark
                           Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.local_florist,
-                                  size: 48,
-                                  color: Colors.green.shade600,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  l10n.appTitle,
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    color: Colors.green.shade700,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _isLogin ? l10n.welcomeBack : l10n.createYourAccount,
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              'Botanly',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: _dark,
+                                letterSpacing: 1.2,
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          
-                          // Form fields
+
+                          const SizedBox(height: 6),
+
+                          // Screen subtitle
+                          Center(
+                            child: Text(
+                              _isLogin ? l10n.welcomeBack : l10n.createYourAccount,
+                              style: GoogleFonts.lato(
+                                fontSize: 15,
+                                color: _dark.withOpacity(0.55),
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // Name field (registration only)
                           if (!_isLogin) ...[
                             TextFormField(
                               controller: _nameController,
                               autofillHints: const [AutofillHints.name],
-                              decoration: InputDecoration(
-                                labelText: l10n.fullName,
-                                prefixIcon: const Icon(Icons.person),
-                                border: const OutlineInputBorder(),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
+                              style: GoogleFonts.lato(color: _dark, fontSize: 15),
+                              decoration: _fieldDecoration(l10n.fullName, Icons.person_outline),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return l10n.pleaseEnterYourName;
@@ -194,24 +230,18 @@ class _AuthScreenState extends State<AuthScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 14),
                           ],
 
+                          // Email field
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            autofillHints: const [
-                              AutofillHints.username,
-                              AutofillHints.email,
-                            ],
+                            autofillHints: const [AutofillHints.username, AutofillHints.email],
                             onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                            decoration: InputDecoration(
-                              labelText: l10n.email,
-                              prefixIcon: const Icon(Icons.email),
-                              border: const OutlineInputBorder(),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            ),
+                            style: GoogleFonts.lato(color: _dark, fontSize: 15),
+                            decoration: _fieldDecoration(l10n.email, Icons.email_outlined),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return l10n.pleaseEnterYourEmail;
@@ -222,8 +252,9 @@ class _AuthScreenState extends State<AuthScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
 
+                          // Password field
                           TextFormField(
                             controller: _passwordController,
                             focusNode: _passwordFocusNode,
@@ -233,29 +264,24 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ? const [AutofillHints.password]
                                 : const [AutofillHints.newPassword],
                             onFieldSubmitted: (_) {
-                              if (!_isLoading) {
-                                _submitForm();
-                              }
+                              if (!_isLoading) _submitForm();
                             },
-                            decoration: InputDecoration(
-                              labelText: l10n.password,
-                              prefixIcon: const Icon(Icons.lock),
+                            style: GoogleFonts.lato(color: _dark, fontSize: 15),
+                            decoration: _fieldDecoration(l10n.password, Icons.lock_outline).copyWith(
                               suffixIcon: Focus(
                                 canRequestFocus: false,
                                 skipTraversal: true,
                                 child: IconButton(
                                   icon: Icon(
-                                    _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                                    _isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    color: _dark.withOpacity(0.4),
+                                    size: 20,
                                   ),
                                   onPressed: () {
-                                    setState(() {
-                                      _isPasswordVisible = !_isPasswordVisible;
-                                    });
+                                    setState(() => _isPasswordVisible = !_isPasswordVisible);
                                   },
                                 ),
                               ),
-                              border: const OutlineInputBorder(),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -267,118 +293,163 @@ class _AuthScreenState extends State<AuthScreen> {
                               return null;
                             },
                           ),
-                          
-                          // Remember Me checkbox (only show for login)
+
+                          // Remember me + Forgot password (login only)
                           if (_isLogin) ...[
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 4),
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Checkbox(
-                                  value: _rememberMe,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _rememberMe = value ?? true;
-                                    });
-                                  },
-                                  activeColor: Colors.green.shade600,
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _rememberMe,
+                                      onChanged: (value) {
+                                        setState(() => _rememberMe = value ?? true);
+                                      },
+                                      activeColor: _dark,
+                                      side: BorderSide(color: _dark.withOpacity(0.4)),
+                                    ),
+                                    Text(
+                                      l10n.rememberMe30Days,
+                                      style: GoogleFonts.lato(
+                                        fontSize: 13,
+                                        color: _dark.withOpacity(0.65),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  l10n.rememberMe30Days,
-                                  style: const TextStyle(fontSize: 14),
+                                TextButton(
+                                  onPressed: _isLoading ? null : _openForgotPasswordFlow,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: _dark,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    l10n.forgotPassword,
+                                    style: GoogleFonts.lato(
+                                      fontSize: 13,
+                                      color: _dark.withOpacity(0.65),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: _isLoading ? null : _openForgotPasswordFlow,
-                                child: Text(
-                                  'Forgot password?',
-                                  style: TextStyle(color: Colors.green.shade700, fontSize: 13),
-                                ),
-                              ),
-                            ),
                           ],
-                          
-                          const SizedBox(height: 16),
+
+                          const SizedBox(height: 24),
 
                           // Error message
-                          if (_errorMessage.isNotEmpty)
+                          if (_errorMessage.isNotEmpty) ...[
                             Container(
-                              padding: const EdgeInsets.all(10),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
                                 color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: Colors.red.shade200),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.error, color: Colors.red.shade600, size: 18),
+                                  Icon(Icons.error_outline, color: Colors.red.shade600, size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       _errorMessage,
-                                      style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                                      style: GoogleFonts.lato(
+                                        color: Colors.red.shade700,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          if (_errorMessage.isNotEmpty) const SizedBox(height: 12),
+                            const SizedBox(height: 16),
+                          ],
 
-                          // Submit button - fixed styling to match outlined button dimensions
+                          // Submit button
                           SizedBox(
                             width: double.infinity,
-                            height: 40,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _submitForm,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green.shade600,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                            height: 56,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF2E6030), Color(0xFF1B3A1B)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _dark.withOpacity(0.3),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _submitForm,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : Text(
+                                        _isLogin ? l10n.logIn : l10n.registration,
+                                        style: GoogleFonts.lato(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
-                                    )
-                                  : Text(
-                                      _isLogin ? l10n.logIn : l10n.registration,
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                    ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 12),
 
-                          // Toggle mode button
+                          const SizedBox(height: 16),
+
+                          // Toggle login/register
                           Center(
                             child: TextButton(
                               onPressed: _isLoading ? null : _toggleMode,
+                              style: TextButton.styleFrom(foregroundColor: _dark),
                               child: Text(
                                 _isLogin
                                     ? l10n.dontHaveAccountRegistration
                                     : l10n.alreadyHaveAccountLogin,
-                                style: TextStyle(color: Colors.green.shade600, fontSize: 14),
+                                style: GoogleFonts.lato(
+                                  fontSize: 14,
+                                  color: _dark.withOpacity(0.65),
+                                ),
                               ),
                             ),
                           ),
+
+                          const SizedBox(height: 24),
                         ],
-                      )),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
-} 
+}

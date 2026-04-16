@@ -256,14 +256,15 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   }
 
   String _sourceLabel(String source) {
+    final l10n = AppLocalizations.of(context)!;
     switch (source) {
       case 'knowledge_base':
-        return 'Knowledge Base';
+        return l10n.chatSourceKnowledgeBase;
       case 'context':
-        return 'Context';
+        return l10n.chatSourceContext;
       case 'agent':
       default:
-        return 'Agent';
+        return l10n.chatSourceAgent;
     }
   }
 
@@ -304,14 +305,14 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            SizedBox(
+          children: [
+            const SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 8),
-            Text('Assistant is typing...'),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context)!.assistantTyping),
           ],
         ),
       ),
@@ -364,7 +365,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
             if (!isUser && message.source != null) ...[
               const SizedBox(height: 6),
               Text(
-                'Source: ${_sourceLabel(message.source!)}',
+                AppLocalizations.of(context)!.chatSourceLabel(_sourceLabel(message.source!)),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,

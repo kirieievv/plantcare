@@ -18,7 +18,7 @@ class AppTheme {
   static const Color shadowGrey = Color(0xFF000000);
 
   // Modern Typography
-  static const String fontFamily = 'Inter';
+  static const String fontFamily = 'Lato';
   
   static const TextStyle headingLarge = TextStyle(
     fontSize: 32,

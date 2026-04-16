@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
+import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/utils/app_theme.dart';
 
 class HealthImage {
@@ -28,6 +29,7 @@ class HealthGallery extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -41,7 +43,7 @@ class HealthGallery extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Health Check History',
+              l10n.healthCheckHistoryTitle,
               style: AppTheme.headingSmall.copyWith(
                 color: AppTheme.textPrimary,
               ),
@@ -55,7 +57,7 @@ class HealthGallery extends StatelessWidget {
                   color: AppTheme.accentGreen,
                   size: 24,
                 ),
-                tooltip: 'Add Health Check',
+                tooltip: l10n.addHealthCheckTooltip,
               ),
           ],
         ),
@@ -80,7 +82,7 @@ class HealthGallery extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No health checks yet',
+                  l10n.noHealthChecksYet,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -89,7 +91,7 @@ class HealthGallery extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Upload photos to track your plant\'s health over time',
+                  l10n.uploadPhotosToTrackHealth,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -120,6 +122,7 @@ class HealthGallery extends StatelessWidget {
   }
 
   Widget _buildHealthImageCard(BuildContext context, HealthImage image) {
+    final l10n = AppLocalizations.of(context)!;
     final isHealthy = image.healthResult['status'] == 'ok';
     
     return Card(
@@ -188,7 +191,7 @@ class HealthGallery extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isHealthy ? 'OK' : 'Issue',
+                            isHealthy ? l10n.healthStatusOk : l10n.healthStatusIssue,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -211,7 +214,7 @@ class HealthGallery extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _formatDate(image.timestamp),
+                  _formatDate(image.timestamp, l10n),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -238,16 +241,16 @@ class HealthGallery extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime date, AppLocalizations l10n) {
     final now = DateTime.now();
     final difference = now.difference(date);
     
     if (difference.inDays == 0) {
-      return 'Today';
+      return l10n.today;
     } else if (difference.inDays == 1) {
-      return 'Yesterday';
+      return l10n.yesterday;
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
+      return l10n.nDaysAgo(difference.inDays);
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }

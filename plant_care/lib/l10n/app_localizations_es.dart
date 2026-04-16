@@ -137,6 +137,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get french => 'Français';
 
   @override
+  String get german => 'Deutsch';
+
+  @override
   String get savePreferences => 'Guardar preferencias';
 
   @override
@@ -475,4 +478,274 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get plantChatQuickWhatToDoNow => '¿Qué debo hacer ahora?';
+
+  @override
+  String get splashTagline => 'Tu compañero inteligente de plantas';
+
+  @override
+  String get getStarted => 'Comenzar';
+
+  @override
+  String get splashDescription => 'Supervisa tus plantas, obtén consejos de cuidado personalizados\ny sigue su salud — todo en un solo lugar.';
+
+  @override
+  String get forgotPassword => '¿Olvidaste tu contraseña?';
+
+  @override
+  String get resetYourPassword => 'Restablecer tu contraseña';
+
+  @override
+  String get enterEmailForCode => 'Introduce el correo de tu cuenta para recibir un código de verificación.';
+
+  @override
+  String get sendCode => 'Enviar código';
+
+  @override
+  String get enterVerificationCode => 'Introduce el código de verificación';
+
+  @override
+  String get weSentACodeTo => 'Enviamos un código de 6 dígitos a';
+
+  @override
+  String get verificationCodeSentAgain => 'Código de verificación enviado de nuevo.';
+
+  @override
+  String resendCodeInSeconds(int seconds) => 'Reenviar código en ${seconds}s';
+
+  @override
+  String get resendCode => 'Reenviar código';
+
+  @override
+  String get setNewPassword => 'Establecer una nueva contraseña';
+
+  @override
+  String get confirmPassword => 'Confirmar contraseña';
+
+  @override
+  String get updatePassword => 'Actualizar contraseña';
+
+  @override
+  String get passwordResetSuccess => 'Contraseña restablecida con éxito. Por favor, inicia sesión.';
+
+  @override
+  String get totalPlants => 'Plantas totales';
+
+  @override
+  String get needWater => 'Necesitan agua';
+
+  @override
+  String get healthy => 'Saludables';
+
+  @override
+  String get yourPlants => 'Tus plantas';
+
+  @override
+  String get plantCreatedSuccessfully => '¡Planta creada con éxito! 🌱';
+
+  @override
+  String get reminderEmail => 'Correo electrónico';
+
+  @override
+  String get reminderEmailSubtitle => 'Correos de recordatorio de riego';
+
+  @override
+  String get pushNotifications => 'Notificaciones push';
+
+  @override
+  String get pushNotificationsSubtitle => 'Alertas en la app (iOS / Android)';
+
+  @override
+  String wateringOverdueNDays(int days) => 'Atrasado ${days}d';
+
+  @override
+  String get wateringToday => 'Riego hoy';
+
+  @override
+  String get wateringTomorrow => 'Riego mañana';
+
+  @override
+  String wateringInNDays(int days) => 'Riego en ${days}d';
+
+  @override
+  String plantWateredSuccess(Object plantName) => '¡$plantName ha sido regada! 💧';
+
+  @override
+  String errorWateringPlant(Object error) => 'Error al regar la planta: $error';
+
+  @override
+  String get healthIssueDetected => 'Problema de salud detectado';
+
+  @override
+  String get recommendedActionsLabel => 'Acciones recomendadas:';
+
+  @override
+  String get healthAlertNote => 'Esta alerta permanecerá visible hasta que una revisión de salud posterior indique OK';
+
+  @override
+  String get addHealthCheckTooltip => 'Agregar revisión de salud';
+
+  @override
+  String get noHealthChecksYet => 'Aún no hay revisiones de salud';
+
+  @override
+  String get uploadPhotosToTrackHealth => 'Sube fotos para seguir la salud de tu planta a lo largo del tiempo';
+
+  @override
+  String get today => 'Hoy';
+
+  @override
+  String get yesterday => 'Ayer';
+
+  @override
+  String nDaysAgo(int days) => 'Hace $days días';
+
+  @override
+  String get healthStatusOk => 'OK';
+
+  @override
+  String get healthStatusIssue => 'Problema';
+
+  @override
+  String get assistantTyping => 'El asistente está escribiendo...';
+
+  @override
+  String chatSourceLabel(Object source) => 'Fuente: $source';
+
+  @override
+  String get chatSourceKnowledgeBase => 'Base de conocimiento';
+
+  @override
+  String get chatSourceContext => 'Contexto';
+
+  @override
+  String get chatSourceAgent => 'Agente';
+
+  @override
+  String get choosePhoto => 'Elegir foto';
+
+  @override
+  String get gallery => 'Galería';
+
+  @override
+  String get camera => 'Cámara';
+
+  @override
+  String get analyzeHealth => 'Analizar salud';
+
+  @override
+  String get analyzing => 'Analizando...';
+
+  @override
+  String get imageReadyForAnalysis => '¡Imagen subida con éxito! Lista para el análisis de salud.';
+
+  @override
+  String get healthCheckTitle => 'Revisión de salud';
+
+  @override
+  String get healthCheckHistoryTitle => 'Historial de salud';
+
+  @override
+  String healthCheckUploadHint(Object plantName) => 'Sube una foto de $plantName para el análisis de salud por IA';
+
+  @override
+  String get deletePlant => 'Eliminar planta';
+
+  @override
+  String get deletePlantConfirm => '¿Estás seguro de que quieres eliminar esta planta?';
+
+  @override
+  String get delete => 'Eliminar';
+
+  @override
+  String get iHaveWatered => 'He regado';
+
+  @override
+  String get soilMoisture => 'Humedad del suelo';
+
+  @override
+  String get lightLabel => 'Luz';
+
+  @override
+  String get perDay => 'por día';
+
+  @override
+  String get hoursLabel => 'horas';
+
+  @override
+  String get careRecommendationsTitle => 'Recomendaciones de cuidado';
+
+  @override
+  String get interestingFactsTitle => 'Datos interesantes';
+
+  @override
+  String get noCareRecommendationsYet => 'Las recomendaciones de cuidado generadas por IA aún no están disponibles para esta planta.';
+
+  @override
+  String get noInterestingFactsYet => 'Los datos interesantes generados por IA aún no están disponibles para esta planta.';
+
+  @override
+  String get noDescriptionYet => 'Aún no hay descripción disponible.';
+
+  @override
+  String get swipeToSeeMore => 'Desliza para ver más';
+
+  @override
+  String get uploadPhotosForHealthHistory => 'Sube fotos para seguir la salud de tu planta';
+
+  @override
+  String plantDeletedMessage(Object plantName) => 'La planta "$plantName" ha sido eliminada';
+
+  @override
+  String get noImageAvailable => 'No hay imagen disponible';
+
+  @override
+  String get addPhotoToSeeYourPlant => 'Agrega una foto para ver tu planta aquí';
+
+  @override
+  String get isThisYourPlant => '¿Es esta tu planta?';
+
+  @override
+  String get speciesPickSubtitle => 'Encontramos estas opciones — elige la que corresponde';
+
+  @override
+  String get noneOfThese => 'Ninguna de estas';
+
+  @override
+  String get typePlantNameRetry => 'Escribe el nombre de la planta e intentaremos de nuevo';
+
+  @override
+  String get gettingCareRecommendations => 'Obteniendo recomendaciones de cuidado';
+
+  @override
+  String get imageUploadedAnalysisComplete => '¡Imagen subida con éxito! Análisis de IA completo.';
+
+  @override
+  String get aiCareRecommendationsHeader => 'Recomendaciones de cuidado de IA';
+
+  @override
+  String get aiReady => 'IA lista';
+
+  @override
+  String get checkPlantButton => 'Revisar planta';
+
+  @override
+  String get plantCareAssistantTitle => 'Asistente de cuidado de plantas';
+
+  @override
+  String get plantNeedsHelp => '¡La planta necesita ayuda!';
+
+  @override
+  String get whatToDoNow => 'Qué hacer ahora';
+  String get wateringLabel => 'Riego';
+  String get nowLabel => 'Ahora';
+  String get nextIn1Day => 'Siguiente en 1 día';
+  String nextInNDays(int days) => 'Siguiente en $days días';
+  String get wateringDone => 'Riego completado';
+  String get moistureDry => 'Seco';
+  String get moistureWet => 'Húmedo';
+  String get moistureLevelVeryDry => 'Muy seco';
+  String get moistureLevelDry => 'Seco';
+  String get moistureLevelSlightlyMoist => 'Ligeramente húmedo';
+  String get moistureLevelMoist => 'Húmedo';
+  String get moistureLevelVeryMoist => 'Muy húmedo';
 }

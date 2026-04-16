@@ -20,6 +20,8 @@ class LanguageService {
 
   static Locale _localeFromCode(String code) {
     switch (code) {
+      case 'de':
+        return const Locale('de');
       case 'es':
         return const Locale('es');
       case 'fr':

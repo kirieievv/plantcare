@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/notification_test.dart';
 import '../utils/web_push_tester.dart';
-import '../utils/web_notification_helper_stub.dart'
-    if (dart.library.html) '../utils/web_notification_helper.dart';
+import '../utils/web_notification_helper.dart';
 
 class NotificationTestScreen extends StatefulWidget {
   const NotificationTestScreen({super.key});
@@ -20,10 +19,12 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
     required String en,
     required String es,
     required String fr,
+    String? de,
   }) {
     final code = Localizations.localeOf(context).languageCode;
     if (code == 'es') return es;
     if (code == 'fr') return fr;
+    if (code == 'de') return de ?? en;
     return en;
   }
 
