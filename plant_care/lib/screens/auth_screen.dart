@@ -394,6 +394,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   shadowColor: Colors.transparent,
                                   foregroundColor: Colors.white,
                                   disabledBackgroundColor: Colors.transparent,
+                                  minimumSize: const Size(double.infinity, 56),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
