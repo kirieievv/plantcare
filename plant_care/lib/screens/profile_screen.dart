@@ -141,23 +141,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                 children: [
-                  // Profile Header - More compact
+                  // Profile Header
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.green.shade600,
-                          Colors.green.shade400,
-                        ],
-                      ),
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.green.withOpacity(0.3),
-                          spreadRadius: 1,
-                          blurRadius: 8,
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -166,13 +160,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         CircleAvatar(
                           radius: 35,
-                          backgroundColor: Colors.white,
+                          backgroundColor: Colors.grey.shade100,
                           child: Text(
                             _userProfile?.name?.substring(0, 1).toUpperCase() ?? 'U',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green.shade600,
+                              color: Colors.grey.shade600,
                             ),
                           ),
                         ),
@@ -183,10 +177,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Text(
                                 _userProfile?.name ?? l10n.plantLover,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: isDark ? Colors.white : AppTheme.textPrimary,
                                 ),
                               ),
                               if (_userProfile?.email != null) ...[
@@ -195,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   _userProfile!.email,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.grey.shade500,
                                   ),
                                 ),
                               ],
@@ -203,13 +197,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 const SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    Icon(Icons.location_on, size: 12, color: Colors.white.withOpacity(0.8)),
+                                    Icon(Icons.location_on, size: 12, color: Colors.grey.shade400),
                                     const SizedBox(width: 4),
                                     Text(
                                       _userProfile!.location!,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.white.withOpacity(0.8),
+                                        color: Colors.grey.shade500,
                                       ),
                                     ),
                                   ],
@@ -223,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Profile Form - More compact
+                  // Profile Form
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -231,9 +225,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: cardShadowColor,
-                          spreadRadius: 1,
-                          blurRadius: 8,
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -338,7 +331,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Account Information - More compact
+                  // Account Information
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -346,9 +339,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: cardShadowColor,
-                          spreadRadius: 1,
-                          blurRadius: 8,
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -398,9 +390,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: cardShadowColor,
-                          spreadRadius: 1,
-                          blurRadius: 8,
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
                       ],

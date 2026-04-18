@@ -1635,7 +1635,7 @@ async function sendWateringReminderPushMulticast(
       tokens: chunk,
     };
     try {
-      const response = await admin.messaging().sendMulticast(message);
+      const response = await admin.messaging().sendEachForMulticast(message);
       successTotal += response.successCount;
       if (response.failureCount > 0) {
         const firstErr = response.responses.find((r) => !r.success)?.error;
@@ -1749,6 +1749,216 @@ exports.migrateFcmTokens = functions.https.onRequest(async (req, res) => {
     }
   });
 });
+
+/**
+ * FCM tokens for a user: fcm_tokens collection + legacy users.fcmTokens[].
+ */
+async function fetchMergedFcmTokens(db, uid) {
+  const snap = await db.collection('fcm_tokens').where('userId', '==', uid).get();
+  const seen = new Set();
+  const tokens = [];
+  for (const d of snap.docs) {
+    if (!seen.has(d.id)) {
+      seen.add(d.id);
+      tokens.push(d.id);
+    }
+  }
+  try {
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (userDoc.exists) {
+      const arr = userDoc.data().fcmTokens;
+      if (Array.isArray(arr)) {
+        for (const t of arr) {
+          const s = typeof t === 'string' ? t.trim() : '';
+          if (s.length > 20 && !seen.has(s)) {
+            seen.add(s);
+            tokens.push(s);
+          }
+        }
+      }
+    }
+  } catch (_) {}
+  return tokens;
+}
+
+/**
+ * Test / scheduled push (same transport as watering reminders).
+ */
+async function sendFcmTestMulticast(db, userId, tokens, title, body) {
+  if (!tokens || tokens.length === 0) return 0;
+  let successTotal = 0;
+  const t = truncateForFcmNotification(title, 100);
+  const b = truncateForFcmNotification(body, 240);
+  for (let i = 0; i < tokens.length; i += FCM_WATERING_MULTICAST_MAX) {
+    const chunk = tokens.slice(i, i + FCM_WATERING_MULTICAST_MAX);
+    const message = {
+      notification: { title: t, body: b },
+      data: {
+        type: 'test_push',
+        action: 'none',
+      },
+      android: { priority: 'high' },
+      apns: {
+        headers: { 'apns-priority': '10' },
+        payload: { aps: { sound: 'default' } },
+      },
+      tokens: chunk,
+    };
+    try {
+      const response = await admin.messaging().sendEachForMulticast(message);
+      successTotal += response.successCount;
+      if (response.failureCount > 0) {
+        const firstErr = response.responses.find((r) => !r.success)?.error;
+        console.warn(
+          `⚠️ FCM test push partial failure user=${userId} ok=${response.successCount} fail=${response.failureCount} first=${firstErr?.code || firstErr?.message || firstErr}`
+        );
+      }
+      await removeInvalidTokens(db, userId, chunk, response);
+    } catch (e) {
+      console.error('❌ FCM test push send error:', e.message);
+    }
+  }
+  return successTotal;
+}
+
+/**
+ * Schedule a test FCM push for the signed-in user (delay 1–1440 minutes).
+ * POST JSON: { delayMinutes?: number, title?: string, body?: string }
+ * Header: Authorization: Bearer <Firebase ID token>
+ *
+ * A scheduled job sends the push shortly after sendAt (runs every minute).
+ */
+exports.scheduleTestPush = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+
+      const authHeader = String(req.headers.authorization || '');
+      const bearerToken = authHeader.startsWith('Bearer ')
+        ? authHeader.slice('Bearer '.length).trim()
+        : '';
+      if (!bearerToken) {
+        return res.status(401).json({ success: false, error: 'Missing bearer token.' });
+      }
+
+      let decoded;
+      try {
+        decoded = await admin.auth().verifyIdToken(bearerToken);
+      } catch (_) {
+        return res.status(401).json({ success: false, error: 'Invalid auth token.' });
+      }
+
+      const uid = decoded.uid;
+      const body = req.body || {};
+      let delayMinutes = Number(body.delayMinutes);
+      if (!Number.isFinite(delayMinutes)) delayMinutes = 20;
+      delayMinutes = Math.round(delayMinutes);
+      delayMinutes = Math.min(1440, Math.max(1, delayMinutes));
+
+      const title =
+        typeof body.title === 'string' && body.title.trim()
+          ? body.title.trim().slice(0, 80)
+          : 'Plant Care — test push';
+      const text =
+        typeof body.body === 'string' && body.body.trim()
+          ? body.body.trim().slice(0, 200)
+          : `Тестовый push через ${delayMinutes} мин. Если видишь это уведомление — FCM работает.`;
+
+      const sendAt = admin.firestore.Timestamp.fromMillis(Date.now() + delayMinutes * 60 * 1000);
+      const db = admin.firestore();
+      const ref = await db.collection('scheduled_test_pushes').add({
+        userId: uid,
+        sendAt,
+        status: 'pending',
+        title,
+        body: text,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return res.json({
+        success: true,
+        id: ref.id,
+        sendAt: sendAt.toDate().toISOString(),
+        delayMinutes,
+      });
+    } catch (error) {
+      console.error('scheduleTestPush error:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+});
+
+/**
+ * Sends due scheduled test pushes (created by scheduleTestPush).
+ */
+exports.processScheduledTestPushes = functions.pubsub
+  .schedule('every 1 minutes')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+    const snap = await db
+      .collection('scheduled_test_pushes')
+      .where('sendAt', '<=', now)
+      .orderBy('sendAt', 'asc')
+      .limit(100)
+      .get();
+
+    let sent = 0;
+    let failed = 0;
+    for (const doc of snap.docs) {
+      const data = doc.data() || {};
+      if (data.status !== 'pending') continue;
+      const uid = data.userId;
+      if (!uid) {
+        await doc.ref.update({
+          status: 'failed',
+          error: 'missing userId',
+          processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        failed += 1;
+        continue;
+      }
+
+      const tokens = await fetchMergedFcmTokens(db, uid);
+      if (tokens.length === 0) {
+        await doc.ref.update({
+          status: 'failed',
+          error: 'no_fcm_tokens',
+          processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        failed += 1;
+        continue;
+      }
+
+      const title = data.title || 'Plant Care — test push';
+      const body = data.body || 'Test push';
+      const ok = await sendFcmTestMulticast(db, uid, tokens, title, body);
+      if (ok > 0) {
+        await doc.ref.update({
+          status: 'sent',
+          devicesOk: ok,
+          processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        sent += 1;
+        console.log(`✅ scheduled test push sent doc=${doc.id} user=${uid} devices=${ok}`);
+      } else {
+        await doc.ref.update({
+          status: 'failed',
+          error: 'fcm_zero_success',
+          processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        failed += 1;
+      }
+    }
+
+    if (sent || failed) {
+      console.log(`📲 processScheduledTestPushes: sent=${sent} failed=${failed}`);
+    }
+    return null;
+  });
 
 /**
  * Calculate scientific watering - simplified version without full implementation

@@ -502,7 +502,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   Widget _buildPlaceholderImage() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.accentGreen.withOpacity(0.1),
+        color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(AppTheme.radiusL - 2),
       ),
       child: Column(
@@ -511,14 +511,14 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           Icon(
             Icons.photo_camera,
             size: 48,
-            color: AppTheme.accentGreen.withOpacity(0.6),
+            color: Colors.grey.shade400,
           ),
           const SizedBox(height: 8),
           Text(
             l10n.uploadPlantPhoto,
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.accentGreen.withOpacity(0.7),
+              color: Colors.grey.shade500,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -931,8 +931,20 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   }
 
   Widget _buildInputCard(String label, String hintText, IconData icon, {TextEditingController? controller, String? Function(String?)? validator, Color? iconColor}) {
-    return Card(
-      elevation: 4,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Card(
+      elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -969,15 +981,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   // Random name button
                   Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.accentGreen.withOpacity(0.1),
+                      color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.accentGreen.withOpacity(0.3)),
+                      border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: IconButton(
                       onPressed: _generateRandomPlantName,
                       icon: Icon(
                         Icons.shuffle,
-                        color: AppTheme.accentGreen,
+                        color: Colors.grey.shade600,
                         size: 24,
                       ),
                       tooltip: l10n.generateRandomName,
@@ -1003,12 +1015,25 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
   Widget _buildImageUploadCard() {
-    return Card(
-      elevation: 4,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Card(
+      elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusL)),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -1039,20 +1064,20 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               child: Container(
                 width: 200,
                 height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusL),
-                  border: Border.all(
-                    color: AppTheme.accentGreen.withOpacity(0.3),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.accentGreen.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1.5,
                     ),
-                  ],
-                ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
                 child: _selectedImageBytes != null
                     ? Stack(
                         children: [
@@ -1164,6 +1189,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             ],
           ],
         ),
+      ),
       ),
     );
   }
@@ -2037,6 +2063,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.lightGrey,
       body: SafeArea(
         child: CustomScrollView(
         slivers: [
