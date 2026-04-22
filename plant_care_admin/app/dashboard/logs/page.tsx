@@ -218,6 +218,7 @@ export default function LogsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">User</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Tokens</TableHead>
                     <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Token (truncated)</TableHead>
                     <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Platform</TableHead>
                     <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Registered</TableHead>
@@ -226,42 +227,57 @@ export default function LogsPage() {
                 <TableBody>
                   {filteredTokens.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                         No push tokens found.
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    filteredTokens.map((t) => {
-                      const user = users[t.userId];
-                      return (
-                        <TableRow key={t.id} className="hover:bg-muted/50">
+                  ) : (() => {
+                    // Group by userId
+                    const grouped: Record<string, FcmToken[]> = {};
+                    filteredTokens.forEach((t) => {
+                      if (!grouped[t.userId]) grouped[t.userId] = [];
+                      grouped[t.userId].push(t);
+                    });
+                    return Object.entries(grouped).flatMap(([uid, userTokens]) => {
+                      const user = users[uid];
+                      return userTokens.map((t, idx) => (
+                        <TableRow key={t.id} className={`hover:bg-muted/50 ${userTokens.length > 1 ? "bg-orange-50/40" : ""}`}>
                           <TableCell>
-                            {user ? (
-                              <Link href={`/dashboard/users/${t.userId}`} className="hover:underline">
-                                <p className="text-sm font-medium">{user.name || "—"}</p>
-                                <p className="text-xs text-muted-foreground">{user.email}</p>
-                              </Link>
-                            ) : (
-                              <p className="text-xs text-muted-foreground font-mono">{t.userId.slice(0, 16)}…</p>
+                            {idx === 0 ? (
+                              user ? (
+                                <Link href={`/dashboard/users/${uid}`} className="hover:underline">
+                                  <p className="text-sm font-medium">{user.name || "—"}</p>
+                                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                                </Link>
+                              ) : (
+                                <div>
+                                  <p className="text-xs font-mono text-muted-foreground">{uid.slice(0, 20)}…</p>
+                                  <Badge variant="destructive" className="text-xs mt-1">No profile — orphan</Badge>
+                                </div>
+                              )
+                            ) : null}
+                          </TableCell>
+                          <TableCell>
+                            {idx === 0 && userTokens.length > 1 && (
+                              <Badge className="bg-orange-100 text-orange-700 text-xs">{userTokens.length} devices</Badge>
+                            )}
+                            {idx === 0 && userTokens.length === 1 && (
+                              <Badge variant="outline" className="text-xs">1 device</Badge>
                             )}
                           </TableCell>
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {t.token.slice(0, 20)}…
                           </TableCell>
                           <TableCell>
-                            {t.platform ? (
-                              <Badge variant="outline" className="text-xs">{t.platform}</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">iOS</Badge>
-                            )}
+                            <Badge variant="outline" className="text-xs">{t.platform || "iOS"}</Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {t.createdAt ? format(t.createdAt, "MMM d, yyyy") : "—"}
                           </TableCell>
                         </TableRow>
-                      );
-                    })
-                  )}
+                      ));
+                    });
+                  })()}
                 </TableBody>
               </Table>
             </CardContent>
