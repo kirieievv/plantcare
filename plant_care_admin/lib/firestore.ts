@@ -240,6 +240,34 @@ export async function fetchNewUsersLast30Days(): Promise<{ date: string; count: 
   return result;
 }
 
+// ─── Push Tokens ─────────────────────────────────────────────────────────────
+
+export interface FcmToken {
+  id: string;
+  userId: string;
+  token: string;
+  userEmail?: string;
+  userName?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  platform?: string;
+}
+
+export async function fetchFcmTokens(): Promise<FcmToken[]> {
+  const snap = await getDocs(collection(db, "fcm_tokens"));
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId || "",
+      token: data.token || d.id,
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
+      platform: data.platform,
+    };
+  });
+}
+
 // ─── Mail Logs ────────────────────────────────────────────────────────────────
 
 export async function fetchMailLogs(pageSize = 50): Promise<MailLog[]> {
