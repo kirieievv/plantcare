@@ -170,7 +170,16 @@ export default function LogsPage() {
                       <TableRow key={log.id} className="hover:bg-muted/50">
                         <TableCell className="text-sm font-medium">{log.to}</TableCell>
                         <TableCell className="text-sm max-w-xs truncate text-muted-foreground">{log.subject || "—"}</TableCell>
-                        <TableCell>{deliveryBadge(log.delivery?.state)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            {deliveryBadge(log.delivery?.state)}
+                            {log.delivery?.error && (
+                              <p className="text-xs text-destructive max-w-[260px] break-words leading-tight">
+                                {log.delivery.error}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{log.delivery?.attempts ?? "—"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {log.createdAt ? format(log.createdAt, "MMM d, HH:mm") : "—"}
