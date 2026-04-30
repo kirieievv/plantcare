@@ -240,6 +240,217 @@ export async function fetchNewUsersLast30Days(): Promise<{ date: string; count: 
   return result;
 }
 
+// ─── AI Usage ────────────────────────────────────────────────────────────────
+
+export interface AiUsageRecord {
+  id: string;
+  userId: string | null;
+  plantId: string | null;
+  type: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  costUsd: number | null;
+  timestamp?: Date;
+}
+
+export interface AiCostSummary {
+  totalCostUsd: number;
+  totalTokens: number;
+  byType: Record<string, { cost: number; tokens: number; count: number }>;
+}
+
+export async function fetchAiUsage(limitN = 500): Promise<AiUsageRecord[]> {
+  const snap = await getDocs(
+    query(collection(db, "ai_usage"), orderBy("timestamp", "desc"), limit(limitN))
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId ?? null,
+      plantId: data.plantId ?? null,
+      type: data.type || "unknown",
+      model: data.model || "",
+      inputTokens: data.inputTokens || 0,
+      outputTokens: data.outputTokens || 0,
+      totalTokens: data.totalTokens || 0,
+      costUsd: data.costUsd ?? null,
+      timestamp: toDate(data.timestamp),
+    };
+  });
+}
+
+export async function fetchAiUsageByUser(userId: string): Promise<AiUsageRecord[]> {
+  const snap = await getDocs(
+    query(
+      collection(db, "ai_usage"),
+      where("userId", "==", userId),
+      orderBy("timestamp", "desc"),
+      limit(200)
+    )
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId ?? null,
+      plantId: data.plantId ?? null,
+      type: data.type || "unknown",
+      model: data.model || "",
+      inputTokens: data.inputTokens || 0,
+      outputTokens: data.outputTokens || 0,
+      totalTokens: data.totalTokens || 0,
+      costUsd: data.costUsd ?? null,
+      timestamp: toDate(data.timestamp),
+    };
+  });
+}
+
+export function summarizeAiUsage(records: AiUsageRecord[]): AiCostSummary {
+  const byType: AiCostSummary["byType"] = {};
+  let totalCostUsd = 0;
+  let totalTokens = 0;
+  for (const r of records) {
+    const cost = r.costUsd ?? 0;
+    totalCostUsd += cost;
+    totalTokens += r.totalTokens;
+    if (!byType[r.type]) byType[r.type] = { cost: 0, tokens: 0, count: 0 };
+    byType[r.type].cost += cost;
+    byType[r.type].tokens += r.totalTokens;
+    byType[r.type].count += 1;
+  }
+  return { totalCostUsd, totalTokens, byType };
+}
+
+// ─── Health Checks ───────────────────────────────────────────────────────────
+
+export interface HealthCheck {
+  id: string;
+  userId: string;
+  plantId: string;
+  plantName?: string;
+  status?: string;
+  createdAt?: Date;
+  imageUrl?: string;
+}
+
+export async function fetchHealthChecks(limitN = 200): Promise<HealthCheck[]> {
+  const snap = await getDocs(
+    query(collection(db, "health_checks"), orderBy("createdAt", "desc"), limit(limitN))
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId || "",
+      plantId: data.plantId || "",
+      plantName: data.plantName,
+      status: data.status,
+      createdAt: toDate(data.createdAt),
+      imageUrl: data.imageUrl,
+    };
+  });
+}
+
+export async function fetchHealthChecksByUser(userId: string): Promise<HealthCheck[]> {
+  const snap = await getDocs(
+    query(
+      collection(db, "health_checks"),
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc"),
+      limit(100)
+    )
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId || "",
+      plantId: data.plantId || "",
+      plantName: data.plantName,
+      status: data.status,
+      createdAt: toDate(data.createdAt),
+      imageUrl: data.imageUrl,
+    };
+  });
+}
+
+// ─── Seasonal Tips ────────────────────────────────────────────────────────────
+
+export interface SeasonalTipWeek {
+  weekKey: string;
+  weekStart?: string;
+  season?: string;
+  month?: string;
+  generatedAt?: Date;
+  model?: string;
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  estimatedCostUsd?: number | null;
+  tips: SeasonalTip[];
+}
+
+export interface SeasonalTip {
+  index: number;
+  en: string;
+  de: string;
+  es: string;
+  fr: string;
+  category: string;
+}
+
+export async function fetchSeasonalTipWeeks(limitN = 12): Promise<SeasonalTipWeek[]> {
+  const snap = await getDocs(
+    query(collection(db, "seasonal_tips"), orderBy("generatedAt", "desc"), limit(limitN))
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      weekKey: d.id,
+      weekStart: data.weekStart,
+      season: data.season,
+      month: data.month,
+      generatedAt: toDate(data.generatedAt),
+      model: data.model,
+      usage: data.usage,
+      estimatedCostUsd: data.estimatedCostUsd ?? null,
+      tips: (data.tips || []).map((t: Record<string, unknown>, i: number) => ({
+        index: typeof t.index === "number" ? t.index : i,
+        en: (t.en as string) || "",
+        de: (t.de as string) || "",
+        es: (t.es as string) || "",
+        fr: (t.fr as string) || "",
+        category: (t.category as string) || "general",
+      })),
+    };
+  });
+}
+
+export async function fetchSeasonalTipWeek(weekKey: string): Promise<SeasonalTipWeek | null> {
+  const snap = await getDoc(doc(db, "seasonal_tips", weekKey));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  return {
+    weekKey: snap.id,
+    weekStart: data.weekStart,
+    season: data.season,
+    month: data.month,
+    generatedAt: toDate(data.generatedAt),
+    model: data.model,
+    usage: data.usage,
+    estimatedCostUsd: data.estimatedCostUsd ?? null,
+    tips: (data.tips || []).map((t: Record<string, unknown>, i: number) => ({
+      index: typeof t.index === "number" ? t.index : i,
+      en: (t.en as string) || "",
+      de: (t.de as string) || "",
+      es: (t.es as string) || "",
+      fr: (t.fr as string) || "",
+      category: (t.category as string) || "general",
+    })),
+  };
+}
+
 // ─── Push Tokens ─────────────────────────────────────────────────────────────
 
 export interface FcmToken {

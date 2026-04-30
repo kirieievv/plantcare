@@ -335,6 +335,24 @@
   "chatSourceKnowledgeBase": "Base de conocimiento",
   "chatSourceContext": "Contexto",
   "chatSourceAgent": "Agente",
+  "chatAttachPhoto": "Adjuntar foto",
+  "chatPhotoQuota": "{used}/{limit} fotos hoy",
+  "@chatPhotoQuota": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "limit": {"type": "int"}
+    }
+  },
+  "chatPhotoQuotaExhausted": "Límite diario de fotos alcanzado. Inténtalo mañana.",
+  "chatPhotoUploading": "Subiendo foto...",
+  "chatPhotoUploadFailed": "Error al subir la foto. Inténtalo de nuevo.",
+  "chatRemovePhoto": "Quitar foto",
+  "chatCopyMessage": "Copiar",
+  "chatClearHistory": "Borrar historial",
+  "chatClearHistoryConfirm": "¿Eliminar todos los mensajes de esta planta?",
+  "chatClearHistorySuccess": "Historial de chat borrado.",
+  "chatDateToday": "Hoy",
+  "chatDateYesterday": "Ayer",
   "choosePhoto": "Elegir foto",
   "gallery": "Galería",
   "camera": "Cámara",

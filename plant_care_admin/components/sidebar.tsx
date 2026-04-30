@@ -10,6 +10,7 @@ import {
   Leaf,
   BarChart2,
   ScrollText,
+  Lightbulb,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/dashboard/plants", label: "Plants", icon: Leaf },
   { href: "/dashboard/stats", label: "Stats", icon: BarChart2 },
   { href: "/dashboard/logs", label: "Logs", icon: ScrollText },
+  { href: "/dashboard/tips", label: "Tips", icon: Lightbulb },
 ];
 
 export function Sidebar() {

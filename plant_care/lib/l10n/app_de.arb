@@ -335,6 +335,24 @@
   "chatSourceKnowledgeBase": "Wissensdatenbank",
   "chatSourceContext": "Kontext",
   "chatSourceAgent": "Agent",
+  "chatAttachPhoto": "Foto anhängen",
+  "chatPhotoQuota": "{used}/{limit} Fotos heute",
+  "@chatPhotoQuota": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "limit": {"type": "int"}
+    }
+  },
+  "chatPhotoQuotaExhausted": "Tägliches Fotolimit erreicht. Morgen erneut versuchen.",
+  "chatPhotoUploading": "Foto hochladen...",
+  "chatPhotoUploadFailed": "Foto konnte nicht hochgeladen werden. Bitte versuche es erneut.",
+  "chatRemovePhoto": "Foto entfernen",
+  "chatCopyMessage": "Kopieren",
+  "chatClearHistory": "Verlauf löschen",
+  "chatClearHistoryConfirm": "Alle Nachrichten für diese Pflanze löschen?",
+  "chatClearHistorySuccess": "Chatverlauf gelöscht.",
+  "chatDateToday": "Heute",
+  "chatDateYesterday": "Gestern",
   "choosePhoto": "Foto wählen",
   "gallery": "Galerie",
   "camera": "Kamera",

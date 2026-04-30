@@ -42,3 +42,9 @@ String get sendTestWateringReminderEmailUrl {
   final projectId = Firebase.app().options.projectId;
   return 'https://us-central1-$projectId.cloudfunctions.net/sendTestWateringReminderEmail';
 }
+
+/// Read or check the daily image-upload quota for the plant chat.
+String get chatImageQuotaUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/chatImageQuota';
+}

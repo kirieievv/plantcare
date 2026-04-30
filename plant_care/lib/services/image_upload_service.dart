@@ -67,6 +67,32 @@ class ImageUploadService {
     }
   }
 
+  /// Upload a chat image to Firebase Storage and return download URL.
+  /// Stored separately from plant / health-check photos at chat_images/{uid}/{plantId}/...
+  Future<String> uploadChatImage(List<int> imageBytes, String plantId) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = 'chat_images/${user.uid}/$plantId/${timestamp}.jpg';
+
+    final storageRef = _storage.ref().child(fileName);
+    final uploadTask = storageRef.putData(
+      imageBytes is Uint8List ? imageBytes : Uint8List.fromList(imageBytes),
+      SettableMetadata(
+        contentType: 'image/jpeg',
+        customMetadata: {
+          'plantId': plantId,
+          'uploadedBy': user.uid,
+          'uploadedAt': DateTime.now().toIso8601String(),
+          'source': 'chat',
+        },
+      ),
+    );
+    final snapshot = await uploadTask;
+    return await snapshot.ref.getDownloadURL();
+  }
+
   /// Delete a plant image from Firebase Storage
   Future<void> deletePlantImage(String imageUrl) async {
     try {

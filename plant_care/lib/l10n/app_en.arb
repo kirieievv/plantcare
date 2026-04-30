@@ -335,6 +335,24 @@
   "chatSourceKnowledgeBase": "Knowledge Base",
   "chatSourceContext": "Context",
   "chatSourceAgent": "Agent",
+  "chatAttachPhoto": "Attach photo",
+  "chatPhotoQuota": "{used}/{limit} photos today",
+  "@chatPhotoQuota": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "limit": {"type": "int"}
+    }
+  },
+  "chatPhotoQuotaExhausted": "Daily photo limit reached. Try again tomorrow.",
+  "chatPhotoUploading": "Uploading photo...",
+  "chatPhotoUploadFailed": "Failed to upload photo. Please try again.",
+  "chatRemovePhoto": "Remove photo",
+  "chatCopyMessage": "Copy",
+  "chatClearHistory": "Clear history",
+  "chatClearHistoryConfirm": "Delete all messages for this plant?",
+  "chatClearHistorySuccess": "Chat history cleared.",
+  "chatDateToday": "Today",
+  "chatDateYesterday": "Yesterday",
   "choosePhoto": "Choose photo",
   "gallery": "Gallery",
   "camera": "Camera",

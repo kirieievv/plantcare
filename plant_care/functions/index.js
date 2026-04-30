@@ -9,6 +9,61 @@ const cors = require('cors')({ origin: true });
 // Supported: 'gpt-4o-mini', 'gpt-4o', 'gpt-4.1', 'gpt-5.1', etc.
 const AI_MODEL = 'gpt-5.1';
 const TOKEN_PARAM = AI_MODEL.startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens';
+
+// Prices in USD per 1M tokens (source: openai.com/api/pricing, April 2026)
+const MODEL_PRICING = {
+  'gpt-5.4':       { input: 2.50,  cachedInput: 0.25,   output: 15.00  },
+  'gpt-5.4-mini':  { input: 0.75,  cachedInput: 0.075,  output: 4.50   },
+  'gpt-5.4-nano':  { input: 0.20,  cachedInput: 0.02,   output: 1.25   },
+  'gpt-5.4-pro':   { input: 30.00, cachedInput: null,   output: 180.00 },
+  'gpt-5.2':       { input: 1.75,  cachedInput: 0.175,  output: 14.00  },
+  'gpt-5.2-pro':   { input: 21.00, cachedInput: null,   output: 168.00 },
+  'gpt-5.1':       { input: 1.25,  cachedInput: 0.125,  output: 10.00  },
+  'gpt-5':         { input: 1.25,  cachedInput: 0.125,  output: 10.00  },
+  'gpt-5-mini':    { input: 0.25,  cachedInput: 0.025,  output: 2.00   },
+  'gpt-5-nano':    { input: 0.05,  cachedInput: 0.005,  output: 0.40   },
+  'gpt-5-pro':     { input: 15.00, cachedInput: null,   output: 120.00 },
+  'gpt-4.1':       { input: 2.00,  cachedInput: 0.50,   output: 8.00   },
+  'gpt-4.1-mini':  { input: 0.40,  cachedInput: 0.10,   output: 1.60   },
+  'gpt-4.1-nano':  { input: 0.10,  cachedInput: 0.025,  output: 0.40   },
+  'gpt-4o':        { input: 2.50,  cachedInput: 1.25,   output: 10.00  },
+  'gpt-4o-mini':   { input: 0.15,  cachedInput: 0.075,  output: 0.60   },
+  'o4-mini':       { input: 1.10,  cachedInput: 0.275,  output: 4.40   },
+  'o3':            { input: 2.00,  cachedInput: 0.50,   output: 8.00   },
+  'o3-mini':       { input: 1.10,  cachedInput: 0.55,   output: 4.40   },
+  'o3-pro':        { input: 20.00, cachedInput: null,   output: 80.00  },
+  'o1':            { input: 15.00, cachedInput: 7.50,   output: 60.00  },
+  'o1-mini':       { input: 1.10,  cachedInput: 0.55,   output: 4.40   },
+};
+
+function calcAiCost(model, inputTokens, outputTokens) {
+  const p = MODEL_PRICING[model];
+  if (!p) return null;
+  return (inputTokens * p.input + outputTokens * p.output) / 1_000_000;
+}
+
+async function saveAiUsage(db, { userId, plantId, type, model, usage }) {
+  if (!usage) return;
+  try {
+    const inputTokens = usage.prompt_tokens || 0;
+    const outputTokens = usage.completion_tokens || 0;
+    const totalTokens = usage.total_tokens || (inputTokens + outputTokens);
+    const costUsd = calcAiCost(model, inputTokens, outputTokens);
+    await db.collection('ai_usage').add({
+      userId: userId || null,
+      plantId: plantId || null,
+      type,
+      model,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      costUsd,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    console.warn('⚠️ saveAiUsage failed:', e.message);
+  }
+}
 // ─────────────────────────────────────────────────────────────────────
 
 // Initialize Firebase Admin
@@ -483,7 +538,7 @@ Input JSON:
 ${JSON.stringify(payload, null, 2)}`;
 }
 
-async function generateWateringEmailWithAI(input) {
+async function generateWateringEmailWithAI(input, usageCtx) {
   const fallback = buildWateringEmailFallback(input);
   try {
     const openaiClient = await initializeOpenAI();
@@ -499,6 +554,11 @@ async function generateWateringEmailWithAI(input) {
         { role: 'user', content: buildWateringEmailPrompt(input) },
       ],
     });
+
+    if (response.usage && usageCtx) {
+      const db = admin.firestore();
+      await saveAiUsage(db, { ...usageCtx, type: 'watering_email', model: AI_MODEL, usage: response.usage });
+    }
 
     const content = response?.choices?.[0]?.message?.content;
     if (!content) return fallback;
@@ -1050,6 +1110,11 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
           temperature: 0.5,
         });
 
+        if (response.usage) {
+          const db = admin.firestore();
+          await saveAiUsage(db, { userId: req.body.userId || null, plantId: req.body.plantId || null, type: 'plant_analysis', model: AI_MODEL, usage: response.usage });
+        }
+
         const content = response.choices[0].message.content;
         let recommendations = parseAIResponse(content);
         recommendations = normalizeRecommendations(recommendations, req.body || {});
@@ -1073,6 +1138,11 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
         [TOKEN_PARAM]: 1000,
         temperature: 0.7,
       });
+
+      if (idResponse.usage) {
+        const db = admin.firestore();
+        await saveAiUsage(db, { userId: req.body.userId || null, plantId: req.body.plantId || null, type: 'plant_identification', model: AI_MODEL, usage: idResponse.usage });
+      }
 
       const idContent = idResponse.choices[0].message.content;
       console.log('🔍 Species identification response:', idContent);
@@ -1245,6 +1315,7 @@ exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
       let escalationReason = null;
       const attemptTrace = [];
       let accepted = false;
+      const accUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
       for (let tierIndex = 0; tierIndex < HEALTH_CHECK_IMAGE_TIERS.length; tierIndex++) {
         attempts++;
@@ -1265,6 +1336,12 @@ exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
           [TOKEN_PARAM]: 3000,
           temperature: isRetry ? 0.3 : 0.8,
         });
+
+        if (response.usage) {
+          accUsage.prompt_tokens += response.usage.prompt_tokens || 0;
+          accUsage.completion_tokens += response.usage.completion_tokens || 0;
+          accUsage.total_tokens += response.usage.total_tokens || 0;
+        }
 
         content = response.choices?.[0]?.message?.content || '';
         recommendations = parseAIResponse(content);
@@ -1307,6 +1384,11 @@ exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
           },
         };
         recommendations = normalizeRecommendations(recommendations, req.body || {});
+      }
+
+      if (accUsage.total_tokens > 0) {
+        const db = admin.firestore();
+        await saveAiUsage(db, { userId, plantId, type: 'health_check', model: AI_MODEL, usage: accUsage });
       }
 
       return res.json({
@@ -1418,6 +1500,11 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         temperature: 0.4,
       });
 
+      if (response.usage) {
+        const db = admin.firestore();
+        await saveAiUsage(db, { userId, plantId, type: 'chat', model: AI_MODEL, usage: response.usage });
+      }
+
       const answer = response.choices?.[0]?.message?.content?.trim() ||
         'I could not generate a response right now. Please try again.';
 
@@ -1528,7 +1615,7 @@ exports.sendTestWateringReminderEmail = functions.https.onRequest((req, res) => 
         minutesToDue,
         minutesOverdue,
         recommendedAmountMl: plantData.wateringAmountMl || null,
-      });
+      }, { userId, plantId });
 
       await db.collection('mail').add({
         to: email,
@@ -3021,7 +3108,7 @@ exports.processWateringEmailReminders = functions.pubsub
         minutesToDue,
         minutesOverdue,
         recommendedAmountMl: data.wateringAmountMl || null,
-      });
+      }, { userId: uid, plantId: doc.id });
 
       let mailQueued = false;
       if (canTryEmail) {

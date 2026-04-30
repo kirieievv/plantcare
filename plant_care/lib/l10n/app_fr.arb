@@ -335,6 +335,24 @@
   "chatSourceKnowledgeBase": "Base de connaissances",
   "chatSourceContext": "Contexte",
   "chatSourceAgent": "Agent",
+  "chatAttachPhoto": "Joindre une photo",
+  "chatPhotoQuota": "{used}/{limit} photos aujourd'hui",
+  "@chatPhotoQuota": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "limit": {"type": "int"}
+    }
+  },
+  "chatPhotoQuotaExhausted": "Limite quotidienne de photos atteinte. Réessayez demain.",
+  "chatPhotoUploading": "Téléchargement de la photo...",
+  "chatPhotoUploadFailed": "Échec du téléchargement. Veuillez réessayer.",
+  "chatRemovePhoto": "Supprimer la photo",
+  "chatCopyMessage": "Copier",
+  "chatClearHistory": "Effacer l'historique",
+  "chatClearHistoryConfirm": "Supprimer tous les messages pour cette plante ?",
+  "chatClearHistorySuccess": "Historique du chat effacé.",
+  "chatDateToday": "Aujourd'hui",
+  "chatDateYesterday": "Hier",
   "choosePhoto": "Choisir une photo",
   "gallery": "Galerie",
   "camera": "Appareil photo",

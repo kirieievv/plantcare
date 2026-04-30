@@ -1,13 +1,22 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { fetchUserById, fetchPlantsByUser, type AdminUser, type AdminPlant } from "@/lib/firestore";
+import {
+  fetchUserById,
+  fetchPlantsByUser,
+  fetchAiUsageByUser,
+  summarizeAiUsage,
+  type AdminUser,
+  type AdminPlant,
+  type AiUsageRecord,
+  type AiCostSummary,
+} from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Leaf, MapPin, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, Leaf, MapPin, Clock, Calendar, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 
@@ -29,18 +38,30 @@ function notifBadge(state?: string, muted?: boolean) {
   return <Badge className="bg-green-100 text-green-700">OK</Badge>;
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  health_check: "Health Check",
+  chat: "Chat",
+  watering_email: "Watering Email",
+  plant_analysis: "Plant Analysis",
+  plant_identification: "Plant ID",
+};
+
 export default function UserDetailPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = use(params);
   const [user, setUser] = useState<AdminUser | null>(null);
   const [plants, setPlants] = useState<AdminPlant[]>([]);
+  const [aiRecords, setAiRecords] = useState<AiUsageRecord[]>([]);
+  const [aiSummary, setAiSummary] = useState<AiCostSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([fetchUserById(uid), fetchPlantsByUser(uid)])
-      .then(([u, p]) => {
+    Promise.all([fetchUserById(uid), fetchPlantsByUser(uid), fetchAiUsageByUser(uid)])
+      .then(([u, p, ai]) => {
         setUser(u);
         setPlants(p);
+        setAiRecords(ai);
+        setAiSummary(summarizeAiUsage(ai));
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -128,9 +149,68 @@ export default function UserDetailPage({ params }: { params: Promise<{ uid: stri
               </span>
               <span className="font-semibold">{plants.length}</span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Sparkles className="h-3 w-3" /> AI Spend
+              </span>
+              <span className="font-semibold">
+                {aiSummary ? `$${aiSummary.totalCostUsd.toFixed(4)}` : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Sparkles className="h-3 w-3" /> AI Tokens
+              </span>
+              <span>{aiSummary ? aiSummary.totalTokens.toLocaleString() : "—"}</span>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {aiSummary && aiSummary.totalTokens > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-purple-500" />
+              AI Usage — ${aiSummary.totalCostUsd.toFixed(4)} total ({aiSummary.totalTokens.toLocaleString()} tokens)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Model</TableHead>
+                  <TableHead className="text-right">In tokens</TableHead>
+                  <TableHead className="text-right">Out tokens</TableHead>
+                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {aiRecords.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {TYPE_LABELS[r.type] ?? r.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{r.model}</TableCell>
+                    <TableCell className="text-right text-xs">{r.inputTokens.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-xs">{r.outputTokens.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-xs font-mono">
+                      {r.costUsd != null ? `$${r.costUsd.toFixed(5)}` : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {r.timestamp ? format(r.timestamp, "MMM d, HH:mm") : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

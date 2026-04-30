@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchStats, fetchNewUsersLast30Days, type StatsOverview } from "@/lib/firestore";
+import {
+  fetchStats,
+  fetchNewUsersLast30Days,
+  fetchAiUsage,
+  summarizeAiUsage,
+  type StatsOverview,
+  type AiCostSummary,
+} from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Users,
@@ -11,6 +18,7 @@ import {
   AlertTriangle,
   BellOff,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import {
   AreaChart,
@@ -53,14 +61,16 @@ function StatCard({
 export default function DashboardPage() {
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [chartData, setChartData] = useState<{ date: string; count: number }[]>([]);
+  const [aiSummary, setAiSummary] = useState<AiCostSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([fetchStats(), fetchNewUsersLast30Days()])
-      .then(([s, chart]) => {
+    Promise.all([fetchStats(), fetchNewUsersLast30Days(), fetchAiUsage(1000)])
+      .then(([s, chart, aiRecords]) => {
         setStats(s);
         setChartData(chart);
+        setAiSummary(summarizeAiUsage(aiRecords));
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -125,6 +135,20 @@ export default function DashboardPage() {
               : "—"
           }
           icon={TrendingUp}
+        />
+        <StatCard
+          title="AI Spend (all time)"
+          value={
+            aiSummary
+              ? `$${aiSummary.totalCostUsd.toFixed(4)}`
+              : "—"
+          }
+          icon={Sparkles}
+          description={
+            aiSummary
+              ? `${aiSummary.totalTokens.toLocaleString()} tokens total`
+              : undefined
+          }
         />
       </div>
 
