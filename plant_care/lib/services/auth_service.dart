@@ -49,6 +49,12 @@ class AuthService {
           'name': name,
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
+          'wateringReminderChannels': {
+            'email': true,
+            'push': true,
+          },
+          'emailVerified': true,
+          'emailVerifiedAt': FieldValue.serverTimestamp(),
         });
         print('User document created in Firestore'); // Debug logging
       } catch (e) {
@@ -146,12 +152,13 @@ class AuthService {
     );
 
     if (response.statusCode >= 400) {
-      var errorMsg = 'Failed to request reset code.';
       try {
         final payload = jsonDecode(response.body) as Map<String, dynamic>;
-        errorMsg = payload['error']?.toString() ?? errorMsg;
-      } catch (_) {}
-      throw errorMsg;
+        throw payload['errorCode']?.toString() ?? 'SEND_FAILED';
+      } catch (e) {
+        if (e is String) rethrow;
+        throw 'SEND_FAILED';
+      }
     }
   }
 
@@ -189,19 +196,58 @@ class AuthService {
     final response = await http.post(
       Uri.parse(verifyPasswordResetPinUrl),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'pin': pin,
-      }),
+      body: jsonEncode({'email': email, 'pin': pin}),
     );
 
     if (response.statusCode >= 400) {
-      var errorMsg = 'Invalid verification code.';
       try {
         final payload = jsonDecode(response.body) as Map<String, dynamic>;
-        errorMsg = payload['error']?.toString() ?? errorMsg;
-      } catch (_) {}
-      throw errorMsg;
+        throw payload['errorCode']?.toString() ?? 'INVALID_PIN';
+      } catch (e) {
+        if (e is String) rethrow;
+        throw 'INVALID_PIN';
+      }
+    }
+  }
+
+  // Send 6-digit PIN to email for registration verification.
+  static Future<void> sendEmailVerificationPin(String email) async {
+    final response = await http.post(
+      Uri.parse(sendEmailVerificationPinUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode >= 400) {
+      try {
+        final payload = jsonDecode(response.body) as Map<String, dynamic>;
+        throw payload['errorCode']?.toString() ?? 'SEND_FAILED';
+      } catch (e) {
+        if (e is String) rethrow;
+        throw 'SEND_FAILED';
+      }
+    }
+  }
+
+  // Verify 6-digit PIN for registration email verification.
+  static Future<void> verifyEmailPin({
+    required String email,
+    required String pin,
+  }) async {
+    final response = await http.post(
+      Uri.parse(verifyEmailPinUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'pin': pin}),
+    );
+
+    if (response.statusCode >= 400) {
+      try {
+        final payload = jsonDecode(response.body) as Map<String, dynamic>;
+        throw payload['errorCode']?.toString() ?? 'INVALID_PIN';
+      } catch (e) {
+        if (e is String) rethrow;
+        throw 'INVALID_PIN';
+      }
     }
   }
 
@@ -248,7 +294,7 @@ class AuthService {
         case 'invalid-email':
           return 'Please enter a valid email address.';
         case 'user-disabled':
-          return 'This account has been disabled.';
+          return 'This account has been deleted. Please contact support if you think this is a mistake.';
         case 'too-many-requests':
           return 'Too many failed attempts. Please try again later.';
         case 'operation-not-allowed':

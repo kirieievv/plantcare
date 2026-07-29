@@ -5,10 +5,17 @@ const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
 
 // ── AI Model Configuration ──────────────────────────────────────────
-// Change this single line to switch between models.
-// Supported: 'gpt-4o-mini', 'gpt-4o', 'gpt-4.1', 'gpt-5.1', etc.
-const AI_MODEL = 'gpt-5.1';
-const TOKEN_PARAM = AI_MODEL.startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens';
+// Model for watering reminder emails — cheap, template-style text.
+const WATERING_EMAIL_MODEL = 'gpt-4o-mini';
+const WATERING_EMAIL_TOKEN_PARAM = WATERING_EMAIL_MODEL.startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens';
+
+// Model for plant photo analysis (add plant + health checks) — quality matters.
+const ANALYSIS_MODEL = 'gpt-5.1';
+const ANALYSIS_TOKEN_PARAM = ANALYSIS_MODEL.startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens';
+
+// Model for chat assistant.
+const CHAT_MODEL = 'gpt-5.1';
+const CHAT_TOKEN_PARAM = CHAT_MODEL.startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens';
 
 // Prices in USD per 1M tokens (source: openai.com/api/pricing, April 2026)
 const MODEL_PRICING = {
@@ -60,6 +67,13 @@ async function saveAiUsage(db, { userId, plantId, type, model, usage }) {
       costUsd,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
+    // Update running totals (used by admin Overview — no index required)
+    await db.collection('system').doc('ai_totals').set({
+      totalCalls: admin.firestore.FieldValue.increment(1),
+      totalCostUsd: admin.firestore.FieldValue.increment(costUsd ?? 0),
+      totalTokens: admin.firestore.FieldValue.increment(totalTokens),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
   } catch (e) {
     console.warn('⚠️ saveAiUsage failed:', e.message);
   }
@@ -163,7 +177,7 @@ exports.requestPasswordResetPin = functions.https.onRequest((req, res) => {
         if (e && e.code === 'auth/user-not-found') {
           return res.status(404).json({
             success: false,
-            error: 'No account found with this email.',
+            error: 'No account with that email address exists. Please check the email or sign up.',
           });
         }
         throw e;
@@ -433,9 +447,9 @@ function toIso(value) {
 const WATERING_EMAIL_LEAD_MINUTES = 30;
 const WATERING_EMAIL_FOLLOW_UP_MINUTES = 30;
 /** Firestore query lower bound for nextDueAt (exclude ancient rows). */
-const WATERING_EMAIL_STALE_LOOKBACK_DAYS = 3650;
-/** No fixed day-cap on reminder cycles — continues until the user waters. */
-const WATERING_EMAIL_MAX_REMINDERS = 100000;
+const WATERING_EMAIL_STALE_LOOKBACK_DAYS = 11;
+/** Max stale-slot catch-up steps per plant per invocation (avoids timeouts). */
+const WATERING_EMAIL_MAX_REMINDERS = 20;
 /** Max stale-slot catch-up steps per plant per invocation (avoids timeouts). */
 const WATERING_EMAIL_STALE_CATCHUP_MAX_STEPS = 40;
 const WATERING_EMAIL_STALE_BUFFER_MS = 20 * 60 * 1000;
@@ -447,11 +461,14 @@ function sanitizeLocale(value) {
   const locale = String(value || 'en').trim().toLowerCase();
   if (locale.startsWith('es')) return 'es';
   if (locale.startsWith('fr')) return 'fr';
+  if (locale.startsWith('de')) return 'de';
+  if (locale.startsWith('ru')) return 'ru';
+  if (locale.startsWith('uk')) return 'uk';
   return 'en';
 }
 
 function buildReminderCycleId(plantId, nextDueAt) {
-  return `${plantId}:${nextDueAt.toISOString()}`;
+  return `v2:${plantId}:${nextDueAt.toISOString()}`;
 }
 
 function buildWateringEmailFallback({ stage, plantName, cultivar, userName, minutesToDue, minutesOverdue, locale }) {
@@ -484,6 +501,48 @@ function buildWateringEmailFallback({ stage, plantName, cultivar, userName, minu
     const subject = `${safePlantName}: arrosage dans ${dueLabel}`;
     const text = `Bonjour ${safeUserName}. Rappel: ${safePlantName}${cultivarHint} devrait etre arrose dans environ ${dueLabel}. Apres arrosage, appuyez sur "I have watered" dans l'app.`;
     const html = `<p>Bonjour ${safeUserName},</p><p>Rappel: <strong>${safePlantName}${cultivarHint}</strong> devrait etre arrose dans environ <strong>${dueLabel}</strong>.</p><p>Apres arrosage, appuyez sur <strong>I have watered</strong> dans l'app.</p><p>- Plant Care</p>`;
+    return { subject, text, html };
+  }
+
+  if (locale === 'de') {
+    if (stage === 'followup_reminder') {
+      const subject = `${safePlantName}: Gießen noch ausstehend`;
+      const text = `Hallo ${safeUserName}. Wir haben noch kein "I have watered" für ${safePlantName}${cultivarHint} erhalten. Falls du schon gegossen hast, tippe den Button in der App. Wenn nicht, gieße bitte, sobald du kannst.`;
+      const html = `<p>Hallo ${safeUserName},</p><p>Wir haben noch kein <strong>I have watered</strong> für <strong>${safePlantName}${cultivarHint}</strong> erhalten.</p><p>Falls du schon gegossen hast, tippe den Button in der App. Wenn nicht, gieße bitte, sobald du kannst.</p><p>- Plant Care</p>`;
+      return { subject, text, html };
+    }
+    const dueLabel = Number.isFinite(minutesToDue) ? `${minutesToDue} min` : '30 min';
+    const subject = `${safePlantName}: Gießen in ${dueLabel}`;
+    const text = `Hallo ${safeUserName}. Erinnerung: ${safePlantName}${cultivarHint} sollte in etwa ${dueLabel} gegossen werden. Tippe nach dem Gießen auf "I have watered" in der App.`;
+    const html = `<p>Hallo ${safeUserName},</p><p>Erinnerung: <strong>${safePlantName}${cultivarHint}</strong> sollte in etwa <strong>${dueLabel}</strong> gegossen werden.</p><p>Tippe nach dem Gießen auf <strong>I have watered</strong> in der App.</p><p>- Plant Care</p>`;
+    return { subject, text, html };
+  }
+
+  if (locale === 'ru') {
+    if (stage === 'followup_reminder') {
+      const subject = `${safePlantName}: полив всё ещё ожидается`;
+      const text = `Привет, ${safeUserName}. Мы пока не видим "I have watered" для ${safePlantName}${cultivarHint}. Если вы уже полили, нажмите кнопку в приложении. Если нет — полейте, когда сможете.`;
+      const html = `<p>Привет, ${safeUserName}!</p><p>Мы пока не видим <strong>I have watered</strong> для <strong>${safePlantName}${cultivarHint}</strong>.</p><p>Если вы уже полили, нажмите кнопку в приложении. Если нет — полейте, когда сможете.</p><p>- Plant Care</p>`;
+      return { subject, text, html };
+    }
+    const dueLabel = Number.isFinite(minutesToDue) ? `${minutesToDue} мин` : '30 мин';
+    const subject = `${safePlantName}: полив через ${dueLabel}`;
+    const text = `Привет, ${safeUserName}. Напоминание: ${safePlantName}${cultivarHint} нужно полить примерно через ${dueLabel}. После полива нажмите "I have watered" в приложении.`;
+    const html = `<p>Привет, ${safeUserName}!</p><p>Напоминание: <strong>${safePlantName}${cultivarHint}</strong> нужно полить примерно через <strong>${dueLabel}</strong>.</p><p>После полива нажмите <strong>I have watered</strong> в приложении.</p><p>- Plant Care</p>`;
+    return { subject, text, html };
+  }
+
+  if (locale === 'uk') {
+    if (stage === 'followup_reminder') {
+      const subject = `${safePlantName}: полив усе ще очікується`;
+      const text = `Привіт, ${safeUserName}. Ми поки не бачимо "I have watered" для ${safePlantName}${cultivarHint}. Якщо ви вже полили, натисніть кнопку в застосунку. Якщо ні — полийте, коли зможете.`;
+      const html = `<p>Привіт, ${safeUserName}!</p><p>Ми поки не бачимо <strong>I have watered</strong> для <strong>${safePlantName}${cultivarHint}</strong>.</p><p>Якщо ви вже полили, натисніть кнопку в застосунку. Якщо ні — полийте, коли зможете.</p><p>- Plant Care</p>`;
+      return { subject, text, html };
+    }
+    const dueLabel = Number.isFinite(minutesToDue) ? `${minutesToDue} хв` : '30 хв';
+    const subject = `${safePlantName}: полив через ${dueLabel}`;
+    const text = `Привіт, ${safeUserName}. Нагадування: ${safePlantName}${cultivarHint} треба полити приблизно через ${dueLabel}. Після поливу натисніть "I have watered" у застосунку.`;
+    const html = `<p>Привіт, ${safeUserName}!</p><p>Нагадування: <strong>${safePlantName}${cultivarHint}</strong> треба полити приблизно через <strong>${dueLabel}</strong>.</p><p>Після поливу натисніть <strong>I have watered</strong> у застосунку.</p><p>- Plant Care</p>`;
     return { subject, text, html };
   }
 
@@ -545,9 +604,9 @@ async function generateWateringEmailWithAI(input, usageCtx) {
     if (!openaiClient || !openaiClient.apiKey) return fallback;
 
     const response = await openaiClient.chat.completions.create({
-      model: AI_MODEL,
+      model: WATERING_EMAIL_MODEL,
       temperature: 0.3,
-      [TOKEN_PARAM]: 260,
+      [WATERING_EMAIL_TOKEN_PARAM]: 260,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: 'You are a concise email copywriter. Output JSON only.' },
@@ -557,7 +616,7 @@ async function generateWateringEmailWithAI(input, usageCtx) {
 
     if (response.usage && usageCtx) {
       const db = admin.firestore();
-      await saveAiUsage(db, { ...usageCtx, type: 'watering_email', model: AI_MODEL, usage: response.usage });
+      await saveAiUsage(db, { ...usageCtx, type: 'watering_email', model: WATERING_EMAIL_MODEL, usage: response.usage });
     }
 
     const content = response?.choices?.[0]?.message?.content;
@@ -662,7 +721,7 @@ async function loadHealthCheckAgentContext(plantId, userId) {
   return context;
 }
 
-const HEALTH_CHECK_IMAGE_TIERS = [2, 5, 10];
+const HEALTH_CHECK_IMAGE_TIERS = [1, 3];
 
 function getPreviousImagesForTier(context, tierSize) {
   return (context.recentImageUrls || []).slice(0, Math.max(0, tierSize));
@@ -718,7 +777,12 @@ function evaluateHealthCheckAgentResult(recommendations, context) {
   return { ok: true, reason: 'accepted' };
 }
 
-function buildHealthCheckContentBlocks(promptText, currentImageUrl, previousImageUrls, isRetry) {
+function buildHealthCheckContentBlocks(promptText, currentImageUrls, previousImageUrls, isRetry) {
+  // currentImageUrls can be a single string (legacy) or an array (multi-photo)
+  const currentUrls = Array.isArray(currentImageUrls) ? currentImageUrls : [currentImageUrls];
+
+  const photoLabels = ['Photo 1 (full plant)', 'Photo 2 (close-up)', 'Photo 3 (problem area)'];
+
   const blocks = [
     {
       type: 'text',
@@ -726,17 +790,18 @@ function buildHealthCheckContentBlocks(promptText, currentImageUrl, previousImag
         ? `CRITICAL: Return ONLY valid JSON. ${promptText}`
         : promptText,
     },
-    {
-      type: 'image_url',
-      image_url: { url: currentImageUrl },
-    },
   ];
 
+  currentUrls.forEach((url, idx) => {
+    if (!url) return;
+    if (currentUrls.length > 1) {
+      blocks.push({ type: 'text', text: photoLabels[idx] || `Photo ${idx + 1}` });
+    }
+    blocks.push({ type: 'image_url', image_url: { url } });
+  });
+
   for (const previousUrl of previousImageUrls) {
-    blocks.push({
-      type: 'image_url',
-      image_url: { url: previousUrl },
-    });
+    blocks.push({ type: 'image_url', image_url: { url: previousUrl } });
   }
   return blocks;
 }
@@ -921,7 +986,18 @@ function normalizeRecommendations(recommendations, reqBody = {}) {
   return recommendations;
 }
 
-function buildHealthCheckAgentPrompt(context, plantNameHint) {
+function resolveLanguageName(code) {
+  const map = {
+    de: 'German',
+    es: 'Spanish',
+    fr: 'French',
+    ru: 'Russian',
+    uk: 'Ukrainian',
+  };
+  return map[code] || 'English';
+}
+
+function buildHealthCheckAgentPrompt(context, plantNameHint, language) {
   const plantSummary = context.plant || {};
   const checksSummary = (context.recentHealthChecks || []).map((c, idx) => ({
     idx: idx + 1,
@@ -954,6 +1030,7 @@ Return ONLY valid JSON (no markdown) using this schema:
   "watering_plan": { "should_water_now": true, "next_watering_in_days": 7, "amount_ml": 250, "reason_short": "string" },
   "care_recommendations": {
     "name": "exact plant name from image", "general_description": "detailed description", "moisture": "40-60%",
+    "moisture_check_tip": "practical tip for THIS plant on how to check soil moisture (e.g. finger test depth, expected feel, plant-specific cues)",
     "water": "specific water recommendations", "light": "4-6 hours", "temperature": "range", "fertilizer": "schedule",
     "soil": "soil type", "growth_rate": "growth info", "toxicity": "safety", "placement": "placement", "personality": "traits"
   },
@@ -978,7 +1055,10 @@ Rules:
 - Use history to adapt advice (avoid contradicting recent watering events unless visible condition strongly requires it).
 - If previous images are provided, mention trend in health_assessment (improving/stable/worsening) when possible.
 - Also consider these stabilizing factors when available: days since last watering, recent recommendedAmountMl vs actual amountMl from watering_events, and whether the plant was recently marked healthy/issue_detected.
-`;
+- plant_assistant fields by status — REQUIRED, never omit:
+  - If status="healthy": praise_phrase (encouraging short phrase), health_summary (1-2 sentence assessment), maintenance_footer (short care reminder). Leave problem_name/problem_description/severity/action_steps/reassurance empty.
+  - If status="issue_detected": problem_name, problem_description, severity, action_steps (array), follow_up_days, reassurance. Leave praise_phrase/health_summary/maintenance_footer empty.
+- CRITICAL: Write ALL string text fields in ${resolveLanguageName(language)}. Keep ONLY scientific names (species.ai_species_guess) and fixed enum values (soil.visual_state, other_care.growth_stage, plant_assistant.status, plant_assistant.severity) in English.`;
 }
 
 function buildPlantChatSystemPrompt(context, options = {}) {
@@ -1080,39 +1160,56 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
         throw new Error('OPENAI_API_KEY is not configured');
       }
 
-      const { base64Image, userHint, confirmedSpecies } = req.body;
+      const { base64Image, base64Images, userHint, confirmedSpecies, language } = req.body;
 
-      if (!base64Image) {
+      // Support both single base64Image (legacy) and base64Images[] array
+      const imageList = base64Images && Array.isArray(base64Images) && base64Images.length > 0
+        ? base64Images
+        : (base64Image ? [base64Image] : []);
+
+      if (imageList.length === 0) {
         return res.status(400).json({ error: 'Base64 image is required' });
       }
 
+      const primaryImage = imageList[0];
+
       console.log('🔍 Starting image analysis');
-      console.log('🔍 Image length:', base64Image.length);
+      console.log('🔍 Photo count:', imageList.length);
       if (userHint) console.log('🔍 User hint:', userHint);
       if (confirmedSpecies) console.log('🔍 Confirmed species:', confirmedSpecies);
+
+      // Build content blocks (multi-image aware)
+      function buildImageContentBlocks(promptText, images) {
+        const blocks = [{ type: 'text', text: promptText }];
+        images.forEach((b64, idx) => {
+          if (!b64) return;
+          if (images.length > 1) {
+            const label = idx === 0 ? 'Photo 1 (whole plant with pot)' : 'Photo 2 (close-up of leaves)';
+            blocks.push({ type: 'text', text: label });
+          }
+          blocks.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } });
+        });
+        return blocks;
+      }
 
       // ── STEP 1: If species is already confirmed, skip identification ──
       if (confirmedSpecies) {
         console.log('🔍 Species confirmed, fetching full recommendations for:', confirmedSpecies);
-        const fullPrompt = buildFullAnalysisPrompt(confirmedSpecies);
-        const imageUrl = `data:image/jpeg;base64,${base64Image}`;
+        const fullPrompt = buildFullAnalysisPrompt(confirmedSpecies, language);
 
         const response = await openaiClient.chat.completions.create({
-          model: AI_MODEL,
+          model: ANALYSIS_MODEL,
           messages: [{
             role: 'user',
-            content: [
-              { type: 'text', text: fullPrompt },
-              { type: 'image_url', image_url: { url: imageUrl } },
-            ],
+            content: buildImageContentBlocks(fullPrompt, imageList),
           }],
-          [TOKEN_PARAM]: 3000,
+          [ANALYSIS_TOKEN_PARAM]: 3000,
           temperature: 0.5,
         });
 
         if (response.usage) {
           const db = admin.firestore();
-          await saveAiUsage(db, { userId: req.body.userId || null, plantId: req.body.plantId || null, type: 'plant_analysis', model: AI_MODEL, usage: response.usage });
+          await saveAiUsage(db, { userId: req.body.userId || null, plantId: req.body.plantId || null, type: 'plant_analysis', model: ANALYSIS_MODEL, usage: response.usage });
         }
 
         const content = response.choices[0].message.content;
@@ -1123,25 +1220,21 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
       }
 
       // ── STEP 2: Identify top 3 species candidates ──
-      const identifyPrompt = buildSpeciesIdentificationPrompt(userHint);
-      const imageUrl = `data:image/jpeg;base64,${base64Image}`;
+      const identifyPrompt = buildSpeciesIdentificationPrompt(userHint, language);
 
       const idResponse = await openaiClient.chat.completions.create({
-        model: AI_MODEL,
+        model: ANALYSIS_MODEL,
         messages: [{
           role: 'user',
-          content: [
-            { type: 'text', text: identifyPrompt },
-            { type: 'image_url', image_url: { url: imageUrl } },
-          ],
+          content: buildImageContentBlocks(identifyPrompt, imageList),
         }],
-        [TOKEN_PARAM]: 1000,
+        [ANALYSIS_TOKEN_PARAM]: 1000,
         temperature: 0.7,
       });
 
       if (idResponse.usage) {
         const db = admin.firestore();
-        await saveAiUsage(db, { userId: req.body.userId || null, plantId: req.body.plantId || null, type: 'plant_identification', model: AI_MODEL, usage: idResponse.usage });
+        await saveAiUsage(db, { userId: req.body.userId || null, plantId: req.body.plantId || null, type: 'plant_identification', model: ANALYSIS_MODEL, usage: idResponse.usage });
       }
 
       const idContent = idResponse.choices[0].message.content;
@@ -1178,22 +1271,29 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
   });
 });
 
-function buildSpeciesIdentificationPrompt(userHint) {
+function buildSpeciesIdentificationPrompt(userHint, language) {
   const hintLine = userHint
     ? `The user suggests this might be: "${userHint}". Consider this hint but still rely on your visual analysis.`
     : '';
 
+  const langName = resolveLanguageName(language);
+  const langInstruction = langName !== 'English'
+    ? `IMPORTANT: Write "common_name" and "visual_hint" in ${langName}. Keep "scientific_name" in Latin (unchanged).`
+    : 'Write "common_name" and "visual_hint" in English.';
+
   return `Analyze this plant photo and identify the TOP 3 most likely species.
 ${hintLine}
+
+${langInstruction}
 
 Return ONLY valid JSON (no markdown, no explanations):
 {
   "top_3_species": [
     {
       "scientific_name": "Genus species",
-      "common_name": "Common name in English",
+      "common_name": "Common name in ${langName}",
       "confidence": 0.95,
-      "visual_hint": "Brief 1-sentence description of key visual features that distinguish this species"
+      "visual_hint": "Brief 1-sentence description of key visual features in ${langName}"
     },
     {
       "scientific_name": "...",
@@ -1212,14 +1312,14 @@ Return ONLY valid JSON (no markdown, no explanations):
 
 Rules:
 - confidence is 0.0–1.0, must decrease from first to third
-- scientific_name must be real botanical names (Genus species format)
-- common_name should be the most widely used English common name
-- visual_hint should describe what makes this species look like the photo
+- scientific_name must be real botanical names (Genus species format) — always in Latin, never translated
+- common_name must be in ${langName}
+- visual_hint must be in ${langName} and describe what makes this species look like the photo
 - Always return exactly 3 candidates, even if uncertain
 - If the photo is unclear, still provide your best guesses with lower confidence`;
 }
 
-function buildFullAnalysisPrompt(confirmedSpecies) {
+function buildFullAnalysisPrompt(confirmedSpecies, language) {
   return `This plant has been identified as: ${confirmedSpecies}.
 
 Your goal is to determine, for this specific plant, based only on:
@@ -1268,8 +1368,11 @@ Return ONLY a JSON object:
   "soil": { "visual_state": "...", "moisture_current_pct": 0 },
   "watering_plan": { "should_water_now": false, "next_watering_in_days": 7, "amount_ml": 250, "reason_short": "..." },
   "care_recommendations": {
-    "name": "${confirmedSpecies}", "general_description": "...", "moisture": "...", "water": "...",
-    "light": "...", "temperature": "...", "fertilizer": "...", "soil": "...",
+    "name": "${confirmedSpecies}", "general_description": "...", "moisture": "...",
+    "moisture_check_tip": "practical tip for THIS plant on how to check soil moisture (e.g. finger test depth, expected feel, plant-specific cues)",
+    "ideal_soil_moisture_min": 10,
+    "ideal_soil_moisture_max": 20,
+    "water": "...", "light": "...", "temperature": "...", "fertilizer": "...", "soil": "...",
     "growth_rate": "...", "toxicity": "...", "placement": "...", "personality": "..."
   },
   "other_care": { "growth_stage": "Seedling/Young/Mature/Established" },
@@ -1287,11 +1390,13 @@ Plant assistant rules: "healthy" if plant looks fine, else "issue_detected".
 specific_issues: 2-3 SPECIES-SPECIFIC CARE RISKS (not current problems).
 amount_ml: 50-1500 for normal pots, up to 2500 for very large containers.
 In care_recommendations.name, use "${confirmedSpecies}".
+care_recommendations.ideal_soil_moisture_min / ideal_soil_moisture_max: the IDEAL soil moisture percentage range for THIS species based on its botanical needs (0–100). Base this on species biology, NOT on the current visual soil state in the photo. Examples: cactus/succulent → 5–15; drought-tolerant → 15–30; average indoor → 30–50; tropical/moisture-loving → 50–70; bog plant → 70–90. These are integer percentages.
 
-Return ONLY JSON. No text. No markdown.`;
+Return ONLY JSON. No text. No markdown.
+CRITICAL: Write ALL string text fields in ${resolveLanguageName(language)}. Keep ONLY species scientific name (ai_species_guess) and fixed enum values (soil.visual_state, other_care.growth_stage, plant_assistant.status, plant_assistant.severity) in English.`;
 }
 
-exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
+exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memory: '512MB' }).https.onRequest((req, res) => {
   return cors(req, res, async () => {
     try {
       const openaiClient = await initializeOpenAI();
@@ -1299,96 +1404,51 @@ exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
         throw new Error('OPENAI_API_KEY is not configured');
       }
 
-      const { base64Image, plantId, userId, plantName } = req.body || {};
-      if (!base64Image) {
-        return res.status(400).json({ success: false, error: 'Base64 image is required' });
+      const { base64Image, base64Images, plantId, userId, plantName, language } = req.body || {};
+
+      // Support both single image (legacy) and multi-image array
+      const imageList = base64Images && Array.isArray(base64Images) && base64Images.length > 0
+        ? base64Images
+        : (base64Image ? [base64Image] : []);
+
+      if (imageList.length === 0) {
+        return res.status(400).json({ success: false, error: 'At least one base64 image is required' });
       }
 
       const context = await loadHealthCheckAgentContext(plantId, userId);
-      const promptText = buildHealthCheckAgentPrompt(context, plantName);
-      const currentImageUrl = `data:image/jpeg;base64,${base64Image}`;
+      const promptText = buildHealthCheckAgentPrompt(context, plantName, language);
+      const currentImageUrl = imageList.map(b64 => `data:image/jpeg;base64,${b64}`);
 
-      let content = '';
-      let recommendations = null;
-      let attempts = 0;
-      let tierUsed = HEALTH_CHECK_IMAGE_TIERS[0];
-      let escalationReason = null;
-      const attemptTrace = [];
-      let accepted = false;
-      const accUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+      const previousImageUrls = getPreviousImagesForTier(context, 1);
+      const contentBlocks = buildHealthCheckContentBlocks(
+        promptText,
+        currentImageUrl,
+        previousImageUrls,
+        false
+      );
 
-      for (let tierIndex = 0; tierIndex < HEALTH_CHECK_IMAGE_TIERS.length; tierIndex++) {
-        attempts++;
-        const tierSize = HEALTH_CHECK_IMAGE_TIERS[tierIndex];
-        const previousImageUrls = getPreviousImagesForTier(context, tierSize);
-        tierUsed = tierSize;
-        const isRetry = tierIndex > 0;
-        const contentBlocks = buildHealthCheckContentBlocks(
-          promptText,
-          currentImageUrl,
-          previousImageUrls,
-          isRetry
-        );
+      const response = await openaiClient.chat.completions.create({
+        model: ANALYSIS_MODEL,
+        messages: [{ role: 'user', content: contentBlocks }],
+        [ANALYSIS_TOKEN_PARAM]: 3000,
+        temperature: 0.8,
+      });
 
-        const response = await openaiClient.chat.completions.create({
-          model: AI_MODEL,
-          messages: [{ role: 'user', content: contentBlocks }],
-          [TOKEN_PARAM]: 3000,
-          temperature: isRetry ? 0.3 : 0.8,
-        });
+      const accUsage = response.usage
+        ? {
+            prompt_tokens: response.usage.prompt_tokens || 0,
+            completion_tokens: response.usage.completion_tokens || 0,
+            total_tokens: response.usage.total_tokens || 0,
+          }
+        : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
-        if (response.usage) {
-          accUsage.prompt_tokens += response.usage.prompt_tokens || 0;
-          accUsage.completion_tokens += response.usage.completion_tokens || 0;
-          accUsage.total_tokens += response.usage.total_tokens || 0;
-        }
-
-        content = response.choices?.[0]?.message?.content || '';
-        recommendations = parseAIResponse(content);
-        recommendations = normalizeRecommendations(recommendations, req.body || {});
-        const quality = evaluateHealthCheckAgentResult(recommendations, context);
-        attemptTrace.push({
-          attempt: attempts,
-          tierSize,
-          previousImagesUsed: previousImageUrls.length,
-          accepted: quality.ok,
-          reason: quality.reason,
-        });
-
-        if (quality.ok) {
-          accepted = true;
-          escalationReason = null;
-          break;
-        }
-
-        escalationReason = quality.reason;
-      }
-
-      // If all tiers failed quality checks, keep the latest normalized output as fallback.
-      if (!accepted && !recommendations) {
-        recommendations = {
-          watering_plan: {
-            should_water_now: false,
-            next_watering_in_days: 7,
-            amount_ml: 200,
-            reason_short: 'Fallback after agent retries',
-          },
-          plant_assistant: {
-            status: 'issue_detected',
-            problem_name: 'Analysis uncertainty',
-            problem_description: 'Could not confidently validate all required fields.',
-            severity: 'mild',
-            action_steps: ['Re-take a clearer photo in good light', 'Check soil moisture manually'],
-            follow_up_days: 3,
-            reassurance: 'Plant can recover with consistent monitoring.',
-          },
-        };
-        recommendations = normalizeRecommendations(recommendations, req.body || {});
-      }
+      const content = response.choices?.[0]?.message?.content || '';
+      let recommendations = parseAIResponse(content);
+      recommendations = normalizeRecommendations(recommendations, req.body || {});
 
       if (accUsage.total_tokens > 0) {
         const db = admin.firestore();
-        await saveAiUsage(db, { userId, plantId, type: 'health_check', model: AI_MODEL, usage: accUsage });
+        await saveAiUsage(db, { userId, plantId, type: 'health_check', model: ANALYSIS_MODEL, usage: accUsage });
       }
 
       return res.json({
@@ -1396,19 +1456,8 @@ exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
         recommendations,
         rawResponse: content,
         agent: {
-          attemptsUsed: attempts,
-          tierUsed,
-          imagesUsed: 1 + getPreviousImagesForTier(context, tierUsed).length,
-          escalationReason,
-          accepted,
-          attemptTrace,
-          decisionTraceV2: buildHealthCheckDecisionTraceV2({
-            attemptTrace,
-            accepted,
-            tierUsed,
-            escalationReason,
-            context,
-          }),
+          attemptsUsed: 1,
+          previousImagesUsed: previousImageUrls.length,
           context: {
             healthChecksLoaded: context.recentHealthChecks.length,
             wateringEventsLoaded: context.recentWateringEvents.length,
@@ -1422,6 +1471,57 @@ exports.analyzeHealthCheckAgent = functions.https.onRequest((req, res) => {
         success: false,
         error: error.message,
       });
+    }
+  });
+});
+
+// ── Chat image quota helpers ────────────────────────────────────────
+const CHAT_IMAGE_DAILY_LIMIT = 2;
+
+function todayUtcString() {
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+async function getChatImageQuota(db, userId, plantId) {
+  const ref = db
+    .collection('users')
+    .doc(userId)
+    .collection('chat_quotas')
+    .doc(plantId);
+  const snap = await ref.get();
+  const today = todayUtcString();
+  if (!snap.exists) return { usedToday: 0, date: today, ref };
+  const data = snap.data();
+  if (data.date !== today) return { usedToday: 0, date: today, ref };
+  return { usedToday: data.usedToday || 0, date: today, ref };
+}
+
+async function incrementChatImageQuota(db, userId, plantId) {
+  const { usedToday, date, ref } = await getChatImageQuota(db, userId, plantId);
+  await ref.set({ usedToday: usedToday + 1, date, dailyLimit: CHAT_IMAGE_DAILY_LIMIT }, { merge: true });
+  return usedToday + 1;
+}
+
+// ── Chat image quota read endpoint ──────────────────────────────────
+exports.chatImageQuota = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      const { userId, plantId } = req.method === 'GET' ? req.query : (req.body || {});
+      if (!userId || !plantId) {
+        return res.status(400).json({ success: false, error: 'userId and plantId are required' });
+      }
+      const db = admin.firestore();
+      const { usedToday } = await getChatImageQuota(db, userId, plantId);
+      return res.json({
+        success: true,
+        usedToday,
+        dailyLimit: CHAT_IMAGE_DAILY_LIMIT,
+        remaining: Math.max(0, CHAT_IMAGE_DAILY_LIMIT - usedToday),
+        resetAt: `${todayUtcString()}T24:00:00Z`,
+      });
+    } catch (error) {
+      console.error('❌ chatImageQuota error:', error);
+      return res.status(500).json({ success: false, error: error.message });
     }
   });
 });
@@ -1442,6 +1542,8 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         plantName,
         species,
         conversation,
+        base64Image, // base64-encoded JPEG sent directly (no Storage upload)
+        imageUrl,    // legacy: Storage URL (kept for backwards compat)
       } = req.body || {};
 
       if (!plantId || !userId || !message) {
@@ -1449,6 +1551,29 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
           success: false,
           error: 'plantId, userId and message are required',
         });
+      }
+
+      // Resolve image: prefer base64, fall back to URL
+      const hasImage = !!(base64Image || imageUrl);
+      const resolvedImageUrl = base64Image
+        ? `data:image/jpeg;base64,${base64Image}`
+        : (imageUrl || null);
+
+      const db = admin.firestore();
+
+      // ── Image quota check ──────────────────────────────────────────
+      let quotaUsed = 0;
+      if (hasImage) {
+        const quota = await getChatImageQuota(db, userId, plantId);
+        if (quota.usedToday >= CHAT_IMAGE_DAILY_LIMIT) {
+          return res.status(429).json({
+            success: false,
+            error: 'daily_image_limit_reached',
+            usedToday: quota.usedToday,
+            dailyLimit: CHAT_IMAGE_DAILY_LIMIT,
+          });
+        }
+        quotaUsed = await incrementChatImageQuota(db, userId, plantId);
       }
 
       const context = await loadHealthCheckAgentContext(plantId, userId);
@@ -1479,30 +1604,38 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
 
       const history = Array.isArray(conversation)
         ? conversation
-            .slice(-12)
+            .slice(-20)
             .map((m) => ({
               role: m?.role === 'assistant' ? 'assistant' : 'user',
-              content: String(m?.text || '').slice(0, 1200),
+              content: String(m?.text || '').slice(0, 1500),
             }))
             .filter((m) => m.content.length > 0)
         : [];
 
+      // ── Build user message content (text only, or text + image) ────
+      const userMessageContent = resolvedImageUrl
+        ? [
+            { type: 'text', text: String(message).slice(0, 1500) },
+            { type: 'image_url', image_url: { url: resolvedImageUrl, detail: 'high' } },
+          ]
+        : String(message).slice(0, 1500);
+
       const messages = [
         { role: 'system', content: systemPrompt },
         ...history,
-        { role: 'user', content: String(message).slice(0, 1200) },
+        { role: 'user', content: userMessageContent },
       ];
 
       const response = await openaiClient.chat.completions.create({
-        model: AI_MODEL,
+        model: CHAT_MODEL,
         messages,
-        [TOKEN_PARAM]: 900,
+        [CHAT_TOKEN_PARAM]: 2000,
         temperature: 0.4,
       });
 
       if (response.usage) {
-        const db = admin.firestore();
-        await saveAiUsage(db, { userId, plantId, type: 'chat', model: AI_MODEL, usage: response.usage });
+        const dbUsage = admin.firestore();
+        await saveAiUsage(dbUsage, { userId, plantId, type: 'chat', model: CHAT_MODEL, usage: response.usage });
       }
 
       const answer = response.choices?.[0]?.message?.content?.trim() ||
@@ -1512,12 +1645,15 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         success: true,
         answer,
         source: responseSource,
+        quotaUsed: hasImage ? quotaUsed : null,
+        quotaRemaining: hasImage ? Math.max(0, CHAT_IMAGE_DAILY_LIMIT - quotaUsed) : null,
         sourceDebug: {
           hasContextSignals,
           hasKnowledgeBaseEvidence,
           healthChecksLoaded: (context.recentHealthChecks || []).length,
           wateringEventsLoaded: (context.recentWateringEvents || []).length,
           previousImagesLoaded: (context.recentImageUrls || []).length,
+          imageAttached: hasImage,
         },
         context: {
           plantId,
@@ -1701,10 +1837,10 @@ async function sendWateringReminderPushMulticast(
 ) {
   if (!tokens || tokens.length === 0) return 0;
   let successTotal = 0;
+  const title = truncateForFcmNotification(emailCopy.subject, 100);
+  const body = truncateForFcmNotification(emailCopy.text, 240);
   for (let i = 0; i < tokens.length; i += FCM_WATERING_MULTICAST_MAX) {
     const chunk = tokens.slice(i, i + FCM_WATERING_MULTICAST_MAX);
-    const title = truncateForFcmNotification(emailCopy.subject, 100);
-    const body = truncateForFcmNotification(emailCopy.text, 240);
     const message = {
       notification: { title, body },
       data: {
@@ -1722,7 +1858,7 @@ async function sendWateringReminderPushMulticast(
       tokens: chunk,
     };
     try {
-      const response = await admin.messaging().sendEachForMulticast(message);
+      const response = await admin.messaging().sendMulticast(message);
       successTotal += response.successCount;
       if (response.failureCount > 0) {
         const firstErr = response.responses.find((r) => !r.success)?.error;
@@ -1733,6 +1869,23 @@ async function sendWateringReminderPushMulticast(
       await removeInvalidTokens(db, userId, chunk, response);
     } catch (e) {
       console.error('❌ FCM watering reminder send error:', e.message);
+    }
+  }
+  // Log push notification to Firestore for admin visibility
+  if (successTotal > 0) {
+    try {
+      await db.collection('push_notifications').add({
+        userId,
+        plantId: plantId || null,
+        plantName: plantName || null,
+        title,
+        body,
+        stage: stage || null,
+        successCount: successTotal,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      console.warn('⚠️ push_notifications log failed:', e.message);
     }
   }
   return successTotal;
@@ -1892,7 +2045,7 @@ async function sendFcmTestMulticast(db, userId, tokens, title, body) {
       tokens: chunk,
     };
     try {
-      const response = await admin.messaging().sendEachForMulticast(message);
+      const response = await admin.messaging().sendMulticast(message);
       successTotal += response.successCount;
       if (response.failureCount > 0) {
         const firstErr = response.responses.find((r) => !r.success)?.error;
@@ -2253,12 +2406,13 @@ function transformNewJsonToLegacy(jsonData) {
   const careTipsLines = [];
   if (careRec.name) careTipsLines.push(`Cultivar: ${careRec.name}`);
   if (careRec.general_description) careTipsLines.push(`General Description: ${careRec.general_description}`);
+  if (careRec.soil) careTipsLines.push(`Soil: ${careRec.soil}`);
   if (careRec.moisture) careTipsLines.push(`Moisture: ${careRec.moisture}`);
+  if (careRec.moisture_check_tip) careTipsLines.push(`Moisture Check: ${careRec.moisture_check_tip}`);
   if (careRec.water) careTipsLines.push(`Water: ${careRec.water}`);
   if (careRec.light) careTipsLines.push(`Light: ${careRec.light}`);
   if (careRec.temperature) careTipsLines.push(`Temperature: ${careRec.temperature}`);
   if (careRec.fertilizer) careTipsLines.push(`Fertilizer: ${careRec.fertilizer}`);
-  if (careRec.soil) careTipsLines.push(`Soil: ${careRec.soil}`);
   if (careRec.growth_rate) careTipsLines.push(`Growth Rate: ${careRec.growth_rate}`);
   if (careRec.toxicity) careTipsLines.push(`Toxicity: ${careRec.toxicity}`);
   if (careRec.placement) careTipsLines.push(`Placement: ${careRec.placement}`);
@@ -2298,6 +2452,12 @@ function transformNewJsonToLegacy(jsonData) {
     species_data: species,
     soil_data: soil,
     plant_assistant: jsonData.plant_assistant || null,
+    // Ideal soil moisture range from AI
+    ideal_soil_moisture_min: careRec.ideal_soil_moisture_min ?? null,
+    ideal_soil_moisture_max: careRec.ideal_soil_moisture_max ?? null,
+    // Pass the full structured object so the client can build
+    // localized section titles in the user's language.
+    care_recommendations: careRec,
   };
 
   if (scientificWatering) {
@@ -3099,7 +3259,7 @@ exports.processWateringEmailReminders = functions.pubsub
       const plantName = data.name || 'your plant';
       const cultivar = data.aiName || data.species || null;
 
-      const emailCopy = await generateWateringEmailWithAI({
+      const emailPayload = {
         stage,
         locale,
         plantName,
@@ -3108,7 +3268,14 @@ exports.processWateringEmailReminders = functions.pubsub
         minutesToDue,
         minutesOverdue,
         recommendedAmountMl: data.wateringAmountMl || null,
-      }, { userId: uid, plantId: doc.id });
+      };
+
+      // AI for first 4 days (slots 0-7); fallback for days 4-9.
+      // Push-only users also get AI-generated text for the first 4 days.
+      const shouldUseAI = (canTryEmail || canTryPush) && remindersSentCount < 8;
+      const emailCopy = shouldUseAI
+        ? await generateWateringEmailWithAI(emailPayload, { userId: uid, plantId: doc.id })
+        : buildWateringEmailFallback(emailPayload);
 
       let mailQueued = false;
       if (canTryEmail) {
@@ -3169,3 +3336,792 @@ exports.processWateringEmailReminders = functions.pubsub
     );
     return null;
   });
+
+// ═══════════════════════════════════════════════════════════════════
+//  generateSeasonalTips — weekly cron + manual HTTP trigger
+// ═══════════════════════════════════════════════════════════════════
+
+function getISOWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+}
+
+function getWeekKey(date) {
+  const w = getISOWeek(date);
+  return `${date.getFullYear()}-W${String(w).padStart(2, '0')}`;
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d.toISOString().split('T')[0];
+}
+
+function getSeason(date) {
+  const m = date.getMonth();
+  if (m >= 2 && m <= 4) return 'spring';
+  if (m >= 5 && m <= 7) return 'summer';
+  if (m >= 8 && m <= 10) return 'autumn';
+  return 'winter';
+}
+
+const TIPS_MODEL = 'gpt-5.1';
+const TIPS_TOKEN_PARAM = TIPS_MODEL.startsWith('gpt-5') ? 'max_completion_tokens' : 'max_tokens';
+
+async function doGenerateSeasonalTips() {
+  const db = admin.firestore();
+  const now = new Date();
+  const weekKey = getWeekKey(now);
+  const season = getSeason(now);
+  const monthName = now.toLocaleString('en-US', { month: 'long' });
+
+  const openaiClient = await initializeOpenAI();
+
+  const prompt = `You are a plant care expert. Generate 21 seasonal plant care tips for home gardeners.
+
+Context:
+- Current season: ${season}
+- Current month: ${monthName}
+- Year: ${now.getFullYear()}
+
+Requirements:
+- 21 unique tips, each 1-2 sentences
+- Mix of: watering advice, light/positioning, pest prevention, fertilizing, seasonal tasks, fun facts
+- Relevant to the current season and month
+- Practical, actionable, friendly tone
+- Each tip must be translated into 4 languages
+
+Return a JSON array of exactly 21 objects:
+[
+  {
+    "index": 0,
+    "en": "English tip text",
+    "de": "German tip text",
+    "es": "Spanish tip text",
+    "fr": "French tip text",
+    "category": "watering|light|pests|fertilizing|seasonal|general"
+  },
+  ...
+]
+
+Return ONLY the JSON array, no markdown fences, no explanation.`;
+
+  const response = await openaiClient.chat.completions.create({
+    model: TIPS_MODEL,
+    messages: [
+      { role: 'system', content: 'You are a helpful plant care assistant. Always respond with valid JSON.' },
+      { role: 'user', content: prompt },
+    ],
+    [TIPS_TOKEN_PARAM]: 6000,
+    temperature: 0.7,
+  });
+
+  const raw = response.choices?.[0]?.message?.content?.trim() || '[]';
+  let tips;
+  try {
+    const cleaned = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+    tips = JSON.parse(cleaned);
+  } catch (e) {
+    console.error('❌ generateSeasonalTips: Failed to parse AI response:', e.message);
+    throw new Error('Failed to parse tips JSON from AI');
+  }
+
+  if (!Array.isArray(tips) || tips.length < 21) {
+    throw new Error(`Expected 21 tips, got ${Array.isArray(tips) ? tips.length : 0}`);
+  }
+
+  const usage = response.usage || {};
+  const inputTokens = usage.prompt_tokens || 0;
+  const outputTokens = usage.completion_tokens || 0;
+  const totalTokens = usage.total_tokens || (inputTokens + outputTokens);
+  const costUsd = calcAiCost(TIPS_MODEL, inputTokens, outputTokens);
+
+  await db.collection('seasonal_tips').doc(weekKey).set({
+    weekKey,
+    weekStart: getWeekStart(now),
+    season,
+    month: monthName,
+    generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    model: TIPS_MODEL,
+    usage: { prompt_tokens: inputTokens, completion_tokens: outputTokens, total_tokens: totalTokens },
+    estimatedCostUsd: costUsd,
+    tips: tips.slice(0, 21).map((t, i) => ({
+      index: i,
+      en: t.en || '',
+      de: t.de || '',
+      es: t.es || '',
+      fr: t.fr || '',
+      category: t.category || 'general',
+    })),
+  });
+
+  await saveAiUsage(db, {
+    userId: 'system',
+    plantId: null,
+    type: 'seasonal_tips',
+    model: TIPS_MODEL,
+    usage,
+  });
+
+  console.log(`✅ generateSeasonalTips: ${weekKey} — ${tips.length} tips, ${totalTokens} tokens, $${costUsd?.toFixed(4) || '?'}`);
+  return { weekKey, tipsCount: tips.length, totalTokens, costUsd };
+}
+
+// Scheduled: every Sunday at 23:00 UTC
+exports.generateSeasonalTipsCron = functions.pubsub
+  .schedule('0 23 * * 0')
+  .timeZone('UTC')
+  .onRun(async () => {
+    await doGenerateSeasonalTips();
+    return null;
+  });
+
+// Manual HTTP trigger (for admin / testing)
+exports.generateSeasonalTips = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'POST only' });
+      }
+      const result = await doGenerateSeasonalTips();
+      return res.json({ success: true, ...result });
+    } catch (error) {
+      console.error('❌ generateSeasonalTips error:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+});
+
+// ── Stripe ──────────────────────────────────────────────────────────────────
+
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_PRICE_MONTHLY = process.env.STRIPE_PRICE_MONTHLY || 'price_1TUtsuBxYoTdS5idFawLwpPs';
+const STRIPE_PRICE_ANNUAL = process.env.STRIPE_PRICE_ANNUAL || 'price_1TUtumBxYoTdS5idOLeprsVn';
+
+/**
+ * Creates a Stripe Checkout session for web subscriptions.
+ * Called from Flutter web via Firebase callable function.
+ */
+exports.createStripeCheckout = functions.https.onCall(async (data, context) => {
+  const stripe = require('stripe')(STRIPE_SECRET_KEY);
+
+  const priceId = data.priceId;
+  const successUrl = data.successUrl || 'https://botanly.app/?stripe_success=1';
+  const cancelUrl = data.cancelUrl || 'https://botanly.app/?stripe_cancel=1';
+  const uid = context.auth?.uid || data.uid;
+
+  if (!priceId) {
+    throw new functions.https.HttpsError('invalid-argument', 'priceId is required');
+  }
+  if (priceId !== STRIPE_PRICE_MONTHLY && priceId !== STRIPE_PRICE_ANNUAL) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid priceId');
+  }
+
+  const sessionParams = {
+    payment_method_types: ['card'],
+    line_items: [{ price: priceId, quantity: 1 }],
+    mode: 'subscription',
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  };
+
+  if (uid) {
+    sessionParams.metadata = { firebaseUid: uid };
+    sessionParams.subscription_data = { metadata: { firebaseUid: uid } };
+    // Try to find or create Stripe customer linked to Firebase UID
+    const db = admin.firestore();
+    const userDoc = await db.collection('users').doc(uid).get();
+    const stripeCustomerId = userDoc.exists ? userDoc.data().stripeCustomerId : null;
+    if (stripeCustomerId) {
+      sessionParams.customer = stripeCustomerId;
+    }
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionParams);
+
+  // Save session ID to Firestore for tracking
+  if (uid) {
+    await admin.firestore().collection('users').doc(uid).set(
+      { stripeCheckoutSessionId: session.id },
+      { merge: true }
+    );
+  }
+
+  console.log(`✅ Stripe checkout session created: ${session.id} for uid=${uid}`);
+  return { url: session.url, sessionId: session.id };
+});
+
+/**
+ * Creates a Stripe Billing Portal session so web users can manage their
+ * subscription (cancel, update payment method, view invoices).
+ * Requires the user to have a stripeCustomerId saved in Firestore.
+ */
+exports.createPortalSession = functions.https.onCall(async (data, context) => {
+  const stripe = require('stripe')(STRIPE_SECRET_KEY);
+  const db = admin.firestore();
+
+  const uid = context.auth?.uid || data.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+
+  const userDoc = await db.collection('users').doc(uid).get();
+  if (!userDoc.exists) {
+    throw new functions.https.HttpsError('not-found', 'User not found');
+  }
+
+  const stripeCustomerId = userDoc.data().stripeCustomerId;
+  if (!stripeCustomerId) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'No Stripe customer found. Please subscribe first.'
+    );
+  }
+
+  const returnUrl = data.returnUrl || 'https://botanly.app/home';
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: stripeCustomerId,
+    return_url: returnUrl,
+  });
+
+  console.log(`✅ Stripe portal session created for uid=${uid}`);
+  return { url: session.url };
+});
+
+/**
+ * Stripe webhook handler — updates Firestore subscription status.
+ * Configure in Stripe Dashboard: https://dashboard.stripe.com/webhooks
+ * Events to enable: checkout.session.completed, customer.subscription.updated,
+ *                   customer.subscription.deleted
+ */
+exports.onStripeWebhook = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+
+  const stripe = require('stripe')(STRIPE_SECRET_KEY);
+  const db = admin.firestore();
+
+  // Verify webhook signature
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  let event = req.body;
+
+  if (webhookSecret) {
+    const sig = req.headers['stripe-signature'];
+    try {
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
+    } catch (err) {
+      console.error('❌ Stripe webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+  }
+
+  const eventType = event.type;
+  console.log(`📩 Stripe webhook: ${eventType}`);
+
+  try {
+    if (eventType === 'checkout.session.completed') {
+      const session = event.data.object;
+      const uid = session.metadata?.firebaseUid;
+      const customerId = session.customer;
+      const subscriptionId = session.subscription;
+
+      if (uid) {
+        const update = {
+          subscriptionStatus: 'active',
+          stripeCustomerId: customerId || null,
+          stripeSubscriptionId: subscriptionId || null,
+          subscriptionExpiresAt: null,
+          autoRenewEnabled: true,
+        };
+
+        // Fetch subscription to get period end
+        if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const periodEndRaw = subscription.current_period_end
+            || subscription.items?.data?.[0]?.current_period_end
+            || subscription.billing_cycle_anchor;
+          if (periodEndRaw && typeof periodEndRaw === 'number') {
+            const periodEnd = new Date(periodEndRaw * 1000);
+            if (!isNaN(periodEnd.getTime())) {
+              update.subscriptionExpiresAt = admin.firestore.Timestamp.fromDate(periodEnd);
+            }
+          }
+        }
+
+        await db.collection('users').doc(uid).set(update, { merge: true });
+        console.log(`✅ Stripe: activated subscription for uid=${uid}`);
+      }
+    } else if (eventType === 'customer.subscription.updated') {
+      const subscription = event.data.object;
+      const previousAttributes = event.data.previous_attributes || {};
+      const uid = subscription.metadata?.firebaseUid;
+
+      if (!uid) {
+        // Try to find user by stripeCustomerId
+        const snap = await db.collection('users')
+          .where('stripeCustomerId', '==', subscription.customer)
+          .limit(1).get();
+        if (!snap.empty) {
+          const userUid = snap.docs[0].id;
+          await _updateStripeSubscription(db, userUid, subscription, previousAttributes);
+        }
+      } else {
+        await _updateStripeSubscription(db, uid, subscription, previousAttributes);
+      }
+    } else if (eventType === 'customer.subscription.deleted') {
+      const subscription = event.data.object;
+      const uid = subscription.metadata?.firebaseUid;
+
+      let userUid = uid;
+      if (!userUid) {
+        const snap = await db.collection('users')
+          .where('stripeCustomerId', '==', subscription.customer)
+          .limit(1).get();
+        if (!snap.empty) userUid = snap.docs[0].id;
+      }
+
+      if (userUid) {
+        await db.collection('users').doc(userUid).set(
+          { subscriptionStatus: 'expired' },
+          { merge: true }
+        );
+        console.log(`✅ Stripe: expired subscription for uid=${userUid}`);
+      }
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (error) {
+    console.error('❌ Stripe webhook processing error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+async function _updateStripeSubscription(db, uid, subscription, previousAttributes = {}) {
+  const status = subscription.status;
+  const periodEndRaw = subscription.current_period_end
+    || subscription.items?.data?.[0]?.current_period_end
+    || subscription.billing_cycle_anchor;
+  const periodEnd = periodEndRaw ? new Date(periodEndRaw * 1000) : null;
+
+  let subscriptionStatus;
+  if (status === 'active' || status === 'trialing') {
+    subscriptionStatus = 'active';
+  } else if (status === 'canceled' || status === 'unpaid' || status === 'incomplete_expired') {
+    subscriptionStatus = 'expired';
+  } else {
+    subscriptionStatus = 'active'; // past_due, incomplete — keep active for grace period
+  }
+
+  const updateData = {
+    subscriptionStatus,
+    stripeSubscriptionId: subscription.id,
+  };
+
+  // Subscription is cancelled when cancel_at_period_end=true OR cancel_at is set to a future date.
+  // Stripe Customer Portal uses cancel_at (specific date) rather than cancel_at_period_end.
+  const isCancelled = subscription.cancel_at_period_end === true || subscription.cancel_at !== null;
+  updateData.autoRenewEnabled = !isCancelled;
+
+  if (periodEnd && !isNaN(periodEnd.getTime())) {
+    updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromDate(periodEnd);
+  }
+
+  await db.collection('users').doc(uid).set(updateData, { merge: true });
+
+  console.log(`✅ Stripe: updated subscription for uid=${uid}, status=${subscriptionStatus}`);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RevenueCat Webhook — subscription lifecycle events
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Maps RevenueCat event types to internal subscription statuses.
+ * Called by RevenueCat when a subscription event occurs.
+ * Set Webhook URL in RevenueCat dashboard → Integrations → Webhooks.
+ * Authorization header must match REVENUECAT_WEBHOOK_SECRET env var.
+ */
+exports.onRevenueCatWebhook = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method not allowed');
+  }
+
+  // Verify shared secret
+  const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
+  if (secret) {
+    const authHeader = req.headers['authorization'] || '';
+    if (authHeader !== secret) {
+      console.warn('⚠️ RevenueCat webhook: invalid authorization header');
+      return res.status(401).send('Unauthorized');
+    }
+  }
+
+  const event = req.body?.event;
+  if (!event) {
+    return res.status(400).send('Missing event');
+  }
+
+  const {
+    type,
+    app_user_id: appUserId,
+    expiration_at_ms: expirationAtMs,
+    original_transaction_id: originalTransactionId,
+  } = event;
+
+  if (!appUserId) {
+    return res.status(400).send('Missing app_user_id');
+  }
+
+  const db = admin.firestore();
+
+  // Find user by revenueCatAppUserId field (set when SDK initializes)
+  const usersSnap = await db
+    .collection('users')
+    .where('revenueCatAppUserId', '==', appUserId)
+    .limit(1)
+    .get();
+
+  // Fall back to treating appUserId as Firebase UID
+  let userRef;
+  if (!usersSnap.empty) {
+    userRef = usersSnap.docs[0].ref;
+  } else {
+    const directDoc = await db.collection('users').doc(appUserId).get();
+    if (directDoc.exists) {
+      userRef = directDoc.ref;
+    } else {
+      console.warn(`⚠️ RevenueCat webhook: no user found for app_user_id=${appUserId}`);
+      return res.status(200).send('User not found — ignored');
+    }
+  }
+
+  const expiresAt = expirationAtMs
+    ? admin.firestore.Timestamp.fromMillis(expirationAtMs)
+    : null;
+
+  let update = {};
+
+  switch (type) {
+    case 'INITIAL_PURCHASE':
+    case 'RENEWAL':
+    case 'UNCANCELLATION':
+      update = {
+        subscriptionStatus: 'active',
+        subscriptionExpiresAt: expiresAt,
+        autoRenewEnabled: true,
+        originalTransactionId: originalTransactionId || null,
+      };
+      break;
+
+    case 'CANCELLATION':
+      // Cancelled but still active until expiry — auto-renew is now off
+      update = {
+        subscriptionStatus: 'active',
+        subscriptionExpiresAt: expiresAt,
+        autoRenewEnabled: false,
+      };
+      break;
+
+    case 'EXPIRATION':
+      update = {
+        subscriptionStatus: 'expired',
+        subscriptionExpiresAt: expiresAt,
+      };
+      break;
+
+    case 'BILLING_ISSUE':
+      // Keep active status but note expiry approaching
+      update = {
+        subscriptionExpiresAt: expiresAt,
+      };
+      break;
+
+    default:
+      console.log(`ℹ️ RevenueCat webhook: unhandled event type=${type}`);
+      return res.status(200).send('Event type not handled');
+  }
+
+  await userRef.update(update);
+  console.log(`✅ RevenueCat webhook: type=${type} appUserId=${appUserId} status=${update.subscriptionStatus || '(unchanged)'}`);
+  return res.status(200).send('OK');
+});
+
+// ── Delete Account ────────────────────────────────────────────────────────────
+// Disables the Firebase Auth account (blocks login) and marks the Firestore
+// user document as deleted. Plant data is intentionally preserved.
+exports.deleteAccount = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be signed in.');
+  }
+
+  const uid = context.auth.uid;
+  const db = admin.firestore();
+
+  try {
+    // Mark user document as deleted (keep all data for analytics)
+    await db.collection('users').doc(uid).update({
+      deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+      status: 'deleted',
+    });
+
+    // Revoke all active sessions first
+    await admin.auth().revokeRefreshTokens(uid);
+
+    // Disable the Firebase Auth account so the user cannot log back in
+    await admin.auth().updateUser(uid, { disabled: true });
+
+    console.log(`✅ deleteAccount: uid=${uid} disabled and marked deleted`);
+    return { success: true };
+  } catch (e) {
+    console.error(`❌ deleteAccount error for uid=${uid}:`, e);
+    throw new functions.https.HttpsError('internal', 'Failed to delete account.');
+  }
+});
+
+// ── Email Verification PIN (Registration) ─────────────────────────────────────
+// IS_DEV=true  → skip email sending, accept '111111' as bypass (dev/test only)
+// IS_DEV=false → real email sending, no bypass (production)
+
+const EMAIL_VERIFICATION_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+exports.sendEmailVerificationPin = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+
+      const email = normalizeEmail(req.body?.email);
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid email.' });
+      }
+
+      // Check if email is already registered
+      try {
+        await admin.auth().getUserByEmail(email);
+        return res.status(409).json({ success: false, error: 'An account with this email already exists.' });
+      } catch (e) {
+        if (!e || e.code !== 'auth/user-not-found') throw e;
+        // user-not-found is expected — email is available
+      }
+
+      const db = admin.firestore();
+      const nowMs = Date.now();
+      const expiresAtMs = nowMs + EMAIL_VERIFICATION_TTL_MS;
+      const pin = String(crypto.randomInt(100000, 1000000));
+      const salt = crypto.randomBytes(16).toString('hex');
+      const pinHash = hashPin(pin, salt);
+
+      await db.collection('email_verification_pins').doc(email).set({
+        emailLower: email,
+        pinHash,
+        salt,
+        attempts: 0,
+        createdAtMs: nowMs,
+        expiresAtMs,
+        expiresAt: admin.firestore.Timestamp.fromMillis(expiresAtMs),
+      });
+
+      if (process.env.IS_DEV === 'true') {
+        console.log(`[DEV] Email verification PIN for ${email}: ${pin} (use 111111 to bypass)`);
+      } else {
+        await admin.firestore().collection('mail').add({
+          to: email,
+          message: {
+            subject: 'Your Botanly verification code',
+            text: `Your verification code is: ${pin}\n\nThis code expires in 15 minutes.`,
+            html: `
+              <h2>Verify your email</h2>
+              <p>Use this code to complete your registration:</p>
+              <p style="font-size:32px;font-weight:700;letter-spacing:6px;">${pin}</p>
+              <p>This code expires in 15 minutes.</p>
+              <p>If you didn't request this, please ignore this email.</p>
+            `.trim(),
+          },
+        });
+      }
+
+      return res.json({ success: true, message: 'Verification code sent.' });
+    } catch (error) {
+      console.error('sendEmailVerificationPin error:', error);
+      return res.status(500).json({ success: false, error: 'Could not send verification code.' });
+    }
+  });
+});
+
+exports.verifyEmailPin = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+
+      const email = normalizeEmail(req.body?.email);
+      const pin = String(req.body?.pin || '').trim();
+
+      if (!isValidEmail(email) || !/^\d{6}$/.test(pin)) {
+        return res.status(400).json({ success: false, error: 'Invalid code or email.' });
+      }
+
+      if (process.env.IS_DEV === 'true' && pin === '111111') {
+        return res.json({ success: true, verified: true });
+      }
+
+      const db = admin.firestore();
+      const docRef = db.collection('email_verification_pins').doc(email);
+      const snap = await docRef.get();
+
+      if (!snap.exists) {
+        return res.status(404).json({ success: false, error: 'No verification code found. Please request a new one.' });
+      }
+
+      const data = snap.data();
+      const nowMs = Date.now();
+
+      if (nowMs > data.expiresAtMs) {
+        await docRef.delete();
+        return res.status(410).json({ success: false, error: 'Verification code has expired. Please request a new one.' });
+      }
+
+      if (data.attempts >= 5) {
+        return res.status(429).json({ success: false, error: 'Too many attempts. Please request a new code.' });
+      }
+
+      const hash = hashPin(pin, data.salt);
+      if (hash !== data.pinHash) {
+        await docRef.update({ attempts: admin.firestore.FieldValue.increment(1) });
+        return res.status(400).json({ success: false, error: 'Incorrect code. Please try again.' });
+      }
+
+      // Valid — delete the pin record
+      await docRef.delete();
+      return res.json({ success: true, verified: true });
+    } catch (error) {
+      console.error('verifyEmailPin error:', error);
+      return res.status(500).json({ success: false, error: 'Could not verify code.' });
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  aggregateAiUsageDaily — runs daily at 00:05 UTC
+//  Aggregates ai_usage records for the previous day into ai_usage_daily/{date}
+// ═══════════════════════════════════════════════════════════════════
+exports.aggregateAiUsageDaily = functions.pubsub
+  .schedule('5 0 * * *')
+  .timeZone('UTC')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = new Date();
+
+    const yesterday = new Date(now);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const dateKey = yesterday.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    const startOfDay = admin.firestore.Timestamp.fromDate(new Date(`${dateKey}T00:00:00.000Z`));
+    const endOfDay = admin.firestore.Timestamp.fromDate(new Date(`${dateKey}T23:59:59.999Z`));
+
+    const snap = await db.collection('ai_usage')
+      .where('timestamp', '>=', startOfDay)
+      .where('timestamp', '<=', endOfDay)
+      .get();
+
+    let totalCalls = 0;
+    let totalCostUsd = 0;
+    let totalTokens = 0;
+    const byType = {};
+    const byUser = {};
+
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      totalCalls += 1;
+      totalCostUsd += data.costUsd ?? 0;
+      totalTokens += data.totalTokens ?? 0;
+
+      const type = data.type || 'unknown';
+      if (!byType[type]) byType[type] = { calls: 0, cost: 0, tokens: 0 };
+      byType[type].calls += 1;
+      byType[type].cost += data.costUsd ?? 0;
+      byType[type].tokens += data.totalTokens ?? 0;
+
+      const uid = data.userId;
+      if (uid && uid !== 'system') {
+        if (!byUser[uid]) byUser[uid] = { calls: 0, cost: 0 };
+        byUser[uid].calls += 1;
+        byUser[uid].cost += data.costUsd ?? 0;
+      }
+    }
+
+    await db.collection('ai_usage_daily').doc(dateKey).set({
+      date: dateKey,
+      totalCalls,
+      totalCostUsd,
+      totalTokens,
+      byType,
+      byUser,
+      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`✅ aggregateAiUsageDaily: ${dateKey} → calls=${totalCalls} cost=$${totalCostUsd.toFixed(4)}`);
+    return null;
+  });
+
+// ═══════════════════════════════════════════════════════════════════
+//  getAiStats — HTTP endpoint for agent/external access
+//  Auth: x-admin-token header or ?token= query param
+//  Set ADMIN_STATS_TOKEN in .env to enable
+// ═══════════════════════════════════════════════════════════════════
+exports.getAiStats = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      const token = req.headers['x-admin-token'] || req.query.token;
+      const expectedToken = process.env.ADMIN_STATS_TOKEN;
+
+      if (!expectedToken || token !== expectedToken) {
+        return res.status(401).json({ error: 'Unauthorized. Set x-admin-token header.' });
+      }
+
+      const db = admin.firestore();
+      const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
+
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days + 1);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+      const dailySnap = await db.collection('ai_usage_daily')
+        .where('date', '>=', cutoffStr)
+        .orderBy('date', 'asc')
+        .get();
+
+      const daily = dailySnap.docs.map((d) => {
+        const data = d.data();
+        return {
+          date: d.id,
+          calls: data.totalCalls ?? 0,
+          cost: parseFloat((data.totalCostUsd ?? 0).toFixed(4)),
+          tokens: data.totalTokens ?? 0,
+          byType: data.byType ?? {},
+        };
+      });
+
+      const periodCost = daily.reduce((s, d) => s + d.cost, 0);
+      const periodCalls = daily.reduce((s, d) => s + d.calls, 0);
+
+      return res.json({
+        ok: true,
+        period: `last ${days} days`,
+        periodCostUsd: parseFloat(periodCost.toFixed(4)),
+        periodCalls,
+        daily,
+        generatedAt: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error('getAiStats error:', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+});

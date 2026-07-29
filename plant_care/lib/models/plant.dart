@@ -7,8 +7,10 @@ class HealthCheckRecord {
   final DateTime timestamp;
   final String status; // 'ok' or 'issue'
   final String message;
-  final String? imageUrl; // Firebase Storage URL for the image
-  final Uint8List? imageBytes; // Local image bytes for immediate display
+  final String? imageUrl; // Firebase Storage URL for the primary image (legacy / compat)
+  final Uint8List? imageBytes; // Local bytes for primary image (immediate display)
+  final List<String?> imageUrls; // Up to 3 Firebase Storage URLs
+  final List<Uint8List?> imageBytesList; // Up to 3 local byte arrays
   final Map<String, dynamic>? metadata; // Additional data like AI analysis details
 
   HealthCheckRecord({
@@ -18,8 +20,11 @@ class HealthCheckRecord {
     required this.message,
     this.imageUrl,
     this.imageBytes,
+    List<String?>? imageUrls,
+    List<Uint8List?>? imageBytesList,
     this.metadata,
-  });
+  })  : imageUrls = imageUrls ?? (imageUrl != null ? [imageUrl] : []),
+        imageBytesList = imageBytesList ?? (imageBytes != null ? [imageBytes] : []);
 
   Map<String, dynamic> toMap() {
     return {
@@ -27,15 +32,15 @@ class HealthCheckRecord {
       'timestamp': timestamp.toIso8601String(),
       'status': status,
       'message': message,
-      'imageUrl': imageUrl,
+      'imageUrl': imageUrls.isNotEmpty ? imageUrls.first : imageUrl,
+      'imageUrls': imageUrls,
       'metadata': metadata,
-      // Note: imageBytes is not stored in Firestore, only used locally
+      // imageBytes / imageBytesList not stored in Firestore, only used locally
     };
   }
 
   factory HealthCheckRecord.fromMap(Map<String, dynamic> map) {
     try {
-      // Validate required fields
       if (map['id'] == null || map['id'].toString().isEmpty) {
         throw Exception('HealthCheckRecord: id is required');
       }
@@ -45,19 +50,29 @@ class HealthCheckRecord {
       if (map['message'] == null || map['message'].toString().isEmpty) {
         throw Exception('HealthCheckRecord: message is required');
       }
-      
+
       final timestamp = Plant._parseTimestamp(map['timestamp']);
       if (timestamp == null) {
         throw Exception('HealthCheckRecord: invalid timestamp');
       }
-      
+
+      // Support both legacy single imageUrl and new imageUrls list
+      List<String?> imageUrls;
+      if (map['imageUrls'] is List) {
+        imageUrls = (map['imageUrls'] as List).map((e) => e?.toString()).toList();
+      } else if (map['imageUrl'] != null) {
+        imageUrls = [map['imageUrl'].toString()];
+      } else {
+        imageUrls = [];
+      }
+
       return HealthCheckRecord(
         id: map['id'].toString(),
         timestamp: timestamp,
         status: map['status'].toString(),
         message: map['message'].toString(),
-        imageUrl: map['imageUrl']?.toString(),
-        imageBytes: null, // Will be loaded separately if needed
+        imageUrl: imageUrls.isNotEmpty ? imageUrls.first : null,
+        imageUrls: imageUrls,
         metadata: map['metadata'] is Map ? Map<String, dynamic>.from(map['metadata']) : null,
       );
     } catch (e) {
@@ -74,6 +89,8 @@ class HealthCheckRecord {
     String? message,
     String? imageUrl,
     Uint8List? imageBytes,
+    List<String?>? imageUrls,
+    List<Uint8List?>? imageBytesList,
     Map<String, dynamic>? metadata,
   }) {
     return HealthCheckRecord(
@@ -83,6 +100,8 @@ class HealthCheckRecord {
       message: message ?? this.message,
       imageUrl: imageUrl ?? this.imageUrl,
       imageBytes: imageBytes ?? this.imageBytes,
+      imageUrls: imageUrls ?? this.imageUrls,
+      imageBytesList: imageBytesList ?? this.imageBytesList,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -139,6 +158,13 @@ class Plant {
   final bool muted; // If true, no reminders for this plant
   final int overdueStreak; // Count of overdue reminders sent
   final bool shouldWaterNow; // From AI: true = water now, false = water later
+  final DateTime? deletedAt; // Soft delete timestamp (null = active)
+
+  // Ideal soil moisture range from AI (e.g. 10–20%)
+  final int? idealSoilMoistureMin;
+  final int? idealSoilMoistureMax;
+
+  bool get isDeleted => deletedAt != null;
 
   Plant({
     required this.id,
@@ -181,6 +207,9 @@ class Plant {
     bool? muted,
     int? overdueStreak,
     bool? shouldWaterNow,
+    this.deletedAt,
+    this.idealSoilMoistureMin,
+    this.idealSoilMoistureMax,
   })  : notificationState = notificationState ?? 'ok',
         muted = muted ?? false,
         overdueStreak = overdueStreak ?? 0,
@@ -229,6 +258,9 @@ class Plant {
       'muted': muted,
       'overdueStreak': overdueStreak,
       'shouldWaterNow': shouldWaterNow,
+      'deletedAt': deletedAt?.toIso8601String(),
+      'idealSoilMoistureMin': idealSoilMoistureMin,
+      'idealSoilMoistureMax': idealSoilMoistureMax,
     };
   }
 
@@ -305,7 +337,14 @@ class Plant {
             : (map['overdueStreak'] != null ? int.tryParse(map['overdueStreak'].toString()) ?? 0 : 0),
         shouldWaterNow: map['shouldWaterNow'] is bool 
             ? (map['shouldWaterNow'] as bool)
-            : false, // Default to false for backward compatibility
+            : false,
+        deletedAt: _parseTimestamp(map['deletedAt']),
+        idealSoilMoistureMin: map['idealSoilMoistureMin'] is int
+            ? map['idealSoilMoistureMin']
+            : (map['idealSoilMoistureMin'] != null ? int.tryParse(map['idealSoilMoistureMin'].toString()) : null),
+        idealSoilMoistureMax: map['idealSoilMoistureMax'] is int
+            ? map['idealSoilMoistureMax']
+            : (map['idealSoilMoistureMax'] != null ? int.tryParse(map['idealSoilMoistureMax'].toString()) : null),
       );
     } catch (e) {
       print('❌ Plant.fromMap error: $e');
@@ -378,6 +417,9 @@ class Plant {
     bool? muted,
     int? overdueStreak,
     bool? shouldWaterNow,
+    DateTime? deletedAt,
+    int? idealSoilMoistureMin,
+    int? idealSoilMoistureMax,
   }) {
     return Plant(
       id: id ?? this.id,
@@ -420,6 +462,9 @@ class Plant {
       muted: muted ?? this.muted,
       overdueStreak: overdueStreak ?? this.overdueStreak,
       shouldWaterNow: shouldWaterNow ?? this.shouldWaterNow,
+      deletedAt: deletedAt ?? this.deletedAt,
+      idealSoilMoistureMin: idealSoilMoistureMin ?? this.idealSoilMoistureMin,
+      idealSoilMoistureMax: idealSoilMoistureMax ?? this.idealSoilMoistureMax,
     );
   }
 } 

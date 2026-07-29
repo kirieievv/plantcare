@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/botanly_loader.dart';
 import '../utils/notification_test.dart';
 import '../utils/web_push_tester.dart';
 import '../utils/web_notification_helper.dart';
@@ -819,7 +820,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: BotanlyLoader())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(

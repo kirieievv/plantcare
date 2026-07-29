@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { fetchUsers, type AdminUser } from "@/lib/firestore";
+import { fetchUsers, fetchAiCostPerUser, type AdminUser } from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { ArrowUpDown, Search } from "lucide-react";
+import { ArrowUpDown, Search, Mail, Bell, ShieldCheck, Crown } from "lucide-react";
 import Link from "next/link";
 
 const col = createColumnHelper<AdminUser>();
@@ -48,6 +48,20 @@ function isActiveRecently(lastLogin?: Date) {
   return Date.now() - lastLogin.getTime() < 7 * 24 * 60 * 60 * 1000;
 }
 
+function SubscriptionBadge({ status }: { status?: string }) {
+  switch (status) {
+    case "active":
+      return <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">Premium</Badge>;
+    case "grandfathered":
+      return <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-xs">Forever Premium</Badge>;
+    case "expired":
+      return <Badge variant="secondary" className="bg-red-100 text-red-600 text-xs">Expired</Badge>;
+    case "trial":
+    default:
+      return <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">Trial</Badge>;
+  }
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,8 +70,16 @@ export default function UsersPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   useEffect(() => {
-    fetchUsers()
-      .then(setUsers)
+    Promise.all([fetchUsers(), fetchAiCostPerUser()])
+      .then(([list, costMap]) => {
+        setUsers(
+          list.map((u) => ({
+            ...u,
+            aiCostUsd: costMap.get(u.uid)?.cost ?? 0,
+            aiTotalTokens: costMap.get(u.uid)?.tokens ?? 0,
+          }))
+        );
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -114,6 +136,38 @@ export default function UsersPage() {
         },
         sortingFn: "datetime",
       }),
+      col.accessor("subscriptionStatus", {
+        header: () => (
+          <div className="flex items-center gap-1">
+            <Crown className="h-3 w-3" /> Plan
+          </div>
+        ),
+        cell: (info) => <SubscriptionBadge status={info.getValue()} />,
+      }),
+      col.accessor("aiCostUsd", {
+        header: ({ column }) => (
+          <button
+            className="flex items-center gap-1 hover:text-foreground"
+            onClick={() => column.toggleSorting()}
+          >
+            AI Cost <ArrowUpDown className="h-3 w-3" />
+          </button>
+        ),
+        cell: (info) => {
+          const cost = info.getValue() ?? 0;
+          const tokens = info.row.original.aiTotalTokens ?? 0;
+          if (cost === 0 && tokens === 0) return "—";
+          return (
+            <span>
+              ${cost.toFixed(4)}
+              <span className="ml-1 text-xs text-muted-foreground">
+                ({tokens.toLocaleString()})
+              </span>
+            </span>
+          );
+        },
+        sortingFn: "basic",
+      }),
       col.accessor("timezone", {
         header: "Timezone",
         cell: (info) => info.getValue() || "—",
@@ -121,6 +175,70 @@ export default function UsersPage() {
       col.accessor("location", {
         header: "Location",
         cell: (info) => info.getValue() || "—",
+      }),
+      col.accessor("emailReminders", {
+        header: () => (
+          <div className="flex items-center gap-1">
+            <Mail className="h-3 w-3" /> Email
+          </div>
+        ),
+        cell: (info) => {
+          const v = info.getValue();
+          if (v === null || v === undefined) {
+            return <span className="text-muted-foreground text-xs">—</span>;
+          }
+          return (
+            <Badge
+              variant="secondary"
+              className={v
+                ? "bg-green-100 text-green-700 text-xs"
+                : "bg-red-100 text-red-600 text-xs"}
+            >
+              {v ? "ON" : "OFF"}
+            </Badge>
+          );
+        },
+      }),
+      col.accessor("pushReminders", {
+        header: () => (
+          <div className="flex items-center gap-1">
+            <Bell className="h-3 w-3" /> Push
+          </div>
+        ),
+        cell: (info) => {
+          const v = info.getValue();
+          if (v === null || v === undefined) {
+            return <span className="text-muted-foreground text-xs">—</span>;
+          }
+          return (
+            <Badge
+              variant="secondary"
+              className={v
+                ? "bg-green-100 text-green-700 text-xs"
+                : "bg-red-100 text-red-600 text-xs"}
+            >
+              {v ? "ON" : "OFF"}
+            </Badge>
+          );
+        },
+      }),
+      col.accessor("emailVerified", {
+        header: () => (
+          <div className="flex items-center gap-1">
+            <ShieldCheck className="h-3 w-3" /> Verified
+          </div>
+        ),
+        cell: (info) => {
+          const v = info.getValue();
+          if (v === true) {
+            return (
+              <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                ✓ Verified
+              </Badge>
+            );
+          }
+          return <span className="text-muted-foreground text-xs">—</span>;
+        },
       }),
     ],
     []

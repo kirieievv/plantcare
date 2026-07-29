@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // KLM Style Color Palette
-  static const Color primaryBlue = Color(0xFF1976D2); // KLM Blue
-  static const Color darkBlue = Color(0xFF0D47A1); // Dark Blue
-  static const Color lightBlue = Color(0xFFE3F2FD); // Light Blue
-  static const Color accentGreen = Color(0xFF4CAF50); // Success Green (кнопки, иконки, акценты)
-  static const Color greenDark = Color(0xFF2E7D32);  // Тёмно-зелёный (текст на зелёном фоне, подписи)
-  static const Color greenLightBg = Color(0xFFE8F5E9); // Светло-зелёный фон карточек
+  // Botanly HTML design tokens (see `lib/theme/botanly_theme.dart` and the
+  // HTML prototypes in `Botanly /screens/`). Field names kept for
+  // compatibility with the existing screens.
+  static const Color primaryBlue = Color(0xFF4A91C8); // info accents
+  static const Color darkBlue = Color(0xFF3A5332); // dark sage (was navy)
+  static const Color lightBlue = Color(0xFFE4EFF8); // info pale
+  static const Color accentGreen = Color(0xFF5FA346); // sage (HTML --sage)
+  static const Color greenDark = Color(0xFF3A5332);  // sage-dark
+  static const Color greenLightBg = Color(0xFFE3F1D6); // sage-pale-2
   static const Color white = Color(0xFFFFFFFF);
-  static const Color lightGrey = Color(0xFFF8F9FA);
-  static const Color mediumGrey = Color(0xFFE9ECEF);
-  static const Color darkGrey = Color(0xFF6C757D);
-  static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF6C757D);
-  static const Color borderGrey = Color(0xFFDEE2E6);
+  static const Color lightGrey = Color(0xFFF7FAF5);   // paper (HTML --paper)
+  static const Color mediumGrey = Color(0xFFEBEBEB);  // sand (HTML --sand)
+  static const Color darkGrey = Color(0xFF7A8676);    // ink-mute
+  static const Color textPrimary = Color(0xFF2D3D2A); // moss
+  static const Color textSecondary = Color(0xFF4A5C46); // ink-soft
+  static const Color borderGrey = Color(0xFFE4EBE1);  // line
   static const Color shadowGrey = Color(0xFF000000);
 
   // Modern Typography

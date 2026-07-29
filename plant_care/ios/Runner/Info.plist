@@ -24,6 +24,12 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Botanly uses the camera to photograph your plants for identification and health checks.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Botanly needs access to your photo library to select plant photos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Botanly may save plant photos to your photo library.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIBackgroundModes</key>

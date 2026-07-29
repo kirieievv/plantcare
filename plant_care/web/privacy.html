@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Botanly</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sage:       #6A8F5E;
+      --sage-dark:  #3E6B34;
+      --moss:       #2D3D2A;
+      --ink:        #1A1F18;
+      --ink-soft:   #4A5244;
+      --ink-mute:   #8A9585;
+      --bg:         #F7F9F4;
+      --paper:      #FFFFFF;
+      --border:     #E4EBE0;
+      --radius:     14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink-soft);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--paper);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #8FBA80, #3E6B34);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--moss);
+      letter-spacing: -0.3px;
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── Page title ── */
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--moss);
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      color: var(--ink-mute);
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+
+    /* ── Sections ── */
+    .section {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 28px 24px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--moss);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 .icon {
+      width: 28px; height: 28px;
+      background: #EAF4E6;
+      border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    p {
+      color: var(--ink-soft);
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    p:last-child { margin-bottom: 0; }
+
+    ul {
+      padding-left: 0;
+      list-style: none;
+      margin-bottom: 12px;
+    }
+
+    ul li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 15px;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+
+    ul li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--sage);
+      font-weight: 700;
+    }
+
+    strong { color: var(--moss); font-weight: 600; }
+
+    a {
+      color: var(--sage-dark);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: border-color 0.15s;
+    }
+
+    a:hover { border-color: var(--sage); }
+
+    /* ── Highlight box ── */
+    .highlight {
+      background: #EAF4E6;
+      border: 1px solid #C8E0C0;
+      border-radius: 10px;
+      padding: 16px 18px;
+      font-size: 14px;
+      color: var(--sage-dark);
+      margin-bottom: 12px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      color: var(--ink-mute);
+      font-size: 13px;
+      padding: 32px 24px;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 32px 16px 60px; }
+      .section { padding: 20px 18px; }
+      .page-title { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌿</div>
+  <span class="logo-text">Botanly</span>
+</header>
+
+<div class="container">
+
+  <h1 class="page-title">Privacy Policy</h1>
+  <p class="page-subtitle">Last updated: May 15, 2026</p>
+
+  <div class="highlight">
+    Botanly ("we", "our", or "us") is committed to protecting your privacy. This policy explains what data we collect, how we use it, and your rights over it.
+  </div>
+
+  <!-- 1. Who We Are -->
+  <div class="section">
+    <h2><span class="icon">🏷️</span> Who We Are</h2>
+    <p>Botanly is a plant care application developed and operated by <strong>Vladymyr Kirieiev</strong>. If you have questions about this policy, contact us at <a href="mailto:support@botanly.tech">support@botanly.tech</a>.</p>
+  </div>
+
+  <!-- 2. Data We Collect -->
+  <div class="section">
+    <h2><span class="icon">📋</span> Data We Collect</h2>
+    <p>We collect the following information when you use Botanly:</p>
+
+    <p><strong>Account information</strong></p>
+    <ul>
+      <li>Email address and display name (used to create and identify your account)</li>
+      <li>Password (stored as a secure hash — we never see it in plain text)</li>
+    </ul>
+
+    <p><strong>Plant data</strong></p>
+    <ul>
+      <li>Plant names, species, watering schedules, and care notes you enter</li>
+      <li>Photos of your plants that you upload for identification or health checks</li>
+      <li>AI-generated care recommendations and health check history</li>
+    </ul>
+
+    <p><strong>AI assistant conversations</strong></p>
+    <ul>
+      <li>Messages you send to the plant assistant (stored per plant, per account)</li>
+      <li>Photos attached to chat messages (up to 5 per day)</li>
+    </ul>
+
+    <p><strong>Subscription and billing</strong></p>
+    <ul>
+      <li>Subscription status, plan type, and renewal dates (managed by Apple App Store or Stripe)</li>
+      <li>We do not store credit card numbers or payment details — these are handled entirely by Apple or Stripe</li>
+    </ul>
+
+    <p><strong>Preferences and settings</strong></p>
+    <ul>
+      <li>Notification preferences, quiet hours, language, and theme settings</li>
+    </ul>
+  </div>
+
+  <!-- 3. How We Use Your Data -->
+  <div class="section">
+    <h2><span class="icon">⚙️</span> How We Use Your Data</h2>
+    <ul>
+      <li>To provide the app's core features: plant tracking, watering reminders, AI identification, and health checks</li>
+      <li>To authenticate you and keep your data synced across your devices</li>
+      <li>To send push notifications and email reminders for plant care (only if you opt in)</li>
+      <li>To deliver AI-powered responses from the plant assistant</li>
+      <li>To verify and manage your premium subscription</li>
+      <li>To improve the reliability and performance of the service</li>
+    </ul>
+    <p>We do not sell your personal data to third parties. We do not use your data for advertising.</p>
+  </div>
+
+  <!-- 4. Third-Party Services -->
+  <div class="section">
+    <h2><span class="icon">🔗</span> Third-Party Services</h2>
+    <p>Botanly uses the following third-party services, each governed by their own privacy policies:</p>
+
+    <p><strong>Firebase (Google)</strong> — authentication, database, file storage, and cloud functions. <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Firebase Privacy Policy</a></p>
+
+    <p><strong>RevenueCat</strong> — subscription management on iOS. <a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">RevenueCat Privacy Policy</a></p>
+
+    <p><strong>Stripe</strong> — payment processing on the web. <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe Privacy Policy</a></p>
+
+    <p><strong>OpenAI / AI provider</strong> — plant identification, health analysis, and chat responses. Photos and questions you submit are sent to an AI model to generate responses. They are not used to train AI models on your personal data.</p>
+  </div>
+
+  <!-- 5. Photos -->
+  <div class="section">
+    <h2><span class="icon">📷</span> Photos and Images</h2>
+    <p>Photos you upload are stored in Firebase Storage and associated with your account. They are used exclusively to:</p>
+    <ul>
+      <li>Identify plant species</li>
+      <li>Analyse plant health</li>
+      <li>Display your plant in the app</li>
+    </ul>
+    <p>Photos sent to the AI assistant are transmitted to the AI provider for analysis and are not permanently retained by the AI service beyond the scope of the request.</p>
+    <p>You can delete any plant (along with its photos) at any time from within the app.</p>
+  </div>
+
+  <!-- 6. Notifications -->
+  <div class="section">
+    <h2><span class="icon">🔔</span> Notifications</h2>
+    <p>Botanly can send you:</p>
+    <ul>
+      <li><strong>Push notifications</strong> — watering reminders delivered to your device. You can enable or disable these in the app's Settings screen or in your device's system settings.</li>
+      <li><strong>Email reminders</strong> — watering reminders sent by email. You can toggle these on or off in the app's Settings screen at any time.</li>
+    </ul>
+    <p>We do not send marketing emails without your explicit consent.</p>
+  </div>
+
+  <!-- 7. Data Retention -->
+  <div class="section">
+    <h2><span class="icon">🗄️</span> Data Retention</h2>
+    <p>Your data is stored for as long as your account is active. If you delete a plant, its data and photos are permanently removed. If you wish to delete your entire account and all associated data, contact us at <a href="mailto:support@botanly.tech">support@botanly.tech</a> and we will process the request within 30 days.</p>
+  </div>
+
+  <!-- 8. Children -->
+  <div class="section">
+    <h2><span class="icon">👦</span> Children's Privacy</h2>
+    <p>Botanly is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us and we will delete it promptly.</p>
+  </div>
+
+  <!-- 9. Your Rights -->
+  <div class="section">
+    <h2><span class="icon">⚖️</span> Your Rights</h2>
+    <p>Depending on your location, you may have the right to:</p>
+    <ul>
+      <li>Access the personal data we hold about you</li>
+      <li>Request correction of inaccurate data</li>
+      <li>Request deletion of your account and data</li>
+      <li>Object to or restrict certain processing</li>
+      <li>Data portability (receive your data in a structured format)</li>
+    </ul>
+    <p>To exercise any of these rights, contact us at <a href="mailto:support@botanly.tech">support@botanly.tech</a>.</p>
+    <p>If you are in the European Economic Area, you also have the right to lodge a complaint with your local data protection authority.</p>
+  </div>
+
+  <!-- 10. Security -->
+  <div class="section">
+    <h2><span class="icon">🔒</span> Security</h2>
+    <p>We use industry-standard security measures including encrypted connections (HTTPS/TLS), Firebase Security Rules to restrict data access to authenticated owners, and secure credential handling. No method of transmission or storage is 100% secure, but we take reasonable steps to protect your information.</p>
+  </div>
+
+  <!-- 11. Changes -->
+  <div class="section">
+    <h2><span class="icon">📝</span> Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date at the top of this page. Continued use of the app after changes constitutes your acceptance of the updated policy.</p>
+  </div>
+
+  <!-- 12. Contact -->
+  <div class="section">
+    <h2><span class="icon">✉️</span> Contact Us</h2>
+    <p>If you have any questions or concerns about this Privacy Policy, please reach out:</p>
+    <ul>
+      <li>Email: <a href="mailto:support@botanly.tech">support@botanly.tech</a></li>
+      <li>Website: <a href="https://botanly.tech">botanly.tech</a></li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  © 2026 Vladymyr Kirieiev &nbsp;·&nbsp; Botanly &nbsp;·&nbsp;
+  <a href="/support.html">Support</a>
+</footer>
+
+</body>
+</html>

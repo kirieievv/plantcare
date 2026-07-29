@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/models/smart_plant.dart';
 import 'package:plant_care/models/user_model.dart';
-import 'package:plant_care/screens/main_navigation_screen.dart';
 import 'package:plant_care/screens/plant_chat_screen.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/services/health_check_service.dart';
@@ -16,6 +16,9 @@ import 'package:plant_care/widgets/plant_card.dart';
 import 'package:plant_care/widgets/health_alert.dart';
 import 'package:plant_care/widgets/health_gallery.dart';
 import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/theme/botanly_theme.dart';
+import 'package:plant_care/widgets/botanly_loader.dart';
+import 'package:plant_care/widgets/botanly_shimmer.dart';
 import 'package:plant_care/utils/responsive_layout.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -43,6 +46,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   int? _wateringCountdownDays;
   HealthCheckAnalysisMode _selectedHealthCheckMode = HealthCheckAnalysisMode.aiAgent;
   bool _isSendingTestWateringEmail = false;
+  int _checksInCurrentCycle = 0;
+  static const _maxChecksPerCycle = 2;
   AppLocalizations get l10n => AppLocalizations.of(context)!;
   
   @override
@@ -54,10 +59,51 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     // Save navigation state so user returns to this page after reload
     _saveNavigationState();
     _startWateringCountdownTimer();
+    _loadHealthCheckCount();
   }
   
   Future<void> _saveNavigationState() async {
     await NavigationService.savePlantDetailsState(_plant.id);
+  }
+
+  Future<void> _loadHealthCheckCount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final since = _plant.lastWateredAt ?? _plant.lastWatered;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('health_checks')
+          .where('plantId', isEqualTo: _plant.id)
+          .where('userId', isEqualTo: user.uid)
+          .where('timestamp', isGreaterThan: since.toIso8601String())
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _checksInCurrentCycle = snapshot.docs.length;
+      });
+    } catch (e) {
+      print('❌ Error loading health check count: $e');
+    }
+  }
+
+  bool _canDoHealthCheck() {
+    if (_canWaterPlant()) return false;
+    if (_checksInCurrentCycle >= _maxChecksPerCycle) return false;
+    return true;
+  }
+
+  String _healthCheckButtonLabel() {
+    if (_canWaterPlant()) return l10n.waterFirstLabel;
+    if (_checksInCurrentCycle >= _maxChecksPerCycle) {
+      final wateringDate = _getNextWateringDate();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final target = DateTime(wateringDate.year, wateringDate.month, wateringDate.day);
+      int days = target.difference(today).inDays;
+      if (days <= 0) days = 1;
+      return l10n.nextCheckAfterWatering(days);
+    }
+    return l10n.analyzeHealth;
   }
 
   void _openHealthCheckModal() {
@@ -85,10 +131,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   Future<void> _sendTestWateringEmailNow() async {
     if (_isSendingTestWateringEmail) return;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Please log in again to send test email.')),
+        SnackBar(content: Text(l10n.pleaseLoginAgain)),
       );
       return;
     }
@@ -122,7 +169,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           response.statusCode < 300 &&
           payload['success'] == true) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Test watering email queued.')),
+          SnackBar(content: Text(l10n.testWateringEmailQueued)),
         );
       } else {
         final err = payload['error']?.toString() ?? 'Failed to send test email.';
@@ -130,7 +177,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not send test email: $e')),
+        SnackBar(content: Text(l10n.errorSendingTestEmail(e.toString()))),
       );
     } finally {
       if (mounted) {
@@ -260,11 +307,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         aiLight: shouldUpdate(newLight) ? newLight : _plant.aiLight,
         // RECALCULATE watering amount from new photo - FORCE update
         aiWateringAmount: shouldUpdate(healthResult['watering_amount']) ? healthResult['watering_amount'] : _plant.aiWateringAmount,
-        // Update care recommendations from new photo
-        aiCareTips: shouldUpdate(healthResult['care_tips']) ? healthResult['care_tips'] : _plant.aiCareTips,
-        interestingFacts: healthResult['interesting_facts'] != null
-            ? List<String>.from(healthResult['interesting_facts'])
-            : _plant.interestingFacts,
+        // Care tips and interesting facts are set at plant creation — Health Check does not overwrite them
+        aiCareTips: _plant.aiCareTips,
+        interestingFacts: _plant.interestingFacts,
         // RECALCULATE scientific watering calculation fields from new photo - FORCE update
         wateringAmountMl: newWateringAmountMl != null 
             ? (newWateringAmountMl is int 
@@ -351,6 +396,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
         );
       }
+      await _loadHealthCheckCount();
     } catch (e) {
       print('❌ Error updating plant with health check: $e');
       if (mounted) {
@@ -456,14 +502,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
         );
         
-        // Navigate back to plant list
-        final currentUser = FirebaseAuth.instance.currentUser;
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => MainNavigationScreen(user: currentUser, initialIndex: 0),
-          ),
-          (route) => false,
-        );
+        if (mounted) Navigator.of(context, rootNavigator: true).pop();
       }
     } catch (e) {
       print('❌ Error deleting plant: $e');
@@ -530,6 +569,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       
       // Refresh plant data to get updated notification schedule
       await _refreshPlantData();
+      await _loadHealthCheckCount();
       
       if (mounted) {
         // Show success message
@@ -1013,8 +1053,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   }
 
   Widget _buildMoistureCard() {
-    final moisturePercentage = _getMoisturePercentage(_plant.aiMoistureLevel);
+    final hasRange = _plant.idealSoilMoistureMin != null && _plant.idealSoilMoistureMax != null;
+    final moisturePercentage = hasRange
+        ? ((_plant.idealSoilMoistureMin! + _plant.idealSoilMoistureMax!) ~/ 2)
+        : null;
     final moistureLevel = _formatMoistureLevel(_plant.aiMoistureLevel);
+    final moistureValueText = hasRange
+        ? '$moistureLevel · ${_plant.idealSoilMoistureMin}–${_plant.idealSoilMoistureMax}%'
+        : moistureLevel;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1049,23 +1095,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           const SizedBox(height: 4),
                                 Text(
-            '$moisturePercentage%',
+            moistureValueText,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 15,
               fontWeight: FontWeight.bold,
               color: Colors.green,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
-          Text(
-            moistureLevel,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
-                            ),
                             const SizedBox(height: 8),
                             Container(
                               width: double.infinity,
@@ -1076,7 +1113,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                               ),
                               child: FractionallySizedBox(
                                 alignment: Alignment.centerLeft,
-              widthFactor: (moisturePercentage / 100).clamp(0.0, 1.0),
+              widthFactor: ((moisturePercentage ?? 0) / 100).clamp(0.0, 1.0),
                                 child: Container(
                                   decoration: BoxDecoration(
                   color: Colors.green,
@@ -1116,10 +1153,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               const SizedBox(width: 8),
                             Expanded(
                 child: ElevatedButton(
-                  onPressed: _openHealthCheckModal,
+                  onPressed: _canDoHealthCheck() ? _openHealthCheckModal : null,
                               style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.grey.shade700,
+                    backgroundColor: _canDoHealthCheck() ? Colors.white : Colors.grey.shade200,
+                    foregroundColor: _canDoHealthCheck() ? Colors.grey.shade700 : Colors.grey.shade500,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                                 shape: RoundedRectangleBorder(
@@ -1129,6 +1166,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                                     width: 1,
                                   ),
                                 ),
+                    overlayColor: _canDoHealthCheck() ? null : Colors.transparent,
                               ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1137,15 +1175,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       Icon(
                         Icons.health_and_safety,
                         size: 14,
-                        color: Colors.red.shade600,
+                        color: _canDoHealthCheck() ? Colors.red.shade600 : Colors.grey.shade500,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                    l10n.analyzeHealth,
-                                style: TextStyle(
-                      fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                    ),
+                      Flexible(
+                        child: Text(
+                          _healthCheckButtonLabel(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                            fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1178,27 +1220,28 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     }
   }
 
-  Widget _buildPlantAssistantHealthyCard(Map<String, dynamic>? pa, bool hasStructured) {
+  Widget _buildPlantAssistantHealthyCard(
+      Map<String, dynamic>? pa, bool hasStructured) {
     final praise = hasStructured ? (pa!['praise_phrase']?.toString() ?? '') : '';
-    final summary = hasStructured ? (pa!['health_summary']?.toString() ?? '') : '';
-    final footer = hasStructured ? (pa!['maintenance_footer']?.toString() ?? '') : '';
-    final defaultPraise = 'Your plant is doing fine!';
-    final defaultFooter = 'Keep caring for your plant per the recommendations and log when you water.';
+    final summary =
+        hasStructured ? (pa!['health_summary']?.toString() ?? '') : '';
+    final footer =
+        hasStructured ? (pa!['maintenance_footer']?.toString() ?? '') : '';
+    final defaultPraise = l10n.healthCheckDefaultPraise;
+    final defaultFooter = l10n.healthCheckDefaultFooter;
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: const Color(0xFFF1F8EB),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade200),
-        boxShadow: [
+        border: Border.all(color: const Color(0xFFCCE8B8)),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+              color: Color(0x0A000000),
+              blurRadius: 8,
+              offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -1206,18 +1249,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.eco, color: Colors.green.shade600, size: 18),
+              const Icon(Icons.local_florist_outlined,
+                  color: Color(0xFF5FA346), size: 17),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   l10n.plantCareAssistantTitle,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
+                  style: GoogleFonts.fraunces(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.2,
+                    color: const Color(0xFF4A8C33),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.visible,
                 ),
               ),
             ],
@@ -1227,29 +1270,30 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.shade100,
+              color: const Color(0xFFE3F1D6),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green.shade300),
+              border: Border.all(color: const Color(0xFFCCE8B8)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  praise.isNotEmpty ? praise : '🌱 $defaultPraise',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade800,
+                  praise.isNotEmpty ? praise : defaultPraise,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A1A1A),
                   ),
                 ),
                 if (summary.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     summary,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.green.shade700,
-                      height: 1.3,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF4A8C33),
+                      height: 1.45,
                     ),
                   ),
                 ],
@@ -1260,21 +1304,22 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             const SizedBox(height: 10),
             Text(
               footer.isNotEmpty ? footer : defaultFooter,
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 11,
-                color: Colors.grey.shade700,
-                height: 1.3,
-                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.w300,
+                color: const Color(0xFF888888),
+                height: 1.4,
               ),
             ),
           ],
           if (_plant.lastHealthCheck != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 10,
-                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w300,
+                color: const Color(0xFF9E9E9E),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -1295,20 +1340,24 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     final followUpDays = hasStructured ? (pa!['follow_up_days'] is int ? pa['follow_up_days'] as int? : int.tryParse(pa['follow_up_days']?.toString() ?? '')) : null;
     final reassurance = hasStructured ? (pa!['reassurance']?.toString() ?? '') : '';
 
+    const Color cardBg = Color(0xFFFBE6E6);
+    const Color innerBg = Color(0xFFF7DCDC);
+    const Color borderC = Color(0xFFECC6C6);
+    const Color textC = Color(0xFF8A3535);
+    const Color titleC = Color(0xFFC54F4F);
+
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade200),
-        boxShadow: [
+        border: Border.all(color: borderC),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+              color: Color(0x0A000000),
+              blurRadius: 8,
+              offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -1316,18 +1365,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.warning, color: Colors.red.shade600, size: 18),
+              const Icon(Icons.warning_amber_rounded,
+                  color: titleC, size: 17),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Plant Needs Help!',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade700,
+                  style: GoogleFonts.fraunces(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.2,
+                    color: titleC,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.visible,
                 ),
               ),
             ],
@@ -1338,9 +1387,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.shade100,
+                color: innerBg,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade300),
+                border: Border.all(color: borderC),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1348,20 +1397,24 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   if (problemName.isNotEmpty)
                     Text(
                       problemName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade800,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textC,
                       ),
                     ),
                   if (severity.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      severity == 'mild' ? 'Mild' : (severity == 'moderate' ? 'Moderate' : 'Serious'),
-                      style: TextStyle(
+                      severity == 'mild'
+                          ? 'Mild'
+                          : (severity == 'moderate'
+                              ? 'Moderate'
+                              : 'Serious'),
+                      style: GoogleFonts.dmSans(
                         fontSize: 11,
-                        color: Colors.red.shade700,
                         fontWeight: FontWeight.w600,
+                        color: textC,
                       ),
                     ),
                   ],
@@ -1369,10 +1422,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     const SizedBox(height: 6),
                     Text(
                       problemDesc,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.red.shade700,
-                        height: 1.3,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
+                        color: textC,
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -1384,37 +1438,44 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           if (actionSteps.isNotEmpty) ...[
             Text(
               l10n.whatToDoNow,
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade800,
+                fontWeight: FontWeight.w700,
+                color: textC,
               ),
             ),
             const SizedBox(height: 6),
             ...actionSteps.take(5).map((s) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('• ', style: TextStyle(fontSize: 11, color: Colors.red.shade800)),
-                  Expanded(
-                    child: Text(
-                      s,
-                      style: TextStyle(fontSize: 11, color: Colors.red.shade800, height: 1.3),
-                    ),
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• ',
+                          style: GoogleFonts.dmSans(
+                              fontSize: 11, color: textC)),
+                      Expanded(
+                        child: Text(
+                          s,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w400,
+                            color: textC,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )),
+                )),
             const SizedBox(height: 12),
           ],
           if (followUpDays != null && followUpDays > 0) ...[
             Text(
               'Check the plant again in $followUpDays days.',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 11,
-                color: Colors.red.shade700,
                 fontWeight: FontWeight.w500,
+                color: textC,
               ),
             ),
             const SizedBox(height: 10),
@@ -1422,25 +1483,29 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           if (reassurance.isNotEmpty) ...[
             Text(
               reassurance,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.red.shade700,
-                height: 1.3,
+              style: GoogleFonts.dmSans(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w400,
+                color: textC,
+                height: 1.4,
               ),
             ),
             const SizedBox(height: 10),
           ],
-          if (!hasStructured && _plant.healthMessage != null && _plant.healthMessage!.trim().isNotEmpty) ...[
+          if (!hasStructured &&
+              _plant.healthMessage != null &&
+              _plant.healthMessage!.trim().isNotEmpty) ...[
             Text(
               _plant.healthMessage!.trim().startsWith('{')
                   ? 'See Care Recommendations below for care tips.'
                   : _plant.healthMessage!.length > 200
                       ? '${_plant.healthMessage!.substring(0, 200).trim()}…'
                       : _plant.healthMessage!,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.red.shade800,
-                height: 1.3,
+              style: GoogleFonts.dmSans(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w400,
+                color: textC,
+                height: 1.4,
               ),
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
@@ -1450,9 +1515,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           if (_plant.lastHealthCheck != null)
             Text(
               'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 10,
-                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w300,
+                color: const Color(0xFF9E9E9E),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -1494,15 +1560,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.yellow.shade50,
+        color: const Color(0xFFFFFAEE),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.yellow.shade200),
-        boxShadow: [
+        border: Border.all(color: const Color(0xFFF5EBCC)),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+              color: Color(0x0A000000),
+              blurRadius: 8,
+              offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -1510,18 +1575,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline_rounded,
-                color: Colors.yellow.shade700,
-                size: 20,
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Color(0xFFC9A052),
+                size: 18,
               ),
               const SizedBox(width: 8),
               Text(
-                'Specific Issues',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.yellow.shade700,
+                l10n.specificIssues,
+                style: GoogleFonts.fraunces(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: -0.2,
+                  color: const Color(0xFFC9A052),
                 ),
               ),
             ],
@@ -1529,27 +1595,29 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           const SizedBox(height: 8),
           ...lines.map(
             (line) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 2, left: 2),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '• ',
-                    style: TextStyle(
+                    '•  ',
+                    style: GoogleFonts.dmSans(
                       fontSize: 13,
-                      color: Colors.yellow.shade800,
-                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFFC9A052),
+                      height: 1.5,
                     ),
                   ),
                   Expanded(
                     child: Text(
                       line,
-                      style: TextStyle(
+                      style: GoogleFonts.dmSans(
                         fontSize: 13,
-                        color: Colors.yellow.shade800,
-                        height: 1.3,
+                        fontWeight: FontWeight.w300,
+                        color: const Color(0xFF9C8456),
+                        height: 1.5,
                       ),
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1563,27 +1631,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   }
   
   
-  // Care Recommendations Accordion
+  // Care Recommendations Accordion — pixel-aligned with .acc in plant_details_screen.html
   Widget _buildDetailsAccordion() {
-    // Show details for all plants, even new ones without AI data
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.accentGreen, width: 1),
+        border: Border.all(color: const Color(0xFFCCE8B8), width: 1),
       ),
       child: StreamBuilder<List<HealthCheckRecord>>(
         stream: _healthCheckStream,
         builder: (context, snapshot) {
-          // Check if there are any health checks
-          final hasHealthChecks = snapshot.hasData && 
-              snapshot.data != null && 
-              snapshot.data!.isNotEmpty;
-          
           return Column(
           children: [
-              // Custom header with better arrow control
+              // Header strip (sage-soft) with bulb circle + Fraunces title + chevron
               GestureDetector(
                 onTap: () {
                   setState(() {
@@ -1591,10 +1653,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   });
                 },
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16), // Increased padding
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentGreen.withOpacity(0.05), // Added subtle background
-                    borderRadius: const BorderRadius.only(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1F8EB),
+                    borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
                     ),
@@ -1602,36 +1665,42 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8), // Increased padding
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentGreen.withOpacity(0.15), // Enhanced background
+                        width: 34,
+                        height: 34,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFCCE8B8),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-              Icons.lightbulb_outline,
-              color: AppTheme.accentGreen,
-                          size: 18, // Increased size
+                        child: const Icon(
+                          Icons.lightbulb_outline,
+                          color: Color(0xFF5FA346),
+                          size: 18,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-              l10n.careRecommendationsTitle,
-              style: GoogleFonts.lato(
+                          l10n.careRecommendationsTitle,
+                          style: GoogleFonts.fraunces(
                             fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                color: AppTheme.accentGreen,
+                            fontWeight: FontWeight.w400,
                             letterSpacing: -0.3,
+                            height: 1.1,
+                            color: const Color(0xFF5FA346),
                           ),
                         ),
                       ),
-                      Icon(
-                        _isDetailsExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: AppTheme.accentGreen,
-                        size: 22, // Increased size
-            ),
-          ],
-        ),
+                      AnimatedRotation(
+                        turns: _isDetailsExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 220),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Color(0xFF5FA346),
+                          size: 22,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               
@@ -2000,20 +2069,20 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         .trim();
   }
 
-  // Health History Gallery
+  // Health History Gallery — pixel-aligned with .hist in plant_details_screen.html
   Widget _buildHealthHistoryGallery() {
   return Container(
       width: double.infinity,
-    padding: const EdgeInsets.all(20),
+    padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.blue.shade50,
+      color: const Color(0xFFE4EFF8),
       borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.shade200),
-      boxShadow: [
+        border: Border.all(color: const Color(0xFFBAD5E9)),
+      boxShadow: const [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Color(0x0A000000),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
         ),
       ],
     ),
@@ -2022,45 +2091,57 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       children: [
         Row(
           children: [
-              Icon(
-                Icons.history,
-                color: Colors.blue.shade600,
-                size: 20,
+              const Icon(
+                Icons.photo_library_outlined,
+                color: Color(0xFF4A91C8),
+                size: 18,
               ),
               const SizedBox(width: 8),
             Expanded(
               child: Text(
                 l10n.healthCheckHistoryTitle,
-                style: TextStyle(
+                style: GoogleFonts.fraunces(
                     fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: -0.2,
+                  color: const Color(0xFF4A91C8),
                 ),
               ),
             ),
-            GestureDetector(
-                onTap: _openHealthCheckModal,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.add,
-                  color: Colors.blue.shade600,
-                  size: 20,
+            Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: _openHealthCheckModal,
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCFE0EF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      color: Color(0xFF4A91C8),
+                      size: 20,
+                    ),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         StreamBuilder<List<HealthCheckRecord>>(
           stream: _healthCheckStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return BotanlyShimmer(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: const ShimmerHealthHistory(),
+                ),
+              );
             }
             
             if (snapshot.hasError) {
@@ -2105,21 +2186,22 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 _buildHealthHistoryList(validHealthChecks),
                 // Scroll indicator
                 if (validHealthChecks.length > 3) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.swipe_left,
-                        size: 16,
-                        color: Colors.blue.shade400,
+                      const Icon(
+                        Icons.chevron_left_rounded,
+                        size: 14,
+                        color: Color(0xFF4A91C8),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
                         l10n.swipeToSeeMore,
-                        style: TextStyle(
+                        style: GoogleFonts.dmSans(
                           fontSize: 11,
-                          color: Colors.blue.shade400,
+                          fontWeight: FontWeight.w300,
+                          color: const Color(0xFF4A91C8),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -2137,8 +2219,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
 
   Widget _buildEmptyHealthHistory() {
   return Container(
+    width: double.infinity,
     padding: const EdgeInsets.all(40),
     child: Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(
           Icons.photo_library_outlined,
@@ -2148,6 +2232,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         const SizedBox(height: 16),
         Text(
           l10n.noHealthChecksYet,
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -3045,16 +3130,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 color: Colors.white,
                 size: 24,
               ),
-              onPressed: () {
-                // Navigate to Home page (Dashboard) instead of going back
-                final currentUser = FirebaseAuth.instance.currentUser;
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => MainNavigationScreen(user: currentUser),
-                  ),
-                  (route) => false,
-                );
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
         ),
@@ -3156,13 +3232,36 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: true, // Allow content to extend behind system UI
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openPlantChat,
-        tooltip: l10n.plantChatOpen,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.chat_bubble_rounded),
+      floatingActionButton: Container(
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF5FA346), Color(0xFF4A8C33)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x525FA346),
+              blurRadius: 14,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: _openPlantChat,
+            child: const SizedBox(
+              width: 56,
+              height: 56,
+              child: Icon(Icons.chat_bubble_rounded,
+                  color: Colors.white, size: 22),
+            ),
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: CustomScrollView(
@@ -3227,16 +3326,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                       
                       return PlantCarouselHeader(
                         images: imageUrls,
-                        onBackPressed: () {
-                          // Navigate to Home page (Dashboard) instead of going back
-                          final currentUser = FirebaseAuth.instance.currentUser;
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (context) => MainNavigationScreen(user: currentUser, initialIndex: 0),
-                            ),
-                            (route) => false,
-                          );
-                        },
+                        onBackPressed: () => Navigator.of(context).pop(),
                       );
                     }
                     
@@ -3385,38 +3475,38 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 16,
               ),
               child: Center(
-                child: SizedBox(
-                  width: 80, // Further reduced to prevent overflow
-                  height: 32, // Further reduced to prevent overflow
-                  child: ElevatedButton(
-                    onPressed: () => _showDeleteConfirmation(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade600.withOpacity(0.6), // More transparent
-                      foregroundColor: Colors.white.withOpacity(0.8), // More transparent text
-                      elevation: 0, // No elevation for subtlety
-                      padding: EdgeInsets.zero, // Remove default padding
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // Adjusted for smaller size
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: _showDeleteConfirmation,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                            color: const Color(0xFFC54F4F), width: 1),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min, // Ensure row doesn't expand
-                      children: [
-                        Icon(
-                          Icons.delete_forever,
-                          size: 14, // Further reduced icon size
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                        const SizedBox(width: 3), // Minimal spacing
-                        Text(
-                          l10n.delete,
-                          style: TextStyle(
-                            fontSize: 11, // Further reduced font size
-                            fontWeight: FontWeight.w400, // Lighter weight
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.delete_outline_rounded,
+                              size: 12, color: Color(0xFFC54F4F)),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.deletePlantAction,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFC54F4F),
+                              letterSpacing: 0.1,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -3456,394 +3546,351 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return (size.height * 0.70).clamp(280.0, 700.0);
   }
 
-  // Unified Information Block - Plant name, health, and care info
-  // Now positioned below the image as a separate section
+  // Unified Information Block — pixel-aligned with plant_details_screen.html .info-card
   Widget _buildUnifiedInformationBlock() {
+    final canWater = _canWaterPlant();
+    final waterDisabled = _isLoading || !canWater;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
-        boxShadow: [
+        border: Border.all(color: const Color(0xFFE4EBE1), width: 1),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color(0x12000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Plant Name and Health Status Row
+          // Header row: name + health-badge | AI Agent pill
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Plant Name
                     Text(
                       _plant.name,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                      style: BotanlyText.plantName(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
-                    // Health Status - Only show if there's a health check
-                    if (_plant.healthMessage != null && _plant.healthMessage!.isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getUnifiedHealthStatusColor(),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _getUnifiedHealthStatusIcon(),
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _getUnifiedHealthStatus(),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    if (_plant.healthMessage != null &&
+                        _plant.healthMessage!.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      _buildHealthBadge(),
                     ],
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              SegmentedButton<HealthCheckAnalysisMode>(
-                segments: [
-                  ButtonSegment<HealthCheckAnalysisMode>(
-                    value: HealthCheckAnalysisMode.aiAgent,
-                    label: Text(l10n.aiAgent),
-                  ),
-                ],
-                selected: {HealthCheckAnalysisMode.aiAgent},
-                onSelectionChanged: (_) {},
-                style: ButtonStyle(
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  overlayColor: WidgetStateProperty.all(Colors.transparent),
-                  textStyle: WidgetStateProperty.all(
-                    const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
+              _buildAiAgentPill(),
             ],
           ),
-          
-          const SizedBox(height: 20),
-          
-          // Care Information Grid
+          const SizedBox(height: 18),
+
+          // 3 care cards
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Next Watering Card
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green.shade200,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.water_drop,
-                        color: Colors.green.shade600,
-                        size: 20,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.wateringLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _plant.shouldWaterNow
-                            ? l10n.nowLabel
-                            : DateFormat('MMM dd').format(_getNextWateringDate()),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (!_plant.shouldWaterNow) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          _getNextWateringDisplay(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                      const SizedBox(height: 6),
-                      // Water amount: cups (1 cup = 250 ml) + ml — FittedBox prevents overflow on narrow cards
-                      Builder(
-                        builder: (context) {
-                          final wateringAmount = _getWateringAmount();
-                          if (wateringAmount != null && wateringAmount > 0) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.blue.shade200),
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.center,
-                                child: _buildWateringAmountWithCups(wateringAmount, iconSize: 12, fontSize: 10),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(width: 12),
-              
-              // Light Card
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.orange.shade200,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.wb_sunny,
-                        color: Colors.orange.shade600,
-                        size: 20,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.lightLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${_calculateLightHours()} ${l10n.hoursLabel}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.perDay,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(width: 12),
-              
-              // Moisture Card
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green.shade200,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.opacity, color: Colors.green.shade600, size: 18),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.soilMoisture,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getMoistureLabel(_getMoisturePercentage(_plant.aiMoistureLevel)),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.green.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildMoistureDotScale(
-                        _getMoistureDotIndex(_getMoisturePercentage(_plant.aiMoistureLevel)),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_getMoisturePercentage(_plant.aiMoistureLevel)}%',
-                        style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              Expanded(child: _buildHtmlWateringCard()),
+              const SizedBox(width: 10),
+              Expanded(child: _buildHtmlLightCard()),
+              const SizedBox(width: 10),
+              Expanded(child: _buildHtmlMoistureCard()),
             ],
           ),
-          
-          const SizedBox(height: 20),
-          
-          // Action Buttons Row
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: (_isLoading || !_canWaterPlant()) ? null : _waterPlant,
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                      if (states.contains(MaterialState.disabled)) return Colors.white;
-                      return AppTheme.accentGreen;
-                    }),
-                    foregroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                      if (states.contains(MaterialState.disabled)) return Colors.grey.shade600;
-                      return Colors.white;
-                    }),
-                    padding: const MaterialStatePropertyAll(EdgeInsets.symmetric(vertical: 12)),
-                    shape: MaterialStateProperty.resolveWith<OutlinedBorder>((Set<MaterialState> states) {
-                      final borderColor = states.contains(MaterialState.disabled)
-                          ? Colors.grey.shade300
-                          : AppTheme.accentGreen.withOpacity(0.3);
-                      return RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: borderColor, width: 1),
-                      );
-                    }),
-                    elevation: MaterialStateProperty.resolveWith<double>((Set<MaterialState> states) {
-                      return states.contains(MaterialState.disabled) ? 0 : 2;
-                    }),
-                    overlayColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
-                      return states.contains(MaterialState.disabled) ? Colors.transparent : null;
-                    }),
-                  ),
-                  icon: Icon(
-                    Icons.water_drop,
-                    size: 18,
-                    color: _canWaterPlant() ? null : Colors.grey.shade600,
-                  ),
-                  label: Text(
-                    _getWateringButtonLabel(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: _canWaterPlant() ? null : Colors.grey.shade600,
-                    ),
+          const SizedBox(height: 18),
+
+          // Action buttons (Water + Analyze Health)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _HtmlActionButton(
+                    label: _getWateringButtonLabel(),
+                    icon: Icons.water_drop_rounded,
+                    variant: waterDisabled
+                        ? _HtmlActionVariant.waterDisabled
+                        : _HtmlActionVariant.waterPrimary,
+                    onTap: waterDisabled ? null : _waterPlant,
                   ),
                 ),
-              ),
-              
-              const SizedBox(width: 12),
-              
-              // "Analyze Health" Button — с золотой тенью
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.amber.shade400.withOpacity(0.4),
-                        blurRadius: 12,
-                        spreadRadius: 0,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: _openHealthCheckModal,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.red.shade600,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: Colors.red.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                    ),
-                    icon: const Icon(Icons.health_and_safety, size: 18),
-                    label: Text(
-                      l10n.analyzeHealth,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _HtmlActionButton(
+                    label: _healthCheckButtonLabel(),
+                    icon: Icons.health_and_safety_outlined,
+                    variant: _canDoHealthCheck()
+                        ? _HtmlActionVariant.analyze
+                        : _HtmlActionVariant.analyzeDisabled,
+                    onTap: _canDoHealthCheck() ? _openHealthCheckModal : null,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Health badge chip (Healthy / Needs attention / Issue) for info-card header
+  Widget _buildHealthBadge() {
+    final status = _getUnifiedHealthStatus();
+    final isOk = _plant.healthStatus == 'ok' ||
+        status.toLowerCase().contains('healthy') ||
+        status.toLowerCase().contains('хорошо');
+    final isWarn = _plant.healthStatus == 'warning';
+
+    Color bg;
+    Color fg;
+    IconData icon;
+    if (isOk) {
+      bg = const Color(0xFFE3F1D6);
+      fg = const Color(0xFF4A8C33);
+      icon = Icons.check_rounded;
+    } else if (isWarn) {
+      bg = const Color(0xFFF7ECD8);
+      fg = const Color(0xFF8A6920);
+      icon = Icons.warning_amber_rounded;
+    } else {
+      bg = const Color(0xFFFBE6E6);
+      fg = const Color(0xFF8A3535);
+      icon = Icons.error_outline_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: fg, size: 12),
+          const SizedBox(width: 5),
+          Text(
+            status,
+            style: GoogleFonts.dmSans(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // "AI Agent" segmented pill on the right of info-card header
+  Widget _buildAiAgentPill() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F1D6),
+        border: Border.all(color: const Color(0xFFCCE8B8)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        l10n.aiAgent,
+        style: GoogleFonts.dmSans(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF4A8C33),
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
+  // Watering care-card (sage-soft background, ml pill at bottom)
+  Widget _buildHtmlWateringCard() {
+    final wateringAmount = _getWateringAmount();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8EB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFCCE8B8)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.water_drop_rounded,
+              color: Color(0xFF5FA346), size: 22),
+          const SizedBox(height: 4),
+          Text(
+            l10n.wateringLabel,
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF888888),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _plant.shouldWaterNow
+                ? l10n.nowLabel
+                : DateFormat('MMM dd').format(_getNextWateringDate()),
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF4A8C33),
+              height: 1.15,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (!_plant.shouldWaterNow) ...[
+            const SizedBox(height: 2),
+            Text(
+              _getNextWateringDisplay(),
+              style: GoogleFonts.dmSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w300,
+                color: const Color(0xFF888888),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          if (wateringAmount != null && wateringAmount > 0) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE4EFF8),
+                border: Border.all(color: const Color(0xFFCADFEE)),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: _buildWateringAmountWithCups(
+                  wateringAmount,
+                  iconSize: 11,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Light care-card (amber-pale background)
+  Widget _buildHtmlLightCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7ECD8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEBD9B8)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.wb_sunny_outlined,
+              color: Color(0xFFB8893A), size: 22),
+          const SizedBox(height: 4),
+          Text(
+            l10n.lightLabel,
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF888888),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${_calculateLightHours()} ${l10n.hoursLabel}',
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFB8893A),
+              height: 1.15,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.perDay,
+            style: GoogleFonts.dmSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w300,
+              color: const Color(0xFF888888),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Moisture care-card (sage-soft + dot scale)
+  Widget _buildHtmlMoistureCard() {
+    final hasRange = _plant.idealSoilMoistureMin != null && _plant.idealSoilMoistureMax != null;
+    final pct = hasRange
+        ? ((_plant.idealSoilMoistureMin! + _plant.idealSoilMoistureMax!) ~/ 2)
+        : null;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8EB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFCCE8B8)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.opacity_rounded,
+              color: Color(0xFF5FA346), size: 22),
+          const SizedBox(height: 4),
+          Text(
+            l10n.soilMoisture,
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF888888),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            hasRange
+                ? _getMoistureLabel(pct!)
+                : _formatMoistureLevel(_plant.aiMoistureLevel),
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF4A8C33),
+              height: 1.15,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (hasRange) ...[
+            const SizedBox(height: 6),
+            _buildMoistureDotScale(_getMoistureDotIndex(pct!)),
+            const SizedBox(height: 4),
+            Text(
+              '${_plant.idealSoilMoistureMin}–${_plant.idealSoilMoistureMax}%',
+              style: GoogleFonts.dmSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w300,
+                color: const Color(0xFF888888),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -3861,7 +3908,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Display each section (removed the main title)
-        ...sections.map((section) => _buildCareSection(section['title']!, section['content']!)).toList(),
+        ...sections.map((section) {
+          final raw = section['title']!;
+          final localized = _localizeSectionTitle(raw, AppLocalizations.of(context)!);
+          return _buildCareSection(raw, localized, section['content']!);
+        }).toList(),
       ],
     );
   }
@@ -3924,8 +3975,116 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   
 
 
-  /// Builds structured care sections from AI care tips
+  /// Maps any known care section label (any language) → canonical key.
+  static const _labelToCanonical = <String, String>{
+    // English
+    'cultivar': 'cultivar',
+    'general description': 'generalDescription',
+    'soil': 'soil',
+    'soil moisture': 'soilMoisture',
+    'moisture': 'soilMoisture',
+    'moisture check': 'moistureCheck',
+    'water': 'water',
+    'light': 'light',
+    'temperature': 'temperature',
+    'fertilizer': 'fertilizer',
+    'growth rate': 'growthRate',
+    'toxicity': 'toxicity',
+    'placement': 'placement',
+    'personality': 'personality',
+    'name': 'cultivar',
+    // Russian
+    'культивар': 'cultivar',
+    'общее описание': 'generalDescription',
+    'почва': 'soil',
+    'влажность почвы': 'soilMoisture',
+    'проверка влажности': 'moistureCheck',
+    'полив': 'water',
+    'освещение': 'light',
+    'температура': 'temperature',
+    'удобрения': 'fertilizer',
+    'скорость роста': 'growthRate',
+    'токсичность': 'toxicity',
+    'размещение': 'placement',
+    'характер': 'personality',
+    // Ukrainian
+    'загальний опис': 'generalDescription',
+    'ґрунт': 'soil',
+    'вологість ґрунту': 'soilMoisture',
+    'перевірка вологості': 'moistureCheck',
+    'освітлення': 'light',
+    'добрива': 'fertilizer',
+    'швидкість росту': 'growthRate',
+    'токсичність': 'toxicity',
+    'розміщення': 'placement',
+    // German
+    'kultivar': 'cultivar',
+    'allgemeine beschreibung': 'generalDescription',
+    'erde': 'soil',
+    'bodenfeuchtigkeit': 'soilMoisture',
+    'feuchtigkeitsprüfung': 'moistureCheck',
+    'wasser': 'water',
+    'licht': 'light',
+    'temperatur': 'temperature',
+    'dünger': 'fertilizer',
+    'wachstumsrate': 'growthRate',
+    'toxizität': 'toxicity',
+    'standort': 'placement',
+    'charakter': 'personality',
+    // Spanish
+    'descripción general': 'generalDescription',
+    'suelo': 'soil',
+    'humedad del suelo': 'soilMoisture',
+    'verificación de humedad': 'moistureCheck',
+    'agua': 'water',
+    'luz': 'light',
+    'fertilizante': 'fertilizer',
+    'tasa de crecimiento': 'growthRate',
+    'toxicidad': 'toxicity',
+    'ubicación': 'placement',
+    'personalidad': 'personality',
+    // French
+    'description générale': 'generalDescription',
+    'sol': 'soil',
+    'humidité du sol': 'soilMoisture',
+    "vérification de l'humidité": 'moistureCheck',
+    'eau': 'water',
+    'lumière': 'light',
+    'engrais': 'fertilizer',
+    'taux de croissance': 'growthRate',
+    'toxicité': 'toxicity',
+    'emplacement': 'placement',
+    'personnalité': 'personality',
+  };
+
+  /// Translates a raw section title (any language) to the user's current language via l10n.
+  String _localizeSectionTitle(String rawTitle, AppLocalizations l10n) {
+    final canonical = _labelToCanonical[rawTitle.toLowerCase().trim()];
+    if (canonical == null) return rawTitle;
+    switch (canonical) {
+      case 'cultivar': return l10n.careSectionCultivar;
+      case 'generalDescription': return l10n.careSectionGeneralDescription;
+      case 'soil': return l10n.careSectionSoil;
+      case 'soilMoisture': return l10n.careSectionSoilMoisture;
+      case 'moistureCheck': return l10n.careSectionMoistureCheck;
+      case 'water': return l10n.careSectionWater;
+      case 'light': return l10n.careSectionLight;
+      case 'temperature': return l10n.careSectionTemperature;
+      case 'fertilizer': return l10n.careSectionFertilizer;
+      case 'growthRate': return l10n.careSectionGrowthRate;
+      case 'toxicity': return l10n.careSectionToxicity;
+      case 'placement': return l10n.careSectionPlacement;
+      case 'personality': return l10n.careSectionPersonality;
+      default: return rawTitle;
+    }
+  }
+
+  /// Returns the canonical key for icon lookup, independent of display language.
+  String? _canonicalKey(String rawTitle) =>
+      _labelToCanonical[rawTitle.toLowerCase().trim()];
+
   List<Widget> _buildStructuredCareSections(String content) {
+    final l10n = AppLocalizations.of(context)!;
     final sections = <Widget>[];
     final lines = content.split('\n');
     
@@ -3933,15 +4092,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       final trimmedLine = line.trim();
       if (trimmedLine.isEmpty) continue;
       
-      // Check if this line contains a care section (like "Watering: ...")
       if (trimmedLine.contains(':')) {
         final parts = trimmedLine.split(':');
         if (parts.length >= 2) {
-          final title = parts[0].trim();
-          final value = parts.sublist(1).join(':').trim(); // Join all parts after first colon
+          final rawTitle = parts[0].trim();
+          final localizedTitle = _localizeSectionTitle(rawTitle, l10n);
+          final value = parts.sublist(1).join(':').trim();
           
-          if (title.isNotEmpty && value.isNotEmpty) {
-            // Add top padding only to the first section
+          if (localizedTitle.isNotEmpty && value.isNotEmpty) {
             final isFirstSection = sections.isEmpty;
             sections.add(
               Padding(
@@ -3949,7 +4107,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   bottom: 16.0,
                   top: isFirstSection ? 16.0 : 0.0,
                 ),
-                child: _buildCareSection(title, value),
+                child: _buildCareSection(rawTitle, localizedTitle, value),
               ),
             );
           }
@@ -3957,28 +4115,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
       }
     }
     
-    // If no structured sections found, return empty list (no fallback)
-    
     return sections;
   }
 
-  /// Builds a single care section with title and content
-  Widget _buildCareSection(String title, String content) {
-    final normalizedTitle = title.toLowerCase() == 'name'
-        ? 'Cultivar'
-        : title.toLowerCase() == 'moisture'
-            ? 'Soil Moisture'
-            : title;
-    // Override content for Moisture and Light with numeric values
-    String displayContent = content;
-    if ((normalizedTitle.toLowerCase() == 'moisture' || normalizedTitle.toLowerCase() == 'soil moisture') && _plant.aiMoistureLevel != null) {
-      // Use the same logic as the top card to get consistent moisture percentage
-      displayContent = '${_getMoisturePercentage(_plant.aiMoistureLevel)}%';
-    } else if (normalizedTitle.toLowerCase() == 'light' && _plant.aiLight != null) {
-      // Use the calculated light hours instead of descriptive text
-      displayContent = '${_calculateLightHours()} hours per day';
-    }
-    
+  /// Builds a single care section with title and content.
+  /// [rawTitle] is used for canonical-key icon lookup; [localizedTitle] is displayed.
+  Widget _buildCareSection(String rawTitle, String localizedTitle, String content) {
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3992,7 +4134,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                _getIconForSection(title),
+                _getIconForSection(_canonicalKey(rawTitle) ?? rawTitle),
                 color: AppTheme.accentGreen,
                 size: 16,
               ),
@@ -4000,7 +4142,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-            normalizedTitle,
+            localizedTitle,
             style: GoogleFonts.lato(
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
@@ -4013,7 +4155,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
         const SizedBox(height: 8),
           // Section content
           Text(
-            displayContent,
+            content,
             style: GoogleFonts.lato(
             color: AppTheme.textSecondary,
               height: 1.4,
@@ -4024,18 +4166,24 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
-  /// Gets appropriate icon for care section
-  IconData _getIconForSection(String title) {
-    final lowerTitle = title.toLowerCase();
-    if (lowerTitle.contains('water')) return Icons.water_drop;
-    if (lowerTitle.contains('light')) return Icons.wb_sunny;
-    if (lowerTitle.contains('temperature')) return Icons.thermostat;
-    if (lowerTitle.contains('soil')) return Icons.eco;
-    if (lowerTitle.contains('fertiliz')) return Icons.grass;
-    if (lowerTitle.contains('humidity')) return Icons.opacity;
-    if (lowerTitle.contains('growth') || lowerTitle.contains('size')) return Icons.trending_up;
-    if (lowerTitle.contains('bloom') || lowerTitle.contains('flower')) return Icons.local_florist;
-    return Icons.info_outline;
+  /// Gets appropriate icon for a care section using its canonical key.
+  IconData _getIconForSection(String canonicalOrRaw) {
+    switch (canonicalOrRaw) {
+      case 'water': return Icons.water_drop;
+      case 'light': return Icons.wb_sunny;
+      case 'temperature': return Icons.thermostat;
+      case 'soil':
+      case 'soilMoisture':
+      case 'moistureCheck': return Icons.eco;
+      case 'fertilizer': return Icons.grass;
+      case 'growthRate': return Icons.trending_up;
+      case 'cultivar':
+      case 'generalDescription': return Icons.local_florist;
+      case 'toxicity': return Icons.warning_amber_outlined;
+      case 'placement': return Icons.place_outlined;
+      case 'personality': return Icons.psychology_outlined;
+      default: return Icons.info_outline;
+    }
   }
 }
 
@@ -4326,33 +4474,121 @@ class _PlantCarouselHeaderState extends State<PlantCarouselHeader> {
                 children: List.generate(widget.images.length, (i) {
                   final active = i == _index;
                   return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: active ? 10 : 8, 
-                    height: active ? 10 : 8,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: active ? 22 : 7,
+                    height: 7,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: active
-                          ? const Color(0xFF2E7D32)       // green active
-                          : const Color(0x662E7D32),      // green with opacity
-                      border: active 
-                          ? Border.all(color: Colors.white, width: 2)
-                          : null,
-                      boxShadow: active 
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
+                      color: Colors.white
+                          .withOpacity(active ? 1.0 : 0.5),
+                      borderRadius:
+                          BorderRadius.circular(active ? 4 : 3.5),
                     ),
                   );
                 }),
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+enum _HtmlActionVariant { waterPrimary, waterDisabled, analyze, analyzeDisabled }
+
+class _HtmlActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final _HtmlActionVariant variant;
+  final VoidCallback? onTap;
+  const _HtmlActionButton({
+    required this.label,
+    required this.icon,
+    required this.variant,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color fg;
+    Color borderColor;
+    List<BoxShadow> shadow;
+    switch (variant) {
+      case _HtmlActionVariant.waterPrimary:
+        bg = const Color(0xFF5FA346);
+        fg = Colors.white;
+        borderColor = const Color(0x4D4A6741);
+        shadow = const [
+          BoxShadow(
+              color: Color(0x474A6741),
+              blurRadius: 6,
+              offset: Offset(0, 2)),
+        ];
+        break;
+      case _HtmlActionVariant.waterDisabled:
+        bg = Colors.white;
+        fg = const Color(0xFF888888);
+        borderColor = const Color(0xFFE4EBE1);
+        shadow = const [];
+        break;
+      case _HtmlActionVariant.analyze:
+        bg = Colors.white;
+        fg = const Color(0xFFC54F4F);
+        borderColor = const Color(0xFFECC6C6);
+        shadow = const [
+          BoxShadow(
+              color: Color(0x52B8893A),
+              blurRadius: 12,
+              offset: Offset(0, 3)),
+        ];
+        break;
+      case _HtmlActionVariant.analyzeDisabled:
+        bg = const Color(0xFFF5F5F5);
+        fg = const Color(0xFF888888);
+        borderColor = const Color(0xFFE4EBE1);
+        shadow = const [];
+        break;
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 44),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1),
+          boxShadow: shadow,
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: fg, size: 16),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: fg,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

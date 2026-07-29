@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import {
   fetchStats,
   fetchNewUsersLast30Days,
-  fetchAiUsage,
-  summarizeAiUsage,
+  fetchAiTotals,
   type StatsOverview,
-  type AiCostSummary,
+  type AiTotals,
 } from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -61,19 +60,23 @@ function StatCard({
 export default function DashboardPage() {
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [chartData, setChartData] = useState<{ date: string; count: number }[]>([]);
-  const [aiSummary, setAiSummary] = useState<AiCostSummary | null>(null);
+  const [aiTotals, setAiTotals] = useState<AiTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([fetchStats(), fetchNewUsersLast30Days(), fetchAiUsage(1000)])
-      .then(([s, chart, aiRecords]) => {
+    Promise.all([fetchStats(), fetchNewUsersLast30Days()])
+      .then(([s, chart]) => {
         setStats(s);
         setChartData(chart);
-        setAiSummary(summarizeAiUsage(aiRecords));
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+
+    // Load AI totals independently so a Firestore error doesn't crash the page
+    fetchAiTotals()
+      .then(setAiTotals)
+      .catch((e) => console.warn("fetchAiTotals error:", e.message));
   }, []);
 
   if (loading) {
@@ -139,14 +142,14 @@ export default function DashboardPage() {
         <StatCard
           title="AI Spend (all time)"
           value={
-            aiSummary
-              ? `$${aiSummary.totalCostUsd.toFixed(4)}`
+            aiTotals
+              ? `$${aiTotals.totalCostUsd.toFixed(4)}`
               : "—"
           }
           icon={Sparkles}
           description={
-            aiSummary
-              ? `${aiSummary.totalTokens.toLocaleString()} tokens total`
+            aiTotals
+              ? `${aiTotals.totalTokens.toLocaleString()} tokens · ${aiTotals.totalCalls.toLocaleString()} calls`
               : undefined
           }
         />

@@ -11,6 +11,7 @@ import {
   BarChart2,
   ScrollText,
   Lightbulb,
+  CreditCard,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/dashboard/stats", label: "Stats", icon: BarChart2 },
   { href: "/dashboard/logs", label: "Logs", icon: ScrollText },
   { href: "/dashboard/tips", label: "Tips", icon: Lightbulb },
+  { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },
 ];
 
 export function Sidebar() {

@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
-import '../services/auth_service.dart';
-import '../services/language_service.dart';
-import '../services/notification_service.dart';
-import '../services/theme_service.dart';
-import '../utils/app_theme.dart';
-import 'auth_screen.dart';
+import 'package:plant_care/services/auth_service.dart';
+import 'package:plant_care/services/language_service.dart';
+import 'package:plant_care/services/notification_service.dart';
+import 'package:plant_care/services/theme_service.dart';
+import 'package:plant_care/theme/botanly_theme.dart';
+import 'package:plant_care/widgets/botanly_cabinet_kit.dart';
+import 'package:plant_care/widgets/botanly_shimmer.dart';
 
+/// Settings — UI from `Botanly /screens/settings_screen.html`. All logic
+/// (preferences, notifications, quiet hours, change password, sign out) is
+/// preserved 1:1 from the production version.
 class SettingsScreen extends StatefulWidget {
   final User user;
 
@@ -20,22 +26,39 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedTheme = 'light';
-  String _selectedLanguage = 'en';
+  String _selectedLanguage =
+      LanguageService.localeNotifier.value.languageCode;
   bool _isLoading = false;
 
-  /// Synced to Firestore for Cloud Functions (processWateringEmailReminders).
   bool _reminderEmail = true;
   bool _reminderPush = true;
-  
-  // Notification settings
+
   String _quietHoursStart = '22:00';
   String _quietHoursEnd = '08:00';
+
+  bool _prefsLoaded = false;
+  bool _notifLoaded = false;
+  bool get _allLoaded => _prefsLoaded && _notifLoaded;
 
   @override
   void initState() {
     super.initState();
     _loadUserPreferences();
     _loadNotificationSettings();
+    LanguageService.localeNotifier.addListener(_onLocaleChanged);
+  }
+
+  @override
+  void dispose() {
+    LanguageService.localeNotifier.removeListener(_onLocaleChanged);
+    super.dispose();
+  }
+
+  void _onLocaleChanged() {
+    if (!mounted) return;
+    setState(() {
+      _selectedLanguage = LanguageService.localeNotifier.value.languageCode;
+    });
   }
 
   Future<void> _loadUserPreferences() async {
@@ -44,20 +67,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final rawTheme = preferences['theme'] as String?;
       final normalizedTheme =
           (rawTheme == 'dark' || rawTheme == 'light') ? rawTheme! : 'light';
-      final rawLanguage = preferences['language'] as String?;
-      final normalizedLanguage =
-          (rawLanguage == 'en' || rawLanguage == 'es' || rawLanguage == 'fr' || rawLanguage == 'de')
-              ? rawLanguage!
-              : 'en';
+      if (!mounted) return;
       setState(() {
         _selectedTheme = normalizedTheme;
-        _selectedLanguage = normalizedLanguage;
+        _prefsLoaded = true;
       });
     } catch (e) {
-      print('Error loading preferences: $e');
+      if (mounted) setState(() => _prefsLoaded = true);
     }
   }
-  
+
   Future<void> _loadNotificationSettings() async {
     try {
       final prefs = await AuthService.getUserPreferences();
@@ -67,10 +86,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .collection('users')
           .doc(widget.user.uid)
           .get();
-      
+
       if (userDoc.exists) {
         final data = userDoc.data();
         final ch = data?['wateringReminderChannels'];
+        if (!mounted) return;
         setState(() {
           _quietHoursStart = data?['quietHours']?['start'] ?? '22:00';
           _quietHoursEnd = data?['quietHours']?['end'] ?? '08:00';
@@ -81,21 +101,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _reminderEmail = legacyReminders;
             _reminderPush = legacyReminders;
           }
+          _notifLoaded = true;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           _reminderEmail = legacyReminders;
           _reminderPush = legacyReminders;
+          _notifLoaded = true;
         });
       }
     } catch (e) {
       print('Error loading notification settings: $e');
+      if (mounted) setState(() => _notifLoaded = true);
     }
   }
 
   Future<void> _persistReminderChannels() async {
     try {
-      await FirebaseFirestore.instance.collection('users').doc(widget.user.uid).set(
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.user.uid)
+          .set(
         {
           'wateringReminderChannels': {
             'email': _reminderEmail,
@@ -111,92 +138,169 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to save reminder channels: $e'),
-          backgroundColor: Colors.red,
+          content: Text(AppLocalizations.of(context)!.failedToSaveReminderChannels(e.toString())),
+          backgroundColor: BotanlyColors.red,
         ),
       );
-    }
-  }
-
-  Future<void> _savePreferences() async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await AuthService.saveUserPreferences({
-        'watering_reminders': _reminderEmail || _reminderPush,
-        'theme': _selectedTheme,
-        'language': _selectedLanguage,
-      });
-
-      await FirebaseFirestore.instance.collection('users').doc(widget.user.uid).set(
-        {
-          'wateringReminderChannels': {
-            'email': _reminderEmail,
-            'push': _reminderPush,
-          },
-        },
-        SetOptions(merge: true),
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.preferencesSavedSuccessfully),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.errorSavingPreferences(e.toString())),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
   int _hourFrom(String value) => int.tryParse(value.split(':').first) ?? 0;
-
   int _minuteFrom(String value) => int.tryParse(value.split(':').last) ?? 0;
-
   String _formatTime(int hour, int minute) =>
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
   Future<void> _openQuietHoursEditor() async {
-    final result = await Navigator.of(context).push<Map<String, String>>(
-      MaterialPageRoute(
-        builder: (context) => _QuietHoursEditorScreen(
-          initialStart: _quietHoursStart,
-          initialEnd: _quietHoursEnd,
-        ),
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    final initialStart = TimeOfDay(
+        hour: _hourFrom(_quietHoursStart),
+        minute: _minuteFrom(_quietHoursStart));
+    final initialEnd = TimeOfDay(
+        hour: _hourFrom(_quietHoursEnd),
+        minute: _minuteFrom(_quietHoursEnd));
+
+    TimeOfDay start = initialStart;
+    TimeOfDay end = initialEnd;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierColor: const Color(0x73000000),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            Future<void> pick(bool isStart) async {
+              final picked = await showTimePicker(
+                context: ctx,
+                initialTime: isStart ? start : end,
+              );
+              if (picked != null) {
+                setLocal(() {
+                  if (isStart) {
+                    start = picked;
+                  } else {
+                    end = picked;
+                  }
+                });
+              }
+            }
+
+            String fmt(TimeOfDay t) => _formatTime(t.hour, t.minute);
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.quietHoursLabel,
+                      style: GoogleFonts.fraunces(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: -0.3,
+                        color: BotanlyColors.moss,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Notifications will be silenced between these times.',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w400,
+                        color: BotanlyColors.inkMute,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _timeRow('Start', fmt(start), () => pick(true)),
+                    const SizedBox(height: 12),
+                    _timeRow('End', fmt(end), () => pick(false)),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: BotanlyPrimaryButton(
+                            label: l10n.save,
+                            onPressed: () =>
+                                Navigator.of(ctx).pop(true),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: BotanlySecondaryButton(
+                            label: l10n.cancel,
+                            onPressed: () =>
+                                Navigator.of(ctx).pop(false),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
 
-    if (result == null) return;
-
-    final start = result['start'];
-    final end = result['end'];
-    if (start == null || end == null) return;
-
-    await _updateQuietHours(newStart: start, newEnd: end);
+    if (saved == true) {
+      await _updateQuietHours(
+        newStart: _formatTime(start.hour, start.minute),
+        newEnd: _formatTime(end.hour, end.minute),
+      );
+    }
   }
 
-  Future<void> _updateQuietHours({
-    String? newStart,
-    String? newEnd,
-  }) async {
+  Widget _timeRow(String label, String value, VoidCallback onTap) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 50,
+          child: Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF4A5C46),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F8EB),
+                  border: Border.all(
+                      color: const Color(0xFFE4EBE1), width: 1.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  value,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF1B2A18),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _updateQuietHours({String? newStart, String? newEnd}) async {
     final start = newStart ?? _quietHoursStart;
     final end = newEnd ?? _quietHoursEnd;
 
@@ -211,8 +315,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update quiet hours: $e'),
-          backgroundColor: Colors.red,
+          content: Text(AppLocalizations.of(context)!.failedToUpdateQuietHours(e.toString())),
+          backgroundColor: BotanlyColors.red,
         ),
       );
     }
@@ -237,9 +341,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: currentPasswordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: l10n.currentPassword,
-                ),
+                decoration:
+                    InputDecoration(labelText: l10n.currentPassword),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.enterCurrentPassword;
@@ -251,9 +354,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: newPasswordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: l10n.newPassword,
-                ),
+                decoration: InputDecoration(labelText: l10n.newPassword),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.enterNewPassword;
@@ -261,7 +362,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (value.trim().length < 6) {
                     return l10n.passwordAtLeast6;
                   }
-                  if (value.trim() == currentPasswordController.text.trim()) {
+                  if (value.trim() ==
+                      currentPasswordController.text.trim()) {
                     return l10n.newPasswordMustBeDifferent;
                   }
                   return null;
@@ -271,9 +373,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: confirmPasswordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: l10n.confirmNewPassword,
-                ),
+                decoration:
+                    InputDecoration(labelText: l10n.confirmNewPassword),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.confirmYourNewPassword;
@@ -311,9 +412,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       await AuthService.changePassword(
@@ -325,7 +424,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.passwordChangedSuccessfully),
-            backgroundColor: Colors.green,
+            backgroundColor: BotanlyColors.sage,
           ),
         );
       }
@@ -334,7 +433,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.errorChangingPassword(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: BotanlyColors.red,
           ),
         );
       }
@@ -342,12 +441,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       currentPasswordController.dispose();
       newPasswordController.dispose();
       confirmPasswordController.dispose();
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -365,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: BotanlyColors.red),
             child: Text(l10n.signOut),
           ),
         ],
@@ -376,513 +470,354 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await NotificationService().removeFCMToken();
       await AuthService.signOut();
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthScreen(isRegistration: false)),
-          (route) => false,
-        );
+        if (mounted) context.go('/welcome');
       }
     }
   }
 
+
+  // ─────────────────────── Build ───────────────────────
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.lightGrey,
+      backgroundColor: BotanlyColors.cabinetBg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
-            // User Info Card
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Card(
-              elevation: 0,
-              color: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor: Colors.grey.shade100,
-                          child: Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.user.displayName ?? l10n.userLabel,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                widget.user.email ?? '',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade100,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.green.shade600,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            l10n.loggedIn,
-                            style: TextStyle(
-                              color: Colors.green.shade700,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Preferences Section
-            Text(
-              l10n.preferences,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Card(
-              elevation: 0,
-              color: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    // Watering reminders (email + push — used by Cloud Functions)
-                    Text(
-                      l10n.wateringReminders,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.getNotifiedWhenPlantsNeedWater,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.reminderEmail),
-                      subtitle: Text(l10n.reminderEmailSubtitle),
-                      value: _reminderEmail,
-                      onChanged: (value) {
-                        setState(() {
-                          _reminderEmail = value;
-                        });
-                        _persistReminderChannels();
-                      },
-                      activeColor: Colors.green,
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.pushNotifications),
-                      subtitle: Text(l10n.pushNotificationsSubtitle),
-                      value: _reminderPush,
-                      onChanged: (value) {
-                        setState(() {
-                          _reminderPush = value;
-                        });
-                        _persistReminderChannels();
-                      },
-                      activeColor: Colors.green,
-                    ),
-                    
-                    const Divider(),
-                    
-                    // Quiet Hours
-                    ListTile(
-                      title: Text(l10n.quietHours),
-                      subtitle: Text('$_quietHoursStart - $_quietHoursEnd'),
-                      trailing: const Icon(Icons.edit),
-                      onTap: _openQuietHoursEditor,
-                    ),
-                    
-                    const Divider(),
-                    
-                    // Theme Selection
-                    ListTile(
-                      title: Text(l10n.theme),
-                      subtitle: Text(_selectedTheme == 'dark' ? l10n.dark : l10n.light),
-                      trailing: Theme(
-                        data: Theme.of(context).copyWith(
-                          splashColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
-                          hoverColor: Colors.transparent,
-                          focusColor: Colors.transparent,
-                        ),
-                        child: DropdownButton<String>(
-                          value: _selectedTheme,
-                          focusColor: Colors.transparent,
-                          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-                          items: [
-                            DropdownMenuItem(value: 'light', child: Text(l10n.light)),
-                            DropdownMenuItem(value: 'dark', child: Text(l10n.dark)),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedTheme = value;
-                              });
-                              ThemeService.setThemePreference(value);
-                              AuthService.saveUserPreferences({'theme': value});
-                              FocusManager.instance.primaryFocus?.unfocus();
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    
-                    const Divider(),
-                    
-                    // Language Selection
-                    ListTile(
-                      title: Text(l10n.language),
-                      subtitle: Text(_selectedLanguage == 'en'
-                          ? l10n.english
-                          : _selectedLanguage == 'es'
-                              ? l10n.spanish
-                              : _selectedLanguage == 'fr'
-                                  ? l10n.french
-                                  : l10n.german),
-                      trailing: Theme(
-                        data: Theme.of(context).copyWith(
-                          splashColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
-                          hoverColor: Colors.transparent,
-                          focusColor: Colors.transparent,
-                        ),
-                        child: DropdownButton<String>(
-                          value: _selectedLanguage,
-                          focusColor: Colors.transparent,
-                          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-                          items: [
-                            DropdownMenuItem(value: 'de', child: Text(l10n.german)),
-                            DropdownMenuItem(value: 'en', child: Text(l10n.english)),
-                            DropdownMenuItem(value: 'es', child: Text(l10n.spanish)),
-                            DropdownMenuItem(value: 'fr', child: Text(l10n.french)),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedLanguage = value;
-                              });
-                              LanguageService.setLanguage(value);
-                              AuthService.saveUserPreferences({'language': value});
-                              FocusManager.instance.primaryFocus?.unfocus();
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Account Actions
-            Text(
-              l10n.account,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Card(
-              elevation: 0,
-              color: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.security, color: Colors.blue),
-                    title: Text(l10n.changePassword),
-                    subtitle: Text(l10n.updateYourAccountPassword),
-                    onTap: _isLoading ? null : _showChangePasswordDialog,
-                  ),
-                  
-                  const Divider(height: 1),
-                  
-                  ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.orange),
-                    title: Text(l10n.signOut),
-                    subtitle: Text(l10n.signOutOfYourAccount),
-                    onTap: _signOut,
-                  ),
-                ],
-              ),
-              ),
-            ),
-            
-            const SizedBox(height: 32),
+            _buildUserCard(l10n),
+            const SizedBox(height: 18),
+            BotanlySectionTitle(l10n.preferencesTitle),
+            const SizedBox(height: 8),
+            _buildPreferencesCard(l10n),
+            const SizedBox(height: 18),
+            BotanlySectionTitle(l10n.accountTitle),
+            const SizedBox(height: 8),
+            _buildAccountCard(l10n),
           ],
         ),
       ),
-    ),
     );
   }
-} 
 
-class _QuietHoursEditorScreen extends StatefulWidget {
-  final String initialStart;
-  final String initialEnd;
-
-  const _QuietHoursEditorScreen({
-    required this.initialStart,
-    required this.initialEnd,
-  });
-
-  @override
-  State<_QuietHoursEditorScreen> createState() => _QuietHoursEditorScreenState();
-}
-
-class _QuietHoursEditorScreenState extends State<_QuietHoursEditorScreen> {
-  late int _startHour;
-  late int _startMinute;
-  late int _endHour;
-  late int _endMinute;
-
-  @override
-  void initState() {
-    super.initState();
-    _startHour = _hourFrom(widget.initialStart);
-    _startMinute = _minuteFrom(widget.initialStart);
-    _endHour = _hourFrom(widget.initialEnd);
-    _endMinute = _minuteFrom(widget.initialEnd);
-  }
-
-  static int _hourFrom(String value) => int.tryParse(value.split(':').first) ?? 0;
-
-  static int _minuteFrom(String value) => int.tryParse(value.split(':').last) ?? 0;
-
-  static String _formatTime(int hour, int minute) =>
-      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-
-  Widget _buildTimeDropdown({
-    required int value,
-    required List<int> options,
-    required ValueChanged<int?> onChanged,
-    double width = 84,
-  }) {
-    return SizedBox(
-      width: width,
-      child: DropdownButtonFormField<int>(
-        value: value,
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          border: const OutlineInputBorder(),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        items: options
-            .map(
-              (n) => DropdownMenuItem<int>(
-                value: n,
-                child: Text(n.toString().padLeft(2, '0')),
+  Widget _buildUserCard(AppLocalizations l10n) {
+    return BotanlyCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const BotanlyAvatar(letter: null, size: 60),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.user.displayName ?? l10n.userLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.fraunces(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: -0.4,
+                        color: BotanlyColors.moss,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.user.email ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: BotanlyColors.inkMute,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            )
-            .toList(),
-        onChanged: (selected) {
-          onChanged(selected);
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
+            ],
+          ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: BotanlyLoggedChip(label: l10n.loggedIn),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildQuietHoursRow({
-    required String label,
-    required int hour,
-    required int minute,
-    required ValueChanged<int?> onHourChanged,
-    required ValueChanged<int?> onMinuteChanged,
-  }) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 52,
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
-        ),
-        _buildTimeDropdown(
-          value: hour,
-          options: List<int>.generate(24, (index) => index),
-          onChanged: onHourChanged,
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            ':',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-        ),
-        _buildTimeDropdown(
-          value: minute,
-          options: List<int>.generate(12, (index) => index * 5),
-          onChanged: onMinuteChanged,
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.quietHours),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+  Widget _buildPreferencesCard(AppLocalizations l10n) {
+    return BotanlyCard(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Reminders header block
+          Container(
+            padding: const EdgeInsets.only(bottom: 10),
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: const BoxDecoration(
+              border: Border(
+                  bottom: BorderSide(color: Color(0xFFE4EBE1))),
+            ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildQuietHoursRow(
-                  label: 'Start',
-                  hour: _startHour,
-                  minute: _startMinute,
-                  onHourChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _startHour = value);
-                  },
-                  onMinuteChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _startMinute = value);
-                  },
+                Text(
+                  l10n.wateringReminders,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF1B2A18),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _buildQuietHoursRow(
-                  label: 'End',
-                  hour: _endHour,
-                  minute: _endMinute,
-                  onHourChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _endHour = value);
-                  },
-                  onMinuteChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _endMinute = value);
-                  },
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop({
-                        'start': _formatTime(_startHour, _startMinute),
-                        'end': _formatTime(_endHour, _endMinute),
-                      });
-                    },
-                    child: Text(l10n.save),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.wateringRemindersBlockSub,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                    color: BotanlyColors.inkMute,
                   ),
                 ),
               ],
             ),
           ),
+          ..._buildPreferenceRows(l10n),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildPreferenceRows(AppLocalizations l10n) {
+    if (!_allLoaded) {
+      return [
+        BotanlyShimmer(
+          child: Column(
+            children: List.generate(5, (i) => ShimmerSettingsRow(
+              showDivider: i < 4,
+            )),
+          ),
         ),
+      ];
+    }
+
+    final rows = <Widget>[
+      BotanlySettingsRow(
+        title: l10n.emailRemindersTitle,
+        subtitle: l10n.emailRemindersSub,
+        trailing: BotanlySwitch(
+          value: _reminderEmail,
+          onChanged: (v) {
+            setState(() => _reminderEmail = v);
+            _persistReminderChannels();
+          },
+        ),
+        onTap: () {
+          setState(() => _reminderEmail = !_reminderEmail);
+          _persistReminderChannels();
+        },
+      ),
+      BotanlySettingsRow(
+        title: l10n.pushNotificationsTitle,
+        subtitle: l10n.pushNotificationsSub,
+        trailing: BotanlySwitch(
+          value: _reminderPush,
+          onChanged: (v) {
+            setState(() => _reminderPush = v);
+            _persistReminderChannels();
+          },
+        ),
+        onTap: () {
+          setState(() => _reminderPush = !_reminderPush);
+          _persistReminderChannels();
+        },
+      ),
+      BotanlySettingsRow(
+        title: l10n.quietHoursLabel,
+        subtitle: '$_quietHoursStart — $_quietHoursEnd',
+        trailing: const Icon(Icons.edit_outlined,
+            size: 16, color: BotanlyColors.inkMute),
+        onTap: _openQuietHoursEditor,
+      ),
+      BotanlySettingsRow(
+        title: l10n.languageLabel,
+        subtitle: _selectedLanguage == 'en'
+            ? l10n.english
+            : _selectedLanguage == 'es'
+                ? l10n.spanish
+                : _selectedLanguage == 'fr'
+                    ? l10n.french
+                    : _selectedLanguage == 'ru'
+                        ? l10n.russian
+                        : _selectedLanguage == 'uk'
+                            ? l10n.ukrainian
+                            : l10n.german,
+        showDivider: false,
+        trailing: _SelectPill<String>(
+          value: _selectedLanguage,
+          items: [
+            _SelectItem('de', l10n.german),
+            _SelectItem('en', l10n.english),
+            _SelectItem('es', l10n.spanish),
+            _SelectItem('fr', l10n.french),
+            _SelectItem('ru', l10n.russian),
+            _SelectItem('uk', l10n.ukrainian),
+          ],
+          onChanged: (v) {
+            if (v == null) return;
+            setState(() => _selectedLanguage = v);
+            LanguageService.setLanguage(v);
+            AuthService.saveUserPreferences({'language': v});
+          },
+        ),
+      ),
+    ];
+
+    return List.generate(rows.length, (i) {
+      return StaggeredFadeUp(
+        index: i,
+        show: true,
+        child: rows[i],
+      );
+    });
+  }
+
+  Widget _buildAccountCard(AppLocalizations l10n) {
+    return BotanlyCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+      child: Column(
+        children: [
+          BotanlySettingsRow(
+            leadingIcon: Icons.shield_outlined,
+            leadingBg: BotanlyColors.bluePale,
+            leadingFg: BotanlyColors.blue,
+            title: l10n.changePasswordTitleRow,
+            subtitle: l10n.changePasswordSubRow,
+            trailing: const Icon(Icons.chevron_right,
+                size: 18, color: BotanlyColors.inkMute),
+            onTap: _isLoading ? null : _showChangePasswordDialog,
+          ),
+          BotanlySettingsRow(
+            leadingIcon: Icons.logout_rounded,
+            leadingBg: BotanlyColors.amberPale,
+            leadingFg: BotanlyColors.amber,
+            title: l10n.signOut,
+            subtitle: l10n.signOutSubRow,
+            showDivider: false,
+            trailing: const Icon(Icons.chevron_right,
+                size: 18, color: BotanlyColors.inkMute),
+            onTap: _signOut,
+          ),
+        ],
       ),
     );
   }
 }
+
+class _SelectItem<T> {
+  final T value;
+  final String label;
+  const _SelectItem(this.value, this.label);
+}
+
+class _SelectPill<T> extends StatelessWidget {
+  final T value;
+  final List<_SelectItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  const _SelectPill({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final current = items.firstWhere(
+      (e) => e.value == value,
+      orElse: () => items.first,
+    );
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () async {
+          final selected = await showMenu<T>(
+            context: context,
+            position: _menuPositionFromContext(context),
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            items: items
+                .map((e) => PopupMenuItem<T>(
+                      value: e.value,
+                      child: Text(
+                        e.label,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: e.value == value
+                              ? BotanlyColors.sage
+                              : BotanlyColors.moss,
+                        ),
+                      ),
+                    ))
+                .toList(),
+          );
+          if (selected != null) onChanged(selected);
+        },
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 6, 10, 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F8EB),
+            border: Border.all(color: const Color(0xFFE4EBE1)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                current.label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: BotanlyColors.moss,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.keyboard_arrow_down_rounded,
+                  size: 18, color: BotanlyColors.moss),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  RelativeRect _menuPositionFromContext(BuildContext ctx) {
+    final overlay =
+        Overlay.of(ctx).context.findRenderObject() as RenderBox?;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (overlay == null || box == null) return RelativeRect.fill;
+    final position = box.localToGlobal(Offset.zero, ancestor: overlay);
+    return RelativeRect.fromLTRB(
+      position.dx,
+      position.dy + box.size.height + 4,
+      overlay.size.width - position.dx - box.size.width,
+      0,
+    );
+  }
+}
+

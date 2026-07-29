@@ -2,6 +2,8 @@ import {
   collection,
   getDocs,
   getDoc,
+  setDoc,
+  updateDoc,
   doc,
   query,
   orderBy,
@@ -26,6 +28,13 @@ export interface AdminUser {
   lastLogin?: Date;
   timezone?: string;
   plantCount?: number;
+  aiCostUsd?: number;
+  aiTotalTokens?: number;
+  subscriptionStatus?: string;
+  subscriptionExpiresAt?: Date;
+  emailReminders?: boolean | null;
+  pushReminders?: boolean | null;
+  emailVerified?: boolean | null;
 }
 
 export interface AdminPlant {
@@ -43,6 +52,7 @@ export interface AdminPlant {
   wateringFrequency?: number;
   notificationState?: string;
   muted?: boolean;
+  deletedAt?: Date;
 }
 
 export interface StatsOverview {
@@ -98,6 +108,17 @@ export async function fetchUsers(): Promise<AdminUser[]> {
       createdAt: toDate(data.createdAt),
       lastLogin: toDate(data.lastLogin),
       timezone: data.timezone,
+      subscriptionStatus: (data.subscriptionStatus as string) || "trial",
+      subscriptionExpiresAt: toDate(data.subscriptionExpiresAt),
+      emailReminders: data.wateringReminderChannels != null
+        ? (data.wateringReminderChannels.email !== false)
+        : null,
+      pushReminders: data.wateringReminderChannels != null
+        ? (data.wateringReminderChannels.push !== false)
+        : null,
+      emailVerified: data.emailVerified === true ? true
+        : data.emailVerified === false ? false
+        : null,
     };
   });
 }
@@ -115,6 +136,15 @@ export async function fetchUserById(uid: string): Promise<AdminUser | null> {
     createdAt: toDate(data.createdAt),
     lastLogin: toDate(data.lastLogin),
     timezone: data.timezone,
+    emailReminders: data.wateringReminderChannels != null
+      ? (data.wateringReminderChannels.email !== false)
+      : null,
+    pushReminders: data.wateringReminderChannels != null
+      ? (data.wateringReminderChannels.push !== false)
+      : null,
+    emailVerified: data.emailVerified === true ? true
+      : data.emailVerified === false ? false
+      : null,
   };
 }
 
@@ -151,7 +181,7 @@ export async function fetchPlantsByUser(userId: string): Promise<AdminPlant[]> {
   const snap = await getDocs(
     query(collection(db, "plants"), where("userId", "==", userId))
   );
-  return snap.docs.map((d) => {
+  const plants = snap.docs.map((d) => {
     const data = d.data();
     return {
       id: d.id,
@@ -166,8 +196,15 @@ export async function fetchPlantsByUser(userId: string): Promise<AdminPlant[]> {
       wateringFrequency: data.wateringIntervalDays || data.wateringFrequency,
       notificationState: data.notificationState,
       muted: data.muted === true,
+      deletedAt: toDate(data.deletedAt),
     };
   });
+  plants.sort((a, b) => {
+    if (a.deletedAt && !b.deletedAt) return 1;
+    if (!a.deletedAt && b.deletedAt) return -1;
+    return (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0);
+  });
+  return plants;
 }
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
@@ -178,8 +215,8 @@ export async function fetchStats(): Promise<StatsOverview> {
   const startOfWeek = new Date(startOfToday);
   startOfWeek.setDate(startOfToday.getDate() - 7);
 
-  const todayIso = startOfToday.toISOString();
-  const weekIso = startOfWeek.toISOString();
+  const todayTs = Timestamp.fromDate(startOfToday);
+  const weekTs = Timestamp.fromDate(startOfWeek);
 
   const [
     totalUsersSnap,
@@ -193,10 +230,10 @@ export async function fetchStats(): Promise<StatsOverview> {
   ] = await Promise.all([
     getCountFromServer(collection(db, "users")),
     getCountFromServer(collection(db, "plants")),
-    getCountFromServer(query(collection(db, "users"), where("createdAt", ">=", todayIso))),
-    getCountFromServer(query(collection(db, "users"), where("createdAt", ">=", weekIso))),
-    getCountFromServer(query(collection(db, "users"), where("lastLogin", ">=", todayIso))),
-    getCountFromServer(query(collection(db, "users"), where("lastLogin", ">=", weekIso))),
+    getCountFromServer(query(collection(db, "users"), where("createdAt", ">=", todayTs))),
+    getCountFromServer(query(collection(db, "users"), where("createdAt", ">=", weekTs))),
+    getCountFromServer(query(collection(db, "users"), where("lastLogin", ">=", todayTs))),
+    getCountFromServer(query(collection(db, "users"), where("lastLogin", ">=", weekTs))),
     getCountFromServer(query(collection(db, "plants"), where("healthStatus", "==", "issue"))),
     getCountFromServer(query(collection(db, "plants"), where("muted", "==", true))),
   ]);
@@ -219,7 +256,7 @@ export async function fetchNewUsersLast30Days(): Promise<{ date: string; count: 
   cutoff.setHours(0, 0, 0, 0);
 
   const snap = await getDocs(
-    query(collection(db, "users"), where("createdAt", ">=", cutoff.toISOString()))
+    query(collection(db, "users"), where("createdAt", ">=", Timestamp.fromDate(cutoff)))
   );
 
   const counts: Record<string, number> = {};
@@ -261,6 +298,66 @@ export interface AiCostSummary {
   byType: Record<string, { cost: number; tokens: number; count: number }>;
 }
 
+export interface AiTotals {
+  totalCalls: number;
+  totalCostUsd: number;
+  totalTokens: number;
+}
+
+export interface AiDailyRecord {
+  date: string;
+  totalCalls: number;
+  totalCostUsd: number;
+  totalTokens: number;
+  byType: Record<string, { calls: number; cost: number; tokens: number }>;
+}
+
+/** Accurate all-time totals from system/ai_totals document (updated by saveAiUsage via increment). */
+export async function fetchAiTotals(): Promise<AiTotals> {
+  const snap = await getDoc(doc(db, "system", "ai_totals"));
+  if (!snap.exists()) return { totalCalls: 0, totalCostUsd: 0, totalTokens: 0 };
+  const data = snap.data();
+  return {
+    totalCalls: data.totalCalls ?? 0,
+    totalCostUsd: data.totalCostUsd ?? 0,
+    totalTokens: data.totalTokens ?? 0,
+  };
+}
+
+/** Daily aggregates from ai_usage_daily collection (written by Firebase Function). */
+export async function fetchAiDailyStats(days = 30): Promise<AiDailyRecord[]> {
+  const snap = await getDocs(
+    query(collection(db, "ai_usage_daily"), orderBy("date", "asc"), limit(90))
+  );
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days + 1);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+  const byDate: Record<string, AiDailyRecord> = {};
+  snap.docs.forEach((d) => {
+    if (d.id >= cutoffStr) {
+      const data = d.data();
+      byDate[d.id] = {
+        date: d.id,
+        totalCalls: data.totalCalls ?? 0,
+        totalCostUsd: data.totalCostUsd ?? 0,
+        totalTokens: data.totalTokens ?? 0,
+        byType: data.byType ?? {},
+      };
+    }
+  });
+
+  const result: AiDailyRecord[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    result.push(byDate[key] ?? { date: key, totalCalls: 0, totalCostUsd: 0, totalTokens: 0, byType: {} });
+  }
+  return result;
+}
+
 export async function fetchAiUsage(limitN = 500): Promise<AiUsageRecord[]> {
   const snap = await getDocs(
     query(collection(db, "ai_usage"), orderBy("timestamp", "desc"), limit(limitN))
@@ -287,11 +384,9 @@ export async function fetchAiUsageByUser(userId: string): Promise<AiUsageRecord[
     query(
       collection(db, "ai_usage"),
       where("userId", "==", userId),
-      orderBy("timestamp", "desc"),
-      limit(200)
     )
   );
-  return snap.docs.map((d) => {
+  const records = snap.docs.map((d) => {
     const data = d.data();
     return {
       id: d.id,
@@ -306,6 +401,8 @@ export async function fetchAiUsageByUser(userId: string): Promise<AiUsageRecord[
       timestamp: toDate(data.timestamp),
     };
   });
+  records.sort((a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0));
+  return records;
 }
 
 export function summarizeAiUsage(records: AiUsageRecord[]): AiCostSummary {
@@ -322,6 +419,21 @@ export function summarizeAiUsage(records: AiUsageRecord[]): AiCostSummary {
     byType[r.type].count += 1;
   }
   return { totalCostUsd, totalTokens, byType };
+}
+
+export async function fetchAiCostPerUser(): Promise<Map<string, { cost: number; tokens: number }>> {
+  const snap = await getDocs(collection(db, "ai_usage"));
+  const map = new Map<string, { cost: number; tokens: number }>();
+  for (const d of snap.docs) {
+    const data = d.data();
+    const uid = data.userId;
+    if (!uid || uid === "system") continue;
+    const prev = map.get(uid) || { cost: 0, tokens: 0 };
+    prev.cost += data.costUsd ?? 0;
+    prev.tokens += data.totalTokens ?? 0;
+    map.set(uid, prev);
+  }
+  return map;
 }
 
 // ─── Health Checks ───────────────────────────────────────────────────────────
@@ -359,11 +471,9 @@ export async function fetchHealthChecksByUser(userId: string): Promise<HealthChe
     query(
       collection(db, "health_checks"),
       where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(100)
     )
   );
-  return snap.docs.map((d) => {
+  const records = snap.docs.map((d) => {
     const data = d.data();
     return {
       id: d.id,
@@ -373,6 +483,43 @@ export async function fetchHealthChecksByUser(userId: string): Promise<HealthChe
       status: data.status,
       createdAt: toDate(data.createdAt),
       imageUrl: data.imageUrl,
+    };
+  });
+  records.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+  return records;
+}
+
+export async function fetchMailLogsByEmail(email: string): Promise<MailLog[]> {
+  const snap = await getDocs(
+    query(collection(db, "mail"), where("to", "==", email))
+  );
+  const records = snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      to: data.to || "",
+      subject: data.message?.subject || data.subject || "",
+      createdAt: toDate(data.delivery?.startTime || data.createdAt),
+      delivery: data.delivery,
+    };
+  });
+  records.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+  return records;
+}
+
+export async function fetchFcmTokensByUser(userId: string): Promise<FcmToken[]> {
+  const snap = await getDocs(
+    query(collection(db, "fcm_tokens"), where("userId", "==", userId))
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId || "",
+      token: data.token || d.id,
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
+      platform: data.platform,
     };
   });
 }
@@ -451,6 +598,89 @@ export async function fetchSeasonalTipWeek(weekKey: string): Promise<SeasonalTip
   };
 }
 
+// ─── Subscription Config ─────────────────────────────────────────────────────
+
+export interface SubscriptionConfig {
+  trial_days: number;
+  trial_plant_limit: number;
+  subscription_plant_limit: number;
+  grandfathered_cutoff_date: string;
+}
+
+export type SubscriptionStatus = "trial" | "active" | "expired" | "grandfathered";
+
+export async function fetchSubscriptionConfig(): Promise<SubscriptionConfig> {
+  const snap = await getDoc(doc(db, "app_config", "subscription"));
+  if (!snap.exists()) {
+    return {
+      trial_days: 14,
+      trial_plant_limit: 1,
+      subscription_plant_limit: 10,
+      grandfathered_cutoff_date: new Date().toISOString(),
+    };
+  }
+  return snap.data() as SubscriptionConfig;
+}
+
+export async function saveSubscriptionConfig(config: SubscriptionConfig): Promise<void> {
+  await setDoc(doc(db, "app_config", "subscription"), config);
+}
+
+export async function fetchUserSubscriptionStatus(uid: string): Promise<{
+  status: SubscriptionStatus;
+  expiresAt?: Date;
+} | null> {
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  return {
+    status: (data.subscriptionStatus as SubscriptionStatus) || "trial",
+    expiresAt: toDate(data.subscriptionExpiresAt),
+  };
+}
+
+export async function updateUserSubscriptionStatus(
+  uid: string,
+  status: SubscriptionStatus
+): Promise<void> {
+  await updateDoc(doc(db, "users", uid), { subscriptionStatus: status });
+}
+
+export async function updateUserReminderChannels(
+  uid: string,
+  channels: { email?: boolean; push?: boolean }
+): Promise<void> {
+  const update: Record<string, boolean> = {};
+  if (channels.email !== undefined) update["wateringReminderChannels.email"] = channels.email;
+  if (channels.push !== undefined) update["wateringReminderChannels.push"] = channels.push;
+  await updateDoc(doc(db, "users", uid), update);
+}
+
+export async function fetchUsersBySubscriptionStatus(
+  status: SubscriptionStatus | "all",
+  limitN = 200
+): Promise<AdminUser[]> {
+  const q = status === "all"
+    ? query(collection(db, "users"), orderBy("createdAt", "desc"), limit(limitN))
+    : query(collection(db, "users"), where("subscriptionStatus", "==", status), limit(limitN));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      uid: data.uid || d.id,
+      email: data.email || "",
+      name: data.name || "",
+      bio: data.bio,
+      location: data.location,
+      createdAt: toDate(data.createdAt),
+      lastLogin: toDate(data.lastLogin),
+      timezone: data.timezone,
+      subscriptionStatus: (data.subscriptionStatus as SubscriptionStatus) || "trial",
+      subscriptionExpiresAt: toDate(data.subscriptionExpiresAt),
+    };
+  });
+}
+
 // ─── Push Tokens ─────────────────────────────────────────────────────────────
 
 export interface FcmToken {
@@ -510,6 +740,45 @@ export async function fetchMailLogs(pageSize = 50): Promise<MailLog[]> {
       subject: data.message?.subject || data.subject || "",
       createdAt: toDate(data.delivery?.startTime || data.createdAt),
       delivery: data.delivery,
+    };
+  });
+}
+
+// ─── Push Notifications History ──────────────────────────────────────────────
+
+export interface PushNotification {
+  id: string;
+  userId: string;
+  plantId: string | null;
+  plantName: string | null;
+  title: string;
+  body: string;
+  stage: string | null;
+  successCount: number;
+  sentAt?: Date;
+}
+
+export async function fetchPushNotifications(userId: string): Promise<PushNotification[]> {
+  const snap = await getDocs(
+    query(
+      collection(db, "push_notifications"),
+      where("userId", "==", userId),
+      orderBy("sentAt", "desc"),
+      limit(100)
+    )
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId || userId,
+      plantId: data.plantId || null,
+      plantName: data.plantName || null,
+      title: data.title || "",
+      body: data.body || "",
+      stage: data.stage || null,
+      successCount: data.successCount ?? 1,
+      sentAt: toDate(data.sentAt),
     };
   });
 }

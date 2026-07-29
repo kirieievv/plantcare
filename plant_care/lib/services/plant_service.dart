@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/plant.dart';
 import '../services/auth_service.dart';
+import '../services/subscription_service.dart';
 
 class PlantService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -95,11 +96,11 @@ class PlantService {
                   }
                   
                   final plant = Plant.fromMap(data);
+                  if (plant.isDeleted) continue;
                   validPlants.add(plant);
                 } catch (e) {
                   print('❌ PlantService: Error parsing plant ${doc.id}: $e');
                   print('❌ Plant data: ${doc.data()}');
-                  // Continue with other plants instead of crashing
                   continue;
                 }
               }
@@ -131,7 +132,23 @@ class PlantService {
   Future<String> addPlant(Plant plant) async {
     final user = AuthService.currentUser;
     if (user == null) throw Exception('User not authenticated');
-    
+
+    // Check subscription plant limit before adding
+    final existingCount = await _firestore
+        .collection(_collection)
+        .where('userId', isEqualTo: user.uid)
+        .where('deletedAt', isNull: true)
+        .count()
+        .get()
+        .then((s) => s.count ?? 0);
+
+    final canAdd = await SubscriptionService().canAddPlant(existingCount);
+    if (!canAdd) {
+      throw SubscriptionLimitException(
+        'Plant limit reached for your current plan.',
+      );
+    }
+
     final plantData = plant.toMap();
     plantData['userId'] = user.uid;
     
@@ -181,9 +198,11 @@ class PlantService {
         .update(plant.toMap());
   }
 
-  // Delete a plant
+  // Soft-delete a plant (marks as deleted, keeps data for analytics)
   Future<void> deletePlant(String plantId) async {
-    await _firestore.collection(_collection).doc(plantId).delete();
+    await _firestore.collection(_collection).doc(plantId).update({
+      'deletedAt': DateTime.now().toIso8601String(),
+    });
   }
 
   // Delete plant by name (temporary function for debugging)
@@ -364,11 +383,11 @@ class PlantService {
                   }
                   
                   final plant = Plant.fromMap(data);
+                  if (plant.isDeleted) continue;
                   validPlants.add(plant);
                 } catch (e) {
                   print('❌ PlantService: Error parsing plant ${doc.id}: $e');
                   print('❌ Plant data: ${doc.data()}');
-                  // Continue with other plants instead of crashing
                   continue;
                 }
               }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:plant_care/screens/dashboard_screen.dart';
 import 'package:plant_care/screens/plant_list_screen.dart';
 import 'package:plant_care/screens/add_plant_screen.dart';
@@ -6,7 +7,8 @@ import 'package:plant_care/screens/profile_screen.dart';
 import 'package:plant_care/screens/settings_screen.dart';
 import 'package:plant_care/services/navigation_service.dart';
 import 'package:plant_care/services/plant_service.dart';
-import 'package:plant_care/utils/app_theme.dart';
+import 'package:plant_care/theme/botanly_theme.dart';
+import 'package:plant_care/widgets/botanly_nav_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 
@@ -44,8 +46,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     
     _screens = [
       DashboardScreen(user: widget.user, onTabChange: changeTab),
-      const PlantListScreen(),
-      const AddPlantScreen(), // ⚠️ IMPORTANT: This screen has automatic navigation feature
+      PlantListScreen(onAddPlant: () => setState(() => _currentIndex = 2)),
+      AddPlantScreen(onPlantAdded: () => setState(() => _currentIndex = 1)), // switch to My Plants on success
       const ProfileScreen(),
       SettingsScreen(user: widget.user!),
     ];
@@ -124,13 +126,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
-                  // Navigate back to auth screen
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/auth',
-                    (route) => false,
-                  );
-                },
+                onPressed: () => context.go('/welcome'),
                 child: Text(l10n.goToLogin),
               ),
             ],
@@ -139,34 +135,40 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       );
     }
     
+    // Bottom nav: visual layer from `Botanly /screens/dashboard_screen.html`.
+    // Logic preserved from production main_navigation_screen.
     return Scaffold(
       body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
+      bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161B22) : Colors.grey.shade100,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+          color: isDark ? const Color(0xFF161B22) : BotanlyColors.navBarBg,
+          border: Border(
+            top: BorderSide(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : BotanlyColors.sand,
+            ),
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+              color: Color(0x0F000000),
+              blurRadius: 12,
+              offset: Offset(0, -1),
             ),
           ],
         ),
         child: SafeArea(
+          top: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.home_outlined, l10n.home),
-                _buildNavItem(1, Icons.eco_outlined, l10n.myPlants),
-                _buildNavItem(2, Icons.add_circle_outlined, l10n.addPlant),
-                _buildNavItem(3, Icons.person_outlined, l10n.profile),
-                _buildNavItem(4, Icons.settings_outlined, l10n.settings),
+                _buildNavItem(0, l10n.home),
+                _buildNavItem(1, l10n.myPlants),
+                _buildNavItem(2, l10n.addPlant),
+                _buildNavItem(3, l10n.profile),
+                _buildNavItem(4, l10n.settings),
               ],
             ),
           ),
@@ -175,60 +177,62 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, String label) {
     final isSelected = _currentIndex == index;
-    final greenLight = const Color(0xFF7BC67E);
-    final greenDark = const Color(0xFF5AB85D);
+    final stroke =
+        isSelected ? Colors.white : BotanlyColors.navIconMuted;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: isSelected
-                  ? LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [greenLight, greenDark],
-                    )
-                  : null,
-              color: isSelected ? null : Colors.transparent,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: greenDark.withOpacity(0.35),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                        spreadRadius: 0,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Icon(
-              icon,
-              color: isSelected ? AppTheme.white : Colors.grey.shade600,
-              size: 24,
-            ),
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 46,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? BotanlyColors.navActiveFill
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSelected
+                      ? BotanlyShadows.navActiveIconDrop
+                      : null,
+                ),
+                child: BotanlyNavGlyph(
+                  tabIndex: index,
+                  stroke: stroke,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 10.5,
+                  fontWeight:
+                      isSelected ? FontWeight.w500 : FontWeight.w400,
+                  color: isSelected
+                      ? BotanlyColors.sage
+                      : BotanlyColors.navLabelMuted,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? AppTheme.greenDark : Colors.grey.shade700,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -9,69 +9,60 @@ class HealthCheckService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'health_checks';
 
-  // Add a new health check record
+  // Add a new health check record (supports up to 3 photos)
   Future<void> addHealthCheck(String plantId, HealthCheckRecord healthCheck) async {
     print('🌱 HealthCheckService: Starting health check save...');
     final user = AuthService.currentUser;
     if (user == null) throw Exception('User not authenticated');
-    
-    String? imageUrl;
-    
-    // Upload image to Firebase Storage if we have image bytes
-    if (healthCheck.imageBytes != null) {
+
+    // Upload all provided image bytes, collecting resulting URLs
+    final uploadedUrls = <String?>[];
+    final bytesToUpload = healthCheck.imageBytesList.isNotEmpty
+        ? healthCheck.imageBytesList
+        : (healthCheck.imageBytes != null ? [healthCheck.imageBytes] : <Uint8List?>[]);
+
+    for (int i = 0; i < bytesToUpload.length; i++) {
+      final bytes = bytesToUpload[i];
+      if (bytes == null) {
+        uploadedUrls.add(null);
+        continue;
+      }
+      String? uploadedUrl;
       try {
-        print('🌱 HealthCheckService: Uploading image to Firebase Storage...');
+        print('🌱 HealthCheckService: Uploading photo ${i + 1}/${bytesToUpload.length}...');
+        final suffix = i == 0 ? '' : '_$i';
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('health_checks')
             .child(user.uid)
             .child(plantId)
-            .child('${healthCheck.id}.jpg');
-        
-        // Add retry logic with exponential backoff
+            .child('${healthCheck.id}$suffix.jpg');
+
         int retryCount = 0;
         const maxRetries = 3;
-        
         while (retryCount < maxRetries) {
           try {
-            print('🌱 HealthCheckService: Upload attempt ${retryCount + 1} starting...');
-            
-            final uploadTask = storageRef.putData(healthCheck.imageBytes!);
-            
-            // Increase timeout to 60 seconds for slow networks
-            final snapshot = await uploadTask.timeout(
+            final snapshot = await storageRef.putData(bytes).timeout(
               const Duration(seconds: 60),
               onTimeout: () => throw TimeoutException('Upload timeout after 60 seconds'),
             );
-            
-            imageUrl = await snapshot.ref.getDownloadURL();
-            print('✅ HealthCheckService: Image uploaded successfully: $imageUrl');
-            break; // Success, exit retry loop
-            
+            uploadedUrl = await snapshot.ref.getDownloadURL();
+            print('✅ HealthCheckService: Photo ${i + 1} uploaded: $uploadedUrl');
+            break;
           } catch (e) {
             retryCount++;
-            print('❌ HealthCheckService: Upload attempt $retryCount failed: $e');
-            
-            if (retryCount >= maxRetries) {
-              print('❌ HealthCheckService: Max retries reached, continuing without image');
-              break;
-            }
-            
-            // Wait before retry with exponential backoff
-            final delay = Duration(seconds: retryCount * 3); // Increased delay
-            print('🌱 HealthCheckService: Retrying in ${delay.inSeconds} seconds...');
-            await Future.delayed(delay);
+            if (retryCount >= maxRetries) break;
+            await Future.delayed(Duration(seconds: retryCount * 3));
           }
         }
       } catch (e) {
-        print('❌ HealthCheckService: Error uploading image: $e');
-        // Continue without image if upload fails
+        print('❌ HealthCheckService: Error uploading photo ${i + 1}: $e');
       }
-    } else {
-      print('🌱 HealthCheckService: No image to upload');
+      uploadedUrls.add(uploadedUrl);
     }
-    
-    // Create the health check document
+
+    final primaryUrl = uploadedUrls.isNotEmpty ? uploadedUrls.first : null;
+
     final healthCheckData = {
       'id': healthCheck.id,
       'plantId': plantId,
@@ -79,33 +70,24 @@ class HealthCheckService {
       'timestamp': healthCheck.timestamp.toIso8601String(),
       'status': healthCheck.status,
       'message': healthCheck.message,
-      'imageUrl': imageUrl,
+      'imageUrl': primaryUrl,
+      'imageUrls': uploadedUrls,
       'metadata': healthCheck.metadata,
       'createdAt': FieldValue.serverTimestamp(),
     };
-    
+
     print('🌱 HealthCheckService: Saving to health_checks collection...');
-    // Save to health_checks collection
     await _firestore.collection(_collection).doc(healthCheck.id).set(healthCheckData);
     print('✅ HealthCheckService: Health check document saved');
-    
-    print('🌱 HealthCheckService: Updating plant document...');
-    // Also update the plant's last health check info (but not the full history)
+
     await _firestore.collection('plants').doc(plantId).update({
       'healthStatus': healthCheck.status,
       'message': healthCheck.message,
       'lastHealthCheck': healthCheck.timestamp.toIso8601String(),
-      'lastHealthCheckImageUrl': imageUrl, // Store the latest health check image URL
+      'lastHealthCheckImageUrl': primaryUrl,
     });
     print('✅ HealthCheckService: Plant document updated');
     print('✅ HealthCheckService: Health check save completed successfully');
-    
-    // If image upload failed but we have image bytes, store them locally for immediate display
-    if (imageUrl == null && healthCheck.imageBytes != null) {
-      print('🌱 HealthCheckService: Image upload failed, but health check saved successfully');
-      print('💡 Tip: The health check was saved without the image. You can retry the image upload later.');
-      print('🌱 HealthCheckService: Health check data saved: Status=${healthCheck.status}, Message=${healthCheck.message.length > 50 ? healthCheck.message.substring(0, 50) + "..." : healthCheck.message}');
-    }
   }
 
   // Get health check history for a specific plant

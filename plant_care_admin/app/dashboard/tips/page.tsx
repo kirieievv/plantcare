@@ -66,7 +66,7 @@ function getCurrentWeekKey(): string {
 }
 
 function TipRow({ tip, lang }: { tip: SeasonalTip; lang: string }) {
-  const text = (tip as Record<string, string>)[lang] || tip.en;
+  const text = (tip as unknown as Record<string, string>)[lang] || tip.en;
   return (
     <TableRow>
       <TableCell className="w-10 text-center font-mono text-xs text-muted-foreground">

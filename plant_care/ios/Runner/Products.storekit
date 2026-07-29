@@ -1,0 +1,88 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "05CD1EDF",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "22145910",
+      "localizations" : [
+        {
+          "customAppName" : "Botanly",
+          "displayName" : "Botanly Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Botanly Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "A1B2C3D4-0001-0001-0001-000000000001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited plants, AI assistant & care reminders.",
+              "displayName" : "Botanly Premium Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.botanly.app.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Botanly Premium Monthly",
+          "subscriptionGroupID" : "22145910",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "21.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "A1B2C3D4-0002-0002-0002-000000000002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited plants, AI assistant & care reminders.",
+              "displayName" : "Botanly Premium Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.botanly.app.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Botanly Premium Annual",
+          "subscriptionGroupID" : "22145910",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

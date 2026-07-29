@@ -1,0 +1,89 @@
+{
+  "identifier" : "BotanlyProducts",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_developerTeamID" : "A3D69H9WLA",
+    "_failTransactionsEnabled" : false,
+    "_interrupted" : false,
+    "_interruptedMessage" : "",
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "22062672",
+      "localizations" : [
+        {
+          "customAppName" : "Botanly",
+          "displayName" : "Botanly Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Botanly Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "MONTHLY001",
+          "introductoryOffer" : {
+            "offerID" : "",
+            "offerMode" : "FREE_TRIAL",
+            "offerPeriod" : "P14D",
+            "offerPeriodCount" : 1,
+            "offerPriceLocale" : "en_US",
+            "type" : "introductory"
+          },
+          "localizations" : [
+            {
+              "description" : "Unlimited plant care, AI assistant, watering reminders",
+              "displayName" : "Botanly Premium Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.botanly.app.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Botanly Premium Monthly",
+          "subscriptionGroupID" : "22062672",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "14.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "ANNUAL001",
+          "introductoryOffer" : {
+            "offerID" : "",
+            "offerMode" : "FREE_TRIAL",
+            "offerPeriod" : "P14D",
+            "offerPeriodCount" : 1,
+            "offerPriceLocale" : "en_US",
+            "type" : "introductory"
+          },
+          "localizations" : [
+            {
+              "description" : "Unlimited plant care, AI assistant, watering reminders",
+              "displayName" : "Botanly Premium Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.botanly.app.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Botanly Premium Annual",
+          "subscriptionGroupID" : "22062672",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}

@@ -48,3 +48,15 @@ String get chatImageQuotaUrl {
   final projectId = Firebase.app().options.projectId;
   return 'https://us-central1-$projectId.cloudfunctions.net/chatImageQuota';
 }
+
+/// Send a 6-digit email verification PIN for new user registration.
+String get sendEmailVerificationPinUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/sendEmailVerificationPin';
+}
+
+/// Verify the 6-digit email PIN sent during registration.
+String get verifyEmailPinUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/verifyEmailPin';
+}
