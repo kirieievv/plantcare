@@ -1,0 +1,3261 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_de.dart';
+import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_fr.dart';
+import 'app_localizations_ru.dart';
+import 'app_localizations_uk.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('de'),
+    Locale('en'),
+    Locale('es'),
+    Locale('fr'),
+    Locale('ru'),
+    Locale('uk')
+  ];
+
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant Care'**
+  String get appTitle;
+
+  /// No description provided for @loadingPlantCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading Plant Care...'**
+  String get loadingPlantCare;
+
+  /// No description provided for @home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
+
+  /// No description provided for @myPlants.
+  ///
+  /// In en, this message translates to:
+  /// **'My Plants'**
+  String get myPlants;
+
+  /// No description provided for @addPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Plant'**
+  String get addPlant;
+
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @authenticationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication Error'**
+  String get authenticationError;
+
+  /// No description provided for @pleaseLoginAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in again to continue'**
+  String get pleaseLoginAgain;
+
+  /// No description provided for @goToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Login'**
+  String get goToLogin;
+
+  /// No description provided for @yourGardenOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Garden Overview'**
+  String get yourGardenOverview;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back!'**
+  String get welcomeBack;
+
+  /// No description provided for @createYourAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get createYourAccount;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get fullName;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get password;
+
+  /// No description provided for @pleaseEnterYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get pleaseEnterYourName;
+
+  /// No description provided for @pleaseEnterYourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email'**
+  String get pleaseEnterYourEmail;
+
+  /// No description provided for @pleaseEnterValidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get pleaseEnterValidEmail;
+
+  /// No description provided for @pleaseEnterYourPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password'**
+  String get pleaseEnterYourPassword;
+
+  /// No description provided for @pleaseConfirmYourPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get pleaseConfirmYourPassword;
+
+  /// No description provided for @passwordAtLeast6.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordAtLeast6;
+
+  /// No description provided for @rememberMe30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember me for 30 days'**
+  String get rememberMe30Days;
+
+  /// No description provided for @logIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get logIn;
+
+  /// No description provided for @registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration'**
+  String get registration;
+
+  /// No description provided for @dontHaveAccountRegistration.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? Registration'**
+  String get dontHaveAccountRegistration;
+
+  /// No description provided for @alreadyHaveAccountLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Log in'**
+  String get alreadyHaveAccountLogin;
+
+  /// No description provided for @loggedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged in'**
+  String get loggedIn;
+
+  /// No description provided for @preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferences;
+
+  /// No description provided for @wateringReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering Reminders'**
+  String get wateringReminders;
+
+  /// No description provided for @getNotifiedWhenPlantsNeedWater.
+  ///
+  /// In en, this message translates to:
+  /// **'Get notified when plants need water'**
+  String get getNotifiedWhenPlantsNeedWater;
+
+  /// No description provided for @quietHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet Hours'**
+  String get quietHours;
+
+  /// No description provided for @maxNotificationsPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Notifications Per Day'**
+  String get maxNotificationsPerDay;
+
+  /// No description provided for @notificationsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} notifications'**
+  String notificationsCount(int count);
+
+  /// No description provided for @theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get theme;
+
+  /// No description provided for @light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get light;
+
+  /// No description provided for @dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get dark;
+
+  /// No description provided for @testNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Notifications'**
+  String get testNotifications;
+
+  /// No description provided for @checkNotificationSetupAndPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Check notification setup and permissions'**
+  String get checkNotificationSetupAndPermissions;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @english.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// No description provided for @spanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Español'**
+  String get spanish;
+
+  /// No description provided for @french.
+  ///
+  /// In en, this message translates to:
+  /// **'Français'**
+  String get french;
+
+  /// No description provided for @german.
+  ///
+  /// In en, this message translates to:
+  /// **'Deutsch'**
+  String get german;
+
+  /// No description provided for @russian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get russian;
+
+  /// No description provided for @ukrainian.
+  ///
+  /// In en, this message translates to:
+  /// **'Ukrainian'**
+  String get ukrainian;
+
+  /// No description provided for @savePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Preferences'**
+  String get savePreferences;
+
+  /// No description provided for @account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
+
+  /// No description provided for @updateYourAccountPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your account password'**
+  String get updateYourAccountPassword;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Out'**
+  String get signOut;
+
+  /// No description provided for @signOutOfYourAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of your account'**
+  String get signOutOfYourAccount;
+
+  /// No description provided for @preferencesSavedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences saved successfully!'**
+  String get preferencesSavedSuccessfully;
+
+  /// No description provided for @errorSavingPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving preferences: {error}'**
+  String errorSavingPreferences(Object error);
+
+  /// No description provided for @quietHoursUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours updated successfully!'**
+  String get quietHoursUpdatedSuccessfully;
+
+  /// No description provided for @changePasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePasswordTitle;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @confirmNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get confirmNewPassword;
+
+  /// No description provided for @enterCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password'**
+  String get enterCurrentPassword;
+
+  /// No description provided for @enterNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a new password'**
+  String get enterNewPassword;
+
+  /// No description provided for @newPasswordMustBeDifferent.
+  ///
+  /// In en, this message translates to:
+  /// **'New password must be different'**
+  String get newPasswordMustBeDifferent;
+
+  /// No description provided for @confirmYourNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your new password'**
+  String get confirmYourNewPassword;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @passwordChangedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed successfully.'**
+  String get passwordChangedSuccessfully;
+
+  /// No description provided for @errorChangingPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Error changing password: {error}'**
+  String errorChangingPassword(Object error);
+
+  /// No description provided for @signOutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Out'**
+  String get signOutConfirmTitle;
+
+  /// No description provided for @signOutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get signOutConfirmMessage;
+
+  /// No description provided for @userLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get userLabel;
+
+  /// No description provided for @nameCannotBeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Name cannot be empty'**
+  String get nameCannotBeEmpty;
+
+  /// No description provided for @profileUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully!'**
+  String get profileUpdatedSuccessfully;
+
+  /// No description provided for @errorUpdatingProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating profile: {error}'**
+  String errorUpdatingProfile(Object error);
+
+  /// No description provided for @plantLover.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant Lover'**
+  String get plantLover;
+
+  /// No description provided for @profileInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Information'**
+  String get profileInformation;
+
+  /// No description provided for @bio.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get bio;
+
+  /// No description provided for @bioHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us about your plant care journey...'**
+  String get bioHint;
+
+  /// No description provided for @location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get location;
+
+  /// No description provided for @locationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Where are your plants located?'**
+  String get locationHint;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @notSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
+
+  /// No description provided for @accountInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Info'**
+  String get accountInfo;
+
+  /// No description provided for @memberSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Member Since'**
+  String get memberSince;
+
+  /// No description provided for @lastLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Login'**
+  String get lastLogin;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'N/A'**
+  String get notAvailable;
+
+  /// No description provided for @actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actions;
+
+  /// No description provided for @errorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get errorLabel;
+
+  /// No description provided for @noPlantsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No plants yet!'**
+  String get noPlantsYet;
+
+  /// No description provided for @addFirstPlantToGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first plant to get started'**
+  String get addFirstPlantToGetStarted;
+
+  /// No description provided for @addYourFirstPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first plant'**
+  String get addYourFirstPlant;
+
+  /// No description provided for @errorPickingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error picking image: {error}'**
+  String errorPickingImage(Object error);
+
+  /// No description provided for @failedToAnalyzePlantPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to analyze plant photo: {statusCode}'**
+  String failedToAnalyzePlantPhoto(int statusCode);
+
+  /// No description provided for @aiAnalysisCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'AI analysis completed! 🌱'**
+  String get aiAnalysisCompleted;
+
+  /// No description provided for @aiAnalysisFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'AI analysis failed: {error}'**
+  String aiAnalysisFailed(Object error);
+
+  /// No description provided for @apiTestError.
+  ///
+  /// In en, this message translates to:
+  /// **'API test error: {error}'**
+  String apiTestError(Object error);
+
+  /// No description provided for @aiAnalysisRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'AI analysis refreshed! 🔄'**
+  String get aiAnalysisRefreshed;
+
+  /// No description provided for @aiAnalysisRefreshFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'AI analysis refresh failed: {error}'**
+  String aiAnalysisRefreshFailed(Object error);
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @uploadPlantPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Plant Photo'**
+  String get uploadPlantPhoto;
+
+  /// No description provided for @notSpecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not specified'**
+  String get notSpecified;
+
+  /// No description provided for @onceEvery7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Once every 7 days'**
+  String get onceEvery7Days;
+
+  /// No description provided for @oncePerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Once per day'**
+  String get oncePerDay;
+
+  /// No description provided for @oncePerWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Once per week'**
+  String get oncePerWeek;
+
+  /// No description provided for @onceEveryNDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Once every {days} days'**
+  String onceEveryNDays(int days);
+
+  /// No description provided for @onceEveryNWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Once every {weeks} weeks'**
+  String onceEveryNWeeks(int weeks);
+
+  /// No description provided for @low.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get low;
+
+  /// No description provided for @mediumLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium-Low'**
+  String get mediumLow;
+
+  /// No description provided for @medium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get medium;
+
+  /// No description provided for @mediumHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium-High'**
+  String get mediumHigh;
+
+  /// No description provided for @high.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get high;
+
+  /// No description provided for @userNotAuthenticated.
+  ///
+  /// In en, this message translates to:
+  /// **'User not authenticated'**
+  String get userNotAuthenticated;
+
+  /// No description provided for @pleaseUploadPlantImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload a plant image'**
+  String get pleaseUploadPlantImage;
+
+  /// No description provided for @pleaseWaitForAiAnalysisBeforeAddingPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait for AI analysis to complete before adding the plant'**
+  String get pleaseWaitForAiAnalysisBeforeAddingPlant;
+
+  /// No description provided for @plantLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'plant'**
+  String get plantLowercase;
+
+  /// No description provided for @plantAddedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant added successfully! 🌱'**
+  String get plantAddedSuccessfully;
+
+  /// No description provided for @errorAddingPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Error adding plant: {error}'**
+  String errorAddingPlant(Object error);
+
+  /// No description provided for @generateRandomName.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate random name'**
+  String get generateRandomName;
+
+  /// No description provided for @plantName.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant Name'**
+  String get plantName;
+
+  /// No description provided for @plantNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Monstera, Snake Plant'**
+  String get plantNameHint;
+
+  /// No description provided for @pleaseEnterPlantName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a plant name'**
+  String get pleaseEnterPlantName;
+
+  /// No description provided for @addingPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding Plant...'**
+  String get addingPlant;
+
+  /// No description provided for @analyzingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing Photo...'**
+  String get analyzingPhoto;
+
+  /// No description provided for @plantUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant updated successfully! 🌱'**
+  String get plantUpdatedSuccessfully;
+
+  /// No description provided for @errorUpdatingPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating plant: {error}'**
+  String errorUpdatingPlant(Object error);
+
+  /// No description provided for @species.
+  ///
+  /// In en, this message translates to:
+  /// **'Species'**
+  String get species;
+
+  /// No description provided for @wateringFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering Frequency'**
+  String get wateringFrequency;
+
+  /// No description provided for @everyNDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Every {days} day(s)'**
+  String everyNDays(int days);
+
+  /// No description provided for @pleaseSelectWateringFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select watering frequency'**
+  String get pleaseSelectWateringFrequency;
+
+  /// No description provided for @notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notes;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChanges;
+
+  /// No description provided for @loadingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading image...'**
+  String get loadingImage;
+
+  /// No description provided for @changeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Image'**
+  String get changeImage;
+
+  /// No description provided for @errorDeletingPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting plant: {error}'**
+  String errorDeletingPlant(Object error);
+
+  /// No description provided for @plantNotDueForWateringYet.
+  ///
+  /// In en, this message translates to:
+  /// **'This plant is not due for watering yet'**
+  String get plantNotDueForWateringYet;
+
+  /// No description provided for @errorBuildingPlantDetailsScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred while building the PlantDetailsScreen: {error}'**
+  String errorBuildingPlantDetailsScreen(Object error);
+
+  /// No description provided for @aiCare.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Care'**
+  String get aiCare;
+
+  /// No description provided for @aiAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Agent'**
+  String get aiAgent;
+
+  /// No description provided for @plantChatOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open plant chat'**
+  String get plantChatOpen;
+
+  /// No description provided for @plantChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat about {plantName}'**
+  String plantChatTitle(Object plantName);
+
+  /// No description provided for @plantChatWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi! I am your plant assistant for {plantName}. Ask me anything about watering, health signs, or what to do next.'**
+  String plantChatWelcome(Object plantName);
+
+  /// No description provided for @plantChatInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about this plant...'**
+  String get plantChatInputHint;
+
+  /// No description provided for @plantChatLoginAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in again.'**
+  String get plantChatLoginAgain;
+
+  /// No description provided for @plantChatRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat request failed'**
+  String get plantChatRequestFailed;
+
+  /// No description provided for @plantChatCouldNotGenerateResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'I could not generate a response. Please try again.'**
+  String get plantChatCouldNotGenerateResponse;
+
+  /// No description provided for @plantChatConnectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while contacting the plant assistant. Please try again.'**
+  String get plantChatConnectionError;
+
+  /// No description provided for @plantChatQuickWaterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I water today?'**
+  String get plantChatQuickWaterToday;
+
+  /// No description provided for @plantChatQuickYellowLeaves.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are leaves turning yellow?'**
+  String get plantChatQuickYellowLeaves;
+
+  /// No description provided for @plantChatQuickWhatToDoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I do now?'**
+  String get plantChatQuickWhatToDoNow;
+
+  /// No description provided for @plantChatImageQuotaReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily photo limit reached. Try again tomorrow.'**
+  String get plantChatImageQuotaReached;
+
+  /// No description provided for @splashTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your smart plant companion'**
+  String get splashTagline;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get getStarted;
+
+  /// No description provided for @splashDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor your plants, get personalised care tips,\nand track their health — all in one place.'**
+  String get splashDescription;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @errorInvalidPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect code. Please try again.'**
+  String get errorInvalidPin;
+
+  /// No description provided for @errorPinExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The code has expired. Please request a new one.'**
+  String get errorPinExpired;
+
+  /// No description provided for @errorPinNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No code found. Please request a new one.'**
+  String get errorPinNotFound;
+
+  /// No description provided for @errorTooManyAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Please request a new code.'**
+  String get errorTooManyAttempts;
+
+  /// No description provided for @errorSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the code. Please try again.'**
+  String get errorSendFailed;
+
+  /// No description provided for @errorUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No account found with this email.'**
+  String get errorUserNotFound;
+
+  /// No description provided for @errorEmailAlreadyExists.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists.'**
+  String get errorEmailAlreadyExists;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get errorGeneric;
+
+  /// No description provided for @resetYourPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset your password'**
+  String get resetYourPassword;
+
+  /// No description provided for @enterEmailForCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your account email to receive a verification code.'**
+  String get enterEmailForCode;
+
+  /// No description provided for @sendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get sendCode;
+
+  /// No description provided for @enterVerificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter verification code'**
+  String get enterVerificationCode;
+
+  /// No description provided for @weSentACodeTo.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to'**
+  String get weSentACodeTo;
+
+  /// No description provided for @verificationCodeSentAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code sent again.'**
+  String get verificationCodeSentAgain;
+
+  /// No description provided for @resendCodeInSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code in {seconds}s'**
+  String resendCodeInSeconds(int seconds);
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
+
+  /// No description provided for @setNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new password'**
+  String get setNewPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get confirmPassword;
+
+  /// No description provided for @updatePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Update password'**
+  String get updatePassword;
+
+  /// No description provided for @passwordResetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset successfully. Please sign in.'**
+  String get passwordResetSuccess;
+
+  /// No description provided for @totalPlants.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Plants'**
+  String get totalPlants;
+
+  /// No description provided for @needWater.
+  ///
+  /// In en, this message translates to:
+  /// **'Need Water'**
+  String get needWater;
+
+  /// No description provided for @healthy.
+  ///
+  /// In en, this message translates to:
+  /// **'Healthy'**
+  String get healthy;
+
+  /// No description provided for @yourPlants.
+  ///
+  /// In en, this message translates to:
+  /// **'My Plants'**
+  String get yourPlants;
+
+  /// No description provided for @plantCreatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant created successfully! 🌱'**
+  String get plantCreatedSuccessfully;
+
+  /// No description provided for @searchPlantsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search plants…'**
+  String get searchPlantsHint;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get filterOverdue;
+
+  /// No description provided for @noResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get noResultsTitle;
+
+  /// No description provided for @noResultsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or filter.'**
+  String get noResultsSub;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @wateringRemindersBlockSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Get notified when your plants need water.'**
+  String get wateringRemindersBlockSub;
+
+  /// No description provided for @emailRemindersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email reminders'**
+  String get emailRemindersTitle;
+
+  /// No description provided for @emailRemindersSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive watering reminders by email'**
+  String get emailRemindersSub;
+
+  /// No description provided for @pushNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get pushNotificationsTitle;
+
+  /// No description provided for @pushNotificationsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Get instant alerts on your device'**
+  String get pushNotificationsSub;
+
+  /// No description provided for @quietHoursLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours'**
+  String get quietHoursLabel;
+
+  /// No description provided for @themeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get themeLabel;
+
+  /// No description provided for @languageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageLabel;
+
+  /// No description provided for @preferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferencesTitle;
+
+  /// No description provided for @accountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTitle;
+
+  /// No description provided for @changePasswordTitleRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePasswordTitleRow;
+
+  /// No description provided for @changePasswordSubRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your account password'**
+  String get changePasswordSubRow;
+
+  /// No description provided for @signOutSubRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of your account'**
+  String get signOutSubRow;
+
+  /// No description provided for @aiAssistantOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Plant Assistant · online'**
+  String get aiAssistantOnline;
+
+  /// No description provided for @clearHistoryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear history'**
+  String get clearHistoryAction;
+
+  /// No description provided for @clearHistoryConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear chat history?'**
+  String get clearHistoryConfirm;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
+  /// No description provided for @plantPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant photo'**
+  String get plantPhoto;
+
+  /// No description provided for @addPlantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add plant'**
+  String get addPlantTitle;
+
+  /// No description provided for @addPlantSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Snap, identify, then save'**
+  String get addPlantSubtitle;
+
+  /// No description provided for @snapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Snap a photo'**
+  String get snapTitle;
+
+  /// No description provided for @snapDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A clear photo helps our AI identify\nyour plant and tailor care'**
+  String get snapDescription;
+
+  /// No description provided for @useCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Use camera'**
+  String get useCamera;
+
+  /// No description provided for @uploadFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload from gallery'**
+  String get uploadFromGallery;
+
+  /// No description provided for @analyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing...'**
+  String get analyzing;
+
+  /// No description provided for @couldntIdentify.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t identify this plant'**
+  String get couldntIdentify;
+
+  /// No description provided for @tryAnotherPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another photo or enter the species manually below.'**
+  String get tryAnotherPhoto;
+
+  /// No description provided for @topMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Top match'**
+  String get topMatch;
+
+  /// No description provided for @useThisMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this match'**
+  String get useThisMatch;
+
+  /// No description provided for @manualNamePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant nickname (e.g. Iris)'**
+  String get manualNamePlaceholder;
+
+  /// No description provided for @savePlantBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Save plant'**
+  String get savePlantBtn;
+
+  /// No description provided for @tagOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'OVERDUE'**
+  String get tagOverdue;
+
+  /// No description provided for @tagDueSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'DUE SOON'**
+  String get tagDueSoon;
+
+  /// No description provided for @tagHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'HEALTHY'**
+  String get tagHealthy;
+
+  /// No description provided for @wateringScheduleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering schedule'**
+  String get wateringScheduleTitle;
+
+  /// No description provided for @lastWatered.
+  ///
+  /// In en, this message translates to:
+  /// **'Last watered'**
+  String get lastWatered;
+
+  /// No description provided for @nextWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Next watering'**
+  String get nextWatering;
+
+  /// No description provided for @frequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get frequency;
+
+  /// No description provided for @waterNowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Water now'**
+  String get waterNowAction;
+
+  /// No description provided for @rescheduleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule'**
+  String get rescheduleAction;
+
+  /// No description provided for @careRecommendationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Care Recommendations'**
+  String get careRecommendationsTitle;
+
+  /// No description provided for @careSectionCultivar.
+  ///
+  /// In en, this message translates to:
+  /// **'Cultivar'**
+  String get careSectionCultivar;
+
+  /// No description provided for @careSectionGeneralDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'General Description'**
+  String get careSectionGeneralDescription;
+
+  /// No description provided for @careSectionSoil.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil'**
+  String get careSectionSoil;
+
+  /// No description provided for @careSectionSoilMoisture.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil Moisture'**
+  String get careSectionSoilMoisture;
+
+  /// No description provided for @careSectionMoistureCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Moisture Check'**
+  String get careSectionMoistureCheck;
+
+  /// No description provided for @careSectionWater.
+  ///
+  /// In en, this message translates to:
+  /// **'Water'**
+  String get careSectionWater;
+
+  /// No description provided for @careSectionLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get careSectionLight;
+
+  /// No description provided for @careSectionTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get careSectionTemperature;
+
+  /// No description provided for @careSectionFertilizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Fertilizer'**
+  String get careSectionFertilizer;
+
+  /// No description provided for @careSectionGrowthRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Growth Rate'**
+  String get careSectionGrowthRate;
+
+  /// No description provided for @careSectionToxicity.
+  ///
+  /// In en, this message translates to:
+  /// **'Toxicity'**
+  String get careSectionToxicity;
+
+  /// No description provided for @careSectionPlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Placement'**
+  String get careSectionPlacement;
+
+  /// No description provided for @careSectionPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Personality'**
+  String get careSectionPersonality;
+
+  /// No description provided for @aboutPlantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About this plant'**
+  String get aboutPlantTitle;
+
+  /// No description provided for @askAssistantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the assistant'**
+  String get askAssistantTitle;
+
+  /// No description provided for @askAssistantSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Get tailored advice from Iris AI'**
+  String get askAssistantSub;
+
+  /// No description provided for @openChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get openChat;
+
+  /// No description provided for @deletePlantAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete plant'**
+  String get deletePlantAction;
+
+  /// No description provided for @reminderEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get reminderEmail;
+
+  /// No description provided for @reminderEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering reminder emails'**
+  String get reminderEmailSubtitle;
+
+  /// No description provided for @pushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get pushNotifications;
+
+  /// No description provided for @pushNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts in the app (iOS / Android)'**
+  String get pushNotificationsSubtitle;
+
+  /// No description provided for @wateringOverdueNDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue {days}d'**
+  String wateringOverdueNDays(int days);
+
+  /// No description provided for @wateringToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering today'**
+  String get wateringToday;
+
+  /// No description provided for @wateringTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering tomorrow'**
+  String get wateringTomorrow;
+
+  /// No description provided for @wateringInNDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering in {days}d'**
+  String wateringInNDays(int days);
+
+  /// No description provided for @plantWateredSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{plantName} has been watered! 💧'**
+  String plantWateredSuccess(Object plantName);
+
+  /// No description provided for @errorWateringPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Error watering plant: {error}'**
+  String errorWateringPlant(Object error);
+
+  /// No description provided for @healthIssueDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Issue Detected'**
+  String get healthIssueDetected;
+
+  /// No description provided for @recommendedActionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Actions:'**
+  String get recommendedActionsLabel;
+
+  /// No description provided for @healthAlertNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This alert will remain visible until a subsequent health check returns OK'**
+  String get healthAlertNote;
+
+  /// No description provided for @addHealthCheckTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Health Check'**
+  String get addHealthCheckTooltip;
+
+  /// No description provided for @noHealthChecksYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No health checks yet'**
+  String get noHealthChecksYet;
+
+  /// No description provided for @uploadPhotosToTrackHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photos to track your plant\'s health over time'**
+  String get uploadPhotosToTrackHealth;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @nDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days ago'**
+  String nDaysAgo(int days);
+
+  /// No description provided for @healthStatusOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get healthStatusOk;
+
+  /// No description provided for @healthStatusIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get healthStatusIssue;
+
+  /// No description provided for @assistantTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant is typing...'**
+  String get assistantTyping;
+
+  /// No description provided for @chatSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {source}'**
+  String chatSourceLabel(Object source);
+
+  /// No description provided for @chatSourceKnowledgeBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge Base'**
+  String get chatSourceKnowledgeBase;
+
+  /// No description provided for @chatSourceContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get chatSourceContext;
+
+  /// No description provided for @chatSourceAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get chatSourceAgent;
+
+  /// No description provided for @chatAttachPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach photo'**
+  String get chatAttachPhoto;
+
+  /// No description provided for @chatPhotoQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'{used}/{limit} photos today'**
+  String chatPhotoQuota(int used, int limit);
+
+  /// No description provided for @chatPhotoQuotaExhausted.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily photo limit reached. Try again tomorrow.'**
+  String get chatPhotoQuotaExhausted;
+
+  /// No description provided for @chatPhotoUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo...'**
+  String get chatPhotoUploading;
+
+  /// No description provided for @chatPhotoUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload photo. Please try again.'**
+  String get chatPhotoUploadFailed;
+
+  /// No description provided for @chatRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get chatRemovePhoto;
+
+  /// No description provided for @chatCopyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get chatCopyMessage;
+
+  /// No description provided for @chatClearHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'New Chat'**
+  String get chatClearHistory;
+
+  /// No description provided for @chatClearHistoryConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new conversation? This will delete the current history.'**
+  String get chatClearHistoryConfirm;
+
+  /// No description provided for @chatClearHistorySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation started.'**
+  String get chatClearHistorySuccess;
+
+  /// No description provided for @chatDateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatDateToday;
+
+  /// No description provided for @chatDateYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get chatDateYesterday;
+
+  /// No description provided for @choosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get choosePhoto;
+
+  /// No description provided for @gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
+
+  /// No description provided for @camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// No description provided for @analyzeHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze Health'**
+  String get analyzeHealth;
+
+  /// No description provided for @waterFirstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Water first'**
+  String get waterFirstLabel;
+
+  /// No description provided for @nextCheckAfterWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Next check in {days} d'**
+  String nextCheckAfterWatering(int days);
+
+  /// No description provided for @imageReadyForAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Image uploaded successfully! Ready for health analysis.'**
+  String get imageReadyForAnalysis;
+
+  /// No description provided for @healthCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Check'**
+  String get healthCheckTitle;
+
+  /// No description provided for @healthCheckHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Check History'**
+  String get healthCheckHistoryTitle;
+
+  /// No description provided for @healthCheckUploadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a photo of {plantName} for AI health analysis'**
+  String healthCheckUploadHint(Object plantName);
+
+  /// No description provided for @deletePlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Plant'**
+  String get deletePlant;
+
+  /// No description provided for @deletePlantConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this plant?'**
+  String get deletePlantConfirm;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @iHaveWatered.
+  ///
+  /// In en, this message translates to:
+  /// **'I have watered'**
+  String get iHaveWatered;
+
+  /// No description provided for @soilMoisture.
+  ///
+  /// In en, this message translates to:
+  /// **'Ideal Soil'**
+  String get soilMoisture;
+
+  /// No description provided for @lightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get lightLabel;
+
+  /// No description provided for @perDay.
+  ///
+  /// In en, this message translates to:
+  /// **'per day'**
+  String get perDay;
+
+  /// No description provided for @hoursLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'hours'**
+  String get hoursLabel;
+
+  /// No description provided for @interestingFactsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Interesting Facts'**
+  String get interestingFactsTitle;
+
+  /// No description provided for @noCareRecommendationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated care recommendations are not available for this plant yet.'**
+  String get noCareRecommendationsYet;
+
+  /// No description provided for @noInterestingFactsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated interesting facts are not available for this plant yet.'**
+  String get noInterestingFactsYet;
+
+  /// No description provided for @noDescriptionYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No description available yet.'**
+  String get noDescriptionYet;
+
+  /// No description provided for @swipeToSeeMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe to see more'**
+  String get swipeToSeeMore;
+
+  /// No description provided for @uploadPhotosForHealthHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photos to track your plant\'s health'**
+  String get uploadPhotosForHealthHistory;
+
+  /// No description provided for @plantDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant \"{plantName}\" has been deleted'**
+  String plantDeletedMessage(Object plantName);
+
+  /// No description provided for @noImageAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Image Available'**
+  String get noImageAvailable;
+
+  /// No description provided for @addPhotoToSeeYourPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo to see your plant here'**
+  String get addPhotoToSeeYourPlant;
+
+  /// No description provided for @isThisYourPlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Is this your plant?'**
+  String get isThisYourPlant;
+
+  /// No description provided for @speciesPickSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We found these options — pick the one that matches'**
+  String get speciesPickSubtitle;
+
+  /// No description provided for @noneOfThese.
+  ///
+  /// In en, this message translates to:
+  /// **'None of these'**
+  String get noneOfThese;
+
+  /// No description provided for @typePlantNameRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the plant name and we\'ll try again'**
+  String get typePlantNameRetry;
+
+  /// No description provided for @gettingCareRecommendations.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting care recommendations'**
+  String get gettingCareRecommendations;
+
+  /// No description provided for @imageUploadedAnalysisComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Image uploaded successfully! AI analysis complete.'**
+  String get imageUploadedAnalysisComplete;
+
+  /// No description provided for @aiCareRecommendationsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Care Recommendations'**
+  String get aiCareRecommendationsHeader;
+
+  /// No description provided for @aiReady.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Ready'**
+  String get aiReady;
+
+  /// No description provided for @checkPlantButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Plant'**
+  String get checkPlantButton;
+
+  /// No description provided for @plantCareAssistantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant Care Assistant'**
+  String get plantCareAssistantTitle;
+
+  /// No description provided for @plantNeedsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant Needs Help!'**
+  String get plantNeedsHelp;
+
+  /// No description provided for @whatToDoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'What to do now'**
+  String get whatToDoNow;
+
+  /// No description provided for @wateringLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering'**
+  String get wateringLabel;
+
+  /// No description provided for @nowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get nowLabel;
+
+  /// No description provided for @nextIn1Day.
+  ///
+  /// In en, this message translates to:
+  /// **'Next in 1 day'**
+  String get nextIn1Day;
+
+  /// No description provided for @nextInNDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Next in {days} days'**
+  String nextInNDays(int days);
+
+  /// No description provided for @wateringDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering done'**
+  String get wateringDone;
+
+  /// No description provided for @moistureDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry'**
+  String get moistureDry;
+
+  /// No description provided for @moistureWet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wet'**
+  String get moistureWet;
+
+  /// No description provided for @moistureLevelVeryDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Very dry'**
+  String get moistureLevelVeryDry;
+
+  /// No description provided for @moistureLevelDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry'**
+  String get moistureLevelDry;
+
+  /// No description provided for @moistureLevelSlightlyMoist.
+  ///
+  /// In en, this message translates to:
+  /// **'Slightly moist'**
+  String get moistureLevelSlightlyMoist;
+
+  /// No description provided for @moistureLevelMoist.
+  ///
+  /// In en, this message translates to:
+  /// **'Moist'**
+  String get moistureLevelMoist;
+
+  /// No description provided for @moistureLevelVeryMoist.
+  ///
+  /// In en, this message translates to:
+  /// **'Very moist'**
+  String get moistureLevelVeryMoist;
+
+  /// No description provided for @bannerWaterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} needs water'**
+  String bannerWaterTitle(String name);
+
+  /// No description provided for @bannerWaterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to water or check details'**
+  String get bannerWaterSubtitle;
+
+  /// No description provided for @bannerTipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip of the Day'**
+  String get bannerTipTitle;
+
+  /// No description provided for @bannerTipSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap for more seasonal tips'**
+  String get bannerTipSubtitle;
+
+  /// No description provided for @tipsOfTheDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips of the Day'**
+  String get tipsOfTheDay;
+
+  /// No description provided for @tipsOfTheDaySub.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-powered seasonal advice · updated weekly'**
+  String get tipsOfTheDaySub;
+
+  /// No description provided for @tipCategoryWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering'**
+  String get tipCategoryWatering;
+
+  /// No description provided for @tipCategoryLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get tipCategoryLight;
+
+  /// No description provided for @tipCategoryPests.
+  ///
+  /// In en, this message translates to:
+  /// **'Pests'**
+  String get tipCategoryPests;
+
+  /// No description provided for @tipCategoryFertilizing.
+  ///
+  /// In en, this message translates to:
+  /// **'Fertilizing'**
+  String get tipCategoryFertilizing;
+
+  /// No description provided for @tipCategorySeasonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonal'**
+  String get tipCategorySeasonal;
+
+  /// No description provided for @tipCategoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get tipCategoryGeneral;
+
+  /// No description provided for @noTipsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips are being generated. Check back soon!'**
+  String get noTipsYet;
+
+  /// No description provided for @waterNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Water now'**
+  String get waterNow;
+
+  /// No description provided for @subscriptionUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get subscriptionUpgrade;
+
+  /// No description provided for @subscriptionManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get subscriptionManage;
+
+  /// No description provided for @subscriptionActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium Active'**
+  String get subscriptionActiveTitle;
+
+  /// No description provided for @subscriptionGrandfatheredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifetime Access'**
+  String get subscriptionGrandfatheredTitle;
+
+  /// No description provided for @subscriptionTrialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Trial'**
+  String get subscriptionTrialTitle;
+
+  /// No description provided for @subscriptionExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription Expired'**
+  String get subscriptionExpiredTitle;
+
+  /// No description provided for @subscriptionActiveUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Active until {date}'**
+  String subscriptionActiveUntil(String date);
+
+  /// No description provided for @subscriptionTrialEndsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial ends on {date}'**
+  String subscriptionTrialEndsOn(String date);
+
+  /// No description provided for @subscriptionTrialDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days left'**
+  String subscriptionTrialDaysLeft(int days);
+
+  /// No description provided for @subscriptionExpiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription has expired. Upgrade to continue.'**
+  String get subscriptionExpiredMessage;
+
+  /// No description provided for @subscriptionPlantLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Plant limit reached'**
+  String get subscriptionPlantLimitReached;
+
+  /// No description provided for @subscriptionPlantLimitBannerTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Free plan limit reached. Upgrade to Premium — up to {limit} plants.'**
+  String subscriptionPlantLimitBannerTrial(int limit);
+
+  /// No description provided for @subscriptionPlantLimitBannerExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe to add more plants.'**
+  String get subscriptionPlantLimitBannerExpired;
+
+  /// No description provided for @subscriptionReadOnlyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only mode. Subscribe to edit your plants.'**
+  String get subscriptionReadOnlyNotice;
+
+  /// No description provided for @paywallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Premium'**
+  String get paywallTitle;
+
+  /// No description provided for @paywallSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the most out of your plant collection'**
+  String get paywallSubtitle;
+
+  /// No description provided for @paywallFeature1.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {limit} plants'**
+  String paywallFeature1(int limit);
+
+  /// No description provided for @paywallFeature2.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited watering reminders'**
+  String get paywallFeature2;
+
+  /// No description provided for @paywallFeature3.
+  ///
+  /// In en, this message translates to:
+  /// **'AI plant assistant & health checks'**
+  String get paywallFeature3;
+
+  /// No description provided for @paywallFeature4.
+  ///
+  /// In en, this message translates to:
+  /// **'Full editing & care tracking'**
+  String get paywallFeature4;
+
+  /// No description provided for @paywallMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get paywallMonthly;
+
+  /// No description provided for @paywallAnnual.
+  ///
+  /// In en, this message translates to:
+  /// **'Annual'**
+  String get paywallAnnual;
+
+  /// No description provided for @paywallBestValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Best value'**
+  String get paywallBestValue;
+
+  /// No description provided for @paywallContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get paywallContinue;
+
+  /// No description provided for @paywallRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchase'**
+  String get paywallRestore;
+
+  /// No description provided for @paywallRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring…'**
+  String get paywallRestoring;
+
+  /// No description provided for @paywallRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase restored!'**
+  String get paywallRestoreSuccess;
+
+  /// No description provided for @paywallRestoreNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No previous purchase found.'**
+  String get paywallRestoreNotFound;
+
+  /// No description provided for @paywallRestoreAlreadyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription is already active.'**
+  String get paywallRestoreAlreadyActive;
+
+  /// No description provided for @paywallTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription auto-renews. Cancel anytime in App Store settings.'**
+  String get paywallTerms;
+
+  /// No description provided for @paywallLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading plans…'**
+  String get paywallLoading;
+
+  /// No description provided for @paywallPurchasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing…'**
+  String get paywallPurchasing;
+
+  /// No description provided for @paywallError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get paywallError;
+
+  /// No description provided for @paywallHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Grow without limits.'**
+  String get paywallHeroTitle;
+
+  /// No description provided for @paywallHeroDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your personal AI assistant — watering reminders, health checks, seasonal tips, and everything you need to keep plants thriving.'**
+  String get paywallHeroDescription;
+
+  /// No description provided for @paywallChoosePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'CHOOSE YOUR PLAN'**
+  String get paywallChoosePlan;
+
+  /// No description provided for @paywallPerMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {price} / month'**
+  String paywallPerMonth(Object price);
+
+  /// No description provided for @paywallStartPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Premium'**
+  String get paywallStartPremium;
+
+  /// No description provided for @paywallSecured.
+  ///
+  /// In en, this message translates to:
+  /// **'Stripe secured'**
+  String get paywallSecured;
+
+  /// No description provided for @paywallSecuredApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Secured'**
+  String get paywallSecuredApple;
+
+  /// No description provided for @paywallCancelAnytime.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel anytime'**
+  String get paywallCancelAnytime;
+
+  /// No description provided for @paywallAutoRenews.
+  ///
+  /// In en, this message translates to:
+  /// **'auto-renews'**
+  String get paywallAutoRenews;
+
+  /// No description provided for @stripeSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription activated!'**
+  String get stripeSuccessTitle;
+
+  /// No description provided for @stripeSuccessWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Activating your subscription'**
+  String get stripeSuccessWaiting;
+
+  /// No description provided for @stripeSuccessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Botanly Premium! You now have access to all features.'**
+  String get stripeSuccessSubtitle;
+
+  /// No description provided for @stripeSuccessButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to my plants'**
+  String get stripeSuccessButton;
+
+  /// No description provided for @errorOpeningBillingPortal.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open billing portal: {error}'**
+  String errorOpeningBillingPortal(Object error);
+
+  /// No description provided for @errorRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to restore: {error}'**
+  String errorRestoring(Object error);
+
+  /// No description provided for @emailCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Email copied: support@botanly.app'**
+  String get emailCopied;
+
+  /// No description provided for @labelExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires'**
+  String get labelExpires;
+
+  /// No description provided for @labelNextRenewal.
+  ///
+  /// In en, this message translates to:
+  /// **'Next renewal'**
+  String get labelNextRenewal;
+
+  /// No description provided for @labelAutoRenewal.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-renewal'**
+  String get labelAutoRenewal;
+
+  /// No description provided for @labelRestorePurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Purchases'**
+  String get labelRestorePurchases;
+
+  /// No description provided for @labelPlants.
+  ///
+  /// In en, this message translates to:
+  /// **'Plants'**
+  String get labelPlants;
+
+  /// No description provided for @labelRenews.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews'**
+  String get labelRenews;
+
+  /// No description provided for @testWateringEmailQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Test watering email queued.'**
+  String get testWateringEmailQueued;
+
+  /// No description provided for @errorSendingTestEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send test email: {error}'**
+  String errorSendingTestEmail(Object error);
+
+  /// No description provided for @failedToSaveReminderChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save reminder channels: {error}'**
+  String failedToSaveReminderChannels(Object error);
+
+  /// No description provided for @failedToUpdateQuietHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update quiet hours: {error}'**
+  String failedToUpdateQuietHours(Object error);
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently disable your account'**
+  String get deleteAccountSubtitle;
+
+  /// No description provided for @deleteAccountConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will be permanently disabled and you will lose access to the app. Your plant data will be retained.\n\nThis action cannot be undone.'**
+  String get deleteAccountConfirmBody;
+
+  /// No description provided for @deleteAccountAreYouSure.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure?'**
+  String get deleteAccountAreYouSure;
+
+  /// No description provided for @deleteAccountTypeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Type DELETE to confirm:'**
+  String get deleteAccountTypeConfirm;
+
+  /// No description provided for @deleteAccountConfirmBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Delete'**
+  String get deleteAccountConfirmBtn;
+
+  /// No description provided for @errorDeletingAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete account: {error}'**
+  String errorDeletingAccount(Object error);
+
+  /// No description provided for @subPillPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get subPillPremium;
+
+  /// No description provided for @subPillEarlyMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Early member'**
+  String get subPillEarlyMember;
+
+  /// No description provided for @subPillFreePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Free plan'**
+  String get subPillFreePlan;
+
+  /// No description provided for @subPillFreeTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Free trial'**
+  String get subPillFreeTrial;
+
+  /// No description provided for @subMetaActivePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE PLAN'**
+  String get subMetaActivePlan;
+
+  /// No description provided for @subMetaForeverPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'FOREVER PREMIUM'**
+  String get subMetaForeverPremium;
+
+  /// No description provided for @subMetaTrialEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'TRIAL ENDED'**
+  String get subMetaTrialEnded;
+
+  /// No description provided for @subMetaNDayPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}-DAY PREVIEW'**
+  String subMetaNDayPreview(int n);
+
+  /// No description provided for @subRenewsInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews in {days} days · {date}'**
+  String subRenewsInDays(int days, Object date);
+
+  /// No description provided for @subEndsInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends in {days} days · {date}'**
+  String subEndsInDays(int days, Object date);
+
+  /// No description provided for @subActiveSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Active subscription'**
+  String get subActiveSubscription;
+
+  /// No description provided for @subGrantedEarlyMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Granted as an early Botanly member'**
+  String get subGrantedEarlyMember;
+
+  /// No description provided for @subDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'days left'**
+  String get subDaysLeft;
+
+  /// No description provided for @subUntilPreviewEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'until your\npreview ends'**
+  String get subUntilPreviewEnds;
+
+  /// No description provided for @subTrialEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'trial ended'**
+  String get subTrialEnded;
+
+  /// No description provided for @subAutoRenewOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-renew on  ·  Cancel anytime'**
+  String get subAutoRenewOn;
+
+  /// No description provided for @subAutoRenewOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-renew off  ·  Access until expiry'**
+  String get subAutoRenewOff;
+
+  /// No description provided for @subDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get subDetails;
+
+  /// No description provided for @subReactivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivate'**
+  String get subReactivate;
+
+  /// No description provided for @subNoChargesEver.
+  ///
+  /// In en, this message translates to:
+  /// **'No charges, ever  ·  All perks unlocked'**
+  String get subNoChargesEver;
+
+  /// No description provided for @subLimitedAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited access  ·  No AI care'**
+  String get subLimitedAccess;
+
+  /// No description provided for @subUnlimitedAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited  ·  AI care  ·  Reminders'**
+  String get subUnlimitedAccess;
+
+  /// No description provided for @subHeroYourePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re '**
+  String get subHeroYourePrefix;
+
+  /// No description provided for @subHeroGrowingWord.
+  ///
+  /// In en, this message translates to:
+  /// **'growing'**
+  String get subHeroGrowingWord;
+
+  /// No description provided for @subHeroForeverWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Forever'**
+  String get subHeroForeverWord;
+
+  /// No description provided for @subHeroPremiumSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' Premium'**
+  String get subHeroPremiumSuffix;
+
+  /// No description provided for @labelEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get labelEnds;
+
+  /// No description provided for @labelPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get labelPlan;
+
+  /// No description provided for @labelPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get labelPremium;
+
+  /// No description provided for @labelGrandfathered.
+  ///
+  /// In en, this message translates to:
+  /// **'Grandfathered (Legacy)'**
+  String get labelGrandfathered;
+
+  /// No description provided for @labelOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get labelOn;
+
+  /// No description provided for @labelOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get labelOff;
+
+  /// No description provided for @yourPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Plan'**
+  String get yourPlan;
+
+  /// No description provided for @manageSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Subscription'**
+  String get manageSubscription;
+
+  /// No description provided for @manageBillingWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Billing'**
+  String get manageBillingWeb;
+
+  /// No description provided for @manageInAppStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage in App Store'**
+  String get manageInAppStore;
+
+  /// No description provided for @manageBillingSubtitleWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel, update your card or view invoices\nvia the Stripe billing portal.'**
+  String get manageBillingSubtitleWeb;
+
+  /// No description provided for @manageBillingSubtitleAppStore.
+  ///
+  /// In en, this message translates to:
+  /// **'To turn off auto-renewal or cancel, go to your\nApp Store subscriptions.'**
+  String get manageBillingSubtitleAppStore;
+
+  /// No description provided for @tipGoodLight.
+  ///
+  /// In en, this message translates to:
+  /// **'good light'**
+  String get tipGoodLight;
+
+  /// No description provided for @tipShowLeaves.
+  ///
+  /// In en, this message translates to:
+  /// **'show the leaves'**
+  String get tipShowLeaves;
+
+  /// No description provided for @tipSinglePlant.
+  ///
+  /// In en, this message translates to:
+  /// **'single plant'**
+  String get tipSinglePlant;
+
+  /// No description provided for @snapYourSprout.
+  ///
+  /// In en, this message translates to:
+  /// **'Snap your sprout'**
+  String get snapYourSprout;
+
+  /// No description provided for @identifyingPlantPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifying your '**
+  String get identifyingPlantPrefix;
+
+  /// No description provided for @identifyingPlantWord.
+  ///
+  /// In en, this message translates to:
+  /// **'plant'**
+  String get identifyingPlantWord;
+
+  /// No description provided for @identifyingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking at leaves, stems and friends nearby'**
+  String get identifyingSubtitle;
+
+  /// No description provided for @specificIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'Specific issues'**
+  String get specificIssues;
+
+  /// No description provided for @healthCheckPhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add up to 3 photos — more angles means a more accurate analysis. Only the first photo is required.'**
+  String get healthCheckPhotoHint;
+
+  /// No description provided for @healthCheckPhotoCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} / 3'**
+  String healthCheckPhotoCounter(int count);
+
+  /// No description provided for @healthCheckSlot1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Full plant'**
+  String get healthCheckSlot1Title;
+
+  /// No description provided for @healthCheckSlot1Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the entire plant including the pot — so the soil and full pot are visible.'**
+  String get healthCheckSlot1Desc;
+
+  /// No description provided for @healthCheckSlot1Tag.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get healthCheckSlot1Tag;
+
+  /// No description provided for @healthCheckSlot2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Close-up'**
+  String get healthCheckSlot2Title;
+
+  /// No description provided for @healthCheckSlot2Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring the camera closer, without the pot — to clearly see the leaves and their texture.'**
+  String get healthCheckSlot2Desc;
+
+  /// No description provided for @healthCheckSlot2Tag.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get healthCheckSlot2Tag;
+
+  /// No description provided for @healthCheckSlot3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem area'**
+  String get healthCheckSlot3Title;
+
+  /// No description provided for @healthCheckSlot3Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Want to show something specific? Photograph a spot, pest, or damaged leaf.'**
+  String get healthCheckSlot3Desc;
+
+  /// No description provided for @healthCheckSlot3Tag.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get healthCheckSlot3Tag;
+
+  /// No description provided for @healthCheckAnalyzeNPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze {count} photo(s)'**
+  String healthCheckAnalyzeNPhotos(int count);
+
+  /// No description provided for @healthCheckError.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis failed. Please try again.'**
+  String get healthCheckError;
+
+  /// No description provided for @healthCheckDefaultPraise.
+  ///
+  /// In en, this message translates to:
+  /// **'🌱 Your plant is doing fine!'**
+  String get healthCheckDefaultPraise;
+
+  /// No description provided for @healthCheckDefaultFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep caring for your plant per the recommendations below and log when you water.'**
+  String get healthCheckDefaultFooter;
+
+  /// No description provided for @addPlantWholePlantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole plant'**
+  String get addPlantWholePlantTitle;
+
+  /// No description provided for @addPlantWholePlantDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'with the pot & soil'**
+  String get addPlantWholePlantDesc;
+
+  /// No description provided for @addPlantWholePlantTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get addPlantWholePlantTag;
+
+  /// No description provided for @addPlantCloseUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close-up'**
+  String get addPlantCloseUpTitle;
+
+  /// No description provided for @addPlantCloseUpDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'leaves in detail'**
+  String get addPlantCloseUpDesc;
+
+  /// No description provided for @addPlantCloseUpTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get addPlantCloseUpTag;
+
+  /// No description provided for @addPlantDualHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Two angles help our AI identify your plant more accurately.'**
+  String get addPlantDualHint;
+
+  /// No description provided for @addPlantAnalyzeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze Plant'**
+  String get addPlantAnalyzeButton;
+
+  /// No description provided for @addPlantStepPhotosReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos received'**
+  String get addPlantStepPhotosReceived;
+
+  /// No description provided for @addPlantStepIdentifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifying species'**
+  String get addPlantStepIdentifying;
+
+  /// No description provided for @addPlantStepCarePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailoring a care plan'**
+  String get addPlantStepCarePlan;
+
+  /// No description provided for @addPlantAnalyzingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing your plant'**
+  String get addPlantAnalyzingTitle;
+
+  /// No description provided for @addPlantAnalyzingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This usually takes a few seconds…'**
+  String get addPlantAnalyzingSubtitle;
+
+  /// No description provided for @addPlantAnalysisComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis complete'**
+  String get addPlantAnalysisComplete;
+
+  /// No description provided for @addPlantSeePlantProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'See plant profile'**
+  String get addPlantSeePlantProfile;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboarding1Eyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get onboarding1Eyebrow;
+
+  /// No description provided for @onboarding1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet '**
+  String get onboarding1Title;
+
+  /// No description provided for @onboarding1TitleItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Botanly'**
+  String get onboarding1TitleItalic;
+
+  /// No description provided for @onboarding1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI companion for happy, healthy plants — right in your pocket.'**
+  String get onboarding1Body;
+
+  /// No description provided for @onboarding2Eyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Identify'**
+  String get onboarding2Eyebrow;
+
+  /// No description provided for @onboarding2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Name '**
+  String get onboarding2Title;
+
+  /// No description provided for @onboarding2TitleItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'any plant'**
+  String get onboarding2TitleItalic;
+
+  /// No description provided for @onboarding2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Point your camera and let AI identify it in seconds — species, name and all.'**
+  String get onboarding2Body;
+
+  /// No description provided for @onboarding3Eyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Care'**
+  String get onboarding3Eyebrow;
+
+  /// No description provided for @onboarding3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Care made '**
+  String get onboarding3Title;
+
+  /// No description provided for @onboarding3TitleItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'effortless'**
+  String get onboarding3TitleItalic;
+
+  /// No description provided for @onboarding3Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering, light and soil reminders — perfectly tuned to each plant you own.'**
+  String get onboarding3Body;
+
+  /// No description provided for @onboarding4Eyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Check'**
+  String get onboarding4Eyebrow;
+
+  /// No description provided for @onboarding4Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot problems '**
+  String get onboarding4Title;
+
+  /// No description provided for @onboarding4TitleItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'early'**
+  String get onboarding4TitleItalic;
+
+  /// No description provided for @onboarding4Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Snap a photo and get an instant health check with a clear plan to fix it.'**
+  String get onboarding4Body;
+
+  /// No description provided for @onboarding5Eyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get onboarding5Eyebrow;
+
+  /// No description provided for @onboarding5Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s '**
+  String get onboarding5Title;
+
+  /// No description provided for @onboarding5TitleItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'grow together'**
+  String get onboarding5TitleItalic;
+
+  /// No description provided for @onboarding5Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Build your plant shelf and never miss a beat. Your greenest era starts now.'**
+  String get onboarding5Body;
+
+  /// No description provided for @tabCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Care'**
+  String get tabCare;
+
+  /// No description provided for @tabAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get tabAbout;
+
+  /// No description provided for @tabHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get tabHistory;
+
+  /// No description provided for @nDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String nDays(int days);
+
+  /// No description provided for @cycleJustStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle just started'**
+  String get cycleJustStarted;
+
+  /// No description provided for @cyclePercentComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle {percent}% complete'**
+  String cyclePercentComplete(int percent);
+
+  /// No description provided for @wateringAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get wateringAmount;
+
+  /// No description provided for @noDataAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available yet'**
+  String get noDataAvailable;
+
+  /// No description provided for @healthCheckHistoryEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a photo every couple of weeks — we\'ll build a health timeline'**
+  String get healthCheckHistoryEmptyHint;
+}
+
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) => <String>['de', 'en', 'es', 'fr', 'ru', 'uk'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'de': return AppLocalizationsDe();
+    case 'en': return AppLocalizationsEn();
+    case 'es': return AppLocalizationsEs();
+    case 'fr': return AppLocalizationsFr();
+    case 'ru': return AppLocalizationsRu();
+    case 'uk': return AppLocalizationsUk();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
+}

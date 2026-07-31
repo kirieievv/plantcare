@@ -1,0 +1,717 @@
+{
+  "@@locale": "en",
+  "appTitle": "Plant Care",
+  "loadingPlantCare": "Loading Plant Care...",
+  "home": "Home",
+  "myPlants": "My Plants",
+  "addPlant": "Add Plant",
+  "profile": "Profile",
+  "settings": "Settings",
+  "authenticationError": "Authentication Error",
+  "pleaseLoginAgain": "Please log in again to continue",
+  "goToLogin": "Go to Login",
+  "yourGardenOverview": "Garden Overview",
+  "welcomeBack": "Welcome back!",
+  "createYourAccount": "Create your account",
+  "fullName": "Full Name",
+  "email": "Email",
+  "password": "Password",
+  "pleaseEnterYourName": "Please enter your name",
+  "pleaseEnterYourEmail": "Please enter your email",
+  "pleaseEnterValidEmail": "Please enter a valid email",
+  "pleaseEnterYourPassword": "Please enter your password",
+  "pleaseConfirmYourPassword": "Please confirm your password",
+  "passwordAtLeast6": "Password must be at least 6 characters",
+  "rememberMe30Days": "Remember me for 30 days",
+  "logIn": "Log in",
+  "registration": "Registration",
+  "dontHaveAccountRegistration": "Don't have an account? Registration",
+  "alreadyHaveAccountLogin": "Already have an account? Log in",
+  "loggedIn": "Logged in",
+  "preferences": "Preferences",
+  "wateringReminders": "Watering Reminders",
+  "getNotifiedWhenPlantsNeedWater": "Get notified when plants need water",
+  "quietHours": "Quiet Hours",
+  "maxNotificationsPerDay": "Max Notifications Per Day",
+  "notificationsCount": "{count} notifications",
+  "@notificationsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "theme": "Theme",
+  "light": "Light",
+  "dark": "Dark",
+  "testNotifications": "Test Notifications",
+  "checkNotificationSetupAndPermissions": "Check notification setup and permissions",
+  "language": "Language",
+  "english": "English",
+  "spanish": "Español",
+  "french": "Français",
+  "german": "Deutsch",
+  "russian": "Russian",
+  "ukrainian": "Ukrainian",
+  "savePreferences": "Save Preferences",
+  "account": "Account",
+  "changePassword": "Change Password",
+  "updateYourAccountPassword": "Update your account password",
+  "signOut": "Sign Out",
+  "signOutOfYourAccount": "Sign out of your account",
+  "preferencesSavedSuccessfully": "Preferences saved successfully!",
+  "errorSavingPreferences": "Error saving preferences: {error}",
+  "@errorSavingPreferences": {
+    "placeholders": { "error": {} }
+  },
+  "quietHoursUpdatedSuccessfully": "Quiet hours updated successfully!",
+  "changePasswordTitle": "Change Password",
+  "currentPassword": "Current password",
+  "newPassword": "New password",
+  "confirmNewPassword": "Confirm new password",
+  "enterCurrentPassword": "Enter your current password",
+  "enterNewPassword": "Enter a new password",
+  "newPasswordMustBeDifferent": "New password must be different",
+  "confirmYourNewPassword": "Confirm your new password",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "save": "Save",
+  "cancel": "Cancel",
+  "passwordChangedSuccessfully": "Password changed successfully.",
+  "errorChangingPassword": "Error changing password: {error}",
+  "@errorChangingPassword": {
+    "placeholders": { "error": {} }
+  },
+  "signOutConfirmTitle": "Sign Out",
+  "signOutConfirmMessage": "Are you sure you want to sign out?",
+  "userLabel": "User",
+  "nameCannotBeEmpty": "Name cannot be empty",
+  "profileUpdatedSuccessfully": "Profile updated successfully!",
+  "errorUpdatingProfile": "Error updating profile: {error}",
+  "@errorUpdatingProfile": {
+    "placeholders": { "error": {} }
+  },
+  "plantLover": "Plant Lover",
+  "profileInformation": "Profile Information",
+  "bio": "Bio",
+  "bioHint": "Tell us about your plant care journey...",
+  "location": "Location",
+  "locationHint": "Where are your plants located?",
+  "name": "Name",
+  "notSet": "Not set",
+  "accountInfo": "Account Info",
+  "memberSince": "Member Since",
+  "lastLogin": "Last Login",
+  "notAvailable": "N/A",
+  "actions": "Actions",
+  "errorLabel": "Error",
+  "noPlantsYet": "No plants yet!",
+  "addFirstPlantToGetStarted": "Add your first plant to get started",
+  "addYourFirstPlant": "Add your first plant",
+  "errorPickingImage": "Error picking image: {error}",
+  "@errorPickingImage": {
+    "placeholders": { "error": {} }
+  },
+  "failedToAnalyzePlantPhoto": "Failed to analyze plant photo: {statusCode}",
+  "@failedToAnalyzePlantPhoto": {
+    "placeholders": {
+      "statusCode": { "type": "int" }
+    }
+  },
+  "aiAnalysisCompleted": "AI analysis completed! 🌱",
+  "aiAnalysisFailed": "AI analysis failed: {error}",
+  "@aiAnalysisFailed": {
+    "placeholders": { "error": {} }
+  },
+  "apiTestError": "API test error: {error}",
+  "@apiTestError": {
+    "placeholders": { "error": {} }
+  },
+  "aiAnalysisRefreshed": "AI analysis refreshed! 🔄",
+  "aiAnalysisRefreshFailed": "AI analysis refresh failed: {error}",
+  "@aiAnalysisRefreshFailed": {
+    "placeholders": { "error": {} }
+  },
+  "retry": "Retry",
+  "uploadPlantPhoto": "Upload Plant Photo",
+  "notSpecified": "Not specified",
+  "onceEvery7Days": "Once every 7 days",
+  "oncePerDay": "Once per day",
+  "oncePerWeek": "Once per week",
+  "onceEveryNDays": "Once every {days} days",
+  "@onceEveryNDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "onceEveryNWeeks": "Once every {weeks} weeks",
+  "@onceEveryNWeeks": {
+    "placeholders": {
+      "weeks": { "type": "int" }
+    }
+  },
+  "low": "Low",
+  "mediumLow": "Medium-Low",
+  "medium": "Medium",
+  "mediumHigh": "Medium-High",
+  "high": "High",
+  "userNotAuthenticated": "User not authenticated",
+  "pleaseUploadPlantImage": "Please upload a plant image",
+  "pleaseWaitForAiAnalysisBeforeAddingPlant": "Please wait for AI analysis to complete before adding the plant",
+  "plantLowercase": "plant",
+  "plantAddedSuccessfully": "Plant added successfully! 🌱",
+  "errorAddingPlant": "Error adding plant: {error}",
+  "@errorAddingPlant": {
+    "placeholders": { "error": {} }
+  },
+  "generateRandomName": "Generate random name",
+  "plantName": "Plant Name",
+  "plantNameHint": "e.g., Monstera, Snake Plant",
+  "pleaseEnterPlantName": "Please enter a plant name",
+  "addingPlant": "Adding Plant...",
+  "analyzingPhoto": "Analyzing Photo...",
+  "plantUpdatedSuccessfully": "Plant updated successfully! 🌱",
+  "errorUpdatingPlant": "Error updating plant: {error}",
+  "@errorUpdatingPlant": {
+    "placeholders": { "error": {} }
+  },
+  "species": "Species",
+  "wateringFrequency": "Watering Frequency",
+  "everyNDays": "Every {days} day(s)",
+  "@everyNDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "pleaseSelectWateringFrequency": "Please select watering frequency",
+  "notes": "Notes",
+  "saveChanges": "Save Changes",
+  "loadingImage": "Loading image...",
+  "changeImage": "Change Image",
+  "errorDeletingPlant": "Error deleting plant: {error}",
+  "@errorDeletingPlant": {
+    "placeholders": { "error": {} }
+  },
+  "plantNotDueForWateringYet": "This plant is not due for watering yet",
+  "errorBuildingPlantDetailsScreen": "An error occurred while building the PlantDetailsScreen: {error}",
+  "@errorBuildingPlantDetailsScreen": {
+    "placeholders": { "error": {} }
+  },
+  "aiCare": "AI Care",
+  "aiAgent": "AI Agent",
+  "plantChatOpen": "Open plant chat",
+  "plantChatTitle": "Chat about {plantName}",
+  "@plantChatTitle": {
+    "placeholders": { "plantName": {} }
+  },
+  "plantChatWelcome": "Hi! I am your plant assistant for {plantName}. Ask me anything about watering, health signs, or what to do next.",
+  "@plantChatWelcome": {
+    "placeholders": { "plantName": {} }
+  },
+  "plantChatInputHint": "Ask about this plant...",
+  "plantChatLoginAgain": "Please log in again.",
+  "plantChatRequestFailed": "Chat request failed",
+  "plantChatCouldNotGenerateResponse": "I could not generate a response. Please try again.",
+  "plantChatConnectionError": "Something went wrong while contacting the plant assistant. Please try again.",
+  "plantChatQuickWaterToday": "Can I water today?",
+  "plantChatQuickYellowLeaves": "Why are leaves turning yellow?",
+  "plantChatQuickWhatToDoNow": "What should I do now?",
+  "plantChatImageQuotaReached": "Daily photo limit reached. Try again tomorrow.",
+  "splashTagline": "Your smart plant companion",
+  "getStarted": "Get Started",
+  "splashDescription": "Monitor your plants, get personalised care tips,\nand track their health — all in one place.",
+  "forgotPassword": "Forgot password?",
+  "errorInvalidPin": "Incorrect code. Please try again.",
+  "errorPinExpired": "The code has expired. Please request a new one.",
+  "errorPinNotFound": "No code found. Please request a new one.",
+  "errorTooManyAttempts": "Too many attempts. Please request a new code.",
+  "errorSendFailed": "Could not send the code. Please try again.",
+  "errorUserNotFound": "No account found with this email.",
+  "errorEmailAlreadyExists": "An account with this email already exists.",
+  "errorGeneric": "Something went wrong. Please try again.",
+  "resetYourPassword": "Reset your password",
+  "enterEmailForCode": "Enter your account email to receive a verification code.",
+  "sendCode": "Send code",
+  "enterVerificationCode": "Enter verification code",
+  "weSentACodeTo": "We sent a 6-digit code to",
+  "verificationCodeSentAgain": "Verification code sent again.",
+  "resendCodeInSeconds": "Resend code in {seconds}s",
+  "@resendCodeInSeconds": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "resendCode": "Resend code",
+  "setNewPassword": "Set a new password",
+  "confirmPassword": "Confirm password",
+  "updatePassword": "Update password",
+  "passwordResetSuccess": "Password reset successfully. Please sign in.",
+  "totalPlants": "Total Plants",
+  "needWater": "Need Water",
+  "healthy": "Healthy",
+  "yourPlants": "My Plants",
+  "plantCreatedSuccessfully": "Plant created successfully! 🌱",
+  "searchPlantsHint": "Search plants…",
+  "filterAll": "All",
+  "filterOverdue": "Overdue",
+  "noResultsTitle": "No matches",
+  "noResultsSub": "Try another search or filter.",
+  "edit": "Edit",
+  "wateringRemindersBlockSub": "Get notified when your plants need water.",
+  "emailRemindersTitle": "Email reminders",
+  "emailRemindersSub": "Receive watering reminders by email",
+  "pushNotificationsTitle": "Push notifications",
+  "pushNotificationsSub": "Get instant alerts on your device",
+  "quietHoursLabel": "Quiet hours",
+  "themeLabel": "Theme",
+  "languageLabel": "Language",
+  "preferencesTitle": "Preferences",
+  "accountTitle": "Account",
+  "changePasswordTitleRow": "Change password",
+  "changePasswordSubRow": "Update your account password",
+  "signOutSubRow": "Sign out of your account",
+  "aiAssistantOnline": "AI Plant Assistant · online",
+  "clearHistoryAction": "Clear history",
+  "clearHistoryConfirm": "Clear chat history?",
+  "saving": "Saving…",
+  "plantPhoto": "Plant photo",
+  "addPlantTitle": "Add plant",
+  "addPlantSubtitle": "Snap, identify, then save",
+  "snapTitle": "Snap a photo",
+  "snapDescription": "We'll identify the species in seconds.",
+  "useCamera": "Use camera",
+  "uploadFromGallery": "Upload from gallery",
+  "analyzing": "Analyzing...",
+  "couldntIdentify": "We couldn't identify this plant",
+  "tryAnotherPhoto": "Try another photo or enter the species manually below.",
+  "topMatch": "Top match",
+  "useThisMatch": "Use this match",
+  "manualNamePlaceholder": "Plant nickname (e.g. Iris)",
+  "savePlantBtn": "Save plant",
+  "tagOverdue": "OVERDUE",
+  "tagDueSoon": "DUE SOON",
+  "tagHealthy": "HEALTHY",
+  "wateringScheduleTitle": "Watering schedule",
+  "lastWatered": "Last watered",
+  "nextWatering": "Next watering",
+  "frequency": "Frequency",
+  "waterNowAction": "Water now",
+  "rescheduleAction": "Reschedule",
+  "careRecommendationsTitle": "Care Recommendations",
+  "careSectionCultivar": "Cultivar",
+  "careSectionGeneralDescription": "General Description",
+  "careSectionSoil": "Soil",
+  "careSectionSoilMoisture": "Soil Moisture",
+  "careSectionMoistureCheck": "Moisture Check",
+  "careSectionWater": "Water",
+  "careSectionLight": "Light",
+  "careSectionTemperature": "Temperature",
+  "careSectionFertilizer": "Fertilizer",
+  "careSectionGrowthRate": "Growth Rate",
+  "careSectionToxicity": "Toxicity",
+  "careSectionPlacement": "Placement",
+  "careSectionPersonality": "Personality",
+  "aboutPlantTitle": "About this plant",
+  "askAssistantTitle": "Ask the assistant",
+  "askAssistantSub": "Get tailored advice from Iris AI",
+  "openChat": "Open chat",
+  "deletePlantAction": "Delete plant",
+  "reminderEmail": "Email",
+  "reminderEmailSubtitle": "Watering reminder emails",
+  "pushNotifications": "Push notifications",
+  "pushNotificationsSubtitle": "Alerts in the app (iOS / Android)",
+  "wateringOverdueNDays": "Overdue {days}d",
+  "@wateringOverdueNDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "wateringToday": "Watering today",
+  "wateringTomorrow": "Watering tomorrow",
+  "wateringInNDays": "Watering in {days}d",
+  "@wateringInNDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "plantWateredSuccess": "{plantName} has been watered! 💧",
+  "@plantWateredSuccess": {
+    "placeholders": { "plantName": {} }
+  },
+  "errorWateringPlant": "Error watering plant: {error}",
+  "@errorWateringPlant": {
+    "placeholders": { "error": {} }
+  },
+  "healthIssueDetected": "Health Issue Detected",
+  "recommendedActionsLabel": "Recommended Actions:",
+  "healthAlertNote": "This alert will remain visible until a subsequent health check returns OK",
+  "addHealthCheckTooltip": "Add Health Check",
+  "noHealthChecksYet": "No health checks yet",
+  "uploadPhotosToTrackHealth": "Upload photos to track your plant's health over time",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "nDaysAgo": "{days} days ago",
+  "@nDaysAgo": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "healthStatusOk": "OK",
+  "healthStatusIssue": "Issue",
+  "assistantTyping": "Assistant is typing...",
+  "chatSourceLabel": "Source: {source}",
+  "@chatSourceLabel": {
+    "placeholders": { "source": {} }
+  },
+  "chatSourceKnowledgeBase": "Knowledge Base",
+  "chatSourceContext": "Context",
+  "chatSourceAgent": "Agent",
+  "chatAttachPhoto": "Attach photo",
+  "chatPhotoQuota": "{used}/{limit} photos today",
+  "@chatPhotoQuota": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "limit": { "type": "int" }
+    }
+  },
+  "chatPhotoQuotaExhausted": "Daily photo limit reached. Try again tomorrow.",
+  "chatPhotoUploading": "Uploading photo...",
+  "chatPhotoUploadFailed": "Failed to upload photo. Please try again.",
+  "chatRemovePhoto": "Remove photo",
+  "chatCopyMessage": "Copy",
+  "chatClearHistory": "New Chat",
+  "chatClearHistoryConfirm": "Start a new conversation? This will delete the current history.",
+  "chatClearHistorySuccess": "New conversation started.",
+  "chatDateToday": "Today",
+  "chatDateYesterday": "Yesterday",
+  "choosePhoto": "Choose photo",
+  "gallery": "Gallery",
+  "camera": "Camera",
+  "analyzeHealth": "Analyze Health",
+  "waterFirstLabel": "Water first",
+  "nextCheckAfterWatering": "Next check in {days} d",
+  "@nextCheckAfterWatering": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "imageReadyForAnalysis": "Image uploaded successfully! Ready for health analysis.",
+  "healthCheckTitle": "Health Check",
+  "healthCheckHistoryTitle": "Health Check History",
+  "healthCheckUploadHint": "Upload a photo of {plantName} for AI health analysis",
+  "@healthCheckUploadHint": {
+    "placeholders": { "plantName": {} }
+  },
+  "deletePlant": "Delete Plant",
+  "deletePlantConfirm": "Are you sure you want to delete this plant?",
+  "delete": "Delete",
+  "iHaveWatered": "I have watered",
+  "soilMoisture": "Ideal Soil",
+  "lightLabel": "Light",
+  "perDay": "per day",
+  "hoursLabel": "hours",
+  "interestingFactsTitle": "Interesting Facts",
+  "noCareRecommendationsYet": "AI-generated care recommendations are not available for this plant yet.",
+  "noInterestingFactsYet": "AI-generated interesting facts are not available for this plant yet.",
+  "noDescriptionYet": "No description available yet.",
+  "swipeToSeeMore": "Swipe to see more",
+  "uploadPhotosForHealthHistory": "Upload photos to track your plant's health",
+  "plantDeletedMessage": "Plant \"{plantName}\" has been deleted",
+  "@plantDeletedMessage": {
+    "placeholders": { "plantName": {} }
+  },
+  "noImageAvailable": "No Image Available",
+  "addPhotoToSeeYourPlant": "Add a photo to see your plant here",
+  "isThisYourPlant": "Is this your plant?",
+  "speciesPickSubtitle": "We found these options — pick the one that matches",
+  "noneOfThese": "None of these",
+  "typePlantNameRetry": "Type the plant name and we'll try again",
+  "gettingCareRecommendations": "Getting care recommendations",
+  "imageUploadedAnalysisComplete": "Image uploaded successfully! AI analysis complete.",
+  "aiCareRecommendationsHeader": "AI Care Recommendations",
+  "aiReady": "AI Ready",
+  "checkPlantButton": "Check Plant",
+  "plantCareAssistantTitle": "Plant Care Assistant",
+  "plantNeedsHelp": "Plant Needs Help!",
+  "whatToDoNow": "What to do now",
+  "wateringLabel": "Watering",
+  "nowLabel": "Now",
+  "nextIn1Day": "Next in 1 day",
+  "nextInNDays": "Next in {days} days",
+  "@nextInNDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "wateringDone": "Watering done",
+  "moistureDry": "Dry",
+  "moistureWet": "Wet",
+  "moistureLevelVeryDry": "Very dry",
+  "moistureLevelDry": "Dry",
+  "moistureLevelSlightlyMoist": "Slightly moist",
+  "moistureLevelMoist": "Moist",
+  "moistureLevelVeryMoist": "Very moist",
+  "bannerWaterTitle": "{name} needs water",
+  "@bannerWaterTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "bannerWaterSubtitle": "Tap to water or check details",
+  "bannerTipTitle": "Tip of the Day",
+  "bannerTipSubtitle": "Tap for more seasonal tips",
+  "tipsOfTheDay": "Tips of the Day",
+  "tipsOfTheDaySub": "AI-powered seasonal advice · updated weekly",
+  "tipCategoryWatering": "Watering",
+  "tipCategoryLight": "Light",
+  "tipCategoryPests": "Pests",
+  "tipCategoryFertilizing": "Fertilizing",
+  "tipCategorySeasonal": "Seasonal",
+  "tipCategoryGeneral": "General",
+  "noTipsYet": "Tips are being generated. Check back soon!",
+  "waterNow": "Water now",
+  "subscriptionUpgrade": "Upgrade",
+  "subscriptionManage": "Manage",
+  "subscriptionActiveTitle": "Premium Active",
+  "subscriptionGrandfatheredTitle": "Lifetime Access",
+  "subscriptionTrialTitle": "Free Trial",
+  "subscriptionExpiredTitle": "Subscription Expired",
+  "subscriptionActiveUntil": "Active until {date}",
+  "@subscriptionActiveUntil": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "subscriptionTrialEndsOn": "Trial ends on {date}",
+  "@subscriptionTrialEndsOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "subscriptionTrialDaysLeft": "{days} days left",
+  "@subscriptionTrialDaysLeft": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "subscriptionExpiredMessage": "Your subscription has expired. Upgrade to continue.",
+  "subscriptionPlantLimitReached": "Plant limit reached",
+  "subscriptionPlantLimitBannerTrial": "Free plan limit reached. Upgrade to Premium — up to {limit} plants.",
+  "@subscriptionPlantLimitBannerTrial": {
+    "placeholders": { "limit": { "type": "int" } }
+  },
+  "subscriptionPlantLimitBannerExpired": "Subscribe to add more plants.",
+  "subscriptionReadOnlyNotice": "Read-only mode. Subscribe to edit your plants.",
+  "paywallTitle": "Unlock Premium",
+  "paywallSubtitle": "Get the most out of your plant collection",
+  "paywallFeature1": "Up to {limit} plants",
+  "@paywallFeature1": {
+    "placeholders": { "limit": { "type": "int" } }
+  },
+  "paywallFeature2": "Unlimited watering reminders",
+  "paywallFeature3": "AI plant assistant & health checks",
+  "paywallFeature4": "Full editing & care tracking",
+  "paywallMonthly": "Monthly",
+  "paywallAnnual": "Annual",
+  "paywallBestValue": "Best value",
+  "paywallContinue": "Continue",
+  "paywallRestore": "Restore purchase",
+  "paywallRestoring": "Restoring…",
+  "paywallRestoreSuccess": "Purchase restored!",
+  "paywallRestoreNotFound": "No previous purchase found.",
+  "paywallRestoreAlreadyActive": "Your subscription is already active.",
+  "paywallTerms": "Subscription auto-renews. Cancel anytime in App Store settings.",
+  "paywallLoading": "Loading plans…",
+  "paywallPurchasing": "Processing…",
+  "paywallError": "Something went wrong. Please try again.",
+  "paywallHeroTitle": "Grow without limits.",
+  "paywallHeroDescription": "Your personal AI assistant — watering reminders, health checks, seasonal tips, and everything you need to keep plants thriving.",
+  "paywallChoosePlan": "CHOOSE YOUR PLAN",
+  "paywallPerMonth": "Only {price} / month",
+  "@paywallPerMonth": {
+    "placeholders": { "price": {} }
+  },
+  "paywallStartPremium": "Start Premium",
+  "paywallSecured": "Stripe secured",
+  "paywallSecuredApple": "Secured",
+  "paywallCancelAnytime": "Cancel anytime",
+  "paywallAutoRenews": "auto-renews",
+  "stripeSuccessTitle": "Subscription activated!",
+  "stripeSuccessWaiting": "Activating your subscription",
+  "stripeSuccessSubtitle": "Welcome to Botanly Premium! You now have access to all features.",
+  "stripeSuccessButton": "Go to my plants",
+  "errorOpeningBillingPortal": "Could not open billing portal: {error}",
+  "@errorOpeningBillingPortal": {
+    "placeholders": { "error": {} }
+  },
+  "errorRestoring": "Failed to restore: {error}",
+  "@errorRestoring": {
+    "placeholders": { "error": {} }
+  },
+  "emailCopied": "Email copied: support@botanly.app",
+  "labelExpires": "Expires",
+  "labelNextRenewal": "Next renewal",
+  "labelAutoRenewal": "Auto-renewal",
+  "labelRestorePurchases": "Restore Purchases",
+  "labelPlants": "Plants",
+  "labelRenews": "Renews",
+  "testWateringEmailQueued": "Test watering email queued.",
+  "errorSendingTestEmail": "Could not send test email: {error}",
+  "@errorSendingTestEmail": {
+    "placeholders": { "error": {} }
+  },
+  "failedToSaveReminderChannels": "Failed to save reminder channels: {error}",
+  "@failedToSaveReminderChannels": {
+    "placeholders": { "error": {} }
+  },
+  "failedToUpdateQuietHours": "Failed to update quiet hours: {error}",
+  "@failedToUpdateQuietHours": {
+    "placeholders": { "error": {} }
+  },
+  "deleteAccountTitle": "Delete Account",
+  "deleteAccountSubtitle": "Permanently disable your account",
+  "deleteAccountConfirmBody": "Your account will be permanently disabled and you will lose access to the app. Your plant data will be retained.\n\nThis action cannot be undone.",
+  "deleteAccountAreYouSure": "Are you sure?",
+  "deleteAccountTypeConfirm": "Type DELETE to confirm:",
+  "deleteAccountConfirmBtn": "Confirm Delete",
+  "errorDeletingAccount": "Failed to delete account: {error}",
+  "@errorDeletingAccount": {
+    "placeholders": { "error": {} }
+  },
+  "subPillPremium": "Premium",
+  "subPillEarlyMember": "Early member",
+  "subPillFreePlan": "Free plan",
+  "subPillFreeTrial": "Free trial",
+  "subMetaActivePlan": "ACTIVE PLAN",
+  "subMetaForeverPremium": "FOREVER PREMIUM",
+  "subMetaTrialEnded": "TRIAL ENDED",
+  "subMetaNDayPreview": "{n}-DAY PREVIEW",
+  "@subMetaNDayPreview": {
+    "placeholders": { "n": { "type": "int" } }
+  },
+  "subRenewsInDays": "Renews in {days} days · {date}",
+  "@subRenewsInDays": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": {}
+    }
+  },
+  "subEndsInDays": "Ends in {days} days · {date}",
+  "@subEndsInDays": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": {}
+    }
+  },
+  "subActiveSubscription": "Active subscription",
+  "subGrantedEarlyMember": "Granted as an early Botanly member",
+  "subDaysLeft": "days left",
+  "subUntilPreviewEnds": "until your\npreview ends",
+  "subTrialEnded": "trial ended",
+  "subAutoRenewOn": "Auto-renew on  ·  Cancel anytime",
+  "subAutoRenewOff": "Auto-renew off  ·  Access until expiry",
+  "subDetails": "Details",
+  "subReactivate": "Reactivate",
+  "subNoChargesEver": "No charges, ever  ·  All perks unlocked",
+  "subLimitedAccess": "Limited access  ·  No AI care",
+  "subUnlimitedAccess": "Unlimited  ·  AI care  ·  Reminders",
+  "subHeroYourePrefix": "You're ",
+  "subHeroGrowingWord": "growing",
+  "subHeroForeverWord": "Forever",
+  "subHeroPremiumSuffix": " Premium",
+  "labelEnds": "Ends",
+  "labelPlan": "Plan",
+  "labelPremium": "Premium",
+  "labelGrandfathered": "Grandfathered (Legacy)",
+  "labelOn": "On",
+  "labelOff": "Off",
+  "yourPlan": "Your Plan",
+  "manageSubscription": "Manage Subscription",
+  "manageBillingWeb": "Manage Billing",
+  "manageInAppStore": "Manage in App Store",
+  "manageBillingSubtitleWeb": "Cancel, update your card or view invoices\nvia the Stripe billing portal.",
+  "manageBillingSubtitleAppStore": "To turn off auto-renewal or cancel, go to your\nApp Store subscriptions.",
+  "tipGoodLight": "good light",
+  "tipShowLeaves": "show the leaves",
+  "tipSinglePlant": "single plant",
+  "snapYourSprout": "Snap your sprout",
+  "snapDescription": "A clear photo helps our AI identify\nyour plant and tailor care",
+  "identifyingPlantPrefix": "Identifying your ",
+  "identifyingPlantWord": "plant",
+  "identifyingSubtitle": "Looking at leaves, stems and friends nearby",
+  "specificIssues": "Specific issues",
+  "healthCheckPhotoHint": "Add up to 3 photos — more angles means a more accurate analysis. Only the first photo is required.",
+  "healthCheckPhotoCounter": "{count} / 3",
+  "@healthCheckPhotoCounter": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "healthCheckSlot1Title": "Full plant",
+  "healthCheckSlot1Desc": "Photograph the entire plant including the pot — so the soil and full pot are visible.",
+  "healthCheckSlot1Tag": "Required",
+  "healthCheckSlot2Title": "Close-up",
+  "healthCheckSlot2Desc": "Bring the camera closer, without the pot — to clearly see the leaves and their texture.",
+  "healthCheckSlot2Tag": "Optional",
+  "healthCheckSlot3Title": "Problem area",
+  "healthCheckSlot3Desc": "Want to show something specific? Photograph a spot, pest, or damaged leaf.",
+  "healthCheckSlot3Tag": "Optional",
+  "healthCheckAnalyzeNPhotos": "Analyze {count} photo(s)",
+  "@healthCheckAnalyzeNPhotos": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "healthCheckError": "Analysis failed. Please try again.",
+  "healthCheckDefaultPraise": "🌱 Your plant is doing fine!",
+  "healthCheckDefaultFooter": "Keep caring for your plant per the recommendations below and log when you water.",
+  "addPlantWholePlantTitle": "Whole plant",
+  "addPlantWholePlantDesc": "with the pot & soil",
+  "addPlantWholePlantTag": "Required",
+  "addPlantCloseUpTitle": "Close-up",
+  "addPlantCloseUpDesc": "leaves in detail",
+  "addPlantCloseUpTag": "Optional",
+  "addPlantDualHint": "Two angles help our AI identify your plant more accurately.",
+  "addPlantAnalyzeButton": "Analyze Plant",
+  "addPlantStepPhotosReceived": "Photos received",
+  "addPlantStepIdentifying": "Identifying species",
+  "addPlantStepCarePlan": "Tailoring a care plan",
+  "addPlantAnalyzingTitle": "Analyzing your plant",
+  "addPlantAnalyzingSubtitle": "This usually takes a few seconds…",
+  "addPlantAnalysisComplete": "Analysis complete",
+  "addPlantSeePlantProfile": "See plant profile",
+
+  "onboardingSkip": "Skip",
+  "onboardingGetStarted": "Get Started",
+
+  "onboarding1Eyebrow": "Welcome",
+  "onboarding1Title": "Meet ",
+  "onboarding1TitleItalic": "Botanly",
+  "onboarding1Body": "Your AI companion for happy, healthy plants — right in your pocket.",
+
+  "onboarding2Eyebrow": "Identify",
+  "onboarding2Title": "Name ",
+  "onboarding2TitleItalic": "any plant",
+  "onboarding2Body": "Point your camera and let AI identify it in seconds — species, name and all.",
+
+  "onboarding3Eyebrow": "Care",
+  "onboarding3Title": "Care made ",
+  "onboarding3TitleItalic": "effortless",
+  "onboarding3Body": "Watering, light and soil reminders — perfectly tuned to each plant you own.",
+
+  "onboarding4Eyebrow": "Health Check",
+  "onboarding4Title": "Spot problems ",
+  "onboarding4TitleItalic": "early",
+  "onboarding4Body": "Snap a photo and get an instant health check with a clear plan to fix it.",
+
+  "onboarding5Eyebrow": "Ready",
+  "onboarding5Title": "Let's ",
+  "onboarding5TitleItalic": "grow together",
+  "onboarding5Body": "Build your plant shelf and never miss a beat. Your greenest era starts now.",
+
+  "tabCare": "Care",
+  "tabAbout": "About",
+  "tabHistory": "History",
+
+  "nDays": "{days} days",
+  "@nDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "cycleJustStarted": "Cycle just started",
+  "cyclePercentComplete": "Cycle {percent}% complete",
+  "@cyclePercentComplete": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "wateringAmount": "Amount",
+  "noDataAvailable": "No data available yet",
+  "healthCheckHistoryEmptyHint": "Upload a photo every couple of weeks — we'll build a health timeline"
+}

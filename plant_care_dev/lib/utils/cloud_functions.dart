@@ -1,0 +1,62 @@
+import 'package:firebase_core/firebase_core.dart';
+
+/// Base URL for Cloud Functions. Uses current Firebase project so dev folder
+/// calls dev project's functions after FlutterFire configure.
+String get analyzePlantPhotoUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/analyzePlantPhoto';
+}
+
+/// Dedicated Health Check agent endpoint (context-aware + retries).
+String get analyzeHealthCheckAgentUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/analyzeHealthCheckAgent';
+}
+
+/// Conversational endpoint for plant-specific assistant chat.
+String get chatPlantAssistantUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/chatPlantAssistant';
+}
+
+/// Request one-time reset PIN for password recovery.
+String get requestPasswordResetPinUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/requestPasswordResetPin';
+}
+
+/// Confirm one-time reset PIN and set new password.
+String get confirmPasswordResetPinUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/confirmPasswordResetPin';
+}
+
+/// Verify one-time reset PIN before entering new password.
+String get verifyPasswordResetPinUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/verifyPasswordResetPin';
+}
+
+/// Trigger a test watering reminder email immediately for a plant.
+String get sendTestWateringReminderEmailUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/sendTestWateringReminderEmail';
+}
+
+/// Read or check the daily image-upload quota for the plant chat.
+String get chatImageQuotaUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/chatImageQuota';
+}
+
+/// Send a 6-digit email verification PIN for new user registration.
+String get sendEmailVerificationPinUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/sendEmailVerificationPin';
+}
+
+/// Verify the 6-digit email PIN sent during registration.
+String get verifyEmailPinUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/verifyEmailPin';
+}

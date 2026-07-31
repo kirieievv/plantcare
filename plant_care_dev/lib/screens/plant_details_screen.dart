@@ -1,0 +1,2975 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:ui';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+
+import 'package:plant_care/l10n/app_localizations.dart';
+import 'package:plant_care/models/plant.dart';
+import 'package:plant_care/screens/edit_plant_screen.dart';
+import 'package:plant_care/screens/plant_chat_screen.dart';
+import 'package:plant_care/services/health_check_service.dart';
+import 'package:plant_care/services/navigation_service.dart';
+import 'package:plant_care/services/plant_service.dart';
+import 'package:plant_care/widgets/health_check_modal.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Design tokens — Botanly Plant Screen v8 (Liquid Glass)
+//  Alpha channels are round(cssOpacity * 255).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _kInk = Color(0xFF12160F); //  --ink   primary text
+const _kInk2 = Color(0xFF333B2F); //  --ink2  body text
+const _kMut = Color(0xFF5A6155); //  --mut   labels / secondary
+const _kMut2 = Color(0xFF6B7266); //  --mut2  meta text
+const _kChev = Color(0xFF8B9285); //  row chevrons
+
+const _kAccent = Color(0xFF3E8E3B); //  --accent  green CTA
+const _kWater = Color(0xFF2E86C8); //  --water   watering / history blue
+const _kSun = Color(0xFFC7891F); //  --sun     light / warnings
+const _kWarm = Color(0xFFC65644); //  temperature / destructive
+
+const _kBase = Color(0xFFEDF0EC); //  neutral base under the glass
+const _kGlassFill = Color(0x9EFFFFFF); //  rgba(255,255,255,.62)
+const _kGlassBorder = Color(0xBFFFFFFF); //  rgba(255,255,255,.75)
+const _kGlassSpecular = Color(0xD9FFFFFF); //  inset 0 1px 0 rgba(255,255,255,.85)
+const _kKnob = Color(0xE6FFFFFF); //  --glass-hi  rgba(255,255,255,.9)
+
+const _kIssuesFill = Color(0x9EFFFBF0); //  rgba(255,251,240,.62)
+const _kHistoryFill = Color(0x99F0F7FC); //  rgba(240,247,252,.6)
+const _kIssuesText = Color(0xFF7C6528);
+
+// Category tints — background / foreground
+const _kLeafBg = Color(0x213E8E3B); //  rgba(62,142,59,.13)
+const _kWaterBg = Color(0x212E86C8); //  rgba(46,134,200,.13)
+const _kSunBg = Color(0x24C7891F); //  rgba(199,137,31,.14)
+const _kWarmBg = Color(0x21C65644); //  rgba(198,86,68,.13)
+
+// Elevation — shadow tint is rgba(20,30,15,α) = #141E0F
+const _kCardShadow = <BoxShadow>[
+  BoxShadow(color: Color(0x2E141E0F), blurRadius: 30, spreadRadius: -8, offset: Offset(0, 8)),
+  BoxShadow(color: Color(0x19141E0F), blurRadius: 8, spreadRadius: -2, offset: Offset(0, 2)),
+];
+
+// Motion
+const _kKnobCurve = Cubic(0.32, 0.72, 0.25, 1.0); //  340 ms knob slide
+const _kProgressCurve = Cubic(0.3, 0.7, 0.3, 1.0); //  800 ms progress fill
+const _kSheetCurve = Cubic(0.22, 1.0, 0.36, 1.0); //  420 ms sheet rise
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Typography
+//
+//  The prototype uses `-apple-system, BlinkMacSystemFont, "SF Pro Text", …`,
+//  i.e. the platform font, with a global `letter-spacing: -.01em` on <body>.
+//  Set [_kUseSystemFont] to false to fall back to the Botanly brand face used
+//  by the rest of the app (DM Sans via botanly_theme.dart) — the screen then
+//  matches the app instead of the prototype.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _kUseSystemFont = true;
+
+// `-apple-system` switches optical size at 20 pt: Display above, Text below.
+// These are the engine aliases for the platform UI font — measured on device,
+// `.SF Pro Display` silently resolves to the Text variant, while
+// `CupertinoSystemDisplay` yields the real (tighter) Display cut.
+const _kFontDisplay = 'CupertinoSystemDisplay';
+const _kFontText = 'CupertinoSystemText';
+const _kFontFallback = <String>[
+  '.SF Pro Text',
+  '.SF UI Text',
+  'Helvetica Neue',
+  'Roboto', // Android
+];
+
+/// Drop-in for the prototype's text styling. [letterSpacing] is absolute px;
+/// when omitted it resolves to the `-.01em` inherited from the document body.
+TextStyle _font({
+  required double fontSize,
+  FontWeight fontWeight = FontWeight.w400,
+  double? letterSpacing,
+  double? height,
+  Color? color,
+}) {
+  final tracking = letterSpacing ?? fontSize * -0.01;
+  if (!_kUseSystemFont) {
+    return GoogleFonts.dmSans(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      letterSpacing: tracking,
+      height: height,
+      color: color,
+    );
+  }
+  return TextStyle(
+    fontFamily: fontSize >= 20 ? _kFontDisplay : _kFontText,
+    fontFamilyFallback: _kFontFallback,
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    letterSpacing: tracking,
+    height: height,
+    color: color,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Backdrop filters
+//
+//  Every glass surface in the prototype is `blur(Npx) saturate(180%)`; the
+//  saturation is what keeps the foliage vivid through the glass. CSS blur radius
+//  N maps to a Gaussian sigma of N/2. ColorFilter is itself an ImageFilter, so
+//  the two compose.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _kSaturate180 = ColorFilter.matrix(<double>[
+  1.6296, -0.5720, -0.0576, 0, 0, //
+  -0.1704, 1.2280, -0.0576, 0, 0, //
+  -0.1704, -0.5720, 1.7424, 0, 0, //
+  0, 0, 0, 1, 0, //
+]);
+
+ImageFilter _frost(double cssBlur) => ImageFilter.compose(
+      outer: _kSaturate180,
+      inner: ImageFilter.blur(sigmaX: cssBlur / 2, sigmaY: cssBlur / 2),
+    );
+
+final _kGlassFilter = _frost(26); //  .g
+final _kNavFilter = _frost(18); //  .gbtn
+final _kSheetFilter = _frost(40); //  .bs
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Glyphs — verbatim SVG from the prototype, so stroke weights and silhouettes
+//  match rather than approximating with Material icons.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _Svg {
+  const _Svg._();
+
+  static const _open =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+      'stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"';
+  static const _solid =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+      'fill="currentColor"';
+
+  static const drop = '$_solid><path d="M12 2.6C8.8 7 5.8 10.6 5.8 14a6.2 6.2 0 '
+      '0 0 12.4 0c0-3.4-3-7-6.2-11.4z"/></svg>';
+
+  static const dropOutline = '$_open stroke-width="1.8"><path d="M12 2.6L5.5 '
+      '10.5a6.5 6.5 0 0013 0L12 2.6z"/></svg>';
+
+  static const leaf = '$_open stroke-width="1.8"><path d="M5 19c0-9 6-14 '
+      '15-14 0 9-6 14-15 14Z"/><path d="M5 19c3-6 7-9 12-10"/></svg>';
+
+  static const gallery = '$_open stroke-width="1.8"><rect x="3" y="4" '
+      'width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/>'
+      '<polyline points="20 15 15 10 5 20"/></svg>';
+
+  static const soil = '$_open stroke-width="1.8"><path d="M2 18h20M4 18c0-3 '
+      '2-5 4-5s3 1.5 4 1.5S14.5 13 16 13s4 2 4 5"/><path d="M12 13V8M12 '
+      '8c-1-3-4-4-6-4 0 3 2 5 6 4ZM12 8c1-2.5 3.5-3.5 5.5-3.5 0 2.5-2 '
+      '4.5-5.5 3.5Z"/></svg>';
+
+  static const sun = '$_open stroke-width="1.8"><circle cx="12" cy="12" '
+      'r="4.6"/><path d="M12 1.6v2.2M12 20.2v2.2M1.6 12h2.2M20.2 12h2.2M4.6 '
+      '4.6l1.6 1.6M17.8 17.8l1.6 1.6M19.4 4.6l-1.6 1.6M6.2 17.8l-1.6 '
+      '1.6"/></svg>';
+
+  static const thermometer = '$_open stroke-width="1.8"><path d="M14 '
+      '14.8V3.6a2.4 2.4 0 00-4.8 0v11.2a4.4 4.4 0 104.8 0z"/></svg>';
+
+  static const fertilizer = '$_open stroke-width="1.8"><path d="M12 22V12M12 '
+      '12C12 7 17 5 17 5M12 12C12 7 7 5 7 5"/></svg>';
+
+  static const trendingUp = '$_open stroke-width="1.8"><polyline points="22 7 '
+      '13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>';
+
+  static const warningTriangle = '$_open stroke-width="1.8"><path d="M12 '
+      '3.2l9 16H3z"/><path d="M12 10v4M12 16.8h.01"/></svg>';
+
+  static const infoCircle = '$_open stroke-width="1.8"><circle cx="12" '
+      'cy="12" r="9.2"/><path d="M12 7.6v5"/><circle cx="12" cy="16.2" '
+      'r=".7" fill="currentColor"/></svg>';
+
+  static const sparkle = '$_solid><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 '
+      '18l-1.8-6.2L4 10l6.2-1.8z"/></svg>';
+
+  static const chevronRight =
+      '$_open stroke-width="2.4"><polyline points="9 6 15 12 9 18"/></svg>';
+
+  static const chevronLeft =
+      '$_open stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>';
+
+  static const chat = '$_open stroke-width="2"><path d="M21 12a8.5 8.5 0 '
+      '01-8.5 8.5H5l-2 2V12A8.5 8.5 0 0111.5 3.5h1A8.5 8.5 0 0121 12z"/></svg>';
+
+  static const more = '$_solid><circle cx="12" cy="5" r="1.5"/><circle '
+      'cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>';
+
+  static const plus = '$_open stroke-width="2.2"><path d="M12 5.5v13M5.5 '
+      '12h13"/></svg>';
+
+  static const trash = '$_open stroke-width="1.8"><polyline points="3.5 6.5 '
+      '5.5 6.5 20.5 6.5"/><path d="M8.5 6.5V4.6a2 2 0 012-2h3a2 2 0 012 '
+      '2v1.9m2.6 0-1 13.4a2 2 0 01-2 1.9H9a2 2 0 01-2-1.9L6 6.5"/></svg>';
+
+  static const check =
+      '$_open stroke-width="2.6"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+
+  static const close =
+      '$_open stroke-width="2.4"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
+  static const clock = '$_open stroke-width="1.8"><circle cx="12" cy="12" '
+      'r="9.2"/><path d="M12 6.8V12l4 2.4"/></svg>';
+
+  static const edit = '$_open stroke-width="1.8"><path d="M4 20h4l10-10a2.8 '
+      '2.8 0 00-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
+
+  static const flower = '$_open stroke-width="1.8"><circle cx="12" cy="12" '
+      'r="2.6"/><path d="M12 9.4C12 6 10 4 12 4s0 2 0 5.4M12 14.6c0 3.4 2 '
+      '5.4 0 5.4s0-2 0-5.4M9.4 12C6 12 4 14 4 12s2 0 5.4 0M14.6 12c3.4 0 '
+      '5.4-2 5.4 0s-2 0-5.4 0"/></svg>';
+}
+
+/// Renders one of the [_Svg] paths at [size], recoloured to [color].
+class _Glyph extends StatelessWidget {
+  final String svg;
+  final double size;
+  final Color color;
+
+  const _Glyph(this.svg, {required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.string(
+      svg,
+      width: size,
+      height: size,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+class PlantDetailsScreen extends StatefulWidget {
+  final Plant plant;
+  const PlantDetailsScreen({super.key, required this.plant});
+
+  @override
+  State<PlantDetailsScreen> createState() => _PlantDetailsScreenState();
+}
+
+class _PlantDetailsScreenState extends State<PlantDetailsScreen>
+    with TickerProviderStateMixin {
+  late Plant _plant;
+  late Stream<List<HealthCheckRecord>> _healthCheckStream;
+  bool _isLoading = false;
+  int _activeTab = 0; // 0 = Care, 1 = About, 2 = History
+  bool _wateredJustNow = false;
+  int _dropletBurst = 0;
+
+  Timer? _wateringCountdownTimer;
+  int? _wateringCountdownDays;
+  final HealthCheckAnalysisMode _healthCheckMode = HealthCheckAnalysisMode.aiAgent;
+  int _checksInCurrentCycle = 0;
+  static const _maxChecksPerCycle = 2;
+
+  late final AnimationController _pulseCtrl;
+
+  ScaffoldMessengerState? _messenger;
+
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
+  @override
+  void initState() {
+    super.initState();
+    _plant = widget.plant;
+    _healthCheckStream = HealthCheckService().getHealthCheckHistory(_plant.id);
+    _saveNavigationState();
+    _startWateringCountdownTimer();
+    _loadHealthCheckCount();
+
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.maybeOf(context);
+  }
+
+  @override
+  void dispose() {
+    _wateringCountdownTimer?.cancel();
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── data ──────────────────────────────────────────────────────────────────
+
+  Future<void> _saveNavigationState() =>
+      NavigationService.savePlantDetailsState(_plant.id);
+
+  Future<void> _loadHealthCheckCount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final since = _plant.lastWateredAt ?? _plant.lastWatered;
+      final snap = await FirebaseFirestore.instance
+          .collection('health_checks')
+          .where('plantId', isEqualTo: _plant.id)
+          .where('userId', isEqualTo: user.uid)
+          .where('timestamp', isGreaterThan: since.toIso8601String())
+          .get();
+      if (!mounted) return;
+      setState(() => _checksInCurrentCycle = snap.docs.length);
+    } catch (_) {
+      // A failed count only gates the "add check" button; keep the last value.
+    }
+  }
+
+  bool _canDoHealthCheck() =>
+      !_canWaterPlant() && _checksInCurrentCycle < _maxChecksPerCycle;
+
+  Future<void> _refreshPlantData() async {
+    final p = await PlantService().getPlantById(_plant.id);
+    if (p != null && mounted) {
+      setState(() => _plant = p);
+      _updateWateringCountdown();
+    }
+  }
+
+  // ── actions ───────────────────────────────────────────────────────────────
+
+  void _openHealthCheckModal() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => HealthCheckModal(
+        plantId: _plant.id,
+        plantName: _plant.name,
+        analysisMode: _healthCheckMode,
+        onHealthCheckComplete: _handleHealthCheckComplete,
+      ),
+    );
+  }
+
+  void _openPlantChat() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PlantChatScreen(plant: _plant)),
+    );
+  }
+
+  void _handleHealthCheckComplete(Map<String, dynamic> result) async {
+    try {
+      final now = DateTime.now();
+      int? newDays;
+      bool newShouldWater = false;
+
+      final dFromAI = result['watering_interval_days'];
+      if (dFromAI != null) {
+        newDays = dFromAI is int ? dFromAI : int.tryParse(dFromAI.toString());
+        newShouldWater = result['should_water_now'] == true;
+      }
+      if (newDays == null || newDays <= 0) {
+        final mode = result['mode'] as String?;
+        final hrsKey = mode == 'recheck_only'
+            ? 'next_check_in_hours'
+            : 'next_after_watering_in_hours';
+        final hrs = result[hrsKey];
+        if (hrs != null) {
+          final h = hrs is int ? hrs : int.tryParse(hrs.toString());
+          if (h != null && h > 0) {
+            newDays = (h / 24).round().clamp(1, 60);
+            newShouldWater = mode != 'recheck_only';
+          }
+        }
+      }
+
+      DateTime? newNext;
+      if (newDays != null && newDays > 0) {
+        newNext = PlantService.calculateNextWateringAt(
+          from: now,
+          intervalDays: newDays,
+          preferredTime: _plant.preferredTime ?? '18:00',
+        );
+      }
+
+      bool upd(String? v) => v != null && v.trim().isNotEmpty;
+      final newMoisture = result['moisture_level'] ??
+          (result['care_recommendations'] as Map?)?['moisture'];
+      final newLight =
+          result['light'] ?? (result['care_recommendations'] as Map?)?['light'];
+      final newAmountMl = result['amount_ml'];
+      final newRangeMl = result['range_ml'];
+
+      final updated = _plant.copyWith(
+        healthStatus: result['status'],
+        healthMessage: result['message'],
+        lastHealthCheck: now,
+        aiPlantSize: upd(result['plant_size']) ? result['plant_size'] : _plant.aiPlantSize,
+        aiPotSize: upd(result['pot_size']) ? result['pot_size'] : _plant.aiPotSize,
+        aiGrowthStage:
+            upd(result['growth_stage']) ? result['growth_stage'] : _plant.aiGrowthStage,
+        aiMoistureLevel: upd(newMoisture) ? newMoisture : _plant.aiMoistureLevel,
+        aiLight: upd(newLight) ? newLight : _plant.aiLight,
+        aiCareTips: _plant.aiCareTips,
+        interestingFacts: _plant.interestingFacts,
+        wateringAmountMl: newAmountMl != null
+            ? (newAmountMl is int
+                ? newAmountMl
+                : newAmountMl is double
+                    ? newAmountMl.toInt()
+                    : int.tryParse(newAmountMl.toString()))
+            : _plant.wateringAmountMl,
+        wateringRangeMl: newRangeMl is List
+            ? List<int>.from(
+                newRangeMl.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0))
+            : _plant.wateringRangeMl,
+        nextAfterWateringHours:
+            result['next_after_watering_in_hours'] ?? _plant.nextAfterWateringHours,
+        nextCheckHours: result['next_check_in_hours'] ?? _plant.nextCheckHours,
+        wateringMode: upd(result['mode']) ? result['mode'] : _plant.wateringMode,
+        nextDueAt: newNext ?? _plant.nextDueAt,
+        nextWatering: newNext ?? _plant.nextWatering,
+        wateringIntervalDays: newDays ?? _plant.wateringIntervalDays,
+        shouldWaterNow: newShouldWater,
+      );
+
+      await PlantService().updatePlant(updated);
+      if (!mounted) return;
+      setState(() => _plant = updated);
+      _updateWateringCountdown();
+      await _loadHealthCheckCount();
+
+      if (!mounted) return;
+      _toast(
+        result['status'] == 'ok'
+            ? 'Plant analyzed! 🌱'
+            : 'Plant Care Assistant has advice for you! 🌿',
+        result['status'] == 'ok' ? _kAccent : _kSun,
+      );
+    } catch (e) {
+      if (mounted) _toast(l10n.errorUpdatingPlant(e.toString()), _kWarm);
+    }
+  }
+
+  Future<void> _waterPlant() async {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _wateredJustNow = true;
+      _dropletBurst++;
+    });
+    try {
+      await PlantService().waterPlant(_plant.id);
+      await _refreshPlantData();
+      await _loadHealthCheckCount();
+      if (!mounted) return;
+      _updateWateringCountdown();
+      HapticFeedback.heavyImpact();
+      _toast(l10n.plantWateredSuccess(_plant.name), _kAccent);
+    } catch (e) {
+      if (!mounted) return;
+      // Optimistic update failed — roll the widget back and surface the error.
+      setState(() => _wateredJustNow = false);
+      _toast(l10n.errorWateringPlant(e), _kWarm);
+    }
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Row(children: [
+          const Icon(Icons.delete_forever_rounded, color: _kWarm),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(l10n.deletePlant,
+                style: const TextStyle(color: _kWarm, fontWeight: FontWeight.bold)),
+          ),
+        ]),
+        content: Text(l10n.deletePlantConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deletePlant();
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: _kWarm, foregroundColor: Colors.white),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deletePlant() async {
+    try {
+      setState(() => _isLoading = true);
+      await PlantService().deletePlant(_plant.id);
+      if (!mounted) return;
+      _toast(l10n.plantDeletedMessage(_plant.name), _kAccent);
+      Navigator.of(context, rootNavigator: true).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _toast(l10n.errorDeletingPlant(e.toString()), _kWarm);
+    }
+  }
+
+  void _toast(String message, Color background) {
+    // Resolved in didChangeDependencies rather than here: toasts fire after
+    // awaits, by which point this element can already be deactivated — and an
+    // ancestor lookup on a deactivated element throws even while mounted is
+    // still true.
+    _messenger?.showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: background,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ));
+  }
+
+  // ── watering schedule ─────────────────────────────────────────────────────
+
+  DateTime _nextWateringDate() => _plant.nextDueAt ?? _plant.nextWatering;
+
+  void _startWateringCountdownTimer() {
+    _wateringCountdownTimer?.cancel();
+    _updateWateringCountdown();
+    _wateringCountdownTimer =
+        Timer.periodic(const Duration(minutes: 1), (_) => _updateWateringCountdown());
+  }
+
+  void _updateWateringCountdown() {
+    if (!mounted) return;
+    if (_plant.shouldWaterNow) {
+      setState(() => _wateringCountdownDays = null);
+      return;
+    }
+    final target = _nextWateringDate();
+    final now = DateTime.now().toLocal();
+    final days = DateTime(target.year, target.month, target.day)
+        .difference(DateTime(now.year, now.month, now.day))
+        .inDays;
+    setState(() => _wateringCountdownDays = days <= 0 ? null : days);
+  }
+
+  bool _canWaterPlant() {
+    if (_wateredJustNow) return false;
+    if (_plant.shouldWaterNow) return true;
+    return !_nextWateringDate().isAfter(DateTime.now());
+  }
+
+  double _cycleProgress() {
+    final last = _plant.lastWateredAt ?? _plant.lastWatered;
+    final total = _nextWateringDate().difference(last).inSeconds;
+    if (total <= 0) return 1.0;
+    return (DateTime.now().difference(last).inSeconds / total).clamp(0.0, 1.0);
+  }
+
+  String _nextWateringValue() {
+    if (_wateredJustNow) {
+      final interval = _wateringInterval();
+      return interval == 1 ? l10n.nextIn1Day : l10n.nextInNDays(interval);
+    }
+    if (_canWaterPlant()) return l10n.nowLabel;
+    if (_wateringCountdownDays == 1) return l10n.wateringTomorrow;
+    if (_wateringCountdownDays != null) {
+      return l10n.nextInNDays(_wateringCountdownDays!);
+    }
+    return l10n.nowLabel;
+  }
+
+  String _waitingButtonLabel() {
+    if (_wateringCountdownDays == 1) return l10n.nextIn1Day;
+    if (_wateringCountdownDays != null) {
+      return l10n.nextInNDays(_wateringCountdownDays!);
+    }
+    return l10n.iHaveWatered;
+  }
+
+  int _wateringInterval() =>
+      _plant.wateringIntervalDays ?? _plant.wateringFrequency;
+
+  // ── health status ─────────────────────────────────────────────────────────
+
+  String _healthStatusLabel() {
+    if (_plant.healthStatus == 'issue') return 'Issue';
+    if (_plant.healthStatus == 'ok') return 'Healthy';
+    final msg = _plant.healthMessage?.toLowerCase();
+    if (msg == null) return '';
+    const issueWords = [
+      'wilted', 'drooping', 'yellow', 'brown', 'problem', 'issue',
+      'concern', 'sick', 'overwatered', 'pest', 'disease',
+    ];
+    if (issueWords.any(msg.contains)) return 'Issue';
+    const healthyWords = ['healthy', 'thriving', 'robust', 'flourishing'];
+    if (healthyWords.any(msg.contains)) return 'Healthy';
+    return '';
+  }
+
+  Map<String, dynamic>? _tryParsePlantAssistant(String? msg) {
+    if (msg == null || !msg.trim().startsWith('{')) return null;
+    try {
+      final m = jsonDecode(msg.trim()) as Map<String, dynamic>;
+      if (m['status'] != null || m['praise_phrase'] != null || m['problem_name'] != null) {
+        return m;
+      }
+    } catch (_) {
+      // Not an assistant payload — fall back to the raw message.
+    }
+    return null;
+  }
+
+  // ── AI text extraction ────────────────────────────────────────────────────
+
+  /// Pulls one section body out of the markdown blob in [Plant.aiCareTips].
+  /// [names] are matched case-insensitively; pass the localized heading first
+  /// because the AI writes headings in the user's language.
+  String _section(List<String> names) {
+    final tips = _plant.aiCareTips;
+    if (tips == null || tips.isEmpty) return '';
+    for (final n in names) {
+      if (n.trim().isEmpty) continue;
+      final re = RegExp(
+        r'(?:##?\s*|\*\*)?' + RegExp.escape(n) + r'[^\n:]*\*?\*?:?\s*\n((?:(?!\n##|\n\*\*[A-Z]).)+)',
+        caseSensitive: false,
+        dotAll: true,
+      );
+      final body = re.firstMatch(tips)?.group(1)?.trim() ?? '';
+      if (body.isNotEmpty) return body;
+    }
+    return '';
+  }
+
+  String _firstLine(String text, [int max = 55]) {
+    final line = text
+        .split('\n')
+        .map((s) => s.replaceAll(RegExp(r'^[-•*]\s*'), '').trim())
+        .firstWhere((s) => s.isNotEmpty, orElse: () => '');
+    return line.length > max ? '${line.substring(0, max)}…' : line;
+  }
+
+  String _moistureLabel() {
+    final v = _plant.aiMoistureLevel;
+    if (v == null || v.isEmpty) return '';
+    final l = v.toLowerCase();
+    if (l.contains('very dry') || l.contains('arid')) return l10n.moistureLevelVeryDry;
+    if (l.contains('slightly moist') || l.contains('slightly damp')) {
+      return l10n.moistureLevelSlightlyMoist;
+    }
+    if (l.contains('very moist')) return l10n.moistureLevelVeryMoist;
+    if (l.contains('dry')) return l10n.moistureLevelDry;
+    if (l.contains('moist') || l.contains('damp')) return l10n.moistureLevelMoist;
+    if (l.contains('wet') || l.contains('saturated')) return l10n.moistureWet;
+    return v;
+  }
+
+  String _lightHours() {
+    final l = _plant.aiLight?.toLowerCase();
+    if (l == null) return '4–6';
+    final m = RegExp(r'(\d+)\s*(?:hours?|hrs?|ч)').firstMatch(l);
+    if (m != null) return m.group(1)!;
+    if (l.contains('full sun') || l.contains('direct sun')) return '6–8';
+    if (l.contains('bright indirect')) return '8–12';
+    if (l.contains('low light')) return '2–3';
+    return '4–6';
+  }
+
+  String _lightType() {
+    final l = _plant.aiLight?.toLowerCase();
+    if (l == null) return 'Bright indirect';
+    if (l.contains('full sun') || l.contains('direct sun')) return 'Direct';
+    if (l.contains('partial sun')) return 'Partial sun';
+    if (l.contains('bright indirect')) return 'Bright indirect';
+    if (l.contains('low light') || l.contains('shade')) return 'Low light';
+    return 'Bright indirect';
+  }
+
+  bool _hasNoIssues(String? t) {
+    if (t == null || t.trim().isEmpty) return true;
+    const empty = {'none detected', 'no specific issues detected', 'no issues'};
+    return empty.contains(t.trim().toLowerCase());
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  BUILD
+  // ══════════════════════════════════════════════════════════════════════════
+
+  @override
+  Widget build(BuildContext context) {
+    // The scrim darkens the top of the photo specifically so white status-bar
+    // glyphs stay legible.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: _kBase,
+        body: Stack(
+          children: [
+            Positioned.fill(child: _buildBackdrop()),
+            Positioned.fill(child: _buildScrim()),
+            _buildScrollContent(),
+            _buildTopNav(),
+            if (_isLoading)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0x44000000),
+                  child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Layer 1: fixed full-bleed photo ──────────────────────────────────────
+  // background: url(photo) center 42% / cover; transform: scale(1.02)
+  // `center 42%` for a cover fit maps to Alignment(0, 2 * 0.42 - 1).
+
+  Widget _buildBackdrop() {
+    const fallback = ColoredBox(color: Color(0xFF2A3E24));
+    const alignment = Alignment(0, -0.16);
+    final url = _plant.imageUrl;
+
+    Widget image = fallback;
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('data:image')) {
+        try {
+          image = Image.memory(
+            base64Decode(url.split(',')[1]),
+            fit: BoxFit.cover,
+            alignment: alignment,
+            errorBuilder: (_, __, ___) => fallback,
+          );
+        } catch (_) {
+          image = fallback;
+        }
+      } else if (url.startsWith('http')) {
+        image = Image.network(
+          url,
+          fit: BoxFit.cover,
+          alignment: alignment,
+          errorBuilder: (_, __, ___) => fallback,
+        );
+      }
+    }
+    return Transform.scale(scale: 1.02, child: image);
+  }
+
+  // ─── Layer 2: photo scrim ─────────────────────────────────────────────────
+  // rgba(0,0,0,.22) 0% → transparent 22% → transparent 40%
+  // → rgba(235,240,233,.5) 56% → #EDF0EC 70%
+  // The 40% stop carries the base RGB so the fade to the neutral base does not
+  // dip through grey on the way.
+
+  Widget _buildScrim() {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0.0, 0.22, 0.40, 0.56, 0.70, 1.0],
+          colors: [
+            Color(0x38000000),
+            Color(0x00000000),
+            Color(0x00EDF0EC),
+            Color(0x80EBF0E9),
+            Color(0xFFEDF0EC),
+            Color(0xFFEDF0EC),
+          ],
+        ),
+      ),
+      child: SizedBox.expand(),
+    );
+  }
+
+  // ─── Layer 4: top nav ─────────────────────────────────────────────────────
+  // top: 52px = safe area + 8. Glass circles are 38 px inside a 44 px target,
+  // so the wrapper sits 3 px higher than the visual edge.
+
+  Widget _buildTopNav() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 5,
+      left: 16,
+      right: 16,
+      child: Row(
+        children: [
+          _navButton(
+            glyph: _Svg.chevronLeft,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+          const Spacer(),
+          _navButton(glyph: _Svg.chat, onTap: _openPlantChat),
+          const SizedBox(width: 8),
+          _navButton(glyph: _Svg.more, onTap: _showMoreMenu),
+        ],
+      ),
+    );
+  }
+
+  Widget _navButton({required String glyph, required VoidCallback onTap}) {
+    return _PressScale(
+      scale: 0.94,
+      onTap: onTap,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: Color(0x24000000), blurRadius: 14, offset: Offset(0, 4)),
+              ],
+            ),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: _kNavFilter,
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0x47FFFFFF), // rgba(255,255,255,.28)
+                    border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
+                  ),
+                  child: Center(
+                    child: _Glyph(glyph, size: 17, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMoreMenu() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _MoreMenuSheet(
+        editLabel: l10n.edit,
+        deleteLabel: l10n.deletePlant,
+        onEdit: () {
+          Navigator.pop(ctx);
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => EditPlantScreen(plant: _plant)))
+              .then((_) => _refreshPlantData());
+        },
+        onDelete: () {
+          Navigator.pop(ctx);
+          _showDeleteConfirmation();
+        },
+      ),
+    );
+  }
+
+  // ─── Layer 3: scroll content ──────────────────────────────────────────────
+  // 430 px spacer on the 812 pt reference canvas ≈ 53% of the viewport; the
+  // scrim stops are proportional, so the spacer tracks the viewport too.
+
+  Widget _buildScrollContent() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.53),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTitleCard(),
+                const SizedBox(height: 12),
+                _buildWateringCard(),
+                const SizedBox(height: 12),
+                _buildSegmentedControl(),
+                const SizedBox(height: 12),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, anim) =>
+                      FadeTransition(opacity: anim, child: child),
+                  child: KeyedSubtree(
+                    key: ValueKey(_activeTab),
+                    child: switch (_activeTab) {
+                      0 => _buildCareTab(),
+                      1 => _buildAboutTab(),
+                      _ => _buildHistoryTab(),
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Glass surface (.g) — the core primitive ──────────────────────────────
+  // radius 26 · rgba(255,255,255,.62) · blur(26px) → sigma 13
+  // · .5px rgba(255,255,255,.75) · two shadow layers
+  // · inset 0 1px 0 rgba(255,255,255,.85) specular top edge
+  //
+  // The shadow must live OUTSIDE the ClipRRect — a clip discards anything drawn
+  // beyond the child's bounds, which is where box shadows are painted.
+
+  Widget _glass({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    double radius = 26,
+    Color fill = _kGlassFill,
+  }) {
+    final shape = BorderRadius.circular(radius);
+    return DecoratedBox(
+      decoration: BoxDecoration(borderRadius: shape, boxShadow: _kCardShadow),
+      child: ClipRRect(
+        borderRadius: shape,
+        child: BackdropFilter(
+          filter: _kGlassFilter,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: shape,
+              border: Border.all(color: _kGlassBorder, width: 0.5),
+            ),
+            child: Stack(
+              children: [
+                Padding(padding: padding ?? EdgeInsets.zero, child: child),
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  child: IgnorePointer(child: ColoredBox(color: _kGlassSpecular)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Title card ───────────────────────────────────────────────────────────
+  // padding 16 18 · align center · name 27/600/-.03em/1.08
+  // · latin 13/400 · health chip with a pulsing dot
+
+  Widget _buildTitleCard() {
+    final status = _healthStatusLabel();
+    final hasLatin =
+        _plant.species.isNotEmpty && _plant.species != _plant.name;
+
+    return _glass(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _plant.name,
+                  style: _font(
+                    fontSize: 27,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 27 * -0.03,
+                    height: 1.08,
+                    color: _kInk,
+                  ),
+                ),
+                if (hasLatin) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    _plant.species,
+                    // .sci resets the inherited tracking to 0
+                    style: _font(fontSize: 13, letterSpacing: 0, color: _kMut),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (status.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            _healthChip(status),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // pill: padding 6 11 · rgba(tint,.14) · .5px rgba(tint,.22) · 12.5/600
+  // dot: 7 px, pulse 2.4 s — ring grows 0 → 5 px while alpha fades .4 → 0
+  Widget _healthChip(String status) {
+    final healthy = status == 'Healthy';
+    final tone = healthy ? _kAccent : _kWarm;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: tone.withAlpha(36), // .14
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tone.withAlpha(56), width: 0.5), // .22
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) {
+              final t = _pulseCtrl.value;
+              final phase = t <= 0.5 ? t * 2 : (1 - t) * 2;
+              return Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: tone,
+                  boxShadow: [
+                    BoxShadow(
+                      color: tone.withAlpha((102 * (1 - phase)).round()),
+                      blurRadius: 0,
+                      spreadRadius: 5 * phase,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 6),
+          Text(
+            status,
+            style: _font(
+                fontSize: 12.5, fontWeight: FontWeight.w600, color: tone),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Watering widget (primary) ────────────────────────────────────────────
+
+  Widget _buildWateringCard() {
+    final canWater = _canWaterPlant();
+    final amount = _plant.wateringAmountMl;
+    final interval = _wateringInterval();
+    final lastWatered = _plant.lastWateredAt ?? _plant.lastWatered;
+    final progress = _wateredJustNow ? 0.04 : _cycleProgress();
+
+    return _glass(
+      child: Stack(
+        children: [
+          const Positioned.fill(child: _WateringSheen()),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 11.5/600 · letter-spacing .08em · uppercase
+                          Text(
+                            l10n.nextWatering.toUpperCase(),
+                            style: _font(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 11.5 * 0.08,
+                              color: _kMut,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          // 30/600 · letter-spacing -.035em · line-height 1
+                          Text(
+                            _nextWateringValue(),
+                            style: _font(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 30 * -0.035,
+                              height: 1.0,
+                              color: _kInk,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            '${l10n.lastWatered} '
+                            '${DateFormat.MMMd().format(lastWatered)} · '
+                            '${l10n.everyNDays(interval)}',
+                            style: _font(fontSize: 13, color: _kMut),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (amount != null && amount > 0) ...[
+                      const SizedBox(width: 12),
+                      _doseBlock(amount),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 15),
+                _cycleBar(progress),
+                const SizedBox(height: 7),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _wateredJustNow
+                          ? l10n.cycleJustStarted
+                          : l10n.cyclePercentComplete((progress * 100).round()),
+                      style: _font(fontSize: 11.5, color: _kMut2),
+                    ),
+                    Text(
+                      l10n.nDays(interval),
+                      style: _font(fontSize: 11.5, color: _kMut2),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _wateringCta(canWater),
+              ],
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(child: _DropletBurst(trigger: _dropletBurst)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // rgba(46,134,200,.12) · .5px rgba(46,134,200,.2) · radius 16 · padding 9 12
+  // value 15/600 in --water over `ML` 10/600 uppercase .04em in --mut
+  Widget _doseBlock(int amount) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: _kWater.withAlpha(31), // .12
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kWater.withAlpha(51), width: 0.5), // .2
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$amount',
+            style: _font(
+                fontSize: 15, fontWeight: FontWeight.w600, color: _kWater),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'ML',
+            style: _font(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 10 * 0.04,
+              color: _kMut,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // track 6 px radius 4 rgba(20,30,15,.10) · fill gradient #7BC0EA → #2E86C8
+  Widget _cycleBar(double progress) {
+    return SizedBox(
+      height: 6,
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0x19141E0F),
+                borderRadius: BorderRadius.all(Radius.circular(4)),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: AnimatedFractionallySizedBox(
+              duration: const Duration(milliseconds: 800),
+              curve: _kProgressCurve,
+              alignment: Alignment.centerLeft,
+              widthFactor: progress.clamp(0.0, 1.0),
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: [Color(0xFF7BC0EA), Color(0xFF2E86C8)]),
+                  borderRadius: BorderRadius.all(Radius.circular(4)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // full width · radius 18 · padding 15 · #3E8E3B · white 16/600/-.01em
+  // shadow 0 8px 20px -8px rgba(62,142,59,.7) · press scale(.975) · ripple 700 ms
+  // Confirmed state: rgba(62,142,59,.16) fill, accent text, no shadow, disabled.
+  Widget _wateringCta(bool canWater) {
+    final done = _wateredJustNow;
+
+    final Color fill;
+    final Color foreground;
+    final List<BoxShadow> shadow;
+    final String glyph;
+    final String label;
+
+    if (done) {
+      fill = _kAccent.withAlpha(41); // .16
+      foreground = _kAccent;
+      shadow = const [];
+      glyph = _Svg.check;
+      label = l10n.wateringDone;
+    } else if (canWater) {
+      fill = _kAccent;
+      foreground = Colors.white;
+      shadow = const [
+        BoxShadow(
+            color: Color(0xB33E8E3B), blurRadius: 20, spreadRadius: -8, offset: Offset(0, 8)),
+      ];
+      glyph = _Svg.drop;
+      label = l10n.iHaveWatered;
+    } else {
+      // Waiting out the cycle: a legible white glass rather than a dimmed CTA.
+      fill = const Color(0xCCFFFFFF);
+      foreground = _kInk2;
+      shadow = const [];
+      glyph = _Svg.clock;
+      label = _waitingButtonLabel();
+    }
+
+    return _RippleButton(
+      enabled: canWater && !done,
+      onTap: _waterPlant,
+      fill: fill,
+      border: (!done && !canWater)
+          ? Border.all(color: const Color(0x22141E0F), width: 0.5)
+          : null,
+      shadow: shadow,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _Glyph(glyph, size: 17, color: foreground),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: _font(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 16 * -0.01,
+              color: foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Segmented control ────────────────────────────────────────────────────
+
+  Widget _buildSegmentedControl() {
+    return _glass(
+      radius: 22,
+      padding: const EdgeInsets.all(4),
+      child: _LiquidSegmentedControl(
+        selected: _activeTab,
+        onChanged: (i) {
+          HapticFeedback.selectionClick();
+          setState(() => _activeTab = i);
+        },
+        tabs: [
+          _SegTab(_Svg.drop, l10n.tabCare),
+          _SegTab(_Svg.leaf, l10n.tabAbout),
+          _SegTab(_Svg.gallery, l10n.tabHistory),
+        ],
+      ),
+    );
+  }
+
+  // ─── Tab: Care ────────────────────────────────────────────────────────────
+  // Column of glass rows, gap 9. Each row opens the detail sheet.
+
+  Widget _buildCareTab() {
+    final interval = _wateringInterval();
+    final amount = _plant.wateringAmountMl;
+    final range = _plant.wateringRangeMl;
+
+    final waterBody = _section([l10n.careSectionWater, 'Water', 'Watering']);
+    final soilBody = _section([l10n.careSectionSoil, 'Soil']);
+    final moistureBody = _section([l10n.careSectionSoilMoisture, 'Soil Moisture']);
+    final lightBody = _section([l10n.careSectionLight, 'Light']);
+    final tempBody = _section([l10n.careSectionTemperature, 'Temperature']);
+    final fertBody = _section([l10n.careSectionFertilizer, 'Fertilizer']);
+
+    final rows = <Widget>[
+      _careRow(
+        tone: _CareTone.water,
+        glyph: _Svg.drop,
+        title: l10n.careSectionWater,
+        value: amount != null && amount > 0
+            ? '${l10n.everyNDays(interval)} · $amount ml'
+            : l10n.everyNDays(interval),
+        body: waterBody,
+        keyValues: [
+          (l10n.wateringFrequency, l10n.nDays(interval)),
+          if (amount != null && amount > 0)
+            (
+              l10n.wateringAmount,
+              range != null && range.length == 2
+                  ? '${range[0]}–${range[1]} ml'
+                  : '$amount ml'
+            ),
+        ],
+      ),
+      _careRow(
+        tone: _CareTone.leaf,
+        glyph: _Svg.soil,
+        title: l10n.careSectionSoil,
+        value: _firstLine(soilBody),
+        body: soilBody,
+      ),
+      if (_plant.aiMoistureLevel != null)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.dropOutline,
+          title: l10n.careSectionSoilMoisture,
+          value: [
+            _moistureLabel(),
+            if (_plant.idealSoilMoistureMin != null && _plant.idealSoilMoistureMax != null)
+              '${_plant.idealSoilMoistureMin}–${_plant.idealSoilMoistureMax}%',
+          ].where((s) => s.isNotEmpty).join(' · '),
+          body: moistureBody.isNotEmpty ? moistureBody : (_plant.aiMoistureLevel ?? ''),
+          showMoistureScale: true,
+        ),
+      if (_plant.aiLight != null)
+        _careRow(
+          tone: _CareTone.sun,
+          glyph: _Svg.sun,
+          title: l10n.careSectionLight,
+          value: '${_lightHours()} h · ${_lightType()}',
+          body: lightBody.isNotEmpty ? lightBody : _plant.aiLight!,
+          keyValues: [
+            ('Daily', '${_lightHours()} h'),
+            ('Type', _lightType()),
+          ],
+        ),
+      if (tempBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.warm,
+          glyph: _Svg.thermometer,
+          title: l10n.careSectionTemperature,
+          value: _firstLine(tempBody),
+          body: tempBody,
+        ),
+      if (fertBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.fertilizer,
+          title: l10n.careSectionFertilizer,
+          value: _firstLine(fertBody),
+          body: fertBody,
+        ),
+      if (!_hasNoIssues(_plant.aiSpecificIssues))
+        _buildIssuesCard(_plant.aiSpecificIssues!),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: 9),
+          rows[i],
+        ],
+      ],
+    );
+  }
+
+  // padding 13 15 · radius 22 · tile 40×40 radius 14 · icon 19
+  // title 15.5/600/-.015em · value 12.5/500 ellipsized · chevron 15 #8B9285
+  Widget _careRow({
+    required _CareTone tone,
+    required String glyph,
+    required String title,
+    required String value,
+    required String body,
+    List<(String, String)> keyValues = const [],
+    bool showMoistureScale = false,
+  }) {
+    final (tint, foreground) = _toneColors(tone);
+    final tappable = body.isNotEmpty || keyValues.isNotEmpty || showMoistureScale;
+
+    return _PressScale(
+      scale: 0.985,
+      onTap: tappable
+          ? () => _openCareSheet(
+                tone: tone,
+                glyph: glyph,
+                title: title,
+                value: value,
+                body: body,
+                keyValues: keyValues,
+                showMoistureScale: showMoistureScale,
+              )
+          : null,
+      child: _glass(
+        radius: 22,
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tint,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
+              ),
+              child: Center(
+                child: _Glyph(glyph, size: 19, color: foreground),
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: _font(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 15.5 * -0.015,
+                      color: _kInk,
+                    ),
+                  ),
+                  if (value.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _font(
+                          fontSize: 12.5, fontWeight: FontWeight.w500, color: _kMut),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (tappable) ...[
+              const SizedBox(width: 8),
+              const _Glyph(_Svg.chevronRight, size: 15, color: _kChev),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  (Color, Color) _toneColors(_CareTone t) => switch (t) {
+        _CareTone.water => (_kWaterBg, _kWater),
+        _CareTone.leaf => (_kLeafBg, _kAccent),
+        _CareTone.sun => (_kSunBg, _kSun),
+        _CareTone.warm => (_kWarmBg, _kWarm),
+      };
+
+  void _openCareSheet({
+    required _CareTone tone,
+    required String glyph,
+    required String title,
+    required String value,
+    required String body,
+    required List<(String, String)> keyValues,
+    required bool showMoistureScale,
+  }) {
+    HapticFeedback.lightImpact();
+    final (tint, foreground) = _toneColors(tone);
+
+    // A custom route rather than showModalBottomSheet: the scrim must fade in
+    // place while only the sheet rises, and barrierColor cannot carry a blur.
+    Navigator.of(context).push(_CareSheetRoute(
+      builder: (_) => _CareDetailSheet(
+        glyph: glyph,
+        tint: tint,
+        foreground: foreground,
+        title: title,
+        value: value,
+        body: body,
+        keyValues: keyValues,
+        showMoistureScale: showMoistureScale,
+        moistureMin: _plant.idealSoilMoistureMin,
+        moistureMax: _plant.idealSoilMoistureMax,
+        dryLabel: l10n.moistureDry,
+        wetLabel: l10n.moistureWet,
+      ),
+    ));
+  }
+
+  // Specific issues — padding 16 18 on rgba(255,251,240,.62)
+  Widget _buildIssuesCard(String text) {
+    final bullets = text
+        .split('\n')
+        .map((s) => s.replaceAll(RegExp(r'^[-•*]\s*'), '').trim())
+        .where((s) => s.isNotEmpty)
+        .take(3)
+        .toList();
+    if (bullets.isEmpty) return const SizedBox.shrink();
+
+    return _glass(
+      fill: _kIssuesFill,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const _Glyph(_Svg.infoCircle, size: 17, color: _kSun),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                l10n.specificIssues,
+                style: _font(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 15.5 * -0.015,
+                  color: _kSun,
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          for (final b in bullets)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 5,
+                    height: 5,
+                    margin: const EdgeInsets.only(top: 7),
+                    decoration: BoxDecoration(
+                        color: _kSun.withAlpha(166), shape: BoxShape.circle), // .65
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      b,
+                      style: _font(
+                          fontSize: 13, height: 1.5, color: _kIssuesText),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Tab: About ───────────────────────────────────────────────────────────
+  // Glass cards, gap 9, padding 17 18. Header: 34×34 tile radius 12, icon 16,
+  // title 16.5/600/-.02em. Body 14/1.55.
+
+  Widget _buildAboutTab() {
+    // Growth Rate / Personality / Toxicity live as sections inside aiCareTips —
+    // the model has no dedicated fields for them.
+    final growth = _section([l10n.careSectionGrowthRate, 'Growth Rate', 'Growth']);
+    final personality = _section([l10n.careSectionPersonality, 'Personality']);
+    final toxicity = _section([l10n.careSectionToxicity, 'Toxicity']);
+    final growthBody =
+        [growth, personality].where((s) => s.isNotEmpty).join('\n\n');
+
+    // Short trait chips. interestingFacts are full sentences and already have
+    // their own card, so they must not be reused here.
+    final traits = <String>[
+      ?_plant.aiGrowthStage,
+      ?_plant.aiPlantSize,
+      ?_plant.aiPotSize,
+      _lightType(),
+    ].map((s) => s.trim()).where((s) => s.isNotEmpty && s.length <= 28).toList();
+
+    final cards = <Widget>[
+      if (_plant.aiGeneralDescription?.isNotEmpty ?? false)
+        _aboutCard(
+          glyph: _Svg.leaf,
+          tint: _kLeafBg,
+          foreground: _kAccent,
+          title: l10n.aboutPlantTitle,
+          body: _plant.aiGeneralDescription!,
+          tags: traits,
+        ),
+      if (growthBody.isNotEmpty)
+        _aboutCard(
+          glyph: _Svg.trendingUp,
+          tint: _kLeafBg,
+          foreground: _kAccent,
+          title: '${l10n.careSectionGrowthRate} & '
+              '${l10n.careSectionPersonality.toLowerCase()}',
+          body: growthBody,
+        ),
+      if (toxicity.isNotEmpty)
+        _aboutCard(
+          glyph: _Svg.warningTriangle,
+          tint: _kWarmBg,
+          foreground: _kWarm,
+          title: l10n.careSectionToxicity,
+          body: toxicity,
+        ),
+      if (_plant.interestingFacts?.isNotEmpty ?? false)
+        _factsCard(_plant.interestingFacts!),
+    ];
+
+    if (cards.isEmpty) {
+      return _glass(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        child: Text(
+          l10n.noDataAvailable,
+          textAlign: TextAlign.center,
+          style: _font(fontSize: 14, color: _kMut),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < cards.length; i++) ...[
+          if (i > 0) const SizedBox(height: 9),
+          cards[i],
+        ],
+      ],
+    );
+  }
+
+  Widget _aboutCard({
+    required String glyph,
+    required Color tint,
+    required Color foreground,
+    required String title,
+    required String body,
+    List<String> tags = const [],
+  }) {
+    return _glass(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            _iconTile(glyph: glyph, tint: tint, foreground: foreground),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                title,
+                style: _font(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 16.5 * -0.02,
+                  color: _kInk,
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 11),
+          Text(
+            body,
+            style: _font(fontSize: 14, height: 1.55, color: _kInk2),
+          ),
+          if (tags.isNotEmpty) ...[
+            const SizedBox(height: 13),
+            Wrap(
+              spacing: 7,
+              runSpacing: 7,
+              children: [
+                for (final t in tags)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xB8FFFFFF), // rgba(255,255,255,.72)
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xD9FFFFFF), width: 0.5),
+                    ),
+                    child: Text(
+                      t,
+                      style: _font(
+                          fontSize: 12, fontWeight: FontWeight.w500, color: _kInk2),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 34×34 tile, radius 12, .5px rgba(255,255,255,.6), icon 16
+  Widget _iconTile({
+    required String glyph,
+    required Color tint,
+    required Color foreground,
+  }) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
+      ),
+      child: Center(child: _Glyph(glyph, size: 16, color: foreground)),
+    );
+  }
+
+  // Fact boxes: rgba(255,255,255,.6), .5px rgba(255,255,255,.8), radius 16,
+  // padding 12 14, 6 px accent dot.
+  Widget _factsCard(List<String> facts) {
+    final items = facts.where((f) => f.trim().isNotEmpty).take(3).toList();
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return _glass(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            _iconTile(glyph: _Svg.sparkle, tint: _kSunBg, foreground: _kSun),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                l10n.interestingFactsTitle,
+                style: _font(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 16.5 * -0.02,
+                  color: _kInk,
+                ),
+              ),
+            ),
+          ]),
+          for (var i = 0; i < items.length; i++)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 13 : 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0x99FFFFFF), // rgba(255,255,255,.6)
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xCCFFFFFF), width: 0.5),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(top: 7),
+                      decoration:
+                          const BoxDecoration(color: _kAccent, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        items[i],
+                        style: _font(
+                            fontSize: 13, height: 1.5, color: _kInk2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Tab: History ─────────────────────────────────────────────────────────
+
+  Widget _buildHistoryTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        StreamBuilder<List<HealthCheckRecord>>(
+          stream: _healthCheckStream,
+          builder: (context, snap) {
+            final checks = [...?snap.data]
+              ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+            return _glass(
+              fill: _kHistoryFill,
+              padding: const EdgeInsets.symmetric(vertical: 17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: Row(children: [
+                      const _Glyph(_Svg.gallery, size: 17, color: _kWater),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          l10n.healthCheckHistoryTitle,
+                          style: _font(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 16 * -0.02,
+                            color: _kWater,
+                          ),
+                        ),
+                      ),
+                      _PressScale(
+                        scale: 0.94,
+                        onTap: _canDoHealthCheck() ? _openHealthCheckModal : null,
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: _kWater.withAlpha(36), // .14
+                            borderRadius: BorderRadius.circular(12),
+                            border:
+                                Border.all(color: const Color(0xB3FFFFFF), width: 0.5),
+                          ),
+                          child: Center(
+                            child: _Glyph(
+                              _Svg.plus,
+                              size: 17,
+                              color: _canDoHealthCheck()
+                                  ? _kWater
+                                  : _kWater.withAlpha(68),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                  if (checks.isEmpty)
+                    _buildEmptyHistory()
+                  else
+                    for (final c in checks.take(5)) _buildHistoryRow(c),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 11), // .rows gap 9 + .del margin-top 2
+        Center(child: _deleteButton()),
+      ],
+    );
+  }
+
+  // padding 26 10 8 · 56 px circle · title 15.5/600 · copy 13, max-width 210
+  Widget _buildEmptyHistory() {
+    return Padding(
+      // .hempty padding 26 10 8, inside the card's own 18 px horizontal inset.
+      padding: const EdgeInsets.fromLTRB(28, 26, 28, 8),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration:
+                BoxDecoration(color: _kWater.withAlpha(26), shape: BoxShape.circle),
+            child: const Center(
+              child: _Glyph(_Svg.gallery, size: 24, color: _kWater),
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            l10n.noHealthChecksYet,
+            style: _font(
+                fontSize: 15.5, fontWeight: FontWeight.w600, color: _kInk),
+          ),
+          const SizedBox(height: 7),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 210),
+            child: Text(
+              l10n.healthCheckHistoryEmptyHint,
+              textAlign: TextAlign.center,
+              style: _font(fontSize: 13, height: 1.45, color: _kMut),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryRow(HealthCheckRecord record) {
+    final ok = record.status == 'ok';
+    final imgUrl =
+        record.imageUrls.isNotEmpty ? record.imageUrls.first : record.imageUrl;
+    final assistant = _tryParsePlantAssistant(record.message);
+    final verdict = assistant?['praise_phrase']?.toString() ??
+        assistant?['problem_name']?.toString() ??
+        (ok ? 'Healthy' : 'Issue detected');
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: imgUrl != null && imgUrl.isNotEmpty
+                ? Image.network(imgUrl,
+                    width: 46,
+                    height: 46,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _historyThumbFallback())
+                : _historyThumbFallback(),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat.yMMMd().format(record.timestamp),
+                  style: _font(
+                      fontSize: 13.5, fontWeight: FontWeight.w600, color: _kInk),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  verdict,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _font(
+                      fontSize: 12, color: ok ? _kAccent : _kWarm),
+                ),
+              ],
+            ),
+          ),
+          const _Glyph(_Svg.chevronRight, size: 15, color: _kChev),
+        ],
+      ),
+    );
+  }
+
+  Widget _historyThumbFallback() => Container(
+        width: 46,
+        height: 46,
+        color: _kLeafBg,
+        child: Center(
+          child: _Glyph(_Svg.flower, size: 20, color: _kAccent.withAlpha(153)),
+        ),
+      );
+
+  // rgba(255,255,255,.55) + blur(20px) · .5px rgba(198,86,68,.28) · 14/600
+  Widget _deleteButton() {
+    return _PressScale(
+      scale: 0.97,
+      onTap: _showDeleteConfirmation,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+            decoration: BoxDecoration(
+              color: const Color(0x8CFFFFFF),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: _kWarm.withAlpha(71), width: 0.5), // .28
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _Glyph(_Svg.trash, size: 15, color: _kWarm),
+                const SizedBox(width: 7),
+                Text(
+                  l10n.deletePlant,
+                  style: _font(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: _kWarm),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _CareTone { water, leaf, sun, warm }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Watering widget decoration
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Diagonal specular streak: an 80% × 200% band offset to top −60% / left −20%
+/// and rotated 12°, so the highlight lands in the upper-left corner rather than
+/// washing across the middle of the card.
+class _WateringSheen extends StatelessWidget {
+  const _WateringSheen();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, c) => Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: -0.20 * c.maxWidth,
+              top: -0.60 * c.maxHeight,
+              width: 0.80 * c.maxWidth,
+              height: 2.0 * c.maxHeight,
+              child: Transform.rotate(
+                angle: 12 * math.pi / 180,
+                child: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    // linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent)
+                    gradient: LinearGradient(
+                      begin: Alignment(-0.985, -0.174),
+                      end: Alignment(0.985, 0.174),
+                      colors: [
+                        Color(0x00FFFFFF),
+                        Color(0x8CFFFFFF),
+                        Color(0x00FFFFFF),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ~10 droplets spawned across the top of the widget with random 0–550 ms
+/// delays; each falls 95 px over 1.1 s ease-in, scaling .5 → 1.05, fading in at
+/// 18% and out at the end.
+class _DropletBurst extends StatefulWidget {
+  final int trigger;
+  const _DropletBurst({required this.trigger});
+
+  @override
+  State<_DropletBurst> createState() => _DropletBurstState();
+}
+
+class _DropletBurstState extends State<_DropletBurst>
+    with SingleTickerProviderStateMixin {
+  static const _count = 10;
+  static const _fall = Duration(milliseconds: 1100);
+  static const _maxDelay = Duration(milliseconds: 550);
+
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: _fall + _maxDelay,
+  );
+  final _rng = math.Random();
+  late List<(double left, double top, double delay)> _drops;
+
+  @override
+  void initState() {
+    super.initState();
+    _drops = const [];
+  }
+
+  @override
+  void didUpdateWidget(_DropletBurst old) {
+    super.didUpdateWidget(old);
+    if (widget.trigger != old.trigger && widget.trigger > 0) {
+      _drops = List.generate(_count, (_) {
+        final delayFraction = _rng.nextDouble() *
+            (_maxDelay.inMilliseconds / _ctrl.duration!.inMilliseconds);
+        return (
+          0.10 + _rng.nextDouble() * 0.78, // left 10–88%
+          10 + _rng.nextDouble() * 22, // top 10–32 px
+          delayFraction,
+        );
+      });
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_drops.isEmpty) return const SizedBox.shrink();
+
+    // Reduced motion: skip the particles entirely.
+    if (MediaQuery.disableAnimationsOf(context)) return const SizedBox.shrink();
+
+    final span = _fall.inMilliseconds / _ctrl.duration!.inMilliseconds;
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        if (!_ctrl.isAnimating && _ctrl.value == 0) {
+          return const SizedBox.shrink();
+        }
+        return LayoutBuilder(
+          builder: (context, c) => Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final (left, top, delay) in _drops)
+                _droplet(c.maxWidth * left, top,
+                    ((_ctrl.value - delay) / span).clamp(0.0, 1.0)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _droplet(double left, double top, double t) {
+    if (t <= 0 || t >= 1) return const SizedBox.shrink();
+    final eased = Curves.easeIn.transform(t);
+    final opacity = t < 0.18 ? t / 0.18 : (1 - (t - 0.18) / 0.82);
+    return Positioned(
+      left: left,
+      top: top - 8 + eased * 103,
+      child: Opacity(
+        opacity: (opacity * 0.95).clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: 0.5 + eased * 0.55,
+          child: const Text('💧', style: TextStyle(fontSize: 14)),
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Interaction primitives
+// ════════════════════════════════════════════════════════════════════════════
+
+/// `transform: scale(n)` on press over 140 ms. A null [onTap] renders the child
+/// inert while keeping its layout identical.
+class _PressScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scale;
+
+  const _PressScale({required this.child, this.onTap, this.scale = 0.985});
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+      onTapUp: enabled ? (_) => setState(() => _down = false) : null,
+      onTapCancel: enabled ? () => setState(() => _down = false) : null,
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? widget.scale : 1.0,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Watering CTA: press scale(.975) plus a white 50% ripple that grows from the
+/// touch point to scale(9) over 700 ms ease-out while fading.
+class _RippleButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final bool enabled;
+  final Color fill;
+  final BoxBorder? border;
+  final List<BoxShadow> shadow;
+
+  const _RippleButton({
+    required this.child,
+    required this.onTap,
+    required this.enabled,
+    required this.fill,
+    required this.shadow,
+    this.border,
+  });
+
+  @override
+  State<_RippleButton> createState() => _RippleButtonState();
+}
+
+class _RippleButtonState extends State<_RippleButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ripple = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+  Offset? _origin;
+  bool _down = false;
+
+  @override
+  void dispose() {
+    _ripple.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails d) {
+    setState(() {
+      _down = true;
+      _origin = d.localPosition;
+    });
+    if (!MediaQuery.disableAnimationsOf(context)) _ripple.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const radius = BorderRadius.all(Radius.circular(18));
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: widget.enabled ? _handleTapDown : null,
+      onTapUp: widget.enabled ? (_) => setState(() => _down = false) : null,
+      onTapCancel: widget.enabled ? () => setState(() => _down = false) : null,
+      onTap: widget.enabled ? widget.onTap : null,
+      child: AnimatedScale(
+        scale: _down ? 0.975 : 1.0,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: widget.fill,
+            borderRadius: radius,
+            border: widget.border,
+            boxShadow: widget.shadow,
+          ),
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  child: widget.child,
+                ),
+                if (_origin != null)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: AnimatedBuilder(
+                        animation: _ripple,
+                        builder: (context, _) {
+                          if (_ripple.value == 0 || _ripple.isCompleted) {
+                            return const SizedBox.shrink();
+                          }
+                          final t = Curves.easeOut.transform(_ripple.value);
+                          return CustomPaint(
+                            painter: _RipplePainter(
+                              origin: _origin!,
+                              radius: t * 9 * 24,
+                              opacity: (1 - t) * 0.5,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RipplePainter extends CustomPainter {
+  final Offset origin;
+  final double radius;
+  final double opacity;
+
+  const _RipplePainter({
+    required this.origin,
+    required this.radius,
+    required this.opacity,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawCircle(
+      origin,
+      radius,
+      Paint()..color = Colors.white.withAlpha((255 * opacity).round()),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RipplePainter old) =>
+      old.radius != radius || old.opacity != opacity || old.origin != origin;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Segmented control
+// ════════════════════════════════════════════════════════════════════════════
+
+class _SegTab {
+  final String glyph;
+  final String label;
+  const _SegTab(this.glyph, this.label);
+}
+
+/// Liquid-slide segmented control. The knob animates left/width over 340 ms
+/// cubic-bezier(.32,.72,.25,1) behind the labels; label colour crossfades over
+/// 200 ms. This motion is the signature of the screen.
+class _LiquidSegmentedControl extends StatelessWidget {
+  final List<_SegTab> tabs;
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  const _LiquidSegmentedControl({
+    required this.tabs,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        // `.seg` is padding 4 + gap 4, and the knob is pinned to each button's
+        // own offsetLeft/offsetWidth, so it spans the full inner height.
+        const gap = 4.0;
+        final button = (c.maxWidth - gap * (tabs.length - 1)) / tabs.length;
+        return Stack(
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 340),
+              curve: _kKnobCurve,
+              left: selected * (button + gap),
+              top: 0,
+              bottom: 0,
+              width: button,
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: _kKnob,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x47141E0F),
+                        blurRadius: 12,
+                        spreadRadius: -4,
+                        offset: Offset(0, 4)),
+                  ],
+                ),
+                // inset 0 1px 0 #fff
+                child: const Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    height: 1,
+                    width: double.infinity,
+                    child: ColoredBox(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+            // The Row is the only unpositioned child, so it sets the height the
+            // knob stretches to — matching `.seg button`'s 11 px padding.
+            Row(
+              children: [
+                for (var i = 0; i < tabs.length; i++) ...[
+                  if (i > 0) const SizedBox(width: gap),
+                  Expanded(child: _tab(i)),
+                ],
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _tab(int i) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onChanged(i),
+      child: TweenAnimationBuilder<Color?>(
+        tween: ColorTween(end: i == selected ? _kInk : _kMut),
+        duration: const Duration(milliseconds: 200),
+        builder: (context, color, _) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _Glyph(tabs[i].glyph, size: 15, color: color ?? _kMut),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  tabs[i].label,
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  style: _font(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Care detail sheet
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Route for the care detail sheet. Enter is 420 ms; the child owns both the
+/// scrim fade and the sheet rise so they can animate independently.
+class _CareSheetRoute<T> extends PopupRoute<T> {
+  final WidgetBuilder builder;
+  _CareSheetRoute({required this.builder});
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 420);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 260);
+
+  @override
+  bool get barrierDismissible => false; // the scrim handles its own taps
+
+  @override
+  Color? get barrierColor => null;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  bool get maintainState => false;
+
+  // The page goes straight into the Overlay, so it needs a Material of its own
+  // to supply a DefaultTextStyle — without one, text inherits WidgetsApp's debug
+  // error style and picks up its yellow double underline.
+  @override
+  Widget buildPage(BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation) =>
+      Material(type: MaterialType.transparency, child: builder(context));
+}
+
+/// Inset floating sheet: 8 px insets, radius 34, max-height 76%,
+/// rgba(252,253,251,.82) over blur(40px), with its own blurred scrim.
+///
+/// Enter: translateY(70px) + opacity 0 → 0 over 420 ms `_kSheetCurve`, scrim
+/// fading in over 300 ms. Dismiss on scrim tap, close button, or a downward
+/// drag on the grabber past 90 px.
+class _CareDetailSheet extends StatefulWidget {
+  final String glyph;
+  final Color tint;
+  final Color foreground;
+  final String title;
+  final String value;
+  final String body;
+  final List<(String, String)> keyValues;
+  final bool showMoistureScale;
+  final int? moistureMin;
+  final int? moistureMax;
+  final String dryLabel;
+  final String wetLabel;
+
+  const _CareDetailSheet({
+    required this.glyph,
+    required this.tint,
+    required this.foreground,
+    required this.title,
+    required this.value,
+    required this.body,
+    required this.keyValues,
+    required this.showMoistureScale,
+    required this.moistureMin,
+    required this.moistureMax,
+    required this.dryLabel,
+    required this.wetLabel,
+  });
+
+  @override
+  State<_CareDetailSheet> createState() => _CareDetailSheetState();
+}
+
+class _CareDetailSheetState extends State<_CareDetailSheet>
+    with SingleTickerProviderStateMixin {
+  static const _dismissThreshold = 90.0;
+
+  late final AnimationController _snapBack = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+  )..addListener(() => setState(() {}));
+
+  double _drag = 0;
+  double _dragAtRelease = 0;
+
+  @override
+  void dispose() {
+    _snapBack.dispose();
+    super.dispose();
+  }
+
+  double get _dragOffset => _snapBack.isAnimating
+      ? _dragAtRelease * (1 - Curves.easeOut.transform(_snapBack.value))
+      : _drag;
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    _snapBack.stop();
+    setState(() => _drag = math.max(0, _drag + d.delta.dy));
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    if (_drag > _dismissThreshold || d.velocity.pixelsPerSecond.dy > 700) {
+      Navigator.of(context).pop();
+      return;
+    }
+    _dragAtRelease = _drag;
+    _drag = 0;
+    _snapBack.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final animation = ModalRoute.of(context)?.animation;
+
+    return AnimatedBuilder(
+      animation: animation ?? const AlwaysStoppedAnimation(1.0),
+      builder: (context, _) {
+        final raw = animation?.value ?? 1.0;
+        final rise = _kSheetCurve.transform(raw.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+        // Scrim fades over 300 ms of the 420 ms enter.
+        final scrimT = Curves.easeOut.transform((raw / 0.71).clamp(0.0, 1.0));
+
+        return Stack(
+          children: [
+            // Scrim: rgba(18,24,14,.28) + blur(6px) → sigma 3. Tap to dismiss.
+            Positioned.fill(
+              child: Opacity(
+                opacity: scrimT,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                    child: const ColoredBox(color: Color(0x4712180E)),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 8,
+              right: 8,
+              bottom: 8 + media.padding.bottom,
+              child: Transform.translate(
+                offset: Offset(0, 70 * (1 - rise) + _dragOffset),
+                child: Opacity(opacity: rise, child: _sheet(context, media)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _sheet(BuildContext context, MediaQueryData media) {
+    final paragraphs = widget.body
+        .split('\n')
+        .map((s) => s.replaceAll(RegExp(r'^[-•*]\s*'), '').trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: media.size.height * 0.76),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(34)),
+          boxShadow: [
+            BoxShadow(
+                color: Color(0x6614200F),
+                blurRadius: 50,
+                spreadRadius: -18,
+                offset: Offset(0, -20)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(34)),
+          child: BackdropFilter(
+            filter: _kSheetFilter,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xD1FCFDFB), // rgba(252,253,251,.82)
+                borderRadius: const BorderRadius.all(Radius.circular(34)),
+                border: Border.all(color: const Color(0xE6FFFFFF), width: 0.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Grabber + header are the drag handle; the body keeps its
+                  // own scrolling.
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragUpdate: _onDragUpdate,
+                    onVerticalDragEnd: _onDragEnd,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 5,
+                          margin: const EdgeInsets.only(top: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0x29141E0F), // rgba(20,30,15,.16)
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                        _header(context),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.keyValues.isNotEmpty) _keyValueStrip(),
+                          if (widget.showMoistureScale) _moistureScale(),
+                          for (var i = 0; i < paragraphs.length; i++)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                  bottom: i == paragraphs.length - 1 ? 0 : 12),
+                              child: Text(
+                                paragraphs[i],
+                                style: _font(
+                                    fontSize: 15, height: 1.6, color: _kInk2),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // gap 13 · 44×44 tile radius 16 icon 21 · title 21/600/-.03em
+  // · value pill 12/600 · 32 px close button rgba(20,30,15,.07)
+  Widget _header(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 15, 20, 4),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: widget.tint,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xB3FFFFFF), width: 0.5),
+            ),
+            child: Center(
+              child: _Glyph(widget.glyph, size: 21, color: widget.foreground),
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.title,
+                  style: _font(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 21 * -0.03,
+                    color: _kInk,
+                  ),
+                ),
+                if (widget.value.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.tint,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      widget.value,
+                      style: _font(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: widget.foreground),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _PressScale(
+            scale: 0.9,
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0x12141E0F), // rgba(20,30,15,.07)
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: _Glyph(_Svg.close, size: 14, color: _kMut),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Equal cells · rgba(255,255,255,.7) · .5px rgba(255,255,255,.9) · radius 16
+  // · padding 11 8 · caption 10/600 uppercase .06em over value 14.5/600
+  Widget _keyValueStrip() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          for (var i = 0; i < widget.keyValues.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+                decoration: BoxDecoration(
+                  color: const Color(0xB3FFFFFF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xE6FFFFFF), width: 0.5),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      widget.keyValues[i].$1.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _font(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 10 * 0.06,
+                        color: _kMut,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.keyValues[i].$2,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _font(
+                          fontSize: 14.5, fontWeight: FontWeight.w600, color: _kInk),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 8 px bar · gradient #E8D3A6 → #A9CE8C → #3E8E3B → #2E86C8
+  // · 20 px white knob with a 3 px accent ring
+  Widget _moistureScale() {
+    final min = widget.moistureMin;
+    final max = widget.moistureMax;
+    final midpoint = (min != null && max != null)
+        ? ((min + max) / 2 / 100).clamp(0.0, 1.0)
+        : 0.38;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 16),
+      child: Column(
+        children: [
+          LayoutBuilder(
+            builder: (context, c) => SizedBox(
+              height: 8,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                        gradient: LinearGradient(colors: [
+                          Color(0xFFE8D3A6),
+                          Color(0xFFA9CE8C),
+                          Color(0xFF3E8E3B),
+                          Color(0xFF2E86C8),
+                        ]),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: (c.maxWidth - 20) * midpoint,
+                    top: -6,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(color: _kAccent, width: 3),
+                        boxShadow: const [
+                          BoxShadow(
+                              color: Color(0x38000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(widget.dryLabel,
+                  style: _font(fontSize: 11, color: _kMut2)),
+              if (min != null && max != null)
+                Text('$min–$max%',
+                    style: _font(fontSize: 11, color: _kMut2)),
+              Text(widget.wetLabel,
+                  style: _font(fontSize: 11, color: _kMut2)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  More menu
+// ════════════════════════════════════════════════════════════════════════════
+
+class _MoreMenuSheet extends StatelessWidget {
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final String editLabel;
+  final String deleteLabel;
+
+  const _MoreMenuSheet({
+    required this.onEdit,
+    required this.onDelete,
+    required this.editLabel,
+    required this.deleteLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.all(Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+              color: Color(0x6614200F),
+              blurRadius: 50,
+              spreadRadius: -18,
+              offset: Offset(0, -20)),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.all(Radius.circular(28)),
+        child: BackdropFilter(
+          filter: _kSheetFilter,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xD1FCFDFB),
+              borderRadius: const BorderRadius.all(Radius.circular(28)),
+              border: Border.all(color: const Color(0xE6FFFFFF), width: 0.5),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 38,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0x29141E0F),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                _item(_Svg.edit, _kAccent, editLabel, _kInk, onEdit),
+                const Divider(
+                    height: 1, indent: 20, endIndent: 20, color: Color(0x12141E0F)),
+                _item(_Svg.trash, _kWarm, deleteLabel, _kWarm, onDelete),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _item(String glyph, Color iconColor, String label, Color textColor,
+      VoidCallback onTap) {
+    return _PressScale(
+      scale: 0.99,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(children: [
+          _Glyph(glyph, size: 20, color: iconColor),
+          const SizedBox(width: 14),
+          Text(
+            label,
+            style: _font(
+                fontSize: 16, fontWeight: FontWeight.w500, color: textColor),
+          ),
+        ]),
+      ),
+    );
+  }
+}

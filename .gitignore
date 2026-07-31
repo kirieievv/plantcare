@@ -3,8 +3,12 @@
 firebase-debug.log
 
 # Local workspace copies
-plant_care_dev/
 plant_care_clean/
+
+# Dev app build artifacts and local caches (the app itself IS tracked)
+plant_care_dev/functions/node_modules/
+plant_care_dev/.firebase/
+plant_care_dev/firepit-log.txt
 
 # Local secrets and recovery files
 twilio_2FA_recovery_code.txt
