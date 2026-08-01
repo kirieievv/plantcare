@@ -1,95 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Per-user document, plus everything nested under it — plant_chats/{plantId}/
-    // messages/{messageId} and chat_quotas/{plantId} both live here (confirmed in
-    // lib/screens/plant_chat_screen.dart). Owner-only, both directions: the client
-    // writes its own profile fields and chat messages directly, and reads its own
-    // quota. Firestore rules are NOT inherited by subcollections automatically —
-    // the nested {document=**} match is what covers plant_chats/messages/chat_quotas
-    // at any depth under this user.
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-
-      match /{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-    }
-
-    // Plants: owner CRUD directly from the client (add/edit/delete their own
-    // plants — confirmed in lib/screens/add_plant_screen.dart and friends).
-    match /plants/{plantId} {
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-    }
-
-    // Health checks: written server-side only by Cloud Functions (which use the
-    // Admin SDK and bypass these rules entirely, so no `create` rule is needed
-    // for them) — the client only ever reads its own, confirmed in
-    // lib/services/plant_service.dart and lib/screens/plant_details_screen.dart.
-    // A client-side create/update here would mean anyone could fabricate a fake
-    // "healthy" diagnosis or inject arbitrary content.
-    match /health_checks/{checkId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create, update, delete: if false;
-    }
-
-    // Watering events — unchanged from before: this rule was already correct,
-    // it was just silently overridden by the wildcard block at the bottom of
-    // the old file (Firestore rules are OR'd across every matching block for a
-    // given path, so a permissive wildcard anywhere defeats every stricter
-    // rule above it).
+    // Watering events: user can only create/read their own events
     match /watering_events/{eventId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow update, delete: if false;
     }
 
-    // FCM tokens: doc id is the token string itself, userId lives in the body
-    // (confirmed in lib/services/notification_service.dart, which sets/deletes
-    // by token id directly from the client). Never read back client-side —
-    // only Cloud Functions query these (Admin SDK, bypasses rules) to send pushes.
-    match /fcm_tokens/{token} {
-      allow read: if false;
-      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-
-    // Global, non-personal content: any signed-in user may read; nobody writes
-    // from the client (server-managed — seasonal_tips by a scheduled Function,
-    // app_config by hand/admin tooling).
-    match /seasonal_tips/{weekKey} {
-      allow read: if request.auth != null;
-      allow write: if false;
-    }
-    match /app_config/{docId} {
-      allow read: if request.auth != null;
-      allow write: if false;
-    }
-
-    // Pure server-internal collections — no client access at all, in either
-    // direction. password_reset_codes / email_verification_pins / mail are
-    // actively dangerous if client-readable or -writable (account takeover /
-    // spam-relay vectors), not just "shouldn't be touched".
-    match /ai_usage/{docId} { allow read, write: if false; }
-    match /ai_usage_daily/{docId} { allow read, write: if false; }
-    match /push_notifications/{docId} { allow read, write: if false; }
-    match /mail/{docId} { allow read, write: if false; }
-    match /password_reset_codes/{docId} { allow read, write: if false; }
-    match /email_verification_pins/{docId} { allow read, write: if false; }
-    match /scheduled_test_pushes/{docId} { allow read, write: if false; }
-    match /system/{docId} { allow read, write: if false; }
-
-    // Everything else: closed by default. The previous
-    // `match /{document=**} { allow read, write: if true; }` here was the
-    // actual vulnerability — it silently granted access to every collection
-    // above too (rules are OR'd, not first-match-wins), regardless of how
-    // tight the specific rules were. Deny-by-default is the correct posture;
-    // add a specific `match` block above for any new collection instead of
-    // loosening this one.
+    // Allow read/write access to all documents for testing
+    // WARNING: This is for development only - don't use in production!
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
+    
+    // For production, use more restrictive rules like:
+    // match /plants/{plantId} {
+    //   allow read, write: if request.auth != null;
+    // }
   }
-}
+} 
