@@ -868,7 +868,7 @@ abstract class AppLocalizations {
   /// No description provided for @everyNDays.
   ///
   /// In en, this message translates to:
-  /// **'Every {days} day(s)'**
+  /// **'{days, plural, one{Every {days} day} other{Every {days} days}}'**
   String everyNDays(int days);
 
   /// No description provided for @pleaseSelectWateringFrequency.
@@ -3190,7 +3190,7 @@ abstract class AppLocalizations {
   /// No description provided for @nDays.
   ///
   /// In en, this message translates to:
-  /// **'{days} days'**
+  /// **'{days, plural, =1{1 day} other{{days} days}}'**
   String nDays(int days);
 
   /// No description provided for @cycleJustStarted.
@@ -3222,6 +3222,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload a photo every couple of weeks — we\'ll build a health timeline'**
   String get healthCheckHistoryEmptyHint;
+
+  /// No description provided for @milliliters.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ml'**
+  String milliliters(int count);
+
+  /// No description provided for @millilitersShort.
+  ///
+  /// In en, this message translates to:
+  /// **'ML'**
+  String get millilitersShort;
+
+  /// No description provided for @nHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String nHours(String hours);
+
+  /// No description provided for @lightDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get lightDaily;
+
+  /// No description provided for @lightType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get lightType;
+
+  /// No description provided for @lightTypeDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get lightTypeDirect;
+
+  /// No description provided for @lightTypePartialSun.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial sun'**
+  String get lightTypePartialSun;
+
+  /// No description provided for @lightTypeBrightIndirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Bright indirect'**
+  String get lightTypeBrightIndirect;
+
+  /// No description provided for @lightTypeLowLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Low light'**
+  String get lightTypeLowLight;
+
+  /// No description provided for @everyDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get everyDay;
+
+  /// No description provided for @healthCheckSeverity.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity'**
+  String get healthCheckSeverity;
+
+  /// No description provided for @healthCheckFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up'**
+  String get healthCheckFollowUp;
+
+  /// No description provided for @severityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get severityLow;
+
+  /// No description provided for @severityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get severityMedium;
+
+  /// No description provided for @severityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get severityHigh;
+
+  /// No description provided for @careKvFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get careKvFrequency;
+
+  /// No description provided for @careKvSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'Season'**
+  String get careKvSeason;
+
+  /// No description provided for @careKvOptimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimal'**
+  String get careKvOptimal;
+
+  /// No description provided for @careKvMinimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum'**
+  String get careKvMinimum;
+
+  /// No description provided for @careKvDose.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get careKvDose;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

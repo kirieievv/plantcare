@@ -19,6 +19,7 @@ import 'package:plant_care/services/health_check_service.dart';
 import 'package:plant_care/services/navigation_service.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/widgets/health_check_modal.dart';
+import 'package:plant_care/utils/care_sections.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Design tokens — Botanly Plant Screen v8 (Liquid Glass)
@@ -186,6 +187,10 @@ class _Svg {
 
   static const fertilizer = '$_open stroke-width="1.8"><path d="M12 22V12M12 '
       '12C12 7 17 5 17 5M12 12C12 7 7 5 7 5"/></svg>';
+
+  static const pin = '$_open stroke-width="1.8"><path d="M12 21.5s7-6.2 '
+      '7-11.2a7 7 0 10-14 0c0 5 7 11.2 7 11.2z"/><circle cx="12" cy="10.3" '
+      'r="2.6"/></svg>';
 
   static const trendingUp = '$_open stroke-width="1.8"><polyline points="22 7 '
       '13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>';
@@ -407,11 +412,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         );
       }
 
-      bool upd(String? v) => v != null && v.trim().isNotEmpty;
-      final newMoisture = result['moisture_level'] ??
-          (result['care_recommendations'] as Map?)?['moisture'];
-      final newLight =
-          result['light'] ?? (result['care_recommendations'] as Map?)?['light'];
+      // The analyzer types these as strings but is not bound by that, and a
+      // stray number here would blow up the whole check on an implicit cast.
+      String? str(dynamic v) {
+        if (v == null || v is Map || v is List) return null;
+        final s = v.toString().trim();
+        return s.isEmpty ? null : s;
+      }
+
+      final care = result['care_recommendations'] as Map?;
+      final newMoisture = str(result['moisture_level']) ?? str(care?['moisture']);
+      final newLight = str(result['light']) ?? str(care?['light']);
       final newAmountMl = result['amount_ml'];
       final newRangeMl = result['range_ml'];
 
@@ -419,13 +430,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         healthStatus: result['status'],
         healthMessage: result['message'],
         lastHealthCheck: now,
-        aiPlantSize: upd(result['plant_size']) ? result['plant_size'] : _plant.aiPlantSize,
-        aiPotSize: upd(result['pot_size']) ? result['pot_size'] : _plant.aiPotSize,
-        aiGrowthStage:
-            upd(result['growth_stage']) ? result['growth_stage'] : _plant.aiGrowthStage,
-        aiMoistureLevel: upd(newMoisture) ? newMoisture : _plant.aiMoistureLevel,
-        aiLight: upd(newLight) ? newLight : _plant.aiLight,
+        aiPlantSize: str(result['plant_size']) ?? _plant.aiPlantSize,
+        aiPotSize: str(result['pot_size']) ?? _plant.aiPotSize,
+        aiGrowthStage: str(result['growth_stage']) ?? _plant.aiGrowthStage,
+        aiMoistureLevel: newMoisture ?? _plant.aiMoistureLevel,
+        aiLight: newLight ?? _plant.aiLight,
         aiCareTips: _plant.aiCareTips,
+        careDetails: result['care_details'] as Map<String, String>? ??
+            _plant.careDetails,
         interestingFacts: _plant.interestingFacts,
         wateringAmountMl: newAmountMl != null
             ? (newAmountMl is int
@@ -441,7 +453,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         nextAfterWateringHours:
             result['next_after_watering_in_hours'] ?? _plant.nextAfterWateringHours,
         nextCheckHours: result['next_check_in_hours'] ?? _plant.nextCheckHours,
-        wateringMode: upd(result['mode']) ? result['mode'] : _plant.wateringMode,
+        wateringMode: str(result['mode']) ?? _plant.wateringMode,
         nextDueAt: newNext ?? _plant.nextDueAt,
         nextWatering: newNext ?? _plant.nextWatering,
         wateringIntervalDays: newDays ?? _plant.wateringIntervalDays,
@@ -610,17 +622,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   // ── health status ─────────────────────────────────────────────────────────
 
   String _healthStatusLabel() {
-    if (_plant.healthStatus == 'issue') return 'Issue';
-    if (_plant.healthStatus == 'ok') return 'Healthy';
+    if (_plant.healthStatus == 'issue') return l10n.healthStatusIssue;
+    if (_plant.healthStatus == 'ok') return l10n.healthy;
     final msg = _plant.healthMessage?.toLowerCase();
     if (msg == null) return '';
     const issueWords = [
       'wilted', 'drooping', 'yellow', 'brown', 'problem', 'issue',
       'concern', 'sick', 'overwatered', 'pest', 'disease',
     ];
-    if (issueWords.any(msg.contains)) return 'Issue';
+    if (issueWords.any(msg.contains)) return l10n.healthStatusIssue;
     const healthyWords = ['healthy', 'thriving', 'robust', 'flourishing'];
-    if (healthyWords.any(msg.contains)) return 'Healthy';
+    if (healthyWords.any(msg.contains)) return l10n.healthy;
     return '';
   }
 
@@ -639,31 +651,53 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   // ── AI text extraction ────────────────────────────────────────────────────
 
-  /// Pulls one section body out of the markdown blob in [Plant.aiCareTips].
-  /// [names] are matched case-insensitively; pass the localized heading first
-  /// because the AI writes headings in the user's language.
-  String _section(List<String> names) {
+  Map<String, String> _careSections = const {};
+  String? _parsedFrom;
+
+  /// Section bodies keyed by [CareSection], reparsed only when the blob changes.
+  Map<String, String> get _care {
     final tips = _plant.aiCareTips;
-    if (tips == null || tips.isEmpty) return '';
-    for (final n in names) {
-      if (n.trim().isEmpty) continue;
-      final re = RegExp(
-        r'(?:##?\s*|\*\*)?' + RegExp.escape(n) + r'[^\n:]*\*?\*?:?\s*\n((?:(?!\n##|\n\*\*[A-Z]).)+)',
-        caseSensitive: false,
-        dotAll: true,
-      );
-      final body = re.firstMatch(tips)?.group(1)?.trim() ?? '';
-      if (body.isNotEmpty) return body;
+    if (tips != _parsedFrom) {
+      _parsedFrom = tips;
+      _careSections = parseCareSections(tips);
     }
-    return '';
+    return _careSections;
   }
 
-  String _firstLine(String text, [int max = 55]) {
-    final line = text
+  String _section(String key) => _care[key] ?? '';
+
+  /// A compact label straight from the analyzer, or null when this plant was
+  /// analysed before those fields existed — every caller has a fallback.
+  String? _detail(String key) {
+    final v = _plant.careDetails?[key]?.trim();
+    return (v == null || v.isEmpty) ? null : v;
+  }
+
+  /// Prefers the analyzer's own short label, falling back to trimming the
+  /// section prose.
+  String _rowValue(String detailKey, String body) =>
+      _detail(detailKey) ?? _summarize(body);
+
+  /// "Every 1 day" reads wrong in every language, so the daily case has its own
+  /// phrasing rather than a plural branch.
+  String _everyN(int days) =>
+      days == 1 ? l10n.everyDay : l10n.everyNDays(days);
+
+  /// A care row shows a value at a glance, so give it the opening sentence
+  /// rather than an arbitrary slice of the paragraph. Anything still too long
+  /// is cut on a word boundary.
+  String _summarize(String text, [int max = 44]) {
+    var s = text
         .split('\n')
-        .map((s) => s.replaceAll(RegExp(r'^[-•*]\s*'), '').trim())
-        .firstWhere((s) => s.isNotEmpty, orElse: () => '');
-    return line.length > max ? '${line.substring(0, max)}…' : line;
+        .map((l) => l.replaceAll(RegExp(r'^[-•*\s]+'), '').trim())
+        .firstWhere((l) => l.isNotEmpty, orElse: () => '');
+    if (s.isEmpty) return '';
+    // Decimals such as "pH 6.0" are not sentence ends: require a space after.
+    final stop = RegExp(r'[.;!?](\s|$)').firstMatch(s);
+    if (stop != null) s = s.substring(0, stop.start).trim();
+    if (s.length <= max) return s;
+    final space = s.lastIndexOf(' ', max);
+    return '${s.substring(0, space > max ~/ 2 ? space : max).trimRight()}…';
   }
 
   String _moistureLabel() {
@@ -681,7 +715,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     return v;
   }
 
+  // The keyword matching below only ever worked on English prose, and the
+  // analyzer writes `aiLight` in the user's language — so for everyone else it
+  // silently returned the default. It survives purely for plants analysed
+  // before `careDetails` existed.
+
   String _lightHours() {
+    final structured = _detail(CareDetail.lightHours);
+    if (structured != null) return structured;
     final l = _plant.aiLight?.toLowerCase();
     if (l == null) return '4–6';
     final m = RegExp(r'(\d+)\s*(?:hours?|hrs?|ч)').firstMatch(l);
@@ -693,13 +734,32 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   }
 
   String _lightType() {
+    final structured = _detail(CareDetail.lightType);
+    if (structured != null) return structured;
     final l = _plant.aiLight?.toLowerCase();
-    if (l == null) return 'Bright indirect';
-    if (l.contains('full sun') || l.contains('direct sun')) return 'Direct';
-    if (l.contains('partial sun')) return 'Partial sun';
-    if (l.contains('bright indirect')) return 'Bright indirect';
-    if (l.contains('low light') || l.contains('shade')) return 'Low light';
-    return 'Bright indirect';
+    if (l == null) return l10n.lightTypeBrightIndirect;
+    if (l.contains('full sun') || l.contains('direct sun')) {
+      return l10n.lightTypeDirect;
+    }
+    if (l.contains('partial sun')) return l10n.lightTypePartialSun;
+    if (l.contains('bright indirect')) return l10n.lightTypeBrightIndirect;
+    if (l.contains('low light') || l.contains('shade')) {
+      return l10n.lightTypeLowLight;
+    }
+    return l10n.lightTypeBrightIndirect;
+  }
+
+  /// Older plants only carry the free-text `aiWateringAmount` ("about 250 ml"),
+  /// so the dose badge falls back to the first millilitre figure in it.
+  int? _doseMl() {
+    final stored = _plant.wateringAmountMl;
+    if (stored != null && stored > 0) return stored;
+    final raw = _plant.aiWateringAmount;
+    if (raw == null) return null;
+    final m = RegExp(r'(\d+)\s*(?:ml|мл|ml\.)', caseSensitive: false)
+        .firstMatch(raw);
+    final parsed = m != null ? int.tryParse(m.group(1)!) : null;
+    return (parsed != null && parsed > 0) ? parsed : null;
   }
 
   bool _hasNoIssues(String? t) {
@@ -976,10 +1036,33 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   // padding 16 18 · align center · name 27/600/-.03em/1.08
   // · latin 13/400 · health chip with a pulsing dot
 
+  /// The name is whatever the owner typed; the line under it is the botanical
+  /// identification. When identification failed, `species` holds a placeholder
+  /// like "Unknown Species" — showing that is worse than showing nothing, so
+  /// fall back to the cultivar the analyzer wrote into the care blob.
+  String _botanicalName() {
+    const placeholders = {
+      'unknown',
+      'unknown species',
+      'unknown plant',
+      'n/a',
+      'none',
+    };
+    for (final candidate in [_plant.species, _section(CareSection.cultivar)]) {
+      final s = candidate.trim();
+      if (s.isEmpty ||
+          s == _plant.name ||
+          placeholders.contains(s.toLowerCase())) {
+        continue;
+      }
+      return s;
+    }
+    return '';
+  }
+
   Widget _buildTitleCard() {
     final status = _healthStatusLabel();
-    final hasLatin =
-        _plant.species.isNotEmpty && _plant.species != _plant.name;
+    final latin = _botanicalName();
 
     return _glass(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -999,10 +1082,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                     color: _kInk,
                   ),
                 ),
-                if (hasLatin) ...[
+                if (latin.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(
-                    _plant.species,
+                    latin,
                     // .sci resets the inherited tracking to 0
                     style: _font(fontSize: 13, letterSpacing: 0, color: _kMut),
                   ),
@@ -1072,7 +1155,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   Widget _buildWateringCard() {
     final canWater = _canWaterPlant();
-    final amount = _plant.wateringAmountMl;
+    final amount = _doseMl();
     final interval = _wateringInterval();
     final lastWatered = _plant.lastWateredAt ?? _plant.lastWatered;
     final progress = _wateredJustNow ? 0.04 : _cycleProgress();
@@ -1119,7 +1202,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                           Text(
                             '${l10n.lastWatered} '
                             '${DateFormat.MMMd().format(lastWatered)} · '
-                            '${l10n.everyNDays(interval)}',
+                            '${_everyN(interval)}',
                             style: _font(fontSize: 13, color: _kMut),
                           ),
                         ],
@@ -1182,7 +1265,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           ),
           const SizedBox(height: 2),
           Text(
-            'ML',
+            l10n.millilitersShort,
             style: _font(
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -1318,43 +1401,53 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   Widget _buildCareTab() {
     final interval = _wateringInterval();
-    final amount = _plant.wateringAmountMl;
+    final amount = _doseMl();
     final range = _plant.wateringRangeMl;
 
-    final waterBody = _section([l10n.careSectionWater, 'Water', 'Watering']);
-    final soilBody = _section([l10n.careSectionSoil, 'Soil']);
-    final moistureBody = _section([l10n.careSectionSoilMoisture, 'Soil Moisture']);
-    final lightBody = _section([l10n.careSectionLight, 'Light']);
-    final tempBody = _section([l10n.careSectionTemperature, 'Temperature']);
-    final fertBody = _section([l10n.careSectionFertilizer, 'Fertilizer']);
+    final waterBody = _section(CareSection.water);
+    final soilBody = _section(CareSection.soil);
+    final moistureBody = _section(CareSection.soilMoisture);
+    final moistureCheck = _section(CareSection.moistureCheck);
+    final lightBody = _section(CareSection.light);
+    final tempBody = _section(CareSection.temperature);
+    final fertBody = _section(CareSection.fertilizer);
+    final placementBody = _section(CareSection.placement);
+
+    // The watering sheet is where the finger test belongs: it is the check you
+    // run right before you decide to water.
+    final waterSheetBody =
+        [waterBody, moistureCheck].where((s) => s.isNotEmpty).join('\n\n');
 
     final rows = <Widget>[
       _careRow(
         tone: _CareTone.water,
         glyph: _Svg.drop,
         title: l10n.careSectionWater,
-        value: amount != null && amount > 0
-            ? '${l10n.everyNDays(interval)} · $amount ml'
-            : l10n.everyNDays(interval),
-        body: waterBody,
+        value: amount != null
+            ? '${_everyN(interval)} · ${l10n.milliliters(amount)}'
+            : _everyN(interval),
+        body: waterSheetBody,
         keyValues: [
-          (l10n.wateringFrequency, l10n.nDays(interval)),
-          if (amount != null && amount > 0)
+          (l10n.careKvFrequency, l10n.nDays(interval)),
+          if (amount != null)
             (
               l10n.wateringAmount,
               range != null && range.length == 2
-                  ? '${range[0]}–${range[1]} ml'
-                  : '$amount ml'
+                  ? '${range[0]}–${l10n.milliliters(range[1])}'
+                  : l10n.milliliters(amount)
             ),
+          if (_detail(CareDetail.wateringSeason) case final season?)
+            (l10n.careKvSeason, season),
         ],
       ),
-      _careRow(
-        tone: _CareTone.leaf,
-        glyph: _Svg.soil,
-        title: l10n.careSectionSoil,
-        value: _firstLine(soilBody),
-        body: soilBody,
-      ),
+      if (soilBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.soil,
+          title: l10n.careSectionSoil,
+          value: _rowValue(CareDetail.soilShort, soilBody),
+          body: soilBody,
+        ),
       if (_plant.aiMoistureLevel != null)
         _careRow(
           tone: _CareTone.leaf,
@@ -1373,11 +1466,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.sun,
           glyph: _Svg.sun,
           title: l10n.careSectionLight,
-          value: '${_lightHours()} h · ${_lightType()}',
+          value: '${l10n.nHours(_lightHours())} · ${_lightType()}',
           body: lightBody.isNotEmpty ? lightBody : _plant.aiLight!,
           keyValues: [
-            ('Daily', '${_lightHours()} h'),
-            ('Type', _lightType()),
+            (l10n.lightDaily, l10n.nHours(_lightHours())),
+            (l10n.lightType, _lightType()),
           ],
         ),
       if (tempBody.isNotEmpty)
@@ -1385,16 +1478,36 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.warm,
           glyph: _Svg.thermometer,
           title: l10n.careSectionTemperature,
-          value: _firstLine(tempBody),
+          value: _rowValue(CareDetail.temperatureShort, tempBody),
           body: tempBody,
+          keyValues: [
+            if (_detail(CareDetail.temperatureOptimal) case final v?)
+              (l10n.careKvOptimal, v),
+            if (_detail(CareDetail.temperatureMinimum) case final v?)
+              (l10n.careKvMinimum, v),
+          ],
         ),
       if (fertBody.isNotEmpty)
         _careRow(
           tone: _CareTone.leaf,
           glyph: _Svg.fertilizer,
           title: l10n.careSectionFertilizer,
-          value: _firstLine(fertBody),
+          value: _rowValue(CareDetail.fertilizerShort, fertBody),
           body: fertBody,
+          keyValues: [
+            if (_detail(CareDetail.fertilizerFrequency) case final v?)
+              (l10n.careKvFrequency, v),
+            if (_detail(CareDetail.fertilizerDose) case final v?)
+              (l10n.careKvDose, v),
+          ],
+        ),
+      if (placementBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.pin,
+          title: l10n.careSectionPlacement,
+          value: _rowValue(CareDetail.placementShort, placementBody),
+          body: placementBody,
         ),
       if (!_hasNoIssues(_plant.aiSpecificIssues))
         _buildIssuesCard(_plant.aiSpecificIssues!),
@@ -1599,11 +1712,14 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   Widget _buildAboutTab() {
     // Growth Rate / Personality / Toxicity live as sections inside aiCareTips —
     // the model has no dedicated fields for them.
-    final growth = _section([l10n.careSectionGrowthRate, 'Growth Rate', 'Growth']);
-    final personality = _section([l10n.careSectionPersonality, 'Personality']);
-    final toxicity = _section([l10n.careSectionToxicity, 'Toxicity']);
+    final growth = _section(CareSection.growthRate);
+    final personality = _section(CareSection.personality);
+    final toxicity = _section(CareSection.toxicity);
     final growthBody =
         [growth, personality].where((s) => s.isNotEmpty).join('\n\n');
+    final description = _plant.aiGeneralDescription?.trim().isNotEmpty ?? false
+        ? _plant.aiGeneralDescription!
+        : _section(CareSection.generalDescription);
 
     // Short trait chips. interestingFacts are full sentences and already have
     // their own card, so they must not be reused here.
@@ -1615,13 +1731,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     ].map((s) => s.trim()).where((s) => s.isNotEmpty && s.length <= 28).toList();
 
     final cards = <Widget>[
-      if (_plant.aiGeneralDescription?.isNotEmpty ?? false)
+      if (description.isNotEmpty)
         _aboutCard(
           glyph: _Svg.leaf,
           tint: _kLeafBg,
           foreground: _kAccent,
           title: l10n.aboutPlantTitle,
-          body: _plant.aiGeneralDescription!,
+          body: description,
           tags: traits,
         ),
       if (growthBody.isNotEmpty)
@@ -1919,54 +2035,133 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     );
   }
 
+  String _verdictOf(HealthCheckRecord record, Map<String, dynamic>? assistant) {
+    final praise = assistant?['praise_phrase']?.toString().trim();
+    if (praise != null && praise.isNotEmpty) return praise;
+    final problem = assistant?['problem_name']?.toString().trim();
+    if (problem != null && problem.isNotEmpty) return problem;
+    return record.status == 'ok' ? l10n.healthy : l10n.healthIssueDetected;
+  }
+
+  static String? _checkImageUrl(HealthCheckRecord record) =>
+      record.imageUrls.isNotEmpty ? record.imageUrls.first : record.imageUrl;
+
   Widget _buildHistoryRow(HealthCheckRecord record) {
     final ok = record.status == 'ok';
-    final imgUrl =
-        record.imageUrls.isNotEmpty ? record.imageUrls.first : record.imageUrl;
+    final imgUrl = _checkImageUrl(record);
     final assistant = _tryParsePlantAssistant(record.message);
-    final verdict = assistant?['praise_phrase']?.toString() ??
-        assistant?['problem_name']?.toString() ??
-        (ok ? 'Healthy' : 'Issue detected');
+    final verdict = _verdictOf(record, assistant);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: imgUrl != null && imgUrl.isNotEmpty
-                ? Image.network(imgUrl,
-                    width: 46,
-                    height: 46,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _historyThumbFallback())
-                : _historyThumbFallback(),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DateFormat.yMMMd().format(record.timestamp),
-                  style: _font(
-                      fontSize: 13.5, fontWeight: FontWeight.w600, color: _kInk),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  verdict,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: _font(
-                      fontSize: 12, color: ok ? _kAccent : _kWarm),
-                ),
-              ],
+    return _PressScale(
+      scale: 0.985,
+      onTap: () => _openHealthCheckSheet(record, assistant),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imgUrl != null && imgUrl.isNotEmpty
+                  ? Image.network(imgUrl,
+                      width: 46,
+                      height: 46,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _historyThumbFallback())
+                  : _historyThumbFallback(),
             ),
-          ),
-          const _Glyph(_Svg.chevronRight, size: 15, color: _kChev),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DateFormat.yMMMd().format(record.timestamp),
+                    style: _font(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: _kInk),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    verdict,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _font(fontSize: 12, color: ok ? _kAccent : _kWarm),
+                  ),
+                ],
+              ),
+            ),
+            const _Glyph(_Svg.chevronRight, size: 15, color: _kChev),
+          ],
+        ),
       ),
     );
+  }
+
+  String _severityLabel(String raw) => switch (raw.toLowerCase().trim()) {
+        'low' || 'mild' || 'minor' => l10n.severityLow,
+        'medium' || 'moderate' => l10n.severityMedium,
+        'high' || 'severe' || 'critical' => l10n.severityHigh,
+        _ => raw,
+      };
+
+  /// Expands a stored check into the same glass sheet the care rows use. The
+  /// analyzer writes one of two shapes — a praise/summary pair when the plant
+  /// is fine, or a problem with action steps when it is not.
+  void _openHealthCheckSheet(
+    HealthCheckRecord record,
+    Map<String, dynamic>? assistant,
+  ) {
+    HapticFeedback.selectionClick();
+    final ok = record.status == 'ok';
+
+    String? text(String key) {
+      final v = assistant?[key]?.toString().trim();
+      return (v == null || v.isEmpty) ? null : v;
+    }
+
+    final steps = (assistant?['action_steps'] as List?)
+            ?.map((s) => s.toString().trim())
+            .where((s) => s.isNotEmpty)
+            .map((s) => '• $s') ??
+        const <String>[];
+
+    final paragraphs = <String>[
+      ?text('health_summary'),
+      ?text('problem_description'),
+      ...steps,
+      ?text('reassurance'),
+      ?text('maintenance_footer'),
+    ];
+    // Older checks stored the raw model reply instead of a JSON payload.
+    final body = paragraphs.isNotEmpty
+        ? paragraphs.join('\n')
+        : record.message.trim();
+
+    final severity = text('severity');
+    final followUp = assistant?['follow_up_days'];
+    final followUpDays =
+        followUp is int ? followUp : int.tryParse('${followUp ?? ''}');
+
+    Navigator.of(context).push(_CareSheetRoute(
+      builder: (_) => _CareDetailSheet(
+        glyph: ok ? _Svg.check : _Svg.warningTriangle,
+        tint: ok ? _kLeafBg : _kWarmBg,
+        foreground: ok ? _kAccent : _kWarm,
+        title: _verdictOf(record, assistant),
+        value: DateFormat.yMMMMd().add_jm().format(record.timestamp),
+        body: body.isNotEmpty ? body : l10n.noDataAvailable,
+        keyValues: [
+          if (severity != null)
+            (l10n.healthCheckSeverity, _severityLabel(severity)),
+          if (followUpDays != null && followUpDays > 0)
+            (l10n.healthCheckFollowUp, l10n.nDays(followUpDays)),
+        ],
+        imageUrl: _checkImageUrl(record),
+        dryLabel: l10n.moistureDry,
+        wetLabel: l10n.moistureWet,
+      ),
+    ));
   }
 
   Widget _historyThumbFallback() => Container(
@@ -2504,6 +2699,7 @@ class _CareDetailSheet extends StatefulWidget {
   final int? moistureMax;
   final String dryLabel;
   final String wetLabel;
+  final String? imageUrl;
 
   const _CareDetailSheet({
     required this.glyph,
@@ -2513,11 +2709,12 @@ class _CareDetailSheet extends StatefulWidget {
     required this.value,
     required this.body,
     required this.keyValues,
-    required this.showMoistureScale,
-    required this.moistureMin,
-    required this.moistureMax,
     required this.dryLabel,
     required this.wetLabel,
+    this.imageUrl,
+    this.showMoistureScale = false,
+    this.moistureMin,
+    this.moistureMax,
   });
 
   @override
@@ -2664,6 +2861,7 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (widget.imageUrl?.isNotEmpty ?? false) _photo(),
                           if (widget.keyValues.isNotEmpty) _keyValueStrip(),
                           if (widget.showMoistureScale) _moistureScale(),
                           for (var i = 0; i < paragraphs.length; i++)
@@ -2683,6 +2881,23 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _photo() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: AspectRatio(
+          aspectRatio: 4 / 3,
+          child: Image.network(
+            widget.imageUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const ColoredBox(color: _kLeafBg),
           ),
         ),
       ),

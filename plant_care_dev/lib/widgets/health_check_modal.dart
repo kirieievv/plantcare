@@ -15,6 +15,7 @@ import 'package:http/http.dart' as http;
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/language_service.dart';
 import 'package:plant_care/utils/web_file_picker.dart';
+import 'package:plant_care/utils/care_sections.dart';
 import 'package:uuid/uuid.dart';
 
 enum HealthCheckAnalysisMode { aiCare, aiAgent }
@@ -268,6 +269,11 @@ class _HealthCheckModalState extends State<HealthCheckModal>
         final light = recommendations['light'] ?? result['light'];
         final careTips = recommendations['care_tips'];
         final interestingFacts = recommendations['interesting_facts'];
+        // The agent re-derives full care guidance on every check, so a plant
+        // created before the analyzer returned structured details picks them up
+        // here without a full re-analysis.
+        final careRecommendations = recommendations['care_recommendations'];
+        final careDetails = extractCareDetails(careRecommendations);
 
         final wateringPlanRaw = recommendations['watering_plan'];
         final wateringPlan = wateringPlanRaw is Map
@@ -324,6 +330,8 @@ class _HealthCheckModalState extends State<HealthCheckModal>
           'moisture_level': moistureLevel,
           'light': light,
           'care_tips': careTips,
+          'care_recommendations': careRecommendations,
+          'care_details': careDetails,
           'interesting_facts': interestingFacts,
           'amount_ml': wateringAmountMl,
           'range_ml': wateringRangeMl,

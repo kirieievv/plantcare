@@ -417,7 +417,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String everyNDays(int days) {
-    return 'Cada $days día(s)';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Cada $days días',
+      one: 'Cada $days día',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1648,7 +1654,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String nDays(int days) {
-    return '$days días';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days días',
+      one: '1 día',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1667,4 +1679,68 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get healthCheckHistoryEmptyHint => 'Sube una foto cada par de semanas y crearemos una cronología de salud';
+
+  @override
+  String milliliters(int count) {
+    return '$count ml';
+  }
+
+  @override
+  String get millilitersShort => 'ML';
+
+  @override
+  String nHours(String hours) {
+    return '$hours h';
+  }
+
+  @override
+  String get lightDaily => 'Al día';
+
+  @override
+  String get lightType => 'Tipo';
+
+  @override
+  String get lightTypeDirect => 'Directa';
+
+  @override
+  String get lightTypePartialSun => 'Sol parcial';
+
+  @override
+  String get lightTypeBrightIndirect => 'Brillante indirecta';
+
+  @override
+  String get lightTypeLowLight => 'Poca luz';
+
+  @override
+  String get everyDay => 'Cada día';
+
+  @override
+  String get healthCheckSeverity => 'Gravedad';
+
+  @override
+  String get healthCheckFollowUp => 'Seguimiento';
+
+  @override
+  String get severityLow => 'Baja';
+
+  @override
+  String get severityMedium => 'Media';
+
+  @override
+  String get severityHigh => 'Alta';
+
+  @override
+  String get careKvFrequency => 'Frecuencia';
+
+  @override
+  String get careKvSeason => 'Temporada';
+
+  @override
+  String get careKvOptimal => 'Óptima';
+
+  @override
+  String get careKvMinimum => 'Mínima';
+
+  @override
+  String get careKvDose => 'Dosis';
 }

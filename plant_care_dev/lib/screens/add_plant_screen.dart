@@ -27,6 +27,7 @@ import 'package:plant_care/services/language_service.dart';
 import 'package:plant_care/widgets/botanly_shimmer.dart';
 import 'package:plant_care/utils/web_file_picker.dart';
 import 'package:plant_care/utils/cloud_functions.dart';
+import 'package:plant_care/utils/care_sections.dart';
 
 Map<String, dynamic>? _asStringKeyedMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -52,148 +53,33 @@ String? _firstNonEmptyString(Iterable<dynamic?> values) {
   return null;
 }
 
-/// Builds a multi-line care_tips string from nested `care_recommendations`
-/// (mirrors `transformNewJsonToLegacy` in Cloud Functions when the client
-/// receives nested JSON without a flat `care_tips` field).
+/// Builds the care_tips blob from nested `care_recommendations` (mirrors
+/// `transformNewJsonToLegacy` in Cloud Functions when the client receives
+/// nested JSON without a flat `care_tips` field).
 String? _composeCareTipsFromCareMap(Map<String, dynamic>? care) {
   if (care == null) return null;
-  final lang = LanguageService.localeNotifier.value.languageCode;
-  final lbl = _careLabelsForLang(lang);
-  final lines = <String>[];
-  void add(String labelKey, String key) {
-    final v = care[key];
-    if (v == null) return;
-    final s = v.toString().trim();
-    if (s.isNotEmpty) lines.add('${lbl[labelKey]}: $s');
-  }
-
-  add('cultivar', 'name');
-  add('generalDescription', 'general_description');
-  add('soil', 'soil');
-  add('soilMoisture', 'moisture');
-  add('moistureCheck', 'moisture_check_tip');
-  add('water', 'water');
-  add('light', 'light');
-  add('temperature', 'temperature');
-  add('fertilizer', 'fertilizer');
-  add('growthRate', 'growth_rate');
-  add('toxicity', 'toxicity');
-  add('placement', 'placement');
-  add('personality', 'personality');
-  if (lines.isEmpty) return null;
-  return lines.join('\n');
-}
-
-Map<String, String> _careLabelsForLang(String lang) {
-  switch (lang) {
-    case 'ru':
-      return {
-        'cultivar': 'Культивар', 'generalDescription': 'Общее описание',
-        'soil': 'Почва', 'soilMoisture': 'Влажность почвы',
-        'moistureCheck': 'Проверка влажности', 'water': 'Полив',
-        'light': 'Освещение', 'temperature': 'Температура',
-        'fertilizer': 'Удобрения', 'growthRate': 'Скорость роста',
-        'toxicity': 'Токсичность', 'placement': 'Размещение',
-        'personality': 'Характер',
-      };
-    case 'uk':
-      return {
-        'cultivar': 'Культивар', 'generalDescription': 'Загальний опис',
-        'soil': 'Ґрунт', 'soilMoisture': 'Вологість ґрунту',
-        'moistureCheck': 'Перевірка вологості', 'water': 'Полив',
-        'light': 'Освітлення', 'temperature': 'Температура',
-        'fertilizer': 'Добрива', 'growthRate': 'Швидкість росту',
-        'toxicity': 'Токсичність', 'placement': 'Розміщення',
-        'personality': 'Характер',
-      };
-    case 'de':
-      return {
-        'cultivar': 'Kultivar', 'generalDescription': 'Allgemeine Beschreibung',
-        'soil': 'Erde', 'soilMoisture': 'Bodenfeuchtigkeit',
-        'moistureCheck': 'Feuchtigkeitsprüfung', 'water': 'Wasser',
-        'light': 'Licht', 'temperature': 'Temperatur',
-        'fertilizer': 'Dünger', 'growthRate': 'Wachstumsrate',
-        'toxicity': 'Toxizität', 'placement': 'Standort',
-        'personality': 'Charakter',
-      };
-    case 'es':
-      return {
-        'cultivar': 'Cultivar', 'generalDescription': 'Descripción general',
-        'soil': 'Suelo', 'soilMoisture': 'Humedad del suelo',
-        'moistureCheck': 'Verificación de humedad', 'water': 'Agua',
-        'light': 'Luz', 'temperature': 'Temperatura',
-        'fertilizer': 'Fertilizante', 'growthRate': 'Tasa de crecimiento',
-        'toxicity': 'Toxicidad', 'placement': 'Ubicación',
-        'personality': 'Personalidad',
-      };
-    case 'fr':
-      return {
-        'cultivar': 'Cultivar', 'generalDescription': 'Description générale',
-        'soil': 'Sol', 'soilMoisture': 'Humidité du sol',
-        'moistureCheck': "Vérification de l'humidité", 'water': 'Eau',
-        'light': 'Lumière', 'temperature': 'Température',
-        'fertilizer': 'Engrais', 'growthRate': 'Taux de croissance',
-        'toxicity': 'Toxicité', 'placement': 'Emplacement',
-        'personality': 'Personnalité',
-      };
-    default:
-      return {
-        'cultivar': 'Cultivar', 'generalDescription': 'General Description',
-        'soil': 'Soil', 'soilMoisture': 'Soil Moisture',
-        'moistureCheck': 'Moisture Check', 'water': 'Water',
-        'light': 'Light', 'temperature': 'Temperature',
-        'fertilizer': 'Fertilizer', 'growthRate': 'Growth Rate',
-        'toxicity': 'Toxicity', 'placement': 'Placement',
-        'personality': 'Personality',
-      };
-  }
-}
-
-/// Maps any known care section label (all supported languages) to a canonical key.
-/// Used for icon selection so icons are language-independent.
-String? _labelToCanonicalKey(String raw) {
-  const map = <String, String>{
-    // English
-    'cultivar': 'cultivar', 'general description': 'generalDescription',
-    'soil': 'soil', 'soil moisture': 'soilMoisture', 'moisture': 'soilMoisture',
-    'moisture check': 'moistureCheck', 'water': 'water', 'light': 'light',
-    'temperature': 'temperature', 'fertilizer': 'fertilizer',
-    'growth rate': 'growthRate', 'toxicity': 'toxicity',
-    'placement': 'placement', 'personality': 'personality', 'name': 'cultivar',
-    // Russian
-    'культивар': 'cultivar', 'общее описание': 'generalDescription',
-    'почва': 'soil', 'влажность почвы': 'soilMoisture',
-    'проверка влажности': 'moistureCheck', 'полив': 'water',
-    'освещение': 'light', 'температура': 'temperature',
-    'удобрения': 'fertilizer', 'скорость роста': 'growthRate',
-    'токсичность': 'toxicity', 'размещение': 'placement', 'характер': 'personality',
-    // Ukrainian
-    'загальний опис': 'generalDescription', 'ґрунт': 'soil',
-    'вологість ґрунту': 'soilMoisture', 'перевірка вологості': 'moistureCheck',
-    'освітлення': 'light', 'добрива': 'fertilizer',
-    'швидкість росту': 'growthRate', 'токсичність': 'toxicity',
-    'розміщення': 'placement',
-    // German
-    'kultivar': 'cultivar', 'allgemeine beschreibung': 'generalDescription',
-    'erde': 'soil', 'bodenfeuchtigkeit': 'soilMoisture',
-    'feuchtigkeitsprüfung': 'moistureCheck', 'wasser': 'water',
-    'licht': 'light', 'temperatur': 'temperature', 'dünger': 'fertilizer',
-    'wachstumsrate': 'growthRate', 'toxizität': 'toxicity',
-    'standort': 'placement', 'charakter': 'personality',
-    // Spanish
-    'descripción general': 'generalDescription', 'suelo': 'soil',
-    'humedad del suelo': 'soilMoisture', 'verificación de humedad': 'moistureCheck',
-    'agua': 'water', 'luz': 'light', 'fertilizante': 'fertilizer',
-    'tasa de crecimiento': 'growthRate', 'toxicidad': 'toxicity',
-    'ubicación': 'placement', 'personalidad': 'personality',
-    // French
-    'description générale': 'generalDescription', 'sol': 'soil',
-    'humidité du sol': 'soilMoisture', "vérification de l'humidité": 'moistureCheck',
-    'eau': 'water', 'lumière': 'light', 'engrais': 'fertilizer',
-    'taux de croissance': 'growthRate', 'toxicité': 'toxicity',
-    'emplacement': 'placement', 'personnalité': 'personality',
+  const sourceKeys = <String, String>{
+    CareSection.cultivar: 'name',
+    CareSection.generalDescription: 'general_description',
+    CareSection.soil: 'soil',
+    CareSection.soilMoisture: 'moisture',
+    CareSection.moistureCheck: 'moisture_check_tip',
+    CareSection.water: 'water',
+    CareSection.light: 'light',
+    CareSection.temperature: 'temperature',
+    CareSection.fertilizer: 'fertilizer',
+    CareSection.growthRate: 'growth_rate',
+    CareSection.toxicity: 'toxicity',
+    CareSection.placement: 'placement',
+    CareSection.personality: 'personality',
   };
-  return map[raw.toLowerCase().trim()];
+  final sections = sourceKeys.map(
+    (section, key) => MapEntry(section, care[key]?.toString().trim()),
+  );
+  return composeCareTips(
+    sections,
+    LanguageService.localeNotifier.value.languageCode,
+  );
 }
 
 /// Flattens `analyzePlantPhoto` payloads so the UI always reads the same keys
@@ -240,6 +126,9 @@ Map<String, dynamic> _coerceAnalyzeRecommendationsMap(dynamic raw) {
     // This overwrites any flat English string the Cloud Function may have sent.
     final built = _composeCareTipsFromCareMap(care);
     if (built != null) rec['care_tips'] = built;
+
+    final details = extractCareDetails(care);
+    if (details != null) rec['care_details'] = details;
   } else if (species != null) {
     setIfEmpty('name', [rec['name'], species['ai_species_guess']]);
   }
@@ -378,6 +267,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _aiWateringAmount;
   String? _aiSpecificIssues;
   String? _aiCareTips;
+  Map<String, String>? _careDetails;
   List<String>? _aiInterestingFacts;
   
   // Plant size assessment fields
@@ -459,6 +349,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     _aiWateringAmount = null;
     _aiSpecificIssues = null;
     _aiCareTips = null;
+    _careDetails = null;
     _aiInterestingFacts = null;
     _aiPlantSize = null;
     _aiPotSize = null;
@@ -652,6 +543,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiWateringAmount = _safeString(recommendations['watering_amount']);
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
+        _careDetails = recommendations['care_details'] as Map<String, String>?;
 
         _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
             ?.map((e) => e.toString())
@@ -797,6 +689,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
+        _careDetails = recommendations['care_details'] as Map<String, String>?;
         _aiInterestingFacts = (recommendations['interesting_facts'] is List)
             ? List<String>.from(recommendations['interesting_facts'])
             : null;
@@ -903,6 +796,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiWateringAmount = _safeString(recommendations['watering_amount']);
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
+        _careDetails = recommendations['care_details'] as Map<String, String>?;
         
         _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
             ?.map((e) => e.toString())
@@ -1313,6 +1207,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         aiWateringAmount: _aiWateringAmount,
         aiSpecificIssues: _aiSpecificIssues,
         aiCareTips: _aiCareTips,
+        careDetails: _careDetails,
         interestingFacts: _aiInterestingFacts,
         aiPlantSize: _aiPlantSize,
         aiPotSize: _aiPotSize,
@@ -3087,16 +2982,16 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   /// [title] is the raw (possibly localized) label — we resolve the canonical key
   /// so icons work regardless of the app language.
   IconData _getIconForSection(String title) {
-    final canonical = _labelToCanonicalKey(title);
+    final canonical = careLabelToKey(title);
     switch (canonical) {
-      case 'water': return Icons.water_drop;
-      case 'light': return Icons.wb_sunny;
-      case 'temperature': return Icons.thermostat;
-      case 'soil':
-      case 'soilMoisture':
-      case 'moistureCheck': return Icons.eco;
-      case 'fertilizer': return Icons.grass;
-      case 'growthRate': return Icons.trending_up;
+      case CareSection.water: return Icons.water_drop;
+      case CareSection.light: return Icons.wb_sunny;
+      case CareSection.temperature: return Icons.thermostat;
+      case CareSection.soil:
+      case CareSection.soilMoisture:
+      case CareSection.moistureCheck: return Icons.eco;
+      case CareSection.fertilizer: return Icons.grass;
+      case CareSection.growthRate: return Icons.trending_up;
       case 'cultivar':
       case 'generalDescription': return Icons.local_florist;
       case 'toxicity': return Icons.warning_amber_outlined;

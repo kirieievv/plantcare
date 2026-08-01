@@ -1032,7 +1032,20 @@ Return ONLY valid JSON (no markdown) using this schema:
     "name": "exact plant name from image", "general_description": "detailed description", "moisture": "40-60%",
     "moisture_check_tip": "practical tip for THIS plant on how to check soil moisture (e.g. finger test depth, expected feel, plant-specific cues)",
     "water": "specific water recommendations", "light": "4-6 hours", "temperature": "range", "fertilizer": "schedule",
-    "soil": "soil type", "growth_rate": "growth info", "toxicity": "safety", "placement": "placement", "personality": "traits"
+    "soil": "soil type", "growth_rate": "growth info", "toxicity": "safety", "placement": "placement", "personality": "traits",
+    "details": {
+      "watering_season": "active growth season, e.g. spring-summer",
+      "light_hours": "daily hours as digits, e.g. 4-6",
+      "light_type": "e.g. bright indirect",
+      "temperature_optimal": "e.g. 18-26 °C",
+      "temperature_minimum": "lowest tolerated, e.g. 10-12 °C",
+      "fertilizer_frequency": "e.g. every 2 weeks",
+      "fertilizer_dose": "e.g. half strength",
+      "soil_short": "soil in 3-4 words",
+      "temperature_short": "temperature in 3-4 words",
+      "fertilizer_short": "feeding in 3-4 words",
+      "placement_short": "placement in 3-4 words"
+    }
   },
   "other_care": { "growth_stage": "Seedling/Young/Mature/Established" },
   "interesting_facts": ["fact 1", "fact 2", "fact 3", "fact 4"],
@@ -1055,6 +1068,8 @@ Rules:
 - Use history to adapt advice (avoid contradicting recent watering events unless visible condition strongly requires it).
 - If previous images are provided, mention trend in health_assessment (improving/stable/worsening) when possible.
 - Also consider these stabilizing factors when available: days since last watering, recent recommendedAmountMl vs actual amountMl from watering_events, and whether the plant was recently marked healthy/issue_detected.
+- care_recommendations.details are compact UI labels, not prose: max 30 characters each, no full sentences, no trailing period. Fill every key; omit one only if the species genuinely has no such requirement.
+- details.light_hours is digits and an optional dash only ("4-6"), with no unit word. details.temperature_optimal and details.temperature_minimum must include the °C unit.
 - plant_assistant fields by status — REQUIRED, never omit:
   - If status="healthy": praise_phrase (encouraging short phrase), health_summary (1-2 sentence assessment), maintenance_footer (short care reminder). Leave problem_name/problem_description/severity/action_steps/reassurance empty.
   - If status="issue_detected": problem_name, problem_description, severity, action_steps (array), follow_up_days, reassurance. Leave praise_phrase/health_summary/maintenance_footer empty.
@@ -1373,7 +1388,20 @@ Return ONLY a JSON object:
     "ideal_soil_moisture_min": 10,
     "ideal_soil_moisture_max": 20,
     "water": "...", "light": "...", "temperature": "...", "fertilizer": "...", "soil": "...",
-    "growth_rate": "...", "toxicity": "...", "placement": "...", "personality": "..."
+    "growth_rate": "...", "toxicity": "...", "placement": "...", "personality": "...",
+    "details": {
+      "watering_season": "active growth season, e.g. spring-summer",
+      "light_hours": "daily hours as digits, e.g. 4-6",
+      "light_type": "e.g. bright indirect",
+      "temperature_optimal": "e.g. 18-26 °C",
+      "temperature_minimum": "lowest tolerated, e.g. 10-12 °C",
+      "fertilizer_frequency": "e.g. every 2 weeks",
+      "fertilizer_dose": "e.g. half strength",
+      "soil_short": "soil in 3-4 words",
+      "temperature_short": "temperature in 3-4 words",
+      "fertilizer_short": "feeding in 3-4 words",
+      "placement_short": "placement in 3-4 words"
+    }
   },
   "other_care": { "growth_stage": "Seedling/Young/Mature/Established" },
   "interesting_facts": ["...", "...", "...", "..."],
@@ -1390,6 +1418,7 @@ Plant assistant rules: "healthy" if plant looks fine, else "issue_detected".
 specific_issues: 2-3 SPECIES-SPECIFIC CARE RISKS (not current problems).
 amount_ml: 50-1500 for normal pots, up to 2500 for very large containers.
 In care_recommendations.name, use "${confirmedSpecies}".
+care_recommendations.details are compact UI labels, not prose: max 30 characters each, no full sentences, no trailing period. Fill every key; omit one only if the species genuinely has no such requirement. details.light_hours is digits and an optional dash only ("4-6"), with no unit word; details.temperature_optimal and details.temperature_minimum must include the °C unit.
 care_recommendations.ideal_soil_moisture_min / ideal_soil_moisture_max: the IDEAL soil moisture percentage range for THIS species based on its botanical needs (0–100). Base this on species biology, NOT on the current visual soil state in the photo. Examples: cactus/succulent → 5–15; drought-tolerant → 15–30; average indoor → 30–50; tropical/moisture-loving → 50–70; bog plant → 70–90. These are integer percentages.
 
 Return ONLY JSON. No text. No markdown.

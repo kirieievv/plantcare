@@ -35,7 +35,11 @@
   "maxNotificationsPerDay": "Макс. уведомлений в день",
   "notificationsCount": "{count} уведомлений",
   "@notificationsCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "theme": "Тема",
   "light": "Светлая",
@@ -58,7 +62,9 @@
   "preferencesSavedSuccessfully": "Настройки сохранены!",
   "errorSavingPreferences": "Ошибка сохранения настроек: {error}",
   "@errorSavingPreferences": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "quietHoursUpdatedSuccessfully": "Тихие часы обновлены!",
   "changePasswordTitle": "Изменить пароль",
@@ -75,7 +81,9 @@
   "passwordChangedSuccessfully": "Пароль успешно изменён.",
   "errorChangingPassword": "Ошибка изменения пароля: {error}",
   "@errorChangingPassword": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "signOutConfirmTitle": "Выход",
   "signOutConfirmMessage": "Вы уверены, что хотите выйти?",
@@ -84,7 +92,9 @@
   "profileUpdatedSuccessfully": "Профиль успешно обновлён!",
   "errorUpdatingProfile": "Ошибка обновления профиля: {error}",
   "@errorUpdatingProfile": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "plantLover": "Любитель растений",
   "profileInformation": "Информация профиля",
@@ -105,25 +115,37 @@
   "addYourFirstPlant": "Добавить первое растение",
   "errorPickingImage": "Ошибка выбора изображения: {error}",
   "@errorPickingImage": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToAnalyzePlantPhoto": "Не удалось проанализировать фото: {statusCode}",
   "@failedToAnalyzePlantPhoto": {
-    "placeholders": { "statusCode": { "type": "int" } }
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
   },
   "aiAnalysisCompleted": "ИИ-анализ завершён! 🌱",
   "aiAnalysisFailed": "ИИ-анализ не выполнен: {error}",
   "@aiAnalysisFailed": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "apiTestError": "Ошибка теста API: {error}",
   "@apiTestError": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "aiAnalysisRefreshed": "ИИ-анализ обновлён! 🔄",
   "aiAnalysisRefreshFailed": "Ошибка обновления ИИ-анализа: {error}",
   "@aiAnalysisRefreshFailed": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "retry": "Повторить",
   "uploadPlantPhoto": "Загрузить фото растения",
@@ -133,11 +155,19 @@
   "oncePerWeek": "Раз в неделю",
   "onceEveryNDays": "Раз в {days} дней",
   "@onceEveryNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "onceEveryNWeeks": "Раз в {weeks} недель",
   "@onceEveryNWeeks": {
-    "placeholders": { "weeks": { "type": "int" } }
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
   },
   "low": "Низкий",
   "mediumLow": "Ниже среднего",
@@ -151,7 +181,9 @@
   "plantAddedSuccessfully": "Растение успешно добавлено! 🌱",
   "errorAddingPlant": "Ошибка добавления растения: {error}",
   "@errorAddingPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "generateRandomName": "Случайное название",
   "plantName": "Название растения",
@@ -162,13 +194,19 @@
   "plantUpdatedSuccessfully": "Растение успешно обновлено! 🌱",
   "errorUpdatingPlant": "Ошибка обновления растения: {error}",
   "@errorUpdatingPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "species": "Вид",
   "wateringFrequency": "Частота полива",
-  "everyNDays": "Каждые {days} дн.",
+  "everyNDays": "{days, plural, one{Каждый {days} день} few{Каждые {days} дня} many{Каждые {days} дней} other{Каждые {days} дня}}",
   "@everyNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "pleaseSelectWateringFrequency": "Выберите частоту полива",
   "notes": "Заметки",
@@ -177,23 +215,31 @@
   "changeImage": "Изменить фото",
   "errorDeletingPlant": "Ошибка удаления растения: {error}",
   "@errorDeletingPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "plantNotDueForWateringYet": "Растение ещё не нуждается в поливе",
   "errorBuildingPlantDetailsScreen": "Ошибка при открытии экрана растения: {error}",
   "@errorBuildingPlantDetailsScreen": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "aiCare": "ИИ-уход",
   "aiAgent": "ИИ-помощник",
   "plantChatOpen": "Открыть чат с растением",
   "plantChatTitle": "Чат о {plantName}",
   "@plantChatTitle": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "plantChatWelcome": "Привет! Я ваш помощник по уходу за {plantName}. Спросите о поливе, признаках болезней или о том, что делать дальше.",
   "@plantChatWelcome": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "plantChatInputHint": "Спросите об этом растении...",
   "plantChatLoginAgain": "Пожалуйста, войдите снова.",
@@ -224,7 +270,11 @@
   "verificationCodeSentAgain": "Код подтверждения отправлен повторно.",
   "resendCodeInSeconds": "Отправить повторно через {seconds}с",
   "@resendCodeInSeconds": {
-    "placeholders": { "seconds": { "type": "int" } }
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "resendCode": "Отправить код повторно",
   "setNewPassword": "Задать новый пароль",
@@ -263,7 +313,7 @@
   "addPlantTitle": "Добавить растение",
   "addPlantSubtitle": "Сфотографируйте, определите, сохраните",
   "snapTitle": "Сделайте фото",
-  "snapDescription": "Мы определим вид за несколько секунд.",
+  "snapDescription": "Чёткое фото поможет нашему ИИ определить\nваше растение и подобрать уход",
   "useCamera": "Камера",
   "uploadFromGallery": "Из галереи",
   "analyzing": "Анализ...",
@@ -307,21 +357,33 @@
   "pushNotificationsSubtitle": "Уведомления в приложении (iOS / Android)",
   "wateringOverdueNDays": "Просрочено {days}д",
   "@wateringOverdueNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "wateringToday": "Полив сегодня",
   "wateringTomorrow": "Полив завтра",
   "wateringInNDays": "Полив через {days}д",
   "@wateringInNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "plantWateredSuccess": "{plantName} полито! 💧",
   "@plantWateredSuccess": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "errorWateringPlant": "Ошибка полива: {error}",
   "@errorWateringPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "healthIssueDetected": "Обнаружена проблема со здоровьем",
   "recommendedActionsLabel": "Рекомендуемые действия:",
@@ -333,14 +395,20 @@
   "yesterday": "Вчера",
   "nDaysAgo": "{days} дней назад",
   "@nDaysAgo": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "healthStatusOk": "ОК",
   "healthStatusIssue": "Проблема",
   "assistantTyping": "Помощник печатает...",
   "chatSourceLabel": "Источник: {source}",
   "@chatSourceLabel": {
-    "placeholders": { "source": {} }
+    "placeholders": {
+      "source": {}
+    }
   },
   "chatSourceKnowledgeBase": "База знаний",
   "chatSourceContext": "Контекст",
@@ -349,8 +417,12 @@
   "chatPhotoQuota": "{used}/{limit} фото сегодня",
   "@chatPhotoQuota": {
     "placeholders": {
-      "used": { "type": "int" },
-      "limit": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
     }
   },
   "chatPhotoQuotaExhausted": "Дневной лимит фото достигнут. Попробуйте завтра.",
@@ -370,14 +442,20 @@
   "waterFirstLabel": "Сначала полейте",
   "nextCheckAfterWatering": "Следующая проверка через {days} д",
   "@nextCheckAfterWatering": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "imageReadyForAnalysis": "Фото загружено! Готово к анализу здоровья.",
   "healthCheckTitle": "Проверка здоровья",
   "healthCheckHistoryTitle": "История проверок здоровья",
   "healthCheckUploadHint": "Загрузите фото {plantName} для ИИ-анализа здоровья",
   "@healthCheckUploadHint": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "deletePlant": "Удалить растение",
   "deletePlantConfirm": "Вы уверены, что хотите удалить это растение?",
@@ -395,7 +473,9 @@
   "uploadPhotosForHealthHistory": "Загружайте фото для отслеживания здоровья растения",
   "plantDeletedMessage": "Растение \"{plantName}\" удалено",
   "@plantDeletedMessage": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "noImageAvailable": "Фото недоступно",
   "addPhotoToSeeYourPlant": "Добавьте фото, чтобы видеть своё растение",
@@ -416,7 +496,11 @@
   "nextIn1Day": "Следующий через 1 день",
   "nextInNDays": "Следующий через {days} дней",
   "@nextInNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "wateringDone": "Полив выполнен",
   "moistureDry": "Сухая",
@@ -428,7 +512,11 @@
   "moistureLevelVeryMoist": "Очень влажная",
   "bannerWaterTitle": "{name} нуждается в поливе",
   "@bannerWaterTitle": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "bannerWaterSubtitle": "Нажмите, чтобы полить или посмотреть детали",
   "bannerTipTitle": "Совет дня",
@@ -451,21 +539,37 @@
   "subscriptionExpiredTitle": "Подписка истекла",
   "subscriptionActiveUntil": "Активен до {date}",
   "@subscriptionActiveUntil": {
-    "placeholders": { "date": { "type": "String" } }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "subscriptionTrialEndsOn": "Пробный период заканчивается {date}",
   "@subscriptionTrialEndsOn": {
-    "placeholders": { "date": { "type": "String" } }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "subscriptionTrialDaysLeft": "Осталось {days} дней",
   "@subscriptionTrialDaysLeft": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionExpiredMessage": "Ваша подписка истекла. Оформите подписку, чтобы продолжить.",
   "subscriptionPlantLimitReached": "Лимит растений достигнут",
   "subscriptionPlantLimitBannerTrial": "Достигнут лимит бесплатного плана. Перейдите на Premium — до {limit} растений.",
   "@subscriptionPlantLimitBannerTrial": {
-    "placeholders": { "limit": { "type": "int" } }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionPlantLimitBannerExpired": "Оформите подписку, чтобы добавлять растения.",
   "subscriptionReadOnlyNotice": "Режим чтения. Оформите подписку для редактирования.",
@@ -473,7 +577,11 @@
   "paywallSubtitle": "Получите максимум от коллекции растений",
   "paywallFeature1": "До {limit} растений",
   "@paywallFeature1": {
-    "placeholders": { "limit": { "type": "int" } }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "paywallFeature2": "Неограниченные напоминания о поливе",
   "paywallFeature3": "ИИ-помощник и проверки здоровья",
@@ -496,7 +604,9 @@
   "paywallChoosePlan": "ВЫБЕРИТЕ ПЛАН",
   "paywallPerMonth": "Всего {price} / месяц",
   "@paywallPerMonth": {
-    "placeholders": { "price": {} }
+    "placeholders": {
+      "price": {}
+    }
   },
   "paywallStartPremium": "Начать Premium",
   "paywallSecured": "Защищено Stripe",
@@ -508,11 +618,15 @@
   "stripeSuccessButton": "К моим растениям",
   "errorOpeningBillingPortal": "Не удалось открыть портал оплаты: {error}",
   "@errorOpeningBillingPortal": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "errorRestoring": "Ошибка восстановления: {error}",
   "@errorRestoring": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "emailCopied": "Email скопирован: support@botanly.app",
   "labelExpires": "Истекает",
@@ -524,15 +638,21 @@
   "testWateringEmailQueued": "Тестовый email о поливе отправлен.",
   "errorSendingTestEmail": "Не удалось отправить тестовый email: {error}",
   "@errorSendingTestEmail": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToSaveReminderChannels": "Ошибка сохранения каналов напоминаний: {error}",
   "@failedToSaveReminderChannels": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToUpdateQuietHours": "Ошибка обновления тихих часов: {error}",
   "@failedToUpdateQuietHours": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "deleteAccountTitle": "Удалить аккаунт",
   "deleteAccountSubtitle": "Навсегда отключить ваш аккаунт",
@@ -542,7 +662,9 @@
   "deleteAccountConfirmBtn": "Подтвердить удаление",
   "errorDeletingAccount": "Не удалось удалить аккаунт: {error}",
   "@errorDeletingAccount": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "subPillPremium": "Премиум",
   "subPillEarlyMember": "Ранний участник",
@@ -553,19 +675,27 @@
   "subMetaTrialEnded": "ПРОБНЫЙ ПЕРИОД ЗАВЕРШЁН",
   "subMetaNDayPreview": "ПРЕДПРОСМОТР {n} ДНЕЙ",
   "@subMetaNDayPreview": {
-    "placeholders": { "n": { "type": "int" } }
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   },
   "subEndsInDays": "Заканчивается через {days} дн. · {date}",
   "@subEndsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
   "subRenewsInDays": "Обновляется через {days} дн. · {date}",
   "@subRenewsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
@@ -601,7 +731,6 @@
   "tipShowLeaves": "покажите листья",
   "tipSinglePlant": "одно растение",
   "snapYourSprout": "Сфотографируйте свой росток",
-  "snapDescription": "Чёткое фото поможет нашему ИИ определить\nваше растение и подобрать уход",
   "identifyingPlantPrefix": "Определяем ваше ",
   "identifyingPlantWord": "растение",
   "identifyingSubtitle": "Изучаем листья, стебли и соседей рядом",
@@ -609,7 +738,11 @@
   "healthCheckPhotoHint": "Добавьте до 3 фото — чем больше ракурсов, тем точнее анализ. Обязательно только первое фото.",
   "healthCheckPhotoCounter": "{count} / 3",
   "@healthCheckPhotoCounter": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckSlot1Title": "Растение целиком",
   "healthCheckSlot1Desc": "Снимите растение полностью вместе с горшком — чтобы было видно землю и весь горшок.",
@@ -622,7 +755,11 @@
   "healthCheckSlot3Tag": "По желанию",
   "healthCheckAnalyzeNPhotos": "Анализировать {count} фото",
   "@healthCheckAnalyzeNPhotos": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckError": "Анализ не выполнен. Пожалуйста, попробуйте ещё раз.",
   "healthCheckDefaultPraise": "🌱 Ваше растение чувствует себя хорошо!",
@@ -642,53 +779,69 @@
   "addPlantAnalyzingSubtitle": "Обычно это занимает несколько секунд…",
   "addPlantAnalysisComplete": "Анализ завершён",
   "addPlantSeePlantProfile": "Посмотреть профиль растения",
-
   "onboardingSkip": "Пропустить",
   "onboardingGetStarted": "Начать",
-
   "onboarding1Eyebrow": "Добро пожаловать",
   "onboarding1Title": "Знакомьтесь: ",
   "onboarding1TitleItalic": "Botanly",
   "onboarding1Body": "Ваш ИИ-помощник для счастливых и здоровых растений — всегда под рукой.",
-
   "onboarding2Eyebrow": "Определение",
   "onboarding2Title": "Узнайте ",
   "onboarding2TitleItalic": "любое растение",
   "onboarding2Body": "Наведите камеру — ИИ определит вид, название и всё остальное за секунды.",
-
   "onboarding3Eyebrow": "Уход",
   "onboarding3Title": "Уход стал ",
   "onboarding3TitleItalic": "проще",
   "onboarding3Body": "Напоминания о поливе, освещении и почве — точно настроенные под каждое растение.",
-
   "onboarding4Eyebrow": "Проверка здоровья",
   "onboarding4Title": "Замечайте проблемы ",
   "onboarding4TitleItalic": "вовремя",
   "onboarding4Body": "Сфотографируйте — получите мгновенную проверку здоровья и чёткий план лечения.",
-
   "onboarding5Eyebrow": "Готово",
   "onboarding5Title": "Давайте ",
   "onboarding5TitleItalic": "расти вместе",
   "onboarding5Body": "Создайте свою коллекцию и никогда ничего не пропускайте. Ваша самая зелёная эра начинается сейчас.",
-
   "tabCare": "Уход",
   "tabAbout": "О растении",
   "tabHistory": "История",
-
-  "nDays": "{days} дн.",
+  "nDays": "{days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}}",
   "@nDays": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
   "cycleJustStarted": "Цикл только начался",
   "cyclePercentComplete": "Цикл пройден на {percent}%",
   "@cyclePercentComplete": {
     "placeholders": {
-      "percent": { "type": "int" }
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "wateringAmount": "Объём",
   "noDataAvailable": "Пока нет данных",
-  "healthCheckHistoryEmptyHint": "Загружай фото раз в пару недель — соберём таймлайн состояния растения"
+  "healthCheckHistoryEmptyHint": "Загружай фото раз в пару недель — соберём таймлайн состояния растения",
+  "milliliters": "{count} мл",
+  "millilitersShort": "МЛ",
+  "nHours": "{hours} ч",
+  "lightDaily": "В день",
+  "lightType": "Тип",
+  "lightTypeDirect": "Прямой",
+  "lightTypePartialSun": "Полутень",
+  "lightTypeBrightIndirect": "Яркий рассеянный",
+  "lightTypeLowLight": "Слабый свет",
+  "everyDay": "Каждый день",
+  "healthCheckSeverity": "Серьёзность",
+  "healthCheckFollowUp": "Повторная проверка",
+  "severityLow": "Низкая",
+  "severityMedium": "Средняя",
+  "severityHigh": "Высокая",
+  "careKvFrequency": "Частота",
+  "careKvSeason": "Сезон",
+  "careKvOptimal": "Оптимум",
+  "careKvMinimum": "Минимум",
+  "careKvDose": "Доза"
 }

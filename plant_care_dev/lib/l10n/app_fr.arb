@@ -198,7 +198,7 @@
   },
   "species": "Espèce",
   "wateringFrequency": "Fréquence d'arrosage",
-  "everyNDays": "Tous les {days} jour(s)",
+  "everyNDays": "{days, plural, one{Tous les {days} jour} other{Tous les {days} jours}}",
   "@everyNDays": {
     "placeholders": {
       "days": {
@@ -290,7 +290,6 @@
   "noResultsTitle": "Aucun résultat",
   "noResultsSub": "Essayez une autre recherche ou un autre filtre.",
   "edit": "Modifier",
-  "loggedIn": "Connecté",
   "wateringRemindersBlockSub": "Soyez averti·e quand vos plantes ont besoin d'eau.",
   "emailRemindersTitle": "Rappels par e-mail",
   "emailRemindersSub": "Recevez les rappels d'arrosage par e-mail",
@@ -312,10 +311,10 @@
   "addPlantTitle": "Ajouter une plante",
   "addPlantSubtitle": "Photographiez, identifiez et enregistrez",
   "snapTitle": "Prendre une photo",
-  "snapDescription": "Nous identifions l'espèce en quelques secondes.",
+  "snapDescription": "Une photo nette aide notre IA à identifier\nvotre plante et personnaliser les soins",
   "useCamera": "Utiliser l'appareil photo",
   "uploadFromGallery": "Importer depuis la galerie",
-  "analyzing": "Analyse de la photo…",
+  "analyzing": "Analyse en cours...",
   "couldntIdentify": "Impossible d'identifier cette plante",
   "tryAnotherPhoto": "Essayez une autre photo ou saisissez l'espèce manuellement.",
   "topMatch": "Meilleure correspondance",
@@ -331,7 +330,7 @@
   "frequency": "Fréquence",
   "waterNowAction": "Arroser maintenant",
   "rescheduleAction": "Replanifier",
-  "careRecommendationsTitle": "Conseils d'entretien",
+  "careRecommendationsTitle": "Conseils de soin",
   "aboutPlantTitle": "À propos de cette plante",
   "askAssistantTitle": "Demander à l'assistant",
   "askAssistantSub": "Recevez des conseils de l'IA Iris",
@@ -403,8 +402,12 @@
   "chatPhotoQuota": "{used}/{limit} photos aujourd'hui",
   "@chatPhotoQuota": {
     "placeholders": {
-      "used": {"type": "int"},
-      "limit": {"type": "int"}
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
     }
   },
   "chatPhotoQuotaExhausted": "Limite quotidienne de photos atteinte. Réessayez demain.",
@@ -425,10 +428,11 @@
   "nextCheckAfterWatering": "Prochain check dans {days} j",
   "@nextCheckAfterWatering": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
-  "analyzing": "Analyse en cours...",
   "imageReadyForAnalysis": "Image téléversée avec succès ! Prête pour l'analyse de santé.",
   "healthCheckTitle": "Contrôle de santé",
   "healthCheckHistoryTitle": "Historique des contrôles de santé",
@@ -446,7 +450,6 @@
   "lightLabel": "Lumière",
   "perDay": "par jour",
   "hoursLabel": "heures",
-  "careRecommendationsTitle": "Conseils de soin",
   "careSectionCultivar": "Cultivar",
   "careSectionGeneralDescription": "Description générale",
   "careSectionSoil": "Sol",
@@ -492,7 +495,9 @@
   "nextInNDays": "Suivant dans {days} jours",
   "@nextInNDays": {
     "placeholders": {
-      "days": {"type": "int"}
+      "days": {
+        "type": "int"
+      }
     }
   },
   "wateringDone": "Arrosage effectué",
@@ -503,10 +508,13 @@
   "moistureLevelSlightlyMoist": "Légèrement humide",
   "moistureLevelMoist": "Humide",
   "moistureLevelVeryMoist": "Très humide",
-
   "bannerWaterTitle": "{name} a besoin d'eau",
   "@bannerWaterTitle": {
-    "placeholders": { "name": {"type": "String"} }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "bannerWaterSubtitle": "Appuyez pour arroser ou voir les détails",
   "bannerTipTitle": "Conseil du jour",
@@ -521,30 +529,45 @@
   "tipCategoryGeneral": "Général",
   "noTipsYet": "Les conseils sont en cours de génération. Revenez bientôt !",
   "waterNow": "Arroser maintenant",
-
   "subscriptionTrialTitle": "Essai gratuit",
-  "subscriptionActiveTitle": "Premium",
-  "subscriptionExpiredTitle": "Essai terminé",
-  "subscriptionGrandfatheredTitle": "Premium",
+  "subscriptionActiveTitle": "Premium actif",
+  "subscriptionExpiredTitle": "Abonnement expiré",
+  "subscriptionGrandfatheredTitle": "Accès à vie",
   "subscriptionTrialDaysLeft": "{days} jours restants",
   "@subscriptionTrialDaysLeft": {
-    "placeholders": { "days": {"type": "int"} }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionTrialEndsOn": "L'essai se termine le {date}",
   "@subscriptionTrialEndsOn": {
-    "placeholders": { "date": {"type": "String"} }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "subscriptionActiveUntil": "Actif jusqu'au {date}",
   "@subscriptionActiveUntil": {
-    "placeholders": { "date": {"type": "String"} }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
-  "subscriptionManage": "Gérer l'abonnement",
+  "subscriptionManage": "Gérer",
   "subscriptionUpgrade": "Passer à Premium",
-  "subscriptionExpiredMessage": "Votre essai est terminé. Abonnez-vous pour continuer à ajouter et modifier des plantes.",
+  "subscriptionExpiredMessage": "Votre abonnement a expiré. Passez à Premium pour continuer.",
   "subscriptionPlantLimitReached": "Limite de plantes atteinte",
   "subscriptionPlantLimitBannerTrial": "Limite du plan gratuit atteinte. Passez à Premium — jusqu'à {limit} plantes.",
   "@subscriptionPlantLimitBannerTrial": {
-    "placeholders": { "limit": {"type": "int"} }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionPlantLimitBannerExpired": "Abonnez-vous pour ajouter d'autres plantes.",
   "subscriptionReadOnlyNotice": "Mode lecture seule. Abonnez-vous pour modifier vos plantes.",
@@ -552,7 +575,11 @@
   "paywallSubtitle": "Profitez pleinement de votre collection de plantes",
   "paywallFeature1": "Jusqu'à {limit} plantes",
   "@paywallFeature1": {
-    "placeholders": { "limit": {"type": "int"} }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "paywallFeature2": "Rappels d'arrosage illimités",
   "paywallFeature3": "Assistant IA et bilans de santé",
@@ -570,26 +597,6 @@
   "paywallLoading": "Chargement des offres…",
   "paywallPurchasing": "Traitement en cours…",
   "paywallError": "Une erreur s'est produite. Veuillez réessayer.",
-
-  "subscriptionUpgrade": "Passer à Premium",
-  "subscriptionManage": "Gérer",
-  "subscriptionActiveTitle": "Premium actif",
-  "subscriptionGrandfatheredTitle": "Accès à vie",
-  "subscriptionTrialTitle": "Essai gratuit",
-  "subscriptionExpiredTitle": "Abonnement expiré",
-  "subscriptionActiveUntil": "Actif jusqu'au {date}",
-  "@subscriptionActiveUntil": {
-    "placeholders": { "date": {"type": "String"} }
-  },
-  "subscriptionTrialEndsOn": "L'essai se termine le {date}",
-  "@subscriptionTrialEndsOn": {
-    "placeholders": { "date": {"type": "String"} }
-  },
-  "subscriptionTrialDaysLeft": "{days} jours restants",
-  "@subscriptionTrialDaysLeft": {
-    "placeholders": { "days": {"type": "int"} }
-  },
-  "subscriptionExpiredMessage": "Votre abonnement a expiré. Passez à Premium pour continuer.",
   "stripeSuccessTitle": "Abonnement activé !",
   "stripeSuccessWaiting": "Activation de votre abonnement",
   "stripeSuccessSubtitle": "Bienvenue sur Botanly Premium ! Vous avez maintenant accès à toutes les fonctionnalités.",
@@ -601,7 +608,9 @@
   "paywallChoosePlan": "CHOISISSEZ VOTRE OFFRE",
   "paywallPerMonth": "Seulement {price} / mois",
   "@paywallPerMonth": {
-    "placeholders": { "price": {} }
+    "placeholders": {
+      "price": {}
+    }
   },
   "paywallStartPremium": "Démarrer Premium",
   "paywallSecured": "Sécurisé par Stripe",
@@ -610,11 +619,15 @@
   "paywallAutoRenews": "renouvellement automatique",
   "errorOpeningBillingPortal": "Impossible d'ouvrir le portail de facturation : {error}",
   "@errorOpeningBillingPortal": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "errorRestoring": "Échec de la restauration : {error}",
   "@errorRestoring": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "emailCopied": "E-mail copié : support@botanly.app",
   "labelExpires": "Expire",
@@ -626,15 +639,21 @@
   "testWateringEmailQueued": "E-mail d'arrosage test en attente.",
   "errorSendingTestEmail": "Impossible d'envoyer l'e-mail test : {error}",
   "@errorSendingTestEmail": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToSaveReminderChannels": "Impossible de sauvegarder les canaux de rappel : {error}",
   "@failedToSaveReminderChannels": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToUpdateQuietHours": "Impossible de mettre à jour les heures silencieuses : {error}",
   "@failedToUpdateQuietHours": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "deleteAccountTitle": "Supprimer le compte",
   "deleteAccountSubtitle": "Désactiver définitivement votre compte",
@@ -644,7 +663,9 @@
   "deleteAccountConfirmBtn": "Confirmer la suppression",
   "errorDeletingAccount": "Impossible de supprimer le compte : {error}",
   "@errorDeletingAccount": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "subPillPremium": "Premium",
   "subPillEarlyMember": "Membre fondateur",
@@ -655,19 +676,27 @@
   "subMetaTrialEnded": "ESSAI TERMINÉ",
   "subMetaNDayPreview": "APERÇU {n} JOURS",
   "@subMetaNDayPreview": {
-    "placeholders": { "n": { "type": "int" } }
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   },
   "subRenewsInDays": "Renouvellement dans {days} jours · {date}",
   "@subRenewsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
   "subEndsInDays": "Se termine dans {days} jours · {date}",
   "@subEndsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
@@ -703,7 +732,6 @@
   "tipShowLeaves": "montrez les feuilles",
   "tipSinglePlant": "plante seule",
   "snapYourSprout": "Photographiez votre pousse",
-  "snapDescription": "Une photo nette aide notre IA à identifier\nvotre plante et personnaliser les soins",
   "identifyingPlantPrefix": "Identification de votre ",
   "identifyingPlantWord": "plante",
   "identifyingSubtitle": "Examen des feuilles, tiges et plantes voisines",
@@ -711,7 +739,11 @@
   "healthCheckPhotoHint": "Ajoutez jusqu'à 3 photos — plus d'angles signifie une analyse plus précise. Seule la première photo est obligatoire.",
   "healthCheckPhotoCounter": "{count} / 3",
   "@healthCheckPhotoCounter": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckSlot1Title": "Plante entière",
   "healthCheckSlot1Desc": "Photographiez la plante entière avec le pot — pour voir la terre et le pot en entier.",
@@ -724,7 +756,11 @@
   "healthCheckSlot3Tag": "Facultatif",
   "healthCheckAnalyzeNPhotos": "Analyser {count} photo(s)",
   "@healthCheckAnalyzeNPhotos": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckError": "L'analyse a échoué. Veuillez réessayer.",
   "healthCheckDefaultPraise": "🌱 Votre plante se porte bien !",
@@ -744,53 +780,69 @@
   "addPlantAnalyzingSubtitle": "Cela prend généralement quelques secondes…",
   "addPlantAnalysisComplete": "Analyse terminée",
   "addPlantSeePlantProfile": "Voir le profil de la plante",
-
   "onboardingSkip": "Passer",
   "onboardingGetStarted": "Commencer",
-
   "onboarding1Eyebrow": "Bienvenue",
   "onboarding1Title": "Découvrez ",
   "onboarding1TitleItalic": "Botanly",
   "onboarding1Body": "Votre compagnon IA pour des plantes heureuses et saines — toujours dans votre poche.",
-
   "onboarding2Eyebrow": "Identifier",
   "onboarding2Title": "Nommez ",
   "onboarding2TitleItalic": "n'importe quelle plante",
   "onboarding2Body": "Pointez votre caméra et laissez l'IA l'identifier en quelques secondes — espèce, nom et tout.",
-
   "onboarding3Eyebrow": "Soin",
   "onboarding3Title": "Des soins ",
   "onboarding3TitleItalic": "sans effort",
   "onboarding3Body": "Rappels d'arrosage, de lumière et de sol — parfaitement adaptés à chaque plante.",
-
   "onboarding4Eyebrow": "Bilan de santé",
   "onboarding4Title": "Détectez les problèmes ",
   "onboarding4TitleItalic": "tôt",
   "onboarding4Body": "Prenez une photo et obtenez un bilan de santé instantané avec un plan clair pour y remédier.",
-
   "onboarding5Eyebrow": "Prêt",
   "onboarding5Title": "Grandissons ",
   "onboarding5TitleItalic": "ensemble",
   "onboarding5Body": "Constituez votre collection de plantes et ne ratez jamais rien. Votre ère la plus verte commence maintenant.",
-
   "tabCare": "Soins",
   "tabAbout": "Info",
   "tabHistory": "Historique",
-
-  "nDays": "{days} jours",
+  "nDays": "{days, plural, =1{1 jour} other{{days} jours}}",
   "@nDays": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
   "cycleJustStarted": "Le cycle vient de commencer",
   "cyclePercentComplete": "Cycle terminé à {percent}%",
   "@cyclePercentComplete": {
     "placeholders": {
-      "percent": { "type": "int" }
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "wateringAmount": "Quantité",
   "noDataAvailable": "Pas encore de données",
-  "healthCheckHistoryEmptyHint": "Ajoutez une photo toutes les deux semaines — nous créerons un suivi de santé"
+  "healthCheckHistoryEmptyHint": "Ajoutez une photo toutes les deux semaines — nous créerons un suivi de santé",
+  "milliliters": "{count} ml",
+  "millilitersShort": "ML",
+  "nHours": "{hours} h",
+  "lightDaily": "Par jour",
+  "lightType": "Type",
+  "lightTypeDirect": "Direct",
+  "lightTypePartialSun": "Mi-soleil",
+  "lightTypeBrightIndirect": "Vive indirecte",
+  "lightTypeLowLight": "Faible luminosité",
+  "everyDay": "Chaque jour",
+  "healthCheckSeverity": "Gravité",
+  "healthCheckFollowUp": "Suivi",
+  "severityLow": "Faible",
+  "severityMedium": "Moyenne",
+  "severityHigh": "Élevée",
+  "careKvFrequency": "Fréquence",
+  "careKvSeason": "Saison",
+  "careKvOptimal": "Optimale",
+  "careKvMinimum": "Minimale",
+  "careKvDose": "Dose"
 }

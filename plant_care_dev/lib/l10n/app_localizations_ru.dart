@@ -417,7 +417,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String everyNDays(int days) {
-    return 'Каждые $days дн.';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Каждые $days дня',
+      many: 'Каждые $days дней',
+      few: 'Каждые $days дня',
+      one: 'Каждый $days день',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1648,7 +1656,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String nDays(int days) {
-    return '$days дн.';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дня',
+      many: '$days дней',
+      few: '$days дня',
+      one: '$days день',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1667,4 +1683,68 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get healthCheckHistoryEmptyHint => 'Загружай фото раз в пару недель — соберём таймлайн состояния растения';
+
+  @override
+  String milliliters(int count) {
+    return '$count мл';
+  }
+
+  @override
+  String get millilitersShort => 'МЛ';
+
+  @override
+  String nHours(String hours) {
+    return '$hours ч';
+  }
+
+  @override
+  String get lightDaily => 'В день';
+
+  @override
+  String get lightType => 'Тип';
+
+  @override
+  String get lightTypeDirect => 'Прямой';
+
+  @override
+  String get lightTypePartialSun => 'Полутень';
+
+  @override
+  String get lightTypeBrightIndirect => 'Яркий рассеянный';
+
+  @override
+  String get lightTypeLowLight => 'Слабый свет';
+
+  @override
+  String get everyDay => 'Каждый день';
+
+  @override
+  String get healthCheckSeverity => 'Серьёзность';
+
+  @override
+  String get healthCheckFollowUp => 'Повторная проверка';
+
+  @override
+  String get severityLow => 'Низкая';
+
+  @override
+  String get severityMedium => 'Средняя';
+
+  @override
+  String get severityHigh => 'Высокая';
+
+  @override
+  String get careKvFrequency => 'Частота';
+
+  @override
+  String get careKvSeason => 'Сезон';
+
+  @override
+  String get careKvOptimal => 'Оптимум';
+
+  @override
+  String get careKvMinimum => 'Минимум';
+
+  @override
+  String get careKvDose => 'Доза';
 }

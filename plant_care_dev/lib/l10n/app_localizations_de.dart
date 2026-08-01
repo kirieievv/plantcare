@@ -417,7 +417,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String everyNDays(int days) {
-    return 'Alle $days Tag(e)';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Alle $days Tage',
+      one: 'Alle $days Tag',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1648,7 +1654,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String nDays(int days) {
-    return '$days Tage';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days Tage',
+      one: '1 Tag',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1667,4 +1679,68 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get healthCheckHistoryEmptyHint => 'Lade alle zwei Wochen ein Foto hoch — wir erstellen einen Gesundheitsverlauf';
+
+  @override
+  String milliliters(int count) {
+    return '$count ml';
+  }
+
+  @override
+  String get millilitersShort => 'ML';
+
+  @override
+  String nHours(String hours) {
+    return '$hours Std.';
+  }
+
+  @override
+  String get lightDaily => 'Täglich';
+
+  @override
+  String get lightType => 'Art';
+
+  @override
+  String get lightTypeDirect => 'Direkt';
+
+  @override
+  String get lightTypePartialSun => 'Halbschatten';
+
+  @override
+  String get lightTypeBrightIndirect => 'Hell indirekt';
+
+  @override
+  String get lightTypeLowLight => 'Wenig Licht';
+
+  @override
+  String get everyDay => 'Täglich';
+
+  @override
+  String get healthCheckSeverity => 'Schweregrad';
+
+  @override
+  String get healthCheckFollowUp => 'Nachkontrolle';
+
+  @override
+  String get severityLow => 'Niedrig';
+
+  @override
+  String get severityMedium => 'Mittel';
+
+  @override
+  String get severityHigh => 'Hoch';
+
+  @override
+  String get careKvFrequency => 'Häufigkeit';
+
+  @override
+  String get careKvSeason => 'Saison';
+
+  @override
+  String get careKvOptimal => 'Optimal';
+
+  @override
+  String get careKvMinimum => 'Minimum';
+
+  @override
+  String get careKvDose => 'Dosis';
 }

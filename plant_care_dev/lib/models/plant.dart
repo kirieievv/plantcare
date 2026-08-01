@@ -127,6 +127,10 @@ class Plant {
   final String? aiWateringAmount; // AI-provided watering amount in ml
   final String? aiSpecificIssues;
   final String? aiCareTips;
+  /// Compact labels from `care_recommendations.details` — the key-value cells
+  /// in the care sheets. Keyed by `CareDetail`; null for plants analysed
+  /// before the analyzer started returning them.
+  final Map<String, String>? careDetails;
   final List<String>? interestingFacts;
   
   // Plant size assessment from AI analysis
@@ -184,6 +188,7 @@ class Plant {
     this.aiWateringAmount,
     this.aiSpecificIssues,
     this.aiCareTips,
+    this.careDetails,
     this.interestingFacts,
     this.aiPlantSize,
     this.aiPotSize,
@@ -235,6 +240,7 @@ class Plant {
       'aiWateringAmount': aiWateringAmount,
       'aiSpecificIssues': aiSpecificIssues,
       'aiCareTips': aiCareTips,
+      'careDetails': careDetails,
       'interestingFacts': interestingFacts,
       'aiPlantSize': aiPlantSize,
       'aiPotSize': aiPotSize,
@@ -301,6 +307,10 @@ class Plant {
         aiWateringAmount: map['aiWateringAmount']?.toString(),
         aiSpecificIssues: map['aiSpecificIssues']?.toString(),
         aiCareTips: map['aiCareTips']?.toString(),
+        careDetails: map['careDetails'] is Map
+            ? Map<String, String>.from((map['careDetails'] as Map)
+                .map((k, v) => MapEntry(k.toString(), v.toString())))
+            : null,
         interestingFacts: map['interestingFacts'] is List ? List<String>.from(map['interestingFacts']) : null,
         aiPlantSize: map['aiPlantSize']?.toString(),
         aiPotSize: map['aiPotSize']?.toString(),
@@ -394,6 +404,7 @@ class Plant {
     String? aiWateringAmount,
     String? aiSpecificIssues,
     String? aiCareTips,
+    Map<String, String>? careDetails,
     List<String>? interestingFacts,
     String? aiPlantSize,
     String? aiPotSize,
@@ -439,6 +450,7 @@ class Plant {
       aiWateringAmount: aiWateringAmount ?? this.aiWateringAmount,
       aiSpecificIssues: aiSpecificIssues ?? this.aiSpecificIssues,
       aiCareTips: aiCareTips ?? this.aiCareTips,
+      careDetails: careDetails ?? this.careDetails,
       interestingFacts: interestingFacts ?? this.interestingFacts,
       aiPlantSize: aiPlantSize ?? this.aiPlantSize,
       aiPotSize: aiPotSize ?? this.aiPotSize,
