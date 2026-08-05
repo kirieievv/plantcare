@@ -125,6 +125,38 @@ class TaskService {
     return ids;
   }
 
+  /// Records a one-off the owner agreed to in chat.
+  ///
+  /// `source: chat` rather than `analysis` because the two behave differently
+  /// on the way out: analysis advice carries a health-score penalty while it is
+  /// open, and this does not. It is not `schedule` either — a recompute would
+  /// delete it, and no rule would ever bring it back.
+  Future<String?> createFromChat({
+    required String plantId,
+    required String title,
+    required int dueInDays,
+    required TaskCategory category,
+  }) async {
+    final user = AuthService.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final ref = _firestore.collection(_collection).doc();
+    await ref.set({
+      'id': ref.id,
+      'plantId': plantId,
+      'userId': user.uid,
+      'title': title,
+      'category': category.name,
+      'source': TaskSource.chat.name,
+      'dueAt': DateTime.now().add(Duration(days: dueInDays)).toIso8601String(),
+      'postponedAt': null,
+      'done': false,
+      'completedAt': null,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
   /// Closes every open task of a given category for a plant — used when a
   /// trigger is satisfied elsewhere: a finished health check retires the
   /// "rescan" task, logging a watering retires the watering task.

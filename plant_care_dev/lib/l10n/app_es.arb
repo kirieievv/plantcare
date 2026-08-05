@@ -1423,5 +1423,62 @@
         "type": "String"
       }
     }
-  }
+  },
+  "chatTopicWater": "Riego",
+  "chatTopicSoil": "Sustrato",
+  "chatTopicLight": "Luz",
+  "chatTopicTemperature": "Temperatura",
+  "chatTopicFertilizer": "Abono",
+  "chatTopicDiagnostics": "Diagnóstico",
+  "chatShowWholeConversation": "Ver toda la conversación",
+  "chatTitleWithTopic": "Asistente · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "¿Puedo regarla antes?",
+  "plantChatQuickSoilSlowToDry": "¿Por qué el sustrato tarda en secarse?",
+  "plantChatQuickEnoughLight": "¿Recibe suficiente luz?",
+  "plantChatQuickLeggyGrowth": "¿Por qué se ahíla?",
+  "plantChatQuickShouldMove": "¿Debería cambiarla de sitio?",
+  "plantChatQuickRepotWhen": "¿Cuándo trasplantarla?",
+  "plantChatQuickSoilCompacted": "¿Por qué se ha compactado el sustrato?",
+  "plantChatQuickWhichSoil": "¿Qué sustrato le va mejor?",
+  "memoryTitle": "Lo que sabe el asistente",
+  "memoryExplainer": "Tomado de tus mensajes en el chat. Elimina lo que esté mal: se usa en cada respuesta.",
+  "memoryLoadFailed": "No se pudo cargar.",
+  "memorySuperseded": "reemplazado",
+  "memoryForgetConfirm": "¿Olvidar esto?",
+  "memoryForgetAction": "Olvidar",
+  "memoryKindPlacement": "Dónde está",
+  "memoryKindContainer": "Maceta",
+  "memoryKindWateringHabit": "Hábitos de cuidado",
+  "memoryKindSpecies": "Especie",
+  "memoryKindEnvironment": "Condiciones",
+  "memoryKindIntervention": "Lo realizado",
+  "memoryKindSymptom": "Síntoma",
+  "memoryKindConstraint": "Limitación",
+  "memoryKindGoal": "Objetivo",
+  "memoryKindPreference": "Preferencia",
+  "memoryEmpty": "Nada todavía. Lo que le cuentes al asistente sobre {name} aparecerá aquí.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "¿Crear un recordatorio?",
+  "chatTaskInDays": "en {days} días",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Recordatorio creado"
 }

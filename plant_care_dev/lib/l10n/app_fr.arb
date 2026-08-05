@@ -1423,5 +1423,62 @@
         "type": "String"
       }
     }
-  }
+  },
+  "chatTopicWater": "Arrosage",
+  "chatTopicSoil": "Substrat",
+  "chatTopicLight": "Lumière",
+  "chatTopicTemperature": "Température",
+  "chatTopicFertilizer": "Engrais",
+  "chatTopicDiagnostics": "Diagnostic",
+  "chatShowWholeConversation": "Voir toute la conversation",
+  "chatTitleWithTopic": "Assistant · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Puis-je l’arroser plus tôt ?",
+  "plantChatQuickSoilSlowToDry": "Pourquoi le substrat sèche-t-il lentement ?",
+  "plantChatQuickEnoughLight": "Reçoit-elle assez de lumière ?",
+  "plantChatQuickLeggyGrowth": "Pourquoi s’étiole-t-elle ?",
+  "plantChatQuickShouldMove": "Faut-il la déplacer ?",
+  "plantChatQuickRepotWhen": "Quand la rempoter ?",
+  "plantChatQuickSoilCompacted": "Pourquoi le substrat s’est-il tassé ?",
+  "plantChatQuickWhichSoil": "Quel substrat lui convient ?",
+  "memoryTitle": "Ce que sait l’assistant",
+  "memoryExplainer": "Repris de vos messages dans le chat. Supprimez ce qui est faux : c’est utilisé dans chaque réponse.",
+  "memoryLoadFailed": "Chargement impossible.",
+  "memorySuperseded": "remplacé",
+  "memoryForgetConfirm": "Oublier ceci ?",
+  "memoryForgetAction": "Oublier",
+  "memoryKindPlacement": "Emplacement",
+  "memoryKindContainer": "Pot",
+  "memoryKindWateringHabit": "Habitudes d’entretien",
+  "memoryKindSpecies": "Espèce",
+  "memoryKindEnvironment": "Conditions",
+  "memoryKindIntervention": "Interventions",
+  "memoryKindSymptom": "Symptôme",
+  "memoryKindConstraint": "Contrainte",
+  "memoryKindGoal": "Objectif",
+  "memoryKindPreference": "Préférence",
+  "memoryEmpty": "Rien pour l’instant. Ce que vous direz à l’assistant sur {name} apparaîtra ici.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Créer un rappel ?",
+  "chatTaskInDays": "dans {days} jours",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Rappel créé"
 }

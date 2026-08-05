@@ -4,7 +4,8 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +17,10 @@ import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/image_upload_service.dart';
 import 'package:plant_care/theme/botanly_theme.dart';
 import 'package:plant_care/models/chat_proposal.dart';
+import 'package:plant_care/models/task.dart';
+import 'package:plant_care/services/task_service.dart';
+import 'package:plant_care/screens/plant_memory_screen.dart';
+import 'package:plant_care/utils/chat_topics.dart';
 import 'package:plant_care/utils/cloud_functions.dart';
 import 'package:plant_care/widgets/botanly_loader.dart';
 import 'package:plant_care/widgets/botanly_shimmer.dart';
@@ -73,22 +78,48 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   // Photo attach state
   Uint8List? _pendingImageBytes;
   bool _isUploadingImage = false;
+
+  /// Whether the topic the screen was opened with is still active.
+  ///
+  /// One flag for two things on purpose. Turning the filter off also leaves the
+  /// topic, so what the header says is always what is happening: a list showing
+  /// everything under a heading that still says "Watering" would be a lie about
+  /// where the next message is going to be filed.
+  late bool _topicMode =
+      widget.topic != null && widget.topic != ChatTopic.general;
+
   bool _quotaLoaded = true; // show badge immediately with defaults
   int _quotaUsed = 0;
   int _quotaLimit = 2;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
-  CollectionReference<Map<String, dynamic>>? _messagesCollection() {
+  /// The topic a message sent right now would be filed under.
+  String? get _activeTopic => _topicMode ? widget.topic : null;
+
+  /// The messages on screen. Filtering happens here rather than in the query:
+  /// the assistant is answering from the whole history either way, so a second
+  /// round trip to show a subset of what is already loaded buys nothing.
+  List<_ChatMessage> get _visibleMessages => _topicMode
+      ? _messages
+            .where((m) => m.topic == null || m.topic == widget.topic)
+            .toList()
+      : _messages;
+
+  /// The per-plant chat document. Never written before — it existed only as a
+  /// path segment above `messages`. It now carries the clear marker.
+  DocumentReference<Map<String, dynamic>>? _chatDoc() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
     return FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('plant_chats')
-        .doc(widget.plant.id)
-        .collection('messages');
+        .doc(widget.plant.id);
   }
+
+  CollectionReference<Map<String, dynamic>>? _messagesCollection() =>
+      _chatDoc()?.collection('messages');
 
   @override
   void initState() {
@@ -116,11 +147,65 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 
   String _welcomeMessage() => l10n.plantChatWelcome(widget.plant.name);
 
-  List<String> _quickQuestions() => [
-        l10n.plantChatQuickWaterToday,
-        l10n.plantChatQuickYellowLeaves,
-        l10n.plantChatQuickWhatToDoNow,
-      ];
+  String? _topicLabel(String? topic) => switch (topic) {
+    ChatTopic.water => l10n.chatTopicWater,
+    ChatTopic.soil => l10n.chatTopicSoil,
+    ChatTopic.light => l10n.chatTopicLight,
+    ChatTopic.temperature => l10n.chatTopicTemperature,
+    ChatTopic.fertilizer => l10n.chatTopicFertilizer,
+    ChatTopic.diagnostics => l10n.chatTopicDiagnostics,
+    _ => null,
+  };
+
+  /// The heading always states what is actually happening. Leaving the filter
+  /// leaves the topic, so a list showing everything can never sit under a
+  /// heading that still claims to be about watering.
+  String _screenTitle() {
+    final label = _topicMode ? _topicLabel(widget.topic) : null;
+    return label == null
+        ? l10n.plantChatTitle(widget.plant.name)
+        : l10n.chatTitleWithTopic(label);
+  }
+
+  /// Openers, not a menu. They exist because a blank chat asks the owner to
+  /// invent a question, and the ones worth asking depend on the topic — and, for
+  /// watering, on whether the plant is actually due.
+  List<String> _quickQuestions() {
+    switch (_activeTopic) {
+      case ChatTopic.water:
+        return [
+          if (widget.plant.shouldWaterNow)
+            l10n.plantChatQuickWaterToday
+          else
+            l10n.plantChatQuickWaterEarly,
+          l10n.plantChatQuickSoilSlowToDry,
+          l10n.plantChatQuickYellowLeaves,
+        ];
+      case ChatTopic.light:
+        return [
+          l10n.plantChatQuickEnoughLight,
+          l10n.plantChatQuickLeggyGrowth,
+          l10n.plantChatQuickShouldMove,
+        ];
+      case ChatTopic.soil:
+        return [
+          l10n.plantChatQuickRepotWhen,
+          l10n.plantChatQuickSoilCompacted,
+          l10n.plantChatQuickWhichSoil,
+        ];
+      case ChatTopic.diagnostics:
+        return [
+          l10n.plantChatQuickWhatToDoNow,
+          l10n.plantChatQuickYellowLeaves,
+        ];
+      default:
+        return [
+          l10n.plantChatQuickWaterToday,
+          l10n.plantChatQuickYellowLeaves,
+          l10n.plantChatQuickWhatToDoNow,
+        ];
+    }
+  }
 
   // ─────────────────────── Image quota ───────────────────────
 
@@ -276,48 +361,74 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
           _isLoadingHistory = false;
           _messages
             ..clear()
-            ..add(_ChatMessage(
-              role: 'assistant',
-              text: _welcomeMessage(),
-              createdAt: DateTime.now(),
-            ));
+            ..add(
+              _ChatMessage(
+                role: 'assistant',
+                text: _welcomeMessage(),
+                createdAt: DateTime.now(),
+              ),
+            );
         });
         return;
       }
 
-      final snapshot = await ref.orderBy('createdAt').limit(60).get();
-      final loaded = snapshot.docs.map((doc) {
-        final data = doc.data();
-        final createdAt = _parseMessageDate(data);
-        return _ChatMessage(
-          role: (data['role'] ?? 'assistant').toString(),
-          text: (data['text'] ?? '').toString(),
-          source: data['source']?.toString(),
-          imageUrl: data['imageUrl']?.toString(),
-          createdAt: createdAt,
-          // Falls back to the message's own timestamp: a card written before
-          // `offeredAt` existed still has to know when it was offered, or it
-          // would read as brand new forever.
-          proposal: ChatProposal.fromJson(
-            (data['proposal'] as Map?)?.cast<String, dynamic>(),
-            offeredAt: createdAt,
-          ),
-        );
-      }).where((m) => m.text.trim().isNotEmpty || m.imageUrl != null).toList();
+      // Everything before the clear marker stays in the database and out of
+      // sight. Read first so a cleared chat opens empty rather than flashing
+      // the old conversation.
+      Timestamp? clearedAt;
+      try {
+        final chat = await _chatDoc()?.get();
+        final value = chat?.data()?['historyClearedAt'];
+        if (value is Timestamp) clearedAt = value;
+      } catch (_) {
+        // Showing more than intended is the wrong way to fail here, but there
+        // is nothing better to do than carry on with the full history.
+      }
+
+      Query<Map<String, dynamic>> query = ref;
+      if (clearedAt != null) {
+        query = query.where('createdAt', isGreaterThan: clearedAt);
+      }
+
+      final snapshot = await query.orderBy('createdAt').limit(60).get();
+      final loaded = snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            final createdAt = _parseMessageDate(data);
+            return _ChatMessage(
+              role: (data['role'] ?? 'assistant').toString(),
+              text: (data['text'] ?? '').toString(),
+              source: data['source']?.toString(),
+              imageUrl: data['imageUrl']?.toString(),
+              createdAt: createdAt,
+              topic: data['topic']?.toString(),
+              // Falls back to the message's own timestamp: a card written before
+              // `offeredAt` existed still has to know when it was offered, or it
+              // would read as brand new forever.
+              proposal: ChatProposal.fromJson(
+                (data['proposal'] as Map?)?.cast<String, dynamic>(),
+                offeredAt: createdAt,
+              ),
+            );
+          })
+          .where((m) => m.text.trim().isNotEmpty || m.imageUrl != null)
+          .toList();
 
       if (!mounted) return;
       setState(() {
         _messages
           ..clear()
-          ..addAll(loaded.isEmpty
-              ? [
-                  _ChatMessage(
-                    role: 'assistant',
-                    text: _welcomeMessage(),
-                    createdAt: DateTime.now(),
-                  ),
-                ]
-              : loaded);
+          ..addAll(
+            loaded.isEmpty
+                ? [
+                    _ChatMessage(
+                      role: 'assistant',
+                      text: _welcomeMessage(),
+                      createdAt: DateTime.now(),
+                    ),
+                  ]
+                : loaded,
+          );
         _hasUserMessage = _messages.any((m) => m.role == 'user');
         _isLoadingHistory = false;
       });
@@ -327,11 +438,13 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       setState(() {
         _messages
           ..clear()
-          ..add(_ChatMessage(
-            role: 'assistant',
-            text: _welcomeMessage(),
-            createdAt: DateTime.now(),
-          ));
+          ..add(
+            _ChatMessage(
+              role: 'assistant',
+              text: _welcomeMessage(),
+              createdAt: DateTime.now(),
+            ),
+          );
         _isLoadingHistory = false;
       });
       _scrollToBottom();
@@ -348,7 +461,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       // Where it was said, not what it is about. A question about light asked
       // on the watering screen stays under `water`: the tag is what makes the
       // filtered view match what the user remembers doing.
-      'topic': widget.topic,
+      'topic': message.topic,
       if (message.proposal != null) 'proposal': message.proposal!.toMap(),
       if (message.imageUrl != null) 'imageUrl': message.imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
@@ -401,16 +514,19 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       text: text,
       imageUrl: imageUrl,
       createdAt: DateTime.now(),
+      topic: _activeTopic,
     );
     setState(() => _messages.add(userMessage));
     _scrollToBottom();
     // Persist message without the heavy base64 data URI
-    await _persistMessage(_ChatMessage(
-      role: 'user',
-      text: text,
-      imageUrl: null, // don't store base64 in Firestore
-      createdAt: userMessage.createdAt,
-    ));
+    await _persistMessage(
+      _ChatMessage(
+        role: 'user',
+        text: text,
+        imageUrl: null, // don't store base64 in Firestore
+        createdAt: userMessage.createdAt,
+      ),
+    );
 
     try {
       // The conversation window is no longer assembled here. The server reads
@@ -422,7 +538,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         'plantName': widget.plant.name,
         'species': widget.plant.species,
         'message': text.isNotEmpty ? text : 'I attached a photo of my plant.',
-        'topic': widget.topic,
+        'topic': _activeTopic,
         'locale': localeCode,
       };
       if (base64Image != null) {
@@ -451,8 +567,8 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
       final assistantText =
           payload['answer']?.toString().trim().isNotEmpty == true
-              ? payload['answer'].toString()
-              : couldNotGenerateText;
+          ? payload['answer'].toString()
+          : couldNotGenerateText;
       final source = payload['source']?.toString();
 
       if (!mounted) return;
@@ -461,8 +577,14 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         text: assistantText,
         source: source,
         createdAt: DateTime.now(),
+        // The answer inherits the question's topic without exception, so a
+        // filtered view never shows a reply whose question lives elsewhere.
+        topic: userMessage.topic,
         proposal: ChatProposal.fromJson(
           payload['proposal'] as Map<String, dynamic>?,
+        ),
+        suggestedTask: SuggestedTask.fromJson(
+          payload['task'] as Map<String, dynamic>?,
         ),
       );
       setState(() => _messages.add(assistantMessage));
@@ -497,8 +619,9 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final outcome =
-        accepted ? ProposalOutcome.applied : ProposalOutcome.declined;
+    final outcome = accepted
+        ? ProposalOutcome.applied
+        : ProposalOutcome.declined;
     _replaceProposal(message, proposal.resolved(outcome));
 
     try {
@@ -533,6 +656,50 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     }
   }
 
+  /// Writes the reminder the assistant offered.
+  ///
+  /// The card is dropped either way once tapped: the deck is where a task lives
+  /// afterwards, and leaving a spent offer in the transcript invites a second
+  /// identical reminder.
+  Future<void> _acceptSuggestedTask(_ChatMessage message) async {
+    final task = message.suggestedTask;
+    if (task == null) return;
+
+    final index = _messages.indexOf(message);
+    if (index != -1) {
+      setState(
+        () => _messages[index] = _ChatMessage(
+          role: message.role,
+          text: message.text,
+          source: message.source,
+          imageUrl: message.imageUrl,
+          createdAt: message.createdAt,
+          topic: message.topic,
+          proposal: message.proposal,
+        ),
+      );
+    }
+
+    try {
+      await TaskService().createFromChat(
+        plantId: widget.plant.id,
+        title: task.title,
+        dueInDays: task.dueInDays,
+        category: switch (_activeTopic) {
+          ChatTopic.water => TaskCategory.water,
+          ChatTopic.light => TaskCategory.light,
+          ChatTopic.soil => TaskCategory.soil,
+          ChatTopic.fertilizer => TaskCategory.fertilizer,
+          ChatTopic.diagnostics => TaskCategory.scan,
+          _ => TaskCategory.other,
+        },
+      );
+      if (mounted) _showSnackBar(l10n.chatTaskCreated);
+    } catch (e) {
+      if (mounted) _showSnackBar(e.toString());
+    }
+  }
+
   /// Swaps a proposal in place, in memory and in the stored message.
   void _replaceProposal(_ChatMessage message, ChatProposal next) {
     final index = _messages.indexOf(message);
@@ -546,15 +713,18 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     final ref = _messagesCollection();
     if (ref == null) return;
     ref
-        .where('createdAtClient',
-            isEqualTo: message.createdAt.toIso8601String())
+        .where(
+          'createdAtClient',
+          isEqualTo: message.createdAt.toIso8601String(),
+        )
         .limit(1)
         .get()
         .then((snap) {
-      for (final doc in snap.docs) {
-        doc.reference.update({'proposal': next.toMap()});
-      }
-    }).catchError((_) {});
+          for (final doc in snap.docs) {
+            doc.reference.update({'proposal': next.toMap()});
+          }
+        })
+        .catchError((_) {});
   }
 
   void _scrollToBottom() {
@@ -570,8 +740,9 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _clearHistory() async {
@@ -594,29 +765,44 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     );
     if (confirmed != true) return;
 
-    final ref = _messagesCollection();
-    if (ref != null) {
+    // A mark, not a delete. Nothing leaves the database — the list and the
+    // model's window both simply start after it, which is what "clear" means to
+    // someone looking at the screen. The assistant has to honour it too, or it
+    // goes on quoting a conversation the owner is staring at an empty page for.
+    //
+    // Facts and memory deliberately survive: this forgets the conversation, not
+    // the plant. "I moved it to the east window" stays known.
+    final chat = _chatDoc();
+    if (chat != null) {
       try {
-        final batch = FirebaseFirestore.instance.batch();
-        final snap = await ref.get();
-        for (final d in snap.docs) {
-          batch.delete(d.reference);
-        }
-        await batch.commit();
-      } catch (_) {}
+        await chat.set({
+          'historyClearedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (_) {
+        // Nothing was destroyed, so a failure here costs the gesture and
+        // nothing else.
+      }
     }
 
     if (!mounted) return;
     setState(() {
       _messages
         ..clear()
-        ..add(_ChatMessage(
-          role: 'assistant',
-          text: _welcomeMessage(),
-          createdAt: DateTime.now(),
-        ));
+        ..add(
+          _ChatMessage(
+            role: 'assistant',
+            text: _welcomeMessage(),
+            createdAt: DateTime.now(),
+          ),
+        );
       _hasUserMessage = false;
     });
+  }
+
+  void _openMemory() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PlantMemoryScreen(plant: widget.plant)),
+    );
   }
 
   String _sourceLabel(String source) {
@@ -655,11 +841,17 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         child: Column(
           children: [
             _AppBar(
-              title: l10n.plantChatTitle(widget.plant.name),
+              title: _screenTitle(),
               onBack: () => Navigator.of(context).maybePop(),
               onClear: _clearHistory,
+              onOpenMemory: _openMemory,
               statusLabel: l10n.aiAssistantOnline,
             ),
+            if (_topicMode)
+              _TopicFilterBar(
+                label: l10n.chatShowWholeConversation,
+                onTap: () => setState(() => _topicMode = false),
+              ),
             if (!_hasUserMessage && !_isLoadingHistory)
               _QuickReplies(
                 items: _quickQuestions(),
@@ -670,21 +862,20 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
                   ? BotanlyShimmer(child: const ShimmerChatHistory())
                   : ListView.builder(
                       controller: _scrollController,
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                      itemCount:
-                          _messages.length + (_isSending ? 1 : 0),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      itemCount: _visibleMessages.length + (_isSending ? 1 : 0),
                       itemBuilder: (context, index) {
-                        if (_isSending && index == _messages.length) {
+                        if (_isSending && index == _visibleMessages.length) {
                           return const _TypingBubble();
                         }
-                        final m = _messages[index];
+                        final m = _visibleMessages[index];
                         return _MessageBubble(
                           message: m,
                           isFirstInGroup: _isFirstInGroup(index),
                           formatTime: _formatTime,
                           sourceLabel: _sourceLabel,
                           onProposalDecision: _decideProposal,
+                          onTaskAccepted: _acceptSuggestedTask,
                         );
                       },
                     ),
@@ -714,7 +905,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 
   bool _isFirstInGroup(int index) {
     if (index == 0) return true;
-    return _messages[index - 1].role != _messages[index].role;
+    return _visibleMessages[index - 1].role != _visibleMessages[index].role;
   }
 }
 
@@ -722,16 +913,60 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 //  App bar
 // ────────────────────────────────────────────────────────────
 
+/// The way out of a filtered view.
+///
+/// Deliberately a strip under the header rather than a chip row: there is only
+/// one thing to do here — see everything — and tapping it also leaves the topic,
+/// so the heading above stops claiming a subject the list no longer has.
+class _TopicFilterBar extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _TopicFilterBar({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Container(
+        width: double.infinity,
+        color: const Color(0xFFEFF5EA),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: BotanlyColors.sageDark,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.expand_more, size: 15, color: BotanlyColors.sageDark),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AppBar extends StatefulWidget {
   final String title;
   final String statusLabel;
   final VoidCallback onBack;
   final VoidCallback onClear;
+  final VoidCallback onOpenMemory;
   const _AppBar({
     required this.title,
     required this.statusLabel,
     required this.onBack,
     required this.onClear,
+    required this.onOpenMemory,
   });
 
   @override
@@ -777,9 +1012,7 @@ class _AppBarState extends State<_AppBar> {
           ),
           Positioned(
             top: offset.dy + size.height + 4,
-            right: MediaQuery.of(context).size.width -
-                offset.dx -
-                size.width,
+            right: MediaQuery.of(context).size.width - offset.dx - size.width,
             child: Material(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -792,37 +1025,84 @@ class _AppBarState extends State<_AppBar> {
                   border: Border.all(color: const Color(0xFFE4EBE1)),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      _removeOverlay();
-                      widget.onClear();
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.delete_outline,
-                              size: 15, color: BotanlyColors.inkMute),
-                          const SizedBox(width: 8),
-                          Text(
-                            AppLocalizations.of(context)!
-                                .clearHistoryAction,
-                            style: GoogleFonts.dmSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF1B2A18),
-                            ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          _removeOverlay();
+                          widget.onOpenMemory();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.psychology_outlined,
+                                size: 15,
+                                color: BotanlyColors.inkMute,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                AppLocalizations.of(context)!.memoryTitle,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: BotanlyColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          _removeOverlay();
+                          widget.onClear();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.delete_outline,
+                                size: 15,
+                                color: BotanlyColors.inkMute,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.clearHistoryAction,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF1B2A18),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -857,10 +1137,7 @@ class _AppBarState extends State<_AppBar> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  BotanlyColors.sagePale,
-                  BotanlyColors.sage,
-                ],
+                colors: [BotanlyColors.sagePale, BotanlyColors.sage],
               ),
               boxShadow: [
                 BoxShadow(
@@ -929,8 +1206,11 @@ class _AppBarState extends State<_AppBar> {
               child: const SizedBox(
                 width: 34,
                 height: 34,
-                child: Icon(Icons.more_vert,
-                    size: 20, color: BotanlyColors.inkMute),
+                child: Icon(
+                  Icons.more_vert,
+                  size: 20,
+                  color: BotanlyColors.inkMute,
+                ),
               ),
             ),
           ),
@@ -980,8 +1260,12 @@ class _AttachButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = onTap == null;
-    final iconColor = disabled ? const Color(0xFFBBBBBB) : BotanlyColors.sageDark;
-    final bgColor = disabled ? const Color(0xFFF0F0F0) : const Color(0xFFF1F8EB);
+    final iconColor = disabled
+        ? const Color(0xFFBBBBBB)
+        : BotanlyColors.sageDark;
+    final bgColor = disabled
+        ? const Color(0xFFF0F0F0)
+        : const Color(0xFFF1F8EB);
     final remaining = quotaRemaining.clamp(0, quotaLimit);
 
     return GestureDetector(
@@ -992,10 +1276,7 @@ class _AttachButton extends StatelessWidget {
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
             child: Icon(Icons.attach_file_rounded, size: 16, color: iconColor),
           ),
           if (quotaLoaded) ...[
@@ -1049,7 +1330,9 @@ class _QuickReplies extends StatelessWidget {
                 child: Container(
                   alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: BotanlyColors.sagePale),
@@ -1083,12 +1366,14 @@ class _MessageBubble extends StatelessWidget {
   final String Function(DateTime) formatTime;
   final String Function(String) sourceLabel;
   final void Function(_ChatMessage, bool accepted)? onProposalDecision;
+  final void Function(_ChatMessage)? onTaskAccepted;
   const _MessageBubble({
     required this.message,
     required this.isFirstInGroup,
     required this.formatTime,
     required this.sourceLabel,
     this.onProposalDecision,
+    this.onTaskAccepted,
   });
 
   @override
@@ -1097,8 +1382,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
@@ -1111,8 +1397,9 @@ class _MessageBubble extends StatelessWidget {
                 maxWidth: MediaQuery.of(context).size.width * 0.78,
               ),
               child: Column(
-                crossAxisAlignment:
-                    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isUser
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   // Photo bubble (if image attached)
                   if (message.imageUrl != null) ...[
@@ -1127,7 +1414,9 @@ class _MessageBubble extends StatelessWidget {
                   if (message.text.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 11),
+                        horizontal: 14,
+                        vertical: 11,
+                      ),
                       decoration: BoxDecoration(
                         color: isUser ? null : Colors.white,
                         gradient: isUser
@@ -1146,10 +1435,8 @@ class _MessageBubble extends StatelessWidget {
                         borderRadius: BorderRadius.only(
                           topLeft: const Radius.circular(18),
                           topRight: const Radius.circular(18),
-                          bottomLeft:
-                              Radius.circular(isUser ? 18 : 4),
-                          bottomRight:
-                              Radius.circular(isUser ? 4 : 18),
+                          bottomLeft: Radius.circular(isUser ? 18 : 4),
+                          bottomRight: Radius.circular(isUser ? 4 : 18),
                         ),
                       ),
                       child: Column(
@@ -1171,7 +1458,9 @@ class _MessageBubble extends StatelessWidget {
                             const SizedBox(height: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE3F1D6),
                                 borderRadius: BorderRadius.circular(999),
@@ -1184,6 +1473,13 @@ class _MessageBubble extends StatelessWidget {
                                   color: BotanlyColors.sageDark,
                                 ),
                               ),
+                            ),
+                          ],
+                          if (!isUser && message.suggestedTask != null) ...[
+                            const SizedBox(height: 10),
+                            _SuggestedTaskCard(
+                              task: message.suggestedTask!,
+                              onAccept: () => onTaskAccepted?.call(message),
                             ),
                           ],
                           if (!isUser && message.proposal != null) ...[
@@ -1269,11 +1565,11 @@ class _PhotoBubble extends StatelessWidget {
   }
 
   Widget _brokenImage() => Container(
-        color: const Color(0xFFE3F1D6),
-        child: const Center(
-          child: Icon(Icons.broken_image, color: BotanlyColors.inkMute),
-        ),
-      );
+    color: const Color(0xFFE3F1D6),
+    child: const Center(
+      child: Icon(Icons.broken_image, color: BotanlyColors.inkMute),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -1380,8 +1676,7 @@ class _TypingBubbleState extends State<_TypingBubble>
           const _MiniAvatar(visible: true),
           const SizedBox(width: 6),
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: const Color(0xFFE4EBE1)),
@@ -1524,8 +1819,11 @@ class _InputBar extends StatelessWidget {
                         child: const SizedBox(
                           width: 22,
                           height: 22,
-                          child: Icon(Icons.close,
-                              size: 12, color: BotanlyColors.inkSoft),
+                          child: Icon(
+                            Icons.close,
+                            size: 12,
+                            color: BotanlyColors.inkSoft,
+                          ),
                         ),
                       ),
                     ),
@@ -1543,8 +1841,7 @@ class _InputBar extends StatelessWidget {
                     height: 12,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      valueColor:
-                          AlwaysStoppedAnimation(BotanlyColors.sage),
+                      valueColor: AlwaysStoppedAnimation(BotanlyColors.sage),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1575,7 +1872,9 @@ class _InputBar extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 6),
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border.all(
@@ -1603,8 +1902,7 @@ class _InputBar extends StatelessWidget {
                       },
                       decoration: InputDecoration(
                         isCollapsed: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 6),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 6),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -1666,10 +1964,7 @@ class _SendButton extends StatelessWidget {
                 ? const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      BotanlyColors.sage,
-                      BotanlyColors.sageDark,
-                    ],
+                    colors: [BotanlyColors.sage, BotanlyColors.sageDark],
                   )
                 : null,
             color: enabled ? null : const Color(0xFFE4EBE1),
@@ -1689,8 +1984,7 @@ class _SendButton extends StatelessWidget {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation(Colors.white),
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
                   ),
                 )
               : Icon(
@@ -1729,8 +2023,7 @@ class _ProposalCard extends StatelessWidget {
     final String status = switch (proposal.outcome) {
       ProposalOutcome.applied => l10n.chatProposalApplied,
       ProposalOutcome.declined => l10n.chatProposalDeclined,
-      ProposalOutcome.open =>
-        actionable ? '' : l10n.chatProposalOutdated,
+      ProposalOutcome.open => actionable ? '' : l10n.chatProposalOutdated,
     };
 
     return Opacity(
@@ -1833,6 +2126,57 @@ class _ProposalCard extends StatelessWidget {
   }
 }
 
+/// The reminder offer. One button, because declining a reminder is just not
+/// tapping it — unlike a change to the plant's data, an ignored offer leaves
+/// nothing wrong behind.
+class _SuggestedTaskCard extends StatelessWidget {
+  final SuggestedTask task;
+  final VoidCallback onAccept;
+
+  const _SuggestedTaskCard({required this.task, required this.onAccept});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F7FB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x332F6FB4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.chatTaskOffer,
+            style: GoogleFonts.dmSans(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2F6FB4),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '${task.title} · ${l10n.chatTaskInDays(task.dueInDays)}',
+            style: GoogleFonts.dmSans(
+              fontSize: 12.5,
+              height: 1.35,
+              color: const Color(0xFF3C4A5A),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _ProposalButton(
+            label: l10n.chatProposalApply,
+            filled: true,
+            onTap: onAccept,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProposalButton extends StatelessWidget {
   final String label;
   final bool filled;
@@ -1881,8 +2225,18 @@ class _ChatMessage {
   final String? imageUrl;
   final DateTime createdAt;
 
+  /// Where it was said, not what it is about. A question about light asked on
+  /// the watering screen stays under `water` — the tag is what makes the
+  /// filtered view match what the owner remembers doing.
+  final String? topic;
+
   /// A change the assistant offered alongside this answer, if any.
   final ChatProposal? proposal;
+
+  /// A one-off reminder it offered to set. Not persisted: once the owner has
+  /// answered, the task itself is the record, and an offer they ignored is not
+  /// worth carrying forward.
+  final SuggestedTask? suggestedTask;
 
   const _ChatMessage({
     required this.role,
@@ -1890,7 +2244,9 @@ class _ChatMessage {
     this.source,
     this.imageUrl,
     required this.createdAt,
+    this.topic,
     this.proposal,
+    this.suggestedTask,
   });
 
   _ChatMessage withProposal(ChatProposal? next) => _ChatMessage(
@@ -1899,6 +2255,7 @@ class _ChatMessage {
     source: source,
     imageUrl: imageUrl,
     createdAt: createdAt,
+    topic: topic,
     proposal: next,
   );
 }

@@ -1590,5 +1590,62 @@
         "type": "String"
       }
     }
-  }
+  },
+  "chatTopicWater": "Watering",
+  "chatTopicSoil": "Soil",
+  "chatTopicLight": "Light",
+  "chatTopicTemperature": "Temperature",
+  "chatTopicFertilizer": "Fertiliser",
+  "chatTopicDiagnostics": "Diagnostics",
+  "chatShowWholeConversation": "Show whole conversation",
+  "chatTitleWithTopic": "Assistant · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Can I water it earlier?",
+  "plantChatQuickSoilSlowToDry": "Why is the soil slow to dry?",
+  "plantChatQuickEnoughLight": "Is it getting enough light?",
+  "plantChatQuickLeggyGrowth": "Why is it getting leggy?",
+  "plantChatQuickShouldMove": "Should I move it?",
+  "plantChatQuickRepotWhen": "When should I repot it?",
+  "plantChatQuickSoilCompacted": "Why has the soil gone hard?",
+  "plantChatQuickWhichSoil": "Which soil is best for it?",
+  "memoryTitle": "What the assistant knows",
+  "memoryExplainer": "Written from what you tell the assistant in chat. Remove anything that is wrong — it is used in every answer.",
+  "memoryLoadFailed": "Could not load.",
+  "memorySuperseded": "replaced",
+  "memoryForgetConfirm": "Forget this?",
+  "memoryForgetAction": "Forget",
+  "memoryKindPlacement": "Where it stands",
+  "memoryKindContainer": "Pot",
+  "memoryKindWateringHabit": "Care habits",
+  "memoryKindSpecies": "Species",
+  "memoryKindEnvironment": "Conditions",
+  "memoryKindIntervention": "What was done",
+  "memoryKindSymptom": "Symptom",
+  "memoryKindConstraint": "Constraint",
+  "memoryKindGoal": "Goal",
+  "memoryKindPreference": "Preference",
+  "memoryEmpty": "Nothing yet. As you talk about {name}, what you tell the assistant is kept here.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Set a reminder?",
+  "chatTaskInDays": "in {days} days",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Reminder set"
 }

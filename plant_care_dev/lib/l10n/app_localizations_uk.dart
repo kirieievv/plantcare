@@ -2989,4 +2989,118 @@ class AppLocalizationsUk extends AppLocalizations {
   String chatProposalSet(String label, String to) {
     return '$label: $to';
   }
+
+  @override
+  String get chatTopicWater => 'Полив';
+
+  @override
+  String get chatTopicSoil => 'Ґрунт';
+
+  @override
+  String get chatTopicLight => 'Світло';
+
+  @override
+  String get chatTopicTemperature => 'Температура';
+
+  @override
+  String get chatTopicFertilizer => 'Добрива';
+
+  @override
+  String get chatTopicDiagnostics => 'Діагностика';
+
+  @override
+  String get chatShowWholeConversation => 'Показати всю розмову';
+
+  @override
+  String chatTitleWithTopic(String topic) {
+    return 'Асистент · $topic';
+  }
+
+  @override
+  String get plantChatQuickWaterEarly => 'Можна полити раніше?';
+
+  @override
+  String get plantChatQuickSoilSlowToDry => 'Чому земля довго сохне?';
+
+  @override
+  String get plantChatQuickEnoughLight => 'Чи вистачає їй світла?';
+
+  @override
+  String get plantChatQuickLeggyGrowth => 'Чому листя витягується?';
+
+  @override
+  String get plantChatQuickShouldMove => 'Чи варто переставити?';
+
+  @override
+  String get plantChatQuickRepotWhen => 'Коли пересаджувати?';
+
+  @override
+  String get plantChatQuickSoilCompacted => 'Чому земля ущільнилася?';
+
+  @override
+  String get plantChatQuickWhichSoil => 'Який ґрунт кращий?';
+
+  @override
+  String get memoryTitle => 'Що асистент знає';
+
+  @override
+  String get memoryExplainer => 'Записано з ваших повідомлень у чаті. Видаліть усе хибне — це використовується у кожній відповіді.';
+
+  @override
+  String get memoryLoadFailed => 'Не вдалося завантажити.';
+
+  @override
+  String get memorySuperseded => 'замінено';
+
+  @override
+  String get memoryForgetConfirm => 'Забути це?';
+
+  @override
+  String get memoryForgetAction => 'Забути';
+
+  @override
+  String get memoryKindPlacement => 'Де стоїть';
+
+  @override
+  String get memoryKindContainer => 'Горщик';
+
+  @override
+  String get memoryKindWateringHabit => 'Звички догляду';
+
+  @override
+  String get memoryKindSpecies => 'Вид';
+
+  @override
+  String get memoryKindEnvironment => 'Умови';
+
+  @override
+  String get memoryKindIntervention => 'Що робили';
+
+  @override
+  String get memoryKindSymptom => 'Симптом';
+
+  @override
+  String get memoryKindConstraint => 'Обмеження';
+
+  @override
+  String get memoryKindGoal => 'Мета';
+
+  @override
+  String get memoryKindPreference => 'Уподобання';
+
+  @override
+  String memoryEmpty(String name) {
+    return 'Поки нічого. Усе, що ви розкажете асистенту про $name, буде тут.';
+  }
+
+  @override
+  String get chatTaskOffer => 'Поставити нагадування?';
+
+  @override
+  String chatTaskInDays(int days) {
+    return 'через $days дн.';
+  }
+
+  @override
+  String get chatTaskCreated => 'Нагадування створено';
 }

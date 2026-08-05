@@ -91,3 +91,24 @@ class ChatProposal {
 }
 
 enum ProposalOutcome { open, applied, declined }
+
+/// A one-off reminder the assistant offered to set.
+///
+/// Separate from [ChatProposal] because it changes nothing about the plant —
+/// it adds something to the deck. Routine care is already scheduled by rules, so
+/// this only ever covers acts that belong to a date rather than a rhythm:
+/// repotting in a fortnight, checking on the plant after a trip.
+class SuggestedTask {
+  final String title;
+  final int dueInDays;
+
+  const SuggestedTask({required this.title, required this.dueInDays});
+
+  static SuggestedTask? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    final title = json['title']?.toString().trim();
+    final due = json['dueInDays'];
+    if (title == null || title.isEmpty || due is! num) return null;
+    return SuggestedTask(title: title, dueInDays: due.round());
+  }
+}

@@ -2958,4 +2958,118 @@ class AppLocalizationsEn extends AppLocalizations {
   String chatProposalSet(String label, String to) {
     return '$label: $to';
   }
+
+  @override
+  String get chatTopicWater => 'Watering';
+
+  @override
+  String get chatTopicSoil => 'Soil';
+
+  @override
+  String get chatTopicLight => 'Light';
+
+  @override
+  String get chatTopicTemperature => 'Temperature';
+
+  @override
+  String get chatTopicFertilizer => 'Fertiliser';
+
+  @override
+  String get chatTopicDiagnostics => 'Diagnostics';
+
+  @override
+  String get chatShowWholeConversation => 'Show whole conversation';
+
+  @override
+  String chatTitleWithTopic(String topic) {
+    return 'Assistant · $topic';
+  }
+
+  @override
+  String get plantChatQuickWaterEarly => 'Can I water it earlier?';
+
+  @override
+  String get plantChatQuickSoilSlowToDry => 'Why is the soil slow to dry?';
+
+  @override
+  String get plantChatQuickEnoughLight => 'Is it getting enough light?';
+
+  @override
+  String get plantChatQuickLeggyGrowth => 'Why is it getting leggy?';
+
+  @override
+  String get plantChatQuickShouldMove => 'Should I move it?';
+
+  @override
+  String get plantChatQuickRepotWhen => 'When should I repot it?';
+
+  @override
+  String get plantChatQuickSoilCompacted => 'Why has the soil gone hard?';
+
+  @override
+  String get plantChatQuickWhichSoil => 'Which soil is best for it?';
+
+  @override
+  String get memoryTitle => 'What the assistant knows';
+
+  @override
+  String get memoryExplainer => 'Written from what you tell the assistant in chat. Remove anything that is wrong — it is used in every answer.';
+
+  @override
+  String get memoryLoadFailed => 'Could not load.';
+
+  @override
+  String get memorySuperseded => 'replaced';
+
+  @override
+  String get memoryForgetConfirm => 'Forget this?';
+
+  @override
+  String get memoryForgetAction => 'Forget';
+
+  @override
+  String get memoryKindPlacement => 'Where it stands';
+
+  @override
+  String get memoryKindContainer => 'Pot';
+
+  @override
+  String get memoryKindWateringHabit => 'Care habits';
+
+  @override
+  String get memoryKindSpecies => 'Species';
+
+  @override
+  String get memoryKindEnvironment => 'Conditions';
+
+  @override
+  String get memoryKindIntervention => 'What was done';
+
+  @override
+  String get memoryKindSymptom => 'Symptom';
+
+  @override
+  String get memoryKindConstraint => 'Constraint';
+
+  @override
+  String get memoryKindGoal => 'Goal';
+
+  @override
+  String get memoryKindPreference => 'Preference';
+
+  @override
+  String memoryEmpty(String name) {
+    return 'Nothing yet. As you talk about $name, what you tell the assistant is kept here.';
+  }
+
+  @override
+  String get chatTaskOffer => 'Set a reminder?';
+
+  @override
+  String chatTaskInDays(int days) {
+    return 'in $days days';
+  }
+
+  @override
+  String get chatTaskCreated => 'Reminder set';
 }

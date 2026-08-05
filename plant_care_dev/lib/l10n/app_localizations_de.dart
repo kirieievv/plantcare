@@ -2958,4 +2958,118 @@ class AppLocalizationsDe extends AppLocalizations {
   String chatProposalSet(String label, String to) {
     return '$label: $to';
   }
+
+  @override
+  String get chatTopicWater => 'Gießen';
+
+  @override
+  String get chatTopicSoil => 'Erde';
+
+  @override
+  String get chatTopicLight => 'Licht';
+
+  @override
+  String get chatTopicTemperature => 'Temperatur';
+
+  @override
+  String get chatTopicFertilizer => 'Dünger';
+
+  @override
+  String get chatTopicDiagnostics => 'Diagnose';
+
+  @override
+  String get chatShowWholeConversation => 'Ganzes Gespräch anzeigen';
+
+  @override
+  String chatTitleWithTopic(String topic) {
+    return 'Assistent · $topic';
+  }
+
+  @override
+  String get plantChatQuickWaterEarly => 'Kann ich früher gießen?';
+
+  @override
+  String get plantChatQuickSoilSlowToDry => 'Warum trocknet die Erde so langsam?';
+
+  @override
+  String get plantChatQuickEnoughLight => 'Bekommt sie genug Licht?';
+
+  @override
+  String get plantChatQuickLeggyGrowth => 'Warum wird sie so lang?';
+
+  @override
+  String get plantChatQuickShouldMove => 'Sollte ich sie umstellen?';
+
+  @override
+  String get plantChatQuickRepotWhen => 'Wann sollte ich umtopfen?';
+
+  @override
+  String get plantChatQuickSoilCompacted => 'Warum ist die Erde hart geworden?';
+
+  @override
+  String get plantChatQuickWhichSoil => 'Welche Erde ist am besten?';
+
+  @override
+  String get memoryTitle => 'Was der Assistent weiß';
+
+  @override
+  String get memoryExplainer => 'Aus Ihren Nachrichten im Chat übernommen. Entfernen Sie Falsches — es fließt in jede Antwort ein.';
+
+  @override
+  String get memoryLoadFailed => 'Konnte nicht geladen werden.';
+
+  @override
+  String get memorySuperseded => 'ersetzt';
+
+  @override
+  String get memoryForgetConfirm => 'Das vergessen?';
+
+  @override
+  String get memoryForgetAction => 'Vergessen';
+
+  @override
+  String get memoryKindPlacement => 'Standort';
+
+  @override
+  String get memoryKindContainer => 'Topf';
+
+  @override
+  String get memoryKindWateringHabit => 'Pflegegewohnheiten';
+
+  @override
+  String get memoryKindSpecies => 'Art';
+
+  @override
+  String get memoryKindEnvironment => 'Bedingungen';
+
+  @override
+  String get memoryKindIntervention => 'Durchgeführt';
+
+  @override
+  String get memoryKindSymptom => 'Symptom';
+
+  @override
+  String get memoryKindConstraint => 'Einschränkung';
+
+  @override
+  String get memoryKindGoal => 'Ziel';
+
+  @override
+  String get memoryKindPreference => 'Vorliebe';
+
+  @override
+  String memoryEmpty(String name) {
+    return 'Noch nichts. Was Sie dem Assistenten über $name erzählen, steht hier.';
+  }
+
+  @override
+  String get chatTaskOffer => 'Erinnerung setzen?';
+
+  @override
+  String chatTaskInDays(int days) {
+    return 'in $days Tagen';
+  }
+
+  @override
+  String get chatTaskCreated => 'Erinnerung gesetzt';
 }

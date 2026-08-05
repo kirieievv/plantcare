@@ -1423,5 +1423,62 @@
         "type": "String"
       }
     }
-  }
+  },
+  "chatTopicWater": "Полив",
+  "chatTopicSoil": "Почва",
+  "chatTopicLight": "Свет",
+  "chatTopicTemperature": "Температура",
+  "chatTopicFertilizer": "Удобрения",
+  "chatTopicDiagnostics": "Диагностика",
+  "chatShowWholeConversation": "Показать весь разговор",
+  "chatTitleWithTopic": "Ассистент · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Можно полить раньше?",
+  "plantChatQuickSoilSlowToDry": "Почему земля долго сохнет?",
+  "plantChatQuickEnoughLight": "Хватает ли ей света?",
+  "plantChatQuickLeggyGrowth": "Почему листья вытягиваются?",
+  "plantChatQuickShouldMove": "Стоит ли переставить?",
+  "plantChatQuickRepotWhen": "Когда пересаживать?",
+  "plantChatQuickSoilCompacted": "Почему земля уплотнилась?",
+  "plantChatQuickWhichSoil": "Какой грунт лучше?",
+  "memoryTitle": "Что ассистент знает",
+  "memoryExplainer": "Записано из ваших сообщений в чате. Удалите всё неверное — это используется в каждом ответе.",
+  "memoryLoadFailed": "Не удалось загрузить.",
+  "memorySuperseded": "заменено",
+  "memoryForgetConfirm": "Забыть это?",
+  "memoryForgetAction": "Забыть",
+  "memoryKindPlacement": "Где стоит",
+  "memoryKindContainer": "Горшок",
+  "memoryKindWateringHabit": "Привычки ухода",
+  "memoryKindSpecies": "Вид",
+  "memoryKindEnvironment": "Условия",
+  "memoryKindIntervention": "Что делали",
+  "memoryKindSymptom": "Симптом",
+  "memoryKindConstraint": "Ограничение",
+  "memoryKindGoal": "Цель",
+  "memoryKindPreference": "Предпочтение",
+  "memoryEmpty": "Пока ничего. Всё, что вы расскажете ассистенту про {name}, будет здесь.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Поставить напоминание?",
+  "chatTaskInDays": "через {days} дн.",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Напоминание создано"
 }

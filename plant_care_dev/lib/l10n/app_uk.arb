@@ -1423,5 +1423,62 @@
         "type": "String"
       }
     }
-  }
+  },
+  "chatTopicWater": "Полив",
+  "chatTopicSoil": "Ґрунт",
+  "chatTopicLight": "Світло",
+  "chatTopicTemperature": "Температура",
+  "chatTopicFertilizer": "Добрива",
+  "chatTopicDiagnostics": "Діагностика",
+  "chatShowWholeConversation": "Показати всю розмову",
+  "chatTitleWithTopic": "Асистент · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Можна полити раніше?",
+  "plantChatQuickSoilSlowToDry": "Чому земля довго сохне?",
+  "plantChatQuickEnoughLight": "Чи вистачає їй світла?",
+  "plantChatQuickLeggyGrowth": "Чому листя витягується?",
+  "plantChatQuickShouldMove": "Чи варто переставити?",
+  "plantChatQuickRepotWhen": "Коли пересаджувати?",
+  "plantChatQuickSoilCompacted": "Чому земля ущільнилася?",
+  "plantChatQuickWhichSoil": "Який ґрунт кращий?",
+  "memoryTitle": "Що асистент знає",
+  "memoryExplainer": "Записано з ваших повідомлень у чаті. Видаліть усе хибне — це використовується у кожній відповіді.",
+  "memoryLoadFailed": "Не вдалося завантажити.",
+  "memorySuperseded": "замінено",
+  "memoryForgetConfirm": "Забути це?",
+  "memoryForgetAction": "Забути",
+  "memoryKindPlacement": "Де стоїть",
+  "memoryKindContainer": "Горщик",
+  "memoryKindWateringHabit": "Звички догляду",
+  "memoryKindSpecies": "Вид",
+  "memoryKindEnvironment": "Умови",
+  "memoryKindIntervention": "Що робили",
+  "memoryKindSymptom": "Симптом",
+  "memoryKindConstraint": "Обмеження",
+  "memoryKindGoal": "Мета",
+  "memoryKindPreference": "Уподобання",
+  "memoryEmpty": "Поки нічого. Усе, що ви розкажете асистенту про {name}, буде тут.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Поставити нагадування?",
+  "chatTaskInDays": "через {days} дн.",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Нагадування створено"
 }

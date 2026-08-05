@@ -5340,6 +5340,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{label}: {to}'**
   String chatProposalSet(String label, String to);
+
+  /// No description provided for @chatTopicWater.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering'**
+  String get chatTopicWater;
+
+  /// No description provided for @chatTopicSoil.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil'**
+  String get chatTopicSoil;
+
+  /// No description provided for @chatTopicLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get chatTopicLight;
+
+  /// No description provided for @chatTopicTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get chatTopicTemperature;
+
+  /// No description provided for @chatTopicFertilizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Fertiliser'**
+  String get chatTopicFertilizer;
+
+  /// No description provided for @chatTopicDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get chatTopicDiagnostics;
+
+  /// No description provided for @chatShowWholeConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show whole conversation'**
+  String get chatShowWholeConversation;
+
+  /// No description provided for @chatTitleWithTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant · {topic}'**
+  String chatTitleWithTopic(String topic);
+
+  /// No description provided for @plantChatQuickWaterEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I water it earlier?'**
+  String get plantChatQuickWaterEarly;
+
+  /// No description provided for @plantChatQuickSoilSlowToDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is the soil slow to dry?'**
+  String get plantChatQuickSoilSlowToDry;
+
+  /// No description provided for @plantChatQuickEnoughLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Is it getting enough light?'**
+  String get plantChatQuickEnoughLight;
+
+  /// No description provided for @plantChatQuickLeggyGrowth.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is it getting leggy?'**
+  String get plantChatQuickLeggyGrowth;
+
+  /// No description provided for @plantChatQuickShouldMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Should I move it?'**
+  String get plantChatQuickShouldMove;
+
+  /// No description provided for @plantChatQuickRepotWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When should I repot it?'**
+  String get plantChatQuickRepotWhen;
+
+  /// No description provided for @plantChatQuickSoilCompacted.
+  ///
+  /// In en, this message translates to:
+  /// **'Why has the soil gone hard?'**
+  String get plantChatQuickSoilCompacted;
+
+  /// No description provided for @plantChatQuickWhichSoil.
+  ///
+  /// In en, this message translates to:
+  /// **'Which soil is best for it?'**
+  String get plantChatQuickWhichSoil;
+
+  /// No description provided for @memoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What the assistant knows'**
+  String get memoryTitle;
+
+  /// No description provided for @memoryExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Written from what you tell the assistant in chat. Remove anything that is wrong — it is used in every answer.'**
+  String get memoryExplainer;
+
+  /// No description provided for @memoryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load.'**
+  String get memoryLoadFailed;
+
+  /// No description provided for @memorySuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'replaced'**
+  String get memorySuperseded;
+
+  /// No description provided for @memoryForgetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget this?'**
+  String get memoryForgetConfirm;
+
+  /// No description provided for @memoryForgetAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get memoryForgetAction;
+
+  /// No description provided for @memoryKindPlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it stands'**
+  String get memoryKindPlacement;
+
+  /// No description provided for @memoryKindContainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pot'**
+  String get memoryKindContainer;
+
+  /// No description provided for @memoryKindWateringHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Care habits'**
+  String get memoryKindWateringHabit;
+
+  /// No description provided for @memoryKindSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Species'**
+  String get memoryKindSpecies;
+
+  /// No description provided for @memoryKindEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions'**
+  String get memoryKindEnvironment;
+
+  /// No description provided for @memoryKindIntervention.
+  ///
+  /// In en, this message translates to:
+  /// **'What was done'**
+  String get memoryKindIntervention;
+
+  /// No description provided for @memoryKindSymptom.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptom'**
+  String get memoryKindSymptom;
+
+  /// No description provided for @memoryKindConstraint.
+  ///
+  /// In en, this message translates to:
+  /// **'Constraint'**
+  String get memoryKindConstraint;
+
+  /// No description provided for @memoryKindGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get memoryKindGoal;
+
+  /// No description provided for @memoryKindPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Preference'**
+  String get memoryKindPreference;
+
+  /// No description provided for @memoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet. As you talk about {name}, what you tell the assistant is kept here.'**
+  String memoryEmpty(String name);
+
+  /// No description provided for @chatTaskOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a reminder?'**
+  String get chatTaskOffer;
+
+  /// No description provided for @chatTaskInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'in {days} days'**
+  String chatTaskInDays(int days);
+
+  /// No description provided for @chatTaskCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder set'**
+  String get chatTaskCreated;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

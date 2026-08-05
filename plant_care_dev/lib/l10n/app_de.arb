@@ -1423,5 +1423,62 @@
         "type": "String"
       }
     }
-  }
+  },
+  "chatTopicWater": "Gießen",
+  "chatTopicSoil": "Erde",
+  "chatTopicLight": "Licht",
+  "chatTopicTemperature": "Temperatur",
+  "chatTopicFertilizer": "Dünger",
+  "chatTopicDiagnostics": "Diagnose",
+  "chatShowWholeConversation": "Ganzes Gespräch anzeigen",
+  "chatTitleWithTopic": "Assistent · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Kann ich früher gießen?",
+  "plantChatQuickSoilSlowToDry": "Warum trocknet die Erde so langsam?",
+  "plantChatQuickEnoughLight": "Bekommt sie genug Licht?",
+  "plantChatQuickLeggyGrowth": "Warum wird sie so lang?",
+  "plantChatQuickShouldMove": "Sollte ich sie umstellen?",
+  "plantChatQuickRepotWhen": "Wann sollte ich umtopfen?",
+  "plantChatQuickSoilCompacted": "Warum ist die Erde hart geworden?",
+  "plantChatQuickWhichSoil": "Welche Erde ist am besten?",
+  "memoryTitle": "Was der Assistent weiß",
+  "memoryExplainer": "Aus Ihren Nachrichten im Chat übernommen. Entfernen Sie Falsches — es fließt in jede Antwort ein.",
+  "memoryLoadFailed": "Konnte nicht geladen werden.",
+  "memorySuperseded": "ersetzt",
+  "memoryForgetConfirm": "Das vergessen?",
+  "memoryForgetAction": "Vergessen",
+  "memoryKindPlacement": "Standort",
+  "memoryKindContainer": "Topf",
+  "memoryKindWateringHabit": "Pflegegewohnheiten",
+  "memoryKindSpecies": "Art",
+  "memoryKindEnvironment": "Bedingungen",
+  "memoryKindIntervention": "Durchgeführt",
+  "memoryKindSymptom": "Symptom",
+  "memoryKindConstraint": "Einschränkung",
+  "memoryKindGoal": "Ziel",
+  "memoryKindPreference": "Vorliebe",
+  "memoryEmpty": "Noch nichts. Was Sie dem Assistenten über {name} erzählen, steht hier.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Erinnerung setzen?",
+  "chatTaskInDays": "in {days} Tagen",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Erinnerung gesetzt"
 }

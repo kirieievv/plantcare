@@ -9,14 +9,28 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Where a task came from. Drives the single badge a row is allowed to show.
-enum TaskSource { schedule, analysis }
+/// Where a task came from, and it decides what may be done to it.
+///
+/// `schedule` is derived: recomputed from the plant's own numbers whenever they
+/// change, so it can be thrown away and rebuilt freely.
+///
+/// `analysis` is advice a health check gave. It is not derived and must never be
+/// swept by a recompute — it carries a health-score penalty while it is open,
+/// and clearing it silently hands that penalty back.
+///
+/// `chat` is a one-off the owner agreed to in conversation: repotting in a
+/// fortnight, checking on something after a trip. Rules would never produce it.
+enum TaskSource { schedule, analysis, chat }
 
 /// Icon and tint bucket. Kept as a closed set so an unknown value from the
 /// analyzer can never reach the UI without a glyph.
 enum TaskCategory { water, light, soil, fertilizer, scan, other }
 
-TaskSource _sourceFrom(String? raw) =>
-    raw == 'analysis' ? TaskSource.analysis : TaskSource.schedule;
+TaskSource _sourceFrom(String? raw) => switch (raw) {
+      'analysis' => TaskSource.analysis,
+      'chat' => TaskSource.chat,
+      _ => TaskSource.schedule,
+    };
 
 TaskCategory _categoryFrom(String? raw) => switch (raw) {
       'water' => TaskCategory.water,
