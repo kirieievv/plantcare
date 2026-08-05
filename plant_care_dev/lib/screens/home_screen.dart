@@ -15,6 +15,7 @@ import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/models/plant_health.dart';
 import 'package:plant_care/models/task.dart';
+import 'package:plant_care/utils/chat_topics.dart';
 import 'package:plant_care/screens/all_tasks_screen.dart';
 import 'package:plant_care/screens/plant_chat_screen.dart';
 import 'package:plant_care/screens/plant_details_screen.dart';
@@ -314,8 +315,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (plant == null) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            PlantChatScreen(plant: plant, initialQuestion: question),
+        builder: (_) => PlantChatScreen(
+          plant: plant,
+          initialQuestion: question,
+          // Same rule as on the plant screen: the task leads to the subject it
+          // is about, so a watering chore and the watering card land in one
+          // thread rather than two.
+          topic: switch (task.category) {
+            TaskCategory.water => ChatTopic.water,
+            TaskCategory.light => ChatTopic.light,
+            TaskCategory.soil => ChatTopic.soil,
+            TaskCategory.fertilizer => ChatTopic.fertilizer,
+            TaskCategory.scan => ChatTopic.diagnostics,
+            TaskCategory.other => ChatTopic.general,
+          },
+        ),
       ),
     );
   }

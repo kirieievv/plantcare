@@ -12,6 +12,7 @@ const {
   weatherForCity,
   weatherSnapshot,
 } = require('./weather');
+const { careBriefForTopic, isKnownTopic } = require('./care-sections');
 
 // ── AI Model Configuration ──────────────────────────────────────────
 // Model for watering reminder emails — cheap, template-style text.
@@ -659,6 +660,11 @@ async function loadHealthCheckAgentContext(plantId, userId) {
     // every one of them without its own integration.
     weather: null,
     location: null,
+    // The standing care plan, kept beside the plant rather than inside it: the
+    // plant object is dumped into the prompt as JSON, and the full plan is
+    // thirteen sections of prose. Only the section the user is actually reading
+    // goes in, and it goes in verbatim, in its own block.
+    carePlan: null,
   };
 
   if (!plantId || !userId) return context;
@@ -668,7 +674,10 @@ async function loadHealthCheckAgentContext(plantId, userId) {
     const plantDoc = await db.collection('plants').doc(plantId).get();
     if (plantDoc.exists) {
       const plantData = plantDoc.data();
-      if (!plantData.userId || plantData.userId === userId) {
+      // Ownership is required, not merely preferred. This used to also accept a
+      // plant whose `userId` was missing, which made every such document
+      // readable by anyone who could name it.
+      if (plantData.userId === userId) {
         context.plant = {
           id: plantDoc.id,
           name: plantData.name || null,
@@ -691,6 +700,10 @@ async function loadHealthCheckAgentContext(plantId, userId) {
           nearHeatSource: typeof plantData.nearHeatSource === 'boolean'
             ? plantData.nearHeatSource
             : null,
+        };
+        context.carePlan = {
+          tips: plantData.aiCareTips || null,
+          details: plantData.careDetails || null,
         };
       }
     }
@@ -1286,13 +1299,30 @@ function buildPlantChatSystemPrompt(context, options = {}) {
   const conditions = describeGrowingConditions(plantSummary);
   const weather = describeWeather(context.weather, context.location);
 
+  // The exact paragraph on the user's screen. Quoting it beats summarising it:
+  // the sheet says "every 3 days, 220 ml" while the prose underneath it says
+  // "every 7-14 days", and an assistant that has seen neither confidently
+  // repeats the generic figure at someone staring at the specific one.
+  const carePlan = context.carePlan || {};
+  const topicBrief = careBriefForTopic(options.topic, carePlan.tips, carePlan.details);
+
   return `You are Plant Care chat assistant for one specific plant.
+Speak about the plant in the third person, by name. Never speak as the plant.
 Respond in language locale="${locale}" unless user asks for another language.
 
 Plant identity:
 - Name hint: ${options.plantNameHint || plantSummary.name || 'unknown'}
 - Species hint: ${options.speciesHint || plantSummary.species || 'unknown'}
-${conditions ? `
+${topicBrief ? `
+The owner is reading this section of the plant's own care plan right now:
+"""
+${topicBrief}
+"""
+It is authoritative for this plant. Continue it — do not restate it, and do not
+replace its figures with the generic ones for the species. Other subjects stay
+in scope: use light, temperature, soil or anything else whenever it changes the
+answer.
+` : ''}${conditions ? `
 Growing conditions the owner already told us:
 ${conditions}
 Treat these as known. Do not ask the user about them again, and do not suggest a
@@ -1309,16 +1339,14 @@ ${JSON.stringify({
   }, null, 2)}
 
 Rules:
-- Keep answer practical and concise (4-8 short bullet points or 1-3 short paragraphs).
-- Use this plant context first. If uncertain, say uncertainty clearly.
+- Ground every claim in the context above. Never invent measurements or events.
+- Prefer this plant's own figures over what is typical for the species.
+- If the data conflicts, choose the conservative action and say why.
 - Never suggest "water now" when signs indicate overwatering risk or wet soil.
-- Prefer safe, conservative actions if data conflicts.
-- If user asks for next action, include a short step list.
-- Do not fabricate measurements or events that are not in context.
-- Return plain text only.
-- Do not use markdown syntax (no **bold**, no headings, no bullet markers, no numbered list formatting).
-- If multiple tips are needed, write short sentences separated by new lines.
-- Keep response concise (max 6-8 short lines).
+- If uncertain, say so plainly rather than guessing.
+- Plain text only. No markdown: no **bold**, no headings, no bullet or number
+  markers. Separate thoughts with line breaks.
+- Three to six short lines. If the user asks what to do, make them steps.
 `;
 }
 
@@ -2062,10 +2090,14 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
           ? 'context'
           : 'agent';
 
+      // An unrecognised topic is dropped rather than passed through: it would
+      // otherwise reach the prompt as a heading for a section that does not
+      // exist, which reads to the model as a subject it has no data on.
       const systemPrompt = buildPlantChatSystemPrompt(context, {
         locale,
         plantNameHint: plantName,
         speciesHint: species,
+        topic: isKnownTopic(topic) ? topic : null,
       });
 
       const history = await loadChatHistory(db, userId, plantId, message);

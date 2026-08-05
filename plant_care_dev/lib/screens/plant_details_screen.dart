@@ -27,6 +27,7 @@ import 'package:plant_care/services/subscription_service.dart';
 import 'package:plant_care/services/task_service.dart';
 import 'package:plant_care/widgets/subscription_gate.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
+import 'package:plant_care/utils/chat_topics.dart';
 import 'package:plant_care/widgets/botanly_sheet.dart';
 import 'package:plant_care/widgets/health_result_view.dart';
 import 'package:plant_care/widgets/task_sheet.dart';
@@ -318,6 +319,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     await _askInChat(
       _analysisQuestion(asked),
       () async => _openStoredResultSheet(asked),
+      topic: ChatTopic.diagnostics,
     );
   }
 
@@ -325,13 +327,30 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       ? l10n.healthAskQuestionIssue
       : l10n.healthAskQuestionOk;
 
+  /// A task leads to the subject it is about, not to a topic named "tasks".
+  ///
+  /// Someone who taps "Water Sunny" and then asks a question is thinking about
+  /// watering, not about which screen they came from — so the answer belongs in
+  /// the same thread as the watering card's.
+  String _topicForTask(CareTask task) => switch (task.category) {
+    TaskCategory.water => ChatTopic.water,
+    TaskCategory.light => ChatTopic.light,
+    TaskCategory.soil => ChatTopic.soil,
+    TaskCategory.fertilizer => ChatTopic.fertilizer,
+    TaskCategory.scan => ChatTopic.diagnostics,
+    TaskCategory.other => ChatTopic.general,
+  };
+
   Future<void> _openPlantChat({String? question}) async {
     if (!await _requirePaidAccess(GateAction.chat)) return;
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            PlantChatScreen(plant: _plant, initialQuestion: question),
+        builder: (_) => PlantChatScreen(
+          plant: _plant,
+          initialQuestion: question,
+          topic: ChatTopic.general,
+        ),
       ),
     );
   }
@@ -343,14 +362,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   /// handoff's: reopening on the same frame reads as if the chat never closed.
   Future<void> _askInChat(
     String question,
-    Future<void> Function() reopen,
-  ) async {
+    Future<void> Function() reopen, {
+    String topic = ChatTopic.general,
+  }) async {
     if (!await _requirePaidAccess(GateAction.chat)) return;
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            PlantChatScreen(plant: _plant, initialQuestion: question),
+        builder: (_) => PlantChatScreen(
+          plant: _plant,
+          initialQuestion: question,
+          topic: topic,
+        ),
       ),
     );
     if (!mounted) return;
@@ -1665,6 +1688,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         await _askInChat(
           l10n.taskAskQuestion(task.title),
           () => _openTaskSheet(task),
+          topic: _topicForTask(task),
         );
     }
   }
@@ -1779,6 +1803,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     await _askInChat(
       _analysisQuestion(current),
       () async => _openStoredResultSheet(current),
+      topic: ChatTopic.diagnostics,
     );
   }
 
@@ -1962,6 +1987,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         tone: _CareTone.water,
         glyph: _Svg.drop,
         title: l10n.careSectionWater,
+        topic: ChatTopic.water,
         value: amount != null
             ? '${_everyN(interval)} · ${l10n.milliliters(amount)}'
             : _everyN(interval),
@@ -1984,6 +2010,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.leaf,
           glyph: _Svg.soil,
           title: l10n.careSectionSoil,
+          topic: ChatTopic.soil,
           value: _rowValue(CareDetail.soilShort, soilBody),
           body: soilBody,
         ),
@@ -1992,6 +2019,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.leaf,
           glyph: _Svg.dropOutline,
           title: l10n.careSectionSoilMoisture,
+          topic: ChatTopic.soil,
           value: [
             _moistureLabel(),
             if (_plant.idealSoilMoistureMin != null &&
@@ -2008,6 +2036,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.sun,
           glyph: _Svg.sun,
           title: l10n.careSectionLight,
+          topic: ChatTopic.light,
           value: '${l10n.nHours(_lightHours())} · ${_lightType()}',
           body: lightBody.isNotEmpty ? lightBody : _plant.aiLight!,
           keyValues: [
@@ -2020,6 +2049,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.warm,
           glyph: _Svg.thermometer,
           title: l10n.careSectionTemperature,
+          topic: ChatTopic.temperature,
           value: _rowValue(CareDetail.temperatureShort, tempBody),
           body: tempBody,
           keyValues: [
@@ -2034,6 +2064,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.leaf,
           glyph: _Svg.fertilizer,
           title: l10n.careSectionFertilizer,
+          topic: ChatTopic.fertilizer,
           value: _rowValue(CareDetail.fertilizerShort, fertBody),
           body: fertBody,
           keyValues: [
@@ -2048,6 +2079,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           tone: _CareTone.leaf,
           glyph: _Svg.pin,
           title: l10n.careSectionPlacement,
+          topic: ChatTopic.light,
           value: _rowValue(CareDetail.placementShort, placementBody),
           body: placementBody,
         ),
@@ -2074,6 +2106,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     required String title,
     required String value,
     required String body,
+    // Required rather than defaulted: a row that forgets its topic would open a
+    // chat that silently drops back to the general one, and the only symptom is
+    // a vaguer answer nobody traces back to here.
+    required String topic,
     List<(String, String)> keyValues = const [],
     bool showMoistureScale = false,
   }) {
@@ -2090,6 +2126,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               title: title,
               value: value,
               body: body,
+              topic: topic,
               keyValues: keyValues,
               showMoistureScale: showMoistureScale,
             )
@@ -2162,6 +2199,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     required String title,
     required String value,
     required String body,
+    required String topic,
     required List<(String, String)> keyValues,
     required bool showMoistureScale,
   }) async {
@@ -2199,9 +2237,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         title: title,
         value: value,
         body: body,
+        topic: topic,
         keyValues: keyValues,
         showMoistureScale: showMoistureScale,
       ),
+      topic: topic,
     );
   }
 
