@@ -33,7 +33,7 @@
   "getNotifiedWhenPlantsNeedWater": "Benachrichtigung erhalten, wenn Pflanzen Wasser brauchen",
   "quietHours": "Ruhestunden",
   "maxNotificationsPerDay": "Max. Benachrichtigungen pro Tag",
-  "notificationsCount": "{count} Benachrichtigungen",
+  "notificationsCount": "{count, plural, one{{count} Benachrichtigung} other{{count} Benachrichtigungen}}",
   "@notificationsCount": {
     "placeholders": {
       "count": {
@@ -151,7 +151,7 @@
   "onceEvery7Days": "Einmal alle 7 Tage",
   "oncePerDay": "Einmal täglich",
   "oncePerWeek": "Einmal wöchentlich",
-  "onceEveryNDays": "Einmal alle {days} Tage",
+  "onceEveryNDays": "{days, plural, one{Täglich} other{Einmal alle {days} Tage}}",
   "@onceEveryNDays": {
     "placeholders": {
       "days": {
@@ -159,7 +159,7 @@
       }
     }
   },
-  "onceEveryNWeeks": "Einmal alle {weeks} Wochen",
+  "onceEveryNWeeks": "{weeks, plural, one{Wöchentlich} other{Einmal alle {weeks} Wochen}}",
   "@onceEveryNWeeks": {
     "placeholders": {
       "weeks": {
@@ -284,7 +284,7 @@
   "healthy": "Gesund",
   "yourPlants": "Meine Pflanzen",
   "plantCreatedSuccessfully": "Pflanze erfolgreich erstellt! 🌱",
-  "searchPlantsHint": "Pflanzen suchen…",
+  "searchPlantsHint": "Nach Name oder Art suchen",
   "filterAll": "Alle",
   "filterOverdue": "Überfällig",
   "noResultsTitle": "Keine Treffer",
@@ -378,7 +378,7 @@
   "uploadPhotosToTrackHealth": "Lade Fotos hoch, um die Gesundheit deiner Pflanze im Laufe der Zeit zu verfolgen",
   "today": "Heute",
   "yesterday": "Gestern",
-  "nDaysAgo": "Vor {days} Tagen",
+  "nDaysAgo": "{days, plural, one{Vor {days} Tag} other{Vor {days} Tagen}}",
   "@nDaysAgo": {
     "placeholders": {
       "days": {
@@ -386,7 +386,7 @@
       }
     }
   },
-  "healthStatusOk": "OK",
+  "healthStatusOk": "In Ordnung",
   "healthStatusIssue": "Problem",
   "assistantTyping": "Assistent schreibt...",
   "chatSourceLabel": "Quelle: {source}",
@@ -492,7 +492,7 @@
   "wateringLabel": "Bewässerung",
   "nowLabel": "Jetzt",
   "nextIn1Day": "Nächste in 1 Tag",
-  "nextInNDays": "Nächste in {days} Tagen",
+  "nextInNDays": "{days, plural, one{Nächste in {days} Tag} other{Nächste in {days} Tagen}}",
   "@nextInNDays": {
     "placeholders": {
       "days": {
@@ -533,7 +533,7 @@
   "subscriptionActiveTitle": "Premium aktiv",
   "subscriptionExpiredTitle": "Abo abgelaufen",
   "subscriptionGrandfatheredTitle": "Lebenslanger Zugang",
-  "subscriptionTrialDaysLeft": "{days} Tage übrig",
+  "subscriptionTrialDaysLeft": "{days, plural, one{{days} Tag übrig} other{{days} Tage übrig}}",
   "@subscriptionTrialDaysLeft": {
     "placeholders": {
       "days": {
@@ -558,7 +558,7 @@
     }
   },
   "subscriptionManage": "Verwalten",
-  "subscriptionUpgrade": "Upgrade",
+  "subscriptionUpgrade": "Upgraden",
   "subscriptionExpiredMessage": "Dein Abo ist abgelaufen. Upgrade, um fortzufahren.",
   "subscriptionPlantLimitReached": "Pflanzenlimit erreicht",
   "subscriptionPlantLimitBannerTrial": "Limit des kostenlosen Plans erreicht. Wechsle zu Premium — bis zu {limit} Pflanzen.",
@@ -674,7 +674,7 @@
   "subMetaActivePlan": "AKTIVER PLAN",
   "subMetaForeverPremium": "EWIGES PREMIUM",
   "subMetaTrialEnded": "TESTPHASE BEENDET",
-  "subMetaNDayPreview": "{n}-TAGE VORSCHAU",
+  "subMetaNDayPreview": "{n, plural, one{{n}-TAG VORSCHAU} other{{n}-TAGE VORSCHAU}}",
   "@subMetaNDayPreview": {
     "placeholders": {
       "n": {
@@ -844,5 +844,551 @@
   "careKvSeason": "Saison",
   "careKvOptimal": "Optimal",
   "careKvMinimum": "Minimum",
-  "careKvDose": "Dosis"
+  "careKvDose": "Dosis",
+  "healthAnalyzeCta": "Zustand prüfen",
+  "healthNeedsAttention": "Braucht Aufmerksamkeit",
+  "healthStatusHealthy": "Gesunde Pflanze",
+  "healthWhatToDo": "Was zu tun ist",
+  "healthClose": "Schließen",
+  "healthNotSavedYet": "Noch nicht im Verlauf gespeichert",
+  "healthAskAssistant": "Assistent fragen",
+  "healthAddedToPlan": "Zum Plan hinzugefügt",
+  "healthLockedNeedsWatering": "Gießen bestätigen, um erneut zu prüfen",
+  "healthLockedLimitReached": "Prüfungen für diesen Zyklus aufgebraucht",
+  "healthAdviceSub": "Sehen, was zu tun ist",
+  "healthAnalyzingTitle": "Analyse läuft…",
+  "healthStepRecognize": "Pflanze wird erkannt",
+  "healthStepCompare": "Vergleich mit früheren Prüfungen",
+  "healthStepAdvice": "Empfehlungen werden erstellt",
+  "healthStepPhotos": "{count, plural, =1{1 Foto erhalten} other{{count} Fotos erhalten}}",
+  "healthAdviceTitle": "{count, plural, =1{1 Empfehlung nach der Prüfung} other{{count} Empfehlungen nach der Prüfung}}",
+  "healthHistoryLoadFailed": "Verlauf konnte nicht geladen werden",
+  "healthUpToThreePhotos": "Bis zu 3 Fotos",
+  "healthResultTitle": "Ergebnis",
+  "taskAllDone": "Alles erledigt — der Pflanze geht es gut",
+  "taskBadgeScheduled": "Nach Plan",
+  "taskBadgeAnalysis": "Nach der Analyse",
+  "taskBadgeOverdue": "{days, plural, =1{1 Tag überfällig} other{{days} Tage überfällig}}",
+  "taskDone": "Fertig",
+  "taskDoneAlready": "Erledigt",
+  "taskLater": "Später",
+  "taskAskAssistant": "Assistent fragen",
+  "taskAskQuestion": "Was ist bei der Aufgabe „{title}“ zu tun?",
+  "homeGardenTitleLead": "Dein",
+  "homeGardenTitleAccent": "Garten",
+  "gardenHealthLabel": "Gartengesundheit",
+  "gardenAllGood": "Allen Pflanzen geht es gut",
+  "gardenOneWeak": "{name} zieht den Garten runter",
+  "gardenManyWeak": "{count, plural, =1{1 Pflanze braucht deine Pflege} other{{count} Pflanzen brauchen deine Pflege}}",
+  "homeOrbitHint": "Tippe auf eine Pflanze, um sie zu öffnen",
+  "homeAllTasksLink": "Alle Aufgaben",
+  "deckAllClearTitle": "Der Garten ist in Ordnung",
+  "taskOverdueShort": "{days, plural, =1{1 Tag} other{{days} Tage}}",
+  "taskPostponed": "Verschoben",
+  "allTasksTitle": "Alle Aufgaben",
+  "allTasksSubtitle": "{today} heute · {later} später",
+  "allTasksToday": "Heute",
+  "allTasksLater": "Später",
+  "allTasksRuleNote": "Neue Aufgaben erscheinen erst, wenn die heutigen erledigt sind.",
+  "allTasksNothingToday": "Für heute ist nichts mehr offen",
+  "whenTomorrow": "Morgen",
+  "whenInAWeek": "In einer Woche",
+  "whenInNDays": "{days, plural, =1{In 1 Tag} other{In {days} Tagen}}",
+  "careAskAbout": "Assistent zu {title} fragen",
+  "careAskQuestion": "Erzähl mir mehr über „{title}“ für meine Pflanze",
+  "healthAskQuestionIssue": "Was soll ich nach der Analyse zuerst tun?",
+  "healthAskQuestionOk": "Die Prüfung sagt, die Pflanze ist gesund — was ließe sich verbessern?",
+  "glassesOne": "1 Glas",
+  "glassesAmount": "{value} Gläser",
+  "addPlantStepOf": "Schritt {step} von {total}",
+  "addPlantTitleLead": "Pflanze",
+  "addPlantTitleAccent": "hinzufügen",
+  "addPlantNameHint": "Wie soll sie heißen — Monty, Ficus junior, Monstera. Der Würfel wählt für dich.",
+  "addPlantPhotosTitle": "Fotos",
+  "addPlantWholePlant": "Ganze Pflanze",
+  "addPlantWholePlantHint": "mit Topf und Erde",
+  "addPlantRequired": "Nötig",
+  "addPlantTwoAnglesHint": "Zwei Perspektiven bestimmen die Art genauer — das zweite Foto ist optional, hilft aber.",
+  "addPlantTipLight": "gutes Licht",
+  "addPlantTipLeaves": "Blätter sichtbar",
+  "addPlantTipSingle": "eine Pflanze",
+  "addPlantIdentifyCta": "Art bestimmen",
+  "addPlantRandomNames": "Monty|Sprössling|Ficus junior|Farni|Basilikus|Blattmann|Sonnie|Pip",
+  "addPlantIsThisYourPlant": "Ist das deine Pflanze?",
+  "addPlantPickSpeciesHint": "Wähle die passendste Variante — davon hängt der Pflegeplan ab.",
+  "addPlantNoneMatch": "Nichts passt — ich gebe sie ein",
+  "addPlantManualHint": "Gib den Artnamen ein, wir suchen erneut.",
+  "addPlantManualPlaceholder": "Zum Beispiel, Monstera deliciosa",
+  "addPlantBuildPlanCta": "Pflegeplan erstellen",
+  "addPlantStartingScore": "Startwert {score}",
+  "addPlantPlanWatering": "Gießen",
+  "addPlantPlanLight": "Licht",
+  "addPlantPlanSoil": "Erde",
+  "addPlantSoilSlightlyMoist": "Leicht feucht",
+  "addPlantEveryNDays": "{days, plural, =1{Täglich} other{Alle {days} Tage}}",
+  "addPlantCarePlan": "Pflegeplan",
+  "addPlantNTasks": "{count, plural, =1{1 Aufgabe} other{{count} Aufgaben}}",
+  "addPlantFirstWatering": "Erstes Gießen",
+  "addPlantToday": "heute",
+  "addPlantWaterToday": "heute",
+  "addPlantFertilising": "Düngen",
+  "addPlantFertilisingDetail": "In zwei Wochen · halbe Dosis",
+  "addPlantHealthCheck": "Gesundheitscheck",
+  "addPlantHealthCheckDetail": "In einem Monat · 1–3 Fotos",
+  "addPlantAddToGarden": "Zum Garten hinzufügen",
+  "addPlantNoSpeciesFound": "Die Pflanze wurde nicht erkannt. Versuch ein anderes Foto.",
+  "addPlantNoPlan": "Der Pflegeplan konnte nicht erstellt werden. Versuch es noch einmal.",
+  "addPlantLoaderPhotos": "Fotos erhalten",
+  "addPlantLoaderIdentify": "Art wird bestimmt",
+  "addPlantLoaderPlan": "Pflegeplan wird erstellt",
+  "myPlantsTitleLead": "Meine",
+  "myPlantsTitleAccent": "Pflanzen",
+  "myPlantsCount": "{count, plural, =1{1 Pflanze} other{{count} Pflanzen}}",
+  "myPlantsEmptyLabel": "Noch nichts da",
+  "filterTomorrow": "Morgen",
+  "filterNeedsCare": "Braucht Pflege",
+  "myPlantsNothingFound": "Nichts gefunden",
+  "myPlantsNothingFoundHint": "Versuch einen anderen Namen oder eine andere Art.",
+  "myPlantsAllClearTitle": "Alles in Ordnung",
+  "myPlantsAllClearHint": "In dieser Gruppe ist gerade nichts — kein Grund zur Sorge.",
+  "addFirstPlantHint": "Add your first plant to get started",
+  "subHeroActiveLead": "Dein Garten ist",
+  "subHeroActiveAccent": "in guten Händen",
+  "subHeroForeverLead": "Premium",
+  "subHeroForeverAccent": "für immer",
+  "subHeroEndedLead": "Der Testzeitraum ist",
+  "subHeroEndedAccent": "vorbei",
+  "subMetaNoCharges": "Keine Abbuchungen",
+  "subFootAutoRenew": "Automatische Verlängerung an · Jederzeit kündbar",
+  "subFootTrial": "Ohne Limits · KI-Pflege · Erinnerungen",
+  "subFootForever": "Alle Funktionen freigeschaltet",
+  "subFootFree": "Eingeschränkter Zugang · Ohne KI-Pflege",
+  "subCtaDetails": "Details",
+  "subCtaResume": "Fortsetzen",
+  "subTrialUntil": "Testzeitraum bis {date}",
+  "subEndedOn": "Beendet am {date}",
+  "subscriptionManageTitle": "Abo",
+  "subscriptionPlanLabel": "Tarif",
+  "subscriptionNextChargeLabel": "Nächste Abbuchung",
+  "subscriptionAutoRenewLabel": "Automatische Verlängerung",
+  "subscriptionAutoRenewOn": "An",
+  "subscriptionAutoRenewOff": "Aus",
+  "subscriptionManageInStore": "Die Abrechnung läuft über den App Store. Ändern oder kündigen unter Einstellungen → Apple-ID → Abos.",
+  "deleteAccountContinue": "Weiter",
+  "deleteAccountKeyword": "LÖSCHEN",
+  "deleteAccountTypeWord": "Gib zur Bestätigung {word} ein.",
+  "settingsSavedToast": "Einstellungen gespeichert!",
+  "quietHoursUpdatedToast": "Ruhezeiten aktualisiert!",
+  "signedInChip": "Angemeldet",
+  "securityLabel": "Sicherheit",
+  "emailNotificationsLabel": "Email",
+  "changePasswordHint": "Mindestens 6 Zeichen",
+  "quietHoursNeedsPush": "Schalte Push ein, um Ruhezeiten zu nutzen",
+  "quietHoursFrom": "Von",
+  "quietHoursTo": "Bis",
+  "quietHoursSummary": "{hours, plural, =1{1 Stunde am Stück keine Benachrichtigungen} other{{hours} Stunden am Stück keine Benachrichtigungen}}",
+  "passwordTooShortError": "Das neue Passwort muss mindestens 6 Zeichen haben.",
+  "passwordSameAsCurrentError": "Das neue Passwort muss sich vom aktuellen unterscheiden.",
+  "passwordsDoNotMatchError": "Die Passwörter stimmen nicht überein.",
+  "passwordCurrentWrongError": "Das aktuelle Passwort ist falsch.",
+  "subscriptionLoading": "Plan wird geladen…",
+  "editPlantTitle": "Bearbeiten",
+  "newPhotoBadge": "Neues Foto",
+  "revertPhoto": "Vorheriges Foto wiederherstellen",
+  "editPlantNameHint": "So heißt die Pflanze im Garten und in den Erinnerungen",
+  "aiManagedNote": "Art und Pflegeplan bestimmt die KI — sie werden nach einem neuen Gesundheitscheck aktualisiert.",
+  "noPhotoYet": "Noch kein Foto",
+  "gardenLoadError": "Der Garten konnte nicht geladen werden. Prüfe die Verbindung und versuche es erneut.",
+  "pullToRefreshHint": "Zum Aktualisieren nach unten ziehen",
+  "refreshingGarden": "Gartendaten werden gesammelt…",
+  "refreshFailed": "Aktualisieren fehlgeschlagen. Prüfe die Verbindung.",
+  "addPlantHeaderPhoto": "{accent} hinzufügen",
+  "@addPlantHeaderPhoto": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPhotoAccent": "Pflanze",
+  "addPlantHeaderSpecies": "{accent} bestätigen",
+  "@addPlantHeaderSpecies": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderSpeciesAccent": "Art",
+  "addPlantHeaderConditions": "Zu den {accent}",
+  "@addPlantHeaderConditions": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderConditionsAccent": "Bedingungen",
+  "addPlantHeaderPlan": "{accent}plan",
+  "@addPlantHeaderPlan": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPlanAccent": "Pflege",
+  "addPlantBack": "Zurück",
+  "quizQuestionOf": "Frage {step} von {total}",
+  "@quizQuestionOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quizNext": "Weiter",
+  "quizBuildPlan": "Plan erstellen",
+  "quizPotQuestion": "Welchen {accent} hat der Topf?",
+  "@quizPotQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotQuestionAccent": "Durchmesser",
+  "quizPotWhy": "Das Erdvolumen bestimmt, wie viel Wasser eine Gabe braucht.",
+  "quizPotHint": "Am Topfrand messen, nicht an der Pflanze.",
+  "unitCm": "cm",
+  "volumeMl": "{value} ml",
+  "@volumeMl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLitres": "{value} l",
+  "@volumeLitres": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotPerWatering": "{volume} pro Gabe",
+  "@quizPotPerWatering": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestion": "Woraus ist der Topf, und hat er {accent}?",
+  "@quizMaterialQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestionAccent": "Abzugslöcher",
+  "quizMaterialWhy": "Terrakotta trocknet doppelt so schnell wie Kunststoff. Ohne Löcher steigt das Risiko von Wurzelfäule.",
+  "quizMatPlastic": "Kunststoff",
+  "quizMatPlasticDesc": "Hält Feuchtigkeit länger",
+  "quizMatCeramic": "Keramik",
+  "quizMatCeramicDesc": "Glasiert, atmet nicht",
+  "quizMatTerracotta": "Terrakotta",
+  "quizMatTerracottaDesc": "Atmet, trocknet schnell",
+  "quizMatUnknown": "Weiß ich nicht",
+  "quizMatUnknownDesc": "Wir nehmen den Mittelwert",
+  "quizDrainageLabel": "Abzugslöcher",
+  "quizDrainageYes": "Ja",
+  "quizDrainageYesDesc": "Überschüssiges Wasser läuft in den Untersetzer",
+  "quizDrainageNo": "Nein",
+  "quizDrainageNoDesc": "Wasser steht an den Wurzeln",
+  "quizPlaceQuestion": "Wo {accent} die Pflanze?",
+  "@quizPlaceQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPlaceQuestionAccent": "steht",
+  "quizPlaceWhy": "So wissen wir, wie viel Licht sie wirklich bekommt — und ob sie Schatten braucht.",
+  "quizPlaceSouth": "Süden",
+  "quizPlaceSouthDesc": "Fensterbank, viel Sonne",
+  "quizPlaceEast": "Osten / Westen",
+  "quizPlaceEastDesc": "Sanfte Morgensonne",
+  "quizPlaceNorth": "Norden",
+  "quizPlaceNorthDesc": "Licht ja, Sonne nein",
+  "quizPlaceRoom": "Mitten im Raum",
+  "quizPlaceRoomDesc": "Weit vom Fenster",
+  "quizPlaceBalcony": "Balkon",
+  "quizPlaceBalconyDesc": "Draußen, saisonal",
+  "quizPlaceBath": "Badezimmer",
+  "quizPlaceBathDesc": "Feucht, wenig Licht",
+  "quizHeatLabel": "Heizung oder Klimaanlage in der Nähe",
+  "quizHeatNo": "Nein",
+  "quizHeatNoDesc": "Normale Raumluft",
+  "quizHeatYes": "Ja",
+  "quizHeatYesDesc": "Trocknet Erde und Luft aus",
+  "quizWaterQuestion": "Wann hast du {accent} gegossen?",
+  "@quizWaterQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizWaterQuestionAccent": "zuletzt",
+  "quizWaterWhy": "Davon hängt das Datum der ersten Gabe ab — sonst wird die Aufgabe blind gesetzt.",
+  "quizWaterToday": "Heute",
+  "quizWaterTodayDesc": "Die Erde ist noch feucht",
+  "quizWaterFewDays": "Vor 2–3 Tagen",
+  "quizWaterFewDaysDesc": "Die obere Schicht ist trocken",
+  "quizWaterWeek": "Vor etwa einer Woche",
+  "quizWaterWeekDesc": "Wahrscheinlich Zeit zu gießen",
+  "quizWaterUnknown": "Weiß ich nicht",
+  "quizWaterUnknownDesc": "Wir prüfen Foto und Erde",
+  "addPlantPlanTuned": "Nach deinen Antworten erstellt",
+  "addPlantCheckToday": "heute prüfen",
+  "placeLightSouth": "6–8 Std.",
+  "placeLightEast": "4–6 Std.",
+  "placeLightNorth": "2–3 Std.",
+  "placeLightRoom": "Wenig Licht",
+  "placeLightBalcony": "6–9 Std.",
+  "placeLightBath": "2–3 Std.",
+  "soilModerate": "Mäßig feucht",
+  "addPlantAddLight": "Mehr Licht",
+  "addPlantAddLightDetail": "Näher ans Fenster oder Pflanzenlampe für 4–6 Std.",
+  "addPlantAddDrainage": "Für Abzug sorgen",
+  "addPlantAddDrainageDetail": "Ohne Löcher steht das Wasser an den Wurzeln",
+  "addPlantMoveFromHeat": "Von der Wärme wegstellen",
+  "addPlantMoveFromHeatDetail": "Die Heizung trocknet die Erde aus",
+  "lockedLabelTrial": "Hinzufügen pausiert",
+  "lockedLabelLimit": "Limit des Gratisplans",
+  "lockedLabelCancelled": "Abo gekündigt",
+  "lockedPillTrial": "Testphase beendet",
+  "lockedPillLimit": "Gratisplan · {count} von {limit}",
+  "@lockedPillLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedPillCancelled": "Zugang beendet",
+  "lockedLeadTrial": "Neue Pflanzen {accent}",
+  "@lockedLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadTrialAccent": "warten auf ein Abo",
+  "lockedLeadLimit": "Der Gratisplan fasst {accent}",
+  "@lockedLeadLimit": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadLimitAccent": "{limit} Pflanzen",
+  "@lockedLeadLimitAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedLeadCancelled": "Das Abo {accent}",
+  "@lockedLeadCancelled": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadCancelledAccent": "ist nicht aktiv",
+  "lockedSubTrial": "Die Testphase endete am {date}",
+  "@lockedSubTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedSubLimit": "Ein Abo hebt das Limit auf — beliebig viele Pflanzen.",
+  "lockedSubCancelled": "Premium war aktiv bis {date}",
+  "@lockedSubCancelled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedKeepTitle": "Was bleibt",
+  "lockedUnlockTitle": "Was ein Abo zurückbringt",
+  "lockedKeepPlants": "{count, plural, =1{1 Pflanze in Obhut} other{{count} Pflanzen in Obhut}}",
+  "@lockedKeepPlants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedKeepPlantsDesc": "Sie bleiben im Garten samt ihrer Prüf-Historie",
+  "lockedKeepReminders": "Gieß-Erinnerungen",
+  "lockedKeepRemindersDesc": "Kommen weiterhin wie bisher",
+  "lockedUnlockNewPlants": "Neue Pflanzen",
+  "lockedUnlockNewPlantsDesc": "Art per Foto bestimmen und ein eigener Pflegeplan",
+  "lockedUnlockHealth": "Gesundheitscheck",
+  "lockedUnlockHealthDesc": "Fotoanalyse, Zustandswert und Empfehlungen",
+  "lockedUnlockChat": "KI-Assistent",
+  "lockedUnlockChatDesc": "Antworten zu jeder Pflanze samt ihrer Bedingungen",
+  "lockedPlanYear": "Jahr",
+  "lockedPlanMonth": "Monat",
+  "lockedPlanYearNote": "21,99 $ pro Jahr · 1,83 $ pro Monat",
+  "lockedPlanMonthNote": "1,99 $ pro Monat · jederzeit kündbar",
+  "lockedPlanBadge": "Günstiger",
+  "lockedFinePrint": "Das Abo verlängert sich automatisch. Jederzeit in den Store-Einstellungen kündbar.",
+  "lockedCtaResume": "Fortsetzen · {plan}",
+  "@lockedCtaResume": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCtaUpgrade": "Upgraden · {plan}",
+  "@lockedCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedRestore": "Käufe wiederherstellen",
+  "lockedRestoreDone": "Käufe wiederhergestellt",
+  "lockedRestoreNothing": "Auf diesem Konto gibt es nichts wiederherzustellen",
+  "billingIssueTitle": "Eine Zahlung ist fehlgeschlagen",
+  "billingIssueBody": "Prüfen Sie Ihre Zahlungsmethode — der Zugang bleibt, solange der Store es erneut versucht.",
+  "duplicateSubscriptionTitle": "Zwei Abos gefunden",
+  "duplicateSubscriptionBody": "Sie zahlen gleichzeitig im App Store und im Web. Kündigen Sie eines davon.",
+  "gateBarTitleTrial": "Testphase beendet",
+  "gateBarTitleExpired": "Abo ist nicht aktiv",
+  "gateBarBody": "Gießen läuft weiter; Analyse und Assistent brauchen ein Abo",
+  "gateBarAction": "Fortsetzen",
+  "gateStaleScore": "Der Wert wird nicht aktualisiert — dafür braucht es einen Gesundheitscheck",
+  "gateSheetHealth": "Gesundheitscheck {accent}",
+  "@gateSheetHealth": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetChat": "Der KI-Assistent {accent}",
+  "@gateSheetChat": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetAccent": "braucht ein Abo",
+  "gateSheetBody": "Die Testphase ist beendet. Die Pflanze und ihre Pflege bleiben — zurück kommt nur das, was die KI berechnet.",
+  "gateSheetKeepWatering": "Gießen und Erinnerungen laufen weiter",
+  "gateSheetKeepHistory": "Prüf-Historie und Pflegekarten bleiben zugänglich",
+  "gateSheetCta": "Abo fortsetzen",
+  "gateSheetLater": "Später",
+  "limitLabel": "Alle Plätze belegt",
+  "limitCountOf": "von {limit} Plätzen",
+  "@limitCountOf": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitPlanTrial": "Testphase",
+  "limitPlanFree": "Gratisplan",
+  "limitPlanPremium": "Premium",
+  "limitLegendUsed": "Belegt",
+  "limitLegendLocked": "Öffnet sich mit Premium",
+  "limitLeadTrial": "Es gibt {accent}",
+  "@limitLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadTrialAccent": "keine freien Plätze mehr",
+  "limitLeadFree": "Der Gratisplan hat {accent}",
+  "@limitLeadFree": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadFreeAccent": "{limit} Plätze",
+  "@limitLeadFreeAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitLeadPremium": "Alle zehn Plätze {accent}",
+  "@limitLeadPremium": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadPremiumAccent": "sind belegt",
+  "limitBody": "Machen Sie einen Platz frei oder öffnen Sie zehn.",
+  "limitBodyPremium": "Entfernen Sie eine Pflanze, die Sie nicht mehr haben, um Platz zu schaffen.",
+  "limitPathUpgrade": "10 Plätze öffnen",
+  "limitPathUpgradeDesc": "Zusammen mit Gesundheitscheck und Assistent",
+  "limitPathFree": "Platz frei machen",
+  "limitPathFreeDesc": "Eine Pflanze entfernen, die Sie nicht mehr haben",
+  "limitPremiumTitle": "Premium",
+  "limitCtaUpgrade": "Upgraden · {plan}",
+  "@limitCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherDetectedByNetwork": "Über das Netzwerk ermittelt",
+  "profileCityLabel": "Stadt",
+  "profileCityHint": "Beeinflusst die Pflegeempfehlungen",
+  "unitsTemperature": "Temperatureinheiten",
+  "unitsCelsius": "°C",
+  "unitsFahrenheit": "°F",
+  "unitsAutomatic": "Automatisch",
+  "weatherDegrees": "{value}°",
+  "@weatherDegrees": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -73,6 +73,9 @@ class HealthCheckService {
       'imageUrl': primaryUrl,
       'imageUrls': uploadedUrls,
       'metadata': healthCheck.metadata,
+      'score': healthCheck.score,
+      'findings': healthCheck.findings.map((f) => f.toMap()).toList(),
+      'recommendations': healthCheck.recommendations.map((r) => r.toMap()).toList(),
       'createdAt': FieldValue.serverTimestamp(),
     };
 
@@ -80,9 +83,12 @@ class HealthCheckService {
     await _firestore.collection(_collection).doc(healthCheck.id).set(healthCheckData);
     print('✅ HealthCheckService: Health check document saved');
 
+    // `healthMessage`, not `message`: Plant.fromMap reads the former, and writing
+    // the latter here left the plant showing the previous check's text whenever
+    // the caller's own update didn't land.
     await _firestore.collection('plants').doc(plantId).update({
       'healthStatus': healthCheck.status,
-      'message': healthCheck.message,
+      'healthMessage': healthCheck.message,
       'lastHealthCheck': healthCheck.timestamp.toIso8601String(),
       'lastHealthCheckImageUrl': primaryUrl,
     });
@@ -120,6 +126,11 @@ class HealthCheckService {
                 }
               }).where((record) => record != null).cast<HealthCheckRecord>().toList();
               
+              final dropped = snapshot.docs.length - records.length;
+              if (dropped > 0) {
+                print('⚠️ HealthCheckService: $dropped of ${snapshot.docs.length} '
+                    'records failed to parse and are missing from History');
+              }
               print('✅ HealthCheckService: Returning ${records.length} health check records');
               return records;
             } catch (e) {
@@ -127,9 +138,12 @@ class HealthCheckService {
               return <HealthCheckRecord>[];
             }
           })
-          .handleError((error) {
-            print('❌ HealthCheckService: Error getting health check history: $error');
-            return <HealthCheckRecord>[];
+          // Deliberately not swallowed: an empty History and a failed query look
+          // identical to the user, and the returned value of a handleError
+          // callback is discarded anyway — so the stream used to just stop.
+          .handleError((Object error, StackTrace stack) {
+            print('❌ HealthCheckService: health check history query failed: $error');
+            Error.throwWithStackTrace(error, stack);
           });
     } catch (e) {
       print('❌ HealthCheckService: Critical error in getHealthCheckHistory: $e');

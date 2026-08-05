@@ -1,0 +1,284 @@
+/**
+ * Weather, stage 1: where the user is and what it is like there (SPEC 12).
+ *
+ * Two deliberate limits, both from the spec:
+ *
+ *   1. No thresholds. Nothing here says "above 32 °C water a day earlier".
+ *      The agent already knows the species, the pot diameter, the material and
+ *      the placement from the quiz — it can weigh the weather against all of
+ *      that better than a constant can, and changing its mind then costs a
+ *      prompt rather than a release.
+ *
+ *   2. No tasks. Weather reaches the agent as context and stops there. The
+ *      watering schedule is untouched.
+ *
+ * Everything is in Celsius in here and in the prompt. Fahrenheit exists only at
+ * the moment of drawing a label, and only for the United States.
+ */
+
+const admin = require('firebase-admin');
+
+/** How long a city's weather is worth reusing. */
+const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
+
+/** Coordinates are rounded to this many decimals — ~1 km, enough for weather. */
+const COORD_PRECISION = 2;
+
+/**
+ * One shared record per city, not per user and not per plant.
+ *
+ * Two neighbours asking on the same morning is one request upstream. The key is
+ * the rounded coordinate pair, which is also why the rounding exists: at two
+ * decimals it identifies a city, not a person.
+ */
+function cityKeyOf(lat, lon) {
+  return `${round(lat)}_${round(lon)}`;
+}
+
+function round(value) {
+  return Number(Number(value).toFixed(COORD_PRECISION));
+}
+
+/** Minimal JSON GET. Rejects rather than throwing inside the callback. */
+function getJson(url, timeoutMs = 6000) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      { headers: { 'User-Agent': 'BotanlyApp/1.0' } },
+      (resp) => {
+        let data = '';
+        resp.on('data', (chunk) => {
+          data += chunk;
+        });
+        resp.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`bad JSON from ${url}: ${e.message}`));
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error(`timeout after ${timeoutMs}ms: ${url}`));
+    });
+  });
+}
+
+/**
+ * The caller's public IP, as seen through Cloud Functions' proxy.
+ *
+ * `x-forwarded-for` is a chain; the client is the first entry. Falls back to
+ * the socket address for local runs.
+ */
+function clientIpOf(req) {
+  const chain = String(req.headers['x-forwarded-for'] || '');
+  const first = chain.split(',')[0].trim();
+  return first || req.socket?.remoteAddress || '';
+}
+
+/**
+ * City from IP. No permission prompt, on purpose (SPEC 3.1): a location dialog
+ * on first launch costs a slice of sign-ups, and for weather the accuracy of an
+ * IP lookup is plenty.
+ *
+ * Returns null when the provider cannot place the address — a datacentre IP or
+ * a local run. The caller then shows the date alone.
+ */
+async function lookupCityByIp(ip, language = 'en') {
+  if (!ip || ip.startsWith('127.') || ip === '::1') return null;
+
+  // ip-api's free tier: no key, and it returns the timezone, which we need for
+  // knowing when the user's morning is.
+  const url =
+    `http://ip-api.com/json/${encodeURIComponent(ip)}` +
+    `?fields=status,country,countryCode,city,lat,lon,timezone&lang=${encodeURIComponent(language)}`;
+
+  const http = require('http');
+  const body = await new Promise((resolve, reject) => {
+    const req = http.get(url, (resp) => {
+      let data = '';
+      resp.on('data', (c) => {
+        data += c;
+      });
+      resp.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(6000, () => req.destroy(new Error('ip lookup timeout')));
+  });
+
+  if (!body || body.status !== 'success' || !body.city) return null;
+
+  return {
+    city: body.city,
+    countryCode: body.countryCode || null,
+    lat: round(body.lat),
+    lon: round(body.lon),
+    timezone: body.timezone || null,
+  };
+}
+
+/** Open-Meteo's WMO code, collapsed to the four states the design draws. */
+function conditionFromCode(code) {
+  if (code === 0 || code === 1) return 'sun';
+  if (code >= 71 && code <= 77) return 'cold'; // snow
+  if (code >= 85 && code <= 86) return 'cold';
+  if (code >= 51 && code <= 67) return 'rain';
+  if (code >= 80 && code <= 82) return 'rain';
+  if (code >= 95) return 'rain'; // thunderstorm
+  return 'cloud';
+}
+
+/**
+ * Current weather plus a week of highs and lows, from the shared city cache.
+ *
+ * A stale record beats no record: if the provider is down we hand back whatever
+ * was cached last. The home screen must never wait on this to draw.
+ */
+async function weatherForCity(lat, lon) {
+  const db = admin.firestore();
+  const key = cityKeyOf(lat, lon);
+  const ref = db.collection('weather').doc(key);
+
+  let cached = null;
+  try {
+    const snap = await ref.get();
+    if (snap.exists) cached = snap.data();
+  } catch (e) {
+    console.warn(`⚠️ weather: cache read failed for ${key}: ${e.message}`);
+  }
+
+  const fresh =
+    cached &&
+    cached.fetchedAt &&
+    Date.now() - cached.fetchedAt.toMillis() < WEATHER_TTL_MS;
+  if (fresh) return cached;
+
+  try {
+    const url =
+      'https://api.open-meteo.com/v1/forecast' +
+      `?latitude=${round(lat)}&longitude=${round(lon)}` +
+      '&current=temperature_2m,relative_humidity_2m,weather_code' +
+      '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
+      '&forecast_days=7&timezone=auto';
+    const body = await getJson(url);
+
+    const current = body.current || {};
+    const daily = body.daily || {};
+    const record = {
+      // Always Celsius in storage and in the prompt (SPEC 6.1). The display
+      // layer is the only place that ever converts.
+      tempC: Number(current.temperature_2m),
+      humidity: Number(current.relative_humidity_2m),
+      condition: conditionFromCode(Number(current.weather_code)),
+      forecast: (daily.time || []).slice(0, 7).map((date, i) => ({
+        date,
+        maxC: Number(daily.temperature_2m_max?.[i]),
+        minC: Number(daily.temperature_2m_min?.[i]),
+        condition: conditionFromCode(Number(daily.weather_code?.[i])),
+      })),
+      fetchedAt: admin.firestore.Timestamp.now(),
+    };
+
+    if (!Number.isFinite(record.tempC)) {
+      throw new Error('provider returned no temperature');
+    }
+
+    await ref.set(record, { merge: true });
+    return record;
+  } catch (e) {
+    console.warn(`⚠️ weather: fetch failed for ${key}: ${e.message}`);
+    // Stale is better than blank; blank is better than an error.
+    return cached || null;
+  }
+}
+
+/** The user's stored location, or null if they have none yet. */
+async function locationOf(userId) {
+  if (!userId) return null;
+  try {
+    const snap = await admin.firestore().collection('users').doc(userId).get();
+    const loc = snap.data()?.location;
+    if (!loc || !Number.isFinite(loc.lat) || !Number.isFinite(loc.lon)) {
+      return null;
+    }
+    return loc;
+  } catch (e) {
+    console.warn(`⚠️ weather: could not read location for ${userId}: ${e}`);
+    return null;
+  }
+}
+
+const CONDITION_WORDS = {
+  sun: 'clear',
+  cloud: 'overcast',
+  rain: 'rain',
+  cold: 'snow or freezing',
+};
+
+/**
+ * The weather as one short block for the agent, or null when there is none.
+ *
+ * Prose rather than raw fields, for the same reason the growing conditions are
+ * written out: the model reasons about "36 °C, clear, humidity 28%" far better
+ * than about a JSON object, and it costs a line.
+ *
+ * No interpretation here. Whether 36 °C matters for this plant is the agent's
+ * call — it can see the pot, the placement and the species.
+ */
+function describeWeather(weather, location) {
+  if (!weather || !Number.isFinite(weather.tempC)) return null;
+
+  const where = location?.city ? ` in ${location.city}` : '';
+  const parts = [
+    `Weather${where}: ${Math.round(weather.tempC)} °C, ` +
+      `${CONDITION_WORDS[weather.condition] || weather.condition}` +
+      (Number.isFinite(weather.humidity)
+        ? `, humidity ${Math.round(weather.humidity)}%`
+        : '') +
+      '.',
+  ];
+
+  const days = (weather.forecast || []).filter((d) => Number.isFinite(d.maxC));
+  if (days.length >= 3) {
+    const highs = days.map((d) => d.maxC);
+    const lows = days.map((d) => d.minC).filter(Number.isFinite);
+    parts.push(
+      `Next ${days.length} days: ${Math.round(Math.min(...lows))}–` +
+        `${Math.round(Math.max(...highs))} °C.`
+    );
+  }
+
+  return parts.join(' ');
+}
+
+/** The subset stored alongside a health check (SPEC 5.2). */
+function weatherSnapshot(weather) {
+  if (!weather || !Number.isFinite(weather.tempC)) return null;
+  return {
+    tempC: weather.tempC,
+    condition: weather.condition || null,
+    humidity: Number.isFinite(weather.humidity) ? weather.humidity : null,
+    fetchedAt: weather.fetchedAt || admin.firestore.Timestamp.now(),
+  };
+}
+
+module.exports = {
+  WEATHER_TTL_MS,
+  cityKeyOf,
+  clientIpOf,
+  conditionFromCode,
+  describeWeather,
+  locationOf,
+  lookupCityByIp,
+  weatherForCity,
+  weatherSnapshot,
+};

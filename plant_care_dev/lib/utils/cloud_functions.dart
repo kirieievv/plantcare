@@ -60,3 +60,15 @@ String get verifyEmailPinUrl {
   final projectId = Firebase.app().options.projectId;
   return 'https://us-central1-$projectId.cloudfunctions.net/verifyEmailPin';
 }
+
+/// City from the caller's IP — no geolocation permission involved.
+String get resolveUserLocationUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/resolveUserLocation';
+}
+
+/// Current weather for a set of coordinates, served from the shared city cache.
+String get getWeatherUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/getWeather';
+}

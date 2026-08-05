@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
@@ -77,6 +78,46 @@ class SplashScreen extends StatelessWidget {
   }
 }
 
+// ── Flag glyph ────────────────────────────────────────────────────────────────
+
+/// Renders a language's flag. Most locales use the system emoji, but `ru` is
+/// drawn from a bundled asset — the flag of Donetsk Oblast — so the picker
+/// never shows the Russian tricolour.
+class _LanguageFlag extends StatelessWidget {
+  const _LanguageFlag({
+    required this.code,
+    required this.emoji,
+    required this.fontSize,
+  });
+
+  final String code;
+  final String emoji;
+  final double fontSize;
+
+  /// Locales whose flag comes from an asset instead of an emoji glyph.
+  static const _assetFlags = {'ru': 'assets/flags/donetsk.svg'};
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = _assetFlags[code];
+    if (asset == null) {
+      return Text(emoji, style: TextStyle(fontSize: fontSize));
+    }
+    // Emoji flags sit at roughly 0.78 of the font size and are 3:2 wide, so the
+    // asset lines up with its neighbours in the same list.
+    final height = fontSize * 0.78;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(2),
+      child: SvgPicture.asset(
+        asset,
+        height: height,
+        width: height * 1.5,
+        fit: BoxFit.fill,
+      ),
+    );
+  }
+}
+
 // ── Language pill button ───────────────────────────────────────────────────────
 
 class _LanguagePill extends StatelessWidget {
@@ -124,7 +165,8 @@ class _LanguagePill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_flagFor(code), style: const TextStyle(fontSize: 16)),
+                _LanguageFlag(
+                    code: code, emoji: _flagFor(code), fontSize: 16),
                 const SizedBox(width: 7),
                 Text(
                   _nameFor(code),
@@ -198,7 +240,7 @@ class _LanguageSheet extends StatelessWidget {
                         horizontal: 24, vertical: 16),
                     child: Row(
                       children: [
-                        Text(flag, style: const TextStyle(fontSize: 22)),
+                        _LanguageFlag(code: code, emoji: flag, fontSize: 22),
                         const SizedBox(width: 14),
                         Text(
                           name,

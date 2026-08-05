@@ -33,7 +33,7 @@
   "getNotifiedWhenPlantsNeedWater": "Get notified when plants need water",
   "quietHours": "Quiet Hours",
   "maxNotificationsPerDay": "Max Notifications Per Day",
-  "notificationsCount": "{count} notifications",
+  "notificationsCount": "{count, plural, one{{count} notification} other{{count} notifications}}",
   "@notificationsCount": {
     "placeholders": {
       "count": {
@@ -153,7 +153,7 @@
   "onceEvery7Days": "Once every 7 days",
   "oncePerDay": "Once per day",
   "oncePerWeek": "Once per week",
-  "onceEveryNDays": "Once every {days} days",
+  "onceEveryNDays": "{days, plural, one{Every day} other{Once every {days} days}}",
   "@onceEveryNDays": {
     "placeholders": {
       "days": {
@@ -161,7 +161,7 @@
       }
     }
   },
-  "onceEveryNWeeks": "Once every {weeks} weeks",
+  "onceEveryNWeeks": "{weeks, plural, one{Every week} other{Once every {weeks} weeks}}",
   "@onceEveryNWeeks": {
     "placeholders": {
       "weeks": {
@@ -286,7 +286,7 @@
   "healthy": "Healthy",
   "yourPlants": "My Plants",
   "plantCreatedSuccessfully": "Plant created successfully! 🌱",
-  "searchPlantsHint": "Search plants…",
+  "searchPlantsHint": "Search by name or species",
   "filterAll": "All",
   "filterOverdue": "Overdue",
   "noResultsTitle": "No matches",
@@ -393,7 +393,7 @@
   "uploadPhotosToTrackHealth": "Upload photos to track your plant's health over time",
   "today": "Today",
   "yesterday": "Yesterday",
-  "nDaysAgo": "{days} days ago",
+  "nDaysAgo": "{days, plural, one{{days} day ago} other{{days} days ago}}",
   "@nDaysAgo": {
     "placeholders": {
       "days": {
@@ -494,7 +494,7 @@
   "wateringLabel": "Watering",
   "nowLabel": "Now",
   "nextIn1Day": "Next in 1 day",
-  "nextInNDays": "Next in {days} days",
+  "nextInNDays": "{days, plural, one{Next in {days} day} other{Next in {days} days}}",
   "@nextInNDays": {
     "placeholders": {
       "days": {
@@ -553,7 +553,7 @@
       }
     }
   },
-  "subscriptionTrialDaysLeft": "{days} days left",
+  "subscriptionTrialDaysLeft": "{days, plural, one{{days} day left} other{{days} days left}}",
   "@subscriptionTrialDaysLeft": {
     "placeholders": {
       "days": {
@@ -674,7 +674,7 @@
   "subMetaActivePlan": "ACTIVE PLAN",
   "subMetaForeverPremium": "FOREVER PREMIUM",
   "subMetaTrialEnded": "TRIAL ENDED",
-  "subMetaNDayPreview": "{n}-DAY PREVIEW",
+  "subMetaNDayPreview": "{n, plural, one{{n}-DAY PREVIEW} other{{n}-DAY PREVIEW}}",
   "@subMetaNDayPreview": {
     "placeholders": {
       "n": {
@@ -858,5 +858,704 @@
   "careKvSeason": "Season",
   "careKvOptimal": "Optimal",
   "careKvMinimum": "Minimum",
-  "careKvDose": "Dose"
+  "careKvDose": "Dose",
+  "healthAnalyzeCta": "Analyze health",
+  "healthNeedsAttention": "Needs attention",
+  "healthStatusHealthy": "Healthy",
+  "healthWhatToDo": "What to do",
+  "healthClose": "Close",
+  "healthNotSavedYet": "Not saved to history yet",
+  "healthAskAssistant": "Ask assistant",
+  "healthAddedToPlan": "Added to plan",
+  "healthLockedNeedsWatering": "Log a watering to check again",
+  "healthLockedLimitReached": "Checks for this cycle are used up",
+  "healthAdviceSub": "See what to do",
+  "healthAnalyzingTitle": "Analyzing…",
+  "healthStepRecognize": "Recognizing the plant",
+  "healthStepCompare": "Comparing with previous checks",
+  "healthStepAdvice": "Preparing recommendations",
+  "healthStepPhotos": "{count, plural, =1{1 photo received} other{{count} photos received}}",
+  "@healthStepPhotos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "healthAdviceTitle": "{count, plural, =1{1 recommendation after the check} other{{count} recommendations after the check}}",
+  "@healthAdviceTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "healthHistoryLoadFailed": "Could not load history",
+  "healthUpToThreePhotos": "Up to 3 photos",
+  "healthResultTitle": "Result",
+  "taskAllDone": "All done — this plant is fine",
+  "taskBadgeScheduled": "On schedule",
+  "taskBadgeAnalysis": "After analysis",
+  "taskBadgeOverdue": "{days, plural, =1{1 day overdue} other{{days} days overdue}}",
+  "@taskBadgeOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskDone": "Done",
+  "taskDoneAlready": "Completed",
+  "taskLater": "Later",
+  "taskAskAssistant": "Ask assistant",
+  "taskAskQuestion": "What should I do about the “{title}” task?",
+  "@taskAskQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "homeGardenTitleLead": "Your",
+  "homeGardenTitleAccent": "garden",
+  "gardenHealthLabel": "Garden health",
+  "gardenAllGood": "Every plant is fine",
+  "gardenOneWeak": "{name} is pulling the garden down",
+  "@gardenOneWeak": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gardenManyWeak": "{count, plural, =1{1 plant needs your care} other{{count} plants need your care}}",
+  "@gardenManyWeak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeOrbitHint": "Tap a plant to open it",
+  "homeAllTasksLink": "All tasks",
+  "deckAllClearTitle": "The garden is fine",
+  "taskOverdueShort": "{days, plural, =1{1 day} other{{days} days}}",
+  "@taskOverdueShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskPostponed": "Postponed",
+  "allTasksTitle": "All tasks",
+  "allTasksSubtitle": "{today} today · {later} later",
+  "@allTasksSubtitle": {
+    "placeholders": {
+      "today": {
+        "type": "int"
+      },
+      "later": {
+        "type": "int"
+      }
+    }
+  },
+  "allTasksToday": "Today",
+  "allTasksLater": "Later",
+  "allTasksRuleNote": "New tasks will not appear until you deal with today's.",
+  "allTasksNothingToday": "Nothing left for today",
+  "whenTomorrow": "Tomorrow",
+  "whenInAWeek": "In a week",
+  "whenInNDays": "{days, plural, =1{In 1 day} other{In {days} days}}",
+  "@whenInNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "careAskAbout": "Ask assistant about {title}",
+  "@careAskAbout": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "careAskQuestion": "Tell me more about “{title}” for my plant",
+  "@careAskQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "healthAskQuestionIssue": "What should I do first based on the analysis?",
+  "healthAskQuestionOk": "The check says the plant is healthy — what could I improve?",
+  "glassesOne": "1 glass",
+  "glassesAmount": "{value} glasses",
+  "@glassesAmount": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantStepOf": "Step {step} of {total}",
+  "@addPlantStepOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "addPlantTitleLead": "Add a",
+  "addPlantTitleAccent": "plant",
+  "addPlantNameHint": "What will you call it — Monty, Ficus Jr., Monstera. The dice will pick for you.",
+  "addPlantPhotosTitle": "Photos",
+  "addPlantWholePlant": "Whole plant",
+  "addPlantWholePlantHint": "with the pot and soil",
+  "addPlantRequired": "Needed",
+  "addPlantTwoAnglesHint": "Two angles pin the species down more accurately — the second photo is optional but helps.",
+  "addPlantTipLight": "good light",
+  "addPlantTipLeaves": "leaves visible",
+  "addPlantTipSingle": "one plant",
+  "addPlantIdentifyCta": "Identify the species",
+  "addPlantRandomNames": "Monty|Sprout|Ficus Jr.|Fernie|Basil the Great|Leafy|Sunny|Pip",
+  "addPlantIsThisYourPlant": "Is this your plant?",
+  "addPlantPickSpeciesHint": "Pick the closest match — the care plan follows from it.",
+  "addPlantNoneMatch": "None of these — I'll type it",
+  "addPlantManualHint": "Type the species name and we'll search again.",
+  "addPlantManualPlaceholder": "For example, Monstera deliciosa",
+  "addPlantBuildPlanCta": "Build the care plan",
+  "addPlantStartingScore": "Starting score {score}",
+  "@addPlantStartingScore": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "addPlantPlanWatering": "Water",
+  "addPlantPlanLight": "Light",
+  "addPlantPlanSoil": "Soil",
+  "addPlantSoilSlightlyMoist": "Slightly moist",
+  "addPlantEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
+  "@addPlantEveryNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "addPlantCarePlan": "Care plan",
+  "addPlantNTasks": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@addPlantNTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addPlantFirstWatering": "First watering",
+  "addPlantToday": "today",
+  "addPlantWaterToday": "today",
+  "addPlantFertilising": "Feeding",
+  "addPlantFertilisingDetail": "In two weeks · half dose",
+  "addPlantHealthCheck": "Health check",
+  "addPlantHealthCheckDetail": "In a month · 1–3 photos",
+  "addPlantAddToGarden": "Add to the garden",
+  "addPlantNoSpeciesFound": "Could not recognise the plant. Try another photo.",
+  "addPlantNoPlan": "Could not build the care plan. Try again.",
+  "addPlantLoaderPhotos": "Photos received",
+  "addPlantLoaderIdentify": "Working out the species",
+  "addPlantLoaderPlan": "Writing the care plan",
+  "myPlantsTitleLead": "My",
+  "myPlantsTitleAccent": "plants",
+  "myPlantsCount": "{count, plural, =1{1 plant} other{{count} plants}}",
+  "@myPlantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "myPlantsEmptyLabel": "Nothing here yet",
+  "filterTomorrow": "Tomorrow",
+  "filterNeedsCare": "Needs care",
+  "myPlantsNothingFound": "Nothing found",
+  "myPlantsNothingFoundHint": "Try a different name or species.",
+  "myPlantsAllClearTitle": "All clear",
+  "myPlantsAllClearHint": "Nothing in this group right now — nothing to worry about.",
+  "addFirstPlantHint": "Add your first plant to get started",
+  "subHeroActiveLead": "Your garden is",
+  "subHeroActiveAccent": "looked after",
+  "subHeroForeverLead": "Premium",
+  "subHeroForeverAccent": "forever",
+  "subHeroEndedLead": "The trial has",
+  "subHeroEndedAccent": "ended",
+  "subMetaNoCharges": "No charges",
+  "subFootAutoRenew": "Auto-renew on · Cancel anytime",
+  "subFootTrial": "No limits · AI care · Reminders",
+  "subFootForever": "Everything is unlocked",
+  "subFootFree": "Limited access · No AI care",
+  "subCtaDetails": "Details",
+  "subCtaResume": "Resume",
+  "subTrialUntil": "Trial until {date}",
+  "@subTrialUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subEndedOn": "Ended on {date}",
+  "@subEndedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionManageTitle": "Subscription",
+  "subscriptionPlanLabel": "Plan",
+  "subscriptionNextChargeLabel": "Next charge",
+  "subscriptionAutoRenewLabel": "Auto-renew",
+  "subscriptionAutoRenewOn": "On",
+  "subscriptionAutoRenewOff": "Off",
+  "subscriptionManageInStore": "Billing is handled by the App Store. Open Settings → Apple ID → Subscriptions to change or cancel it.",
+  "deleteAccountContinue": "Continue",
+  "deleteAccountKeyword": "DELETE",
+  "deleteAccountTypeWord": "Type {word} to confirm.",
+  "@deleteAccountTypeWord": {
+    "placeholders": {
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSavedToast": "Settings saved!",
+  "quietHoursUpdatedToast": "Quiet hours updated!",
+  "signedInChip": "Signed in",
+  "securityLabel": "Security",
+  "emailNotificationsLabel": "Email",
+  "changePasswordHint": "At least 6 characters",
+  "quietHoursNeedsPush": "Turn push on to use quiet hours",
+  "quietHoursFrom": "From",
+  "quietHoursTo": "To",
+  "quietHoursSummary": "{hours, plural, =1{No notifications for 1 hour straight} other{No notifications for {hours} hours straight}}",
+  "@quietHoursSummary": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "passwordTooShortError": "The new password must be at least 6 characters.",
+  "passwordSameAsCurrentError": "The new password must be different from the current one.",
+  "passwordsDoNotMatchError": "The passwords do not match.",
+  "passwordCurrentWrongError": "The current password is wrong.",
+  "subscriptionLoading": "Loading your plan…",
+  "editPlantTitle": "Editing",
+  "newPhotoBadge": "New photo",
+  "revertPhoto": "Restore previous photo",
+  "editPlantNameHint": "This is how the plant appears in your garden and in reminders",
+  "aiManagedNote": "The species and care plan are set by AI — they update after a new health check.",
+  "noPhotoYet": "No photo yet",
+  "gardenLoadError": "Couldn't load your garden. Check the connection and try again.",
+  "pullToRefreshHint": "Pull down to refresh",
+  "refreshingGarden": "Gathering your garden…",
+  "refreshFailed": "Couldn't refresh. Check your connection.",
+  "addPlantHeaderPhoto": "Add a {accent}",
+  "@addPlantHeaderPhoto": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPhotoAccent": "plant",
+  "addPlantHeaderSpecies": "Confirm the {accent}",
+  "@addPlantHeaderSpecies": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderSpeciesAccent": "species",
+  "addPlantHeaderConditions": "About the {accent}",
+  "@addPlantHeaderConditions": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderConditionsAccent": "conditions",
+  "addPlantHeaderPlan": "Care {accent}",
+  "@addPlantHeaderPlan": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPlanAccent": "plan",
+  "addPlantBack": "Back",
+  "quizQuestionOf": "Question {step} of {total}",
+  "@quizQuestionOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quizNext": "Next",
+  "quizBuildPlan": "Build the plan",
+  "quizPotQuestion": "What {accent} is the pot?",
+  "@quizPotQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotQuestionAccent": "diameter",
+  "quizPotWhy": "The volume of soil decides how much water one watering needs.",
+  "quizPotHint": "Measure across the rim of the pot, not the plant.",
+  "unitCm": "cm",
+  "volumeMl": "{value} ml",
+  "@volumeMl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLitres": "{value} l",
+  "@volumeLitres": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotPerWatering": "{volume} per watering",
+  "@quizPotPerWatering": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestion": "What is the pot made of, and does it have {accent}?",
+  "@quizMaterialQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestionAccent": "drainage",
+  "quizMaterialWhy": "Terracotta dries twice as fast as plastic. Without holes, root rot gets likely.",
+  "quizMatPlastic": "Plastic",
+  "quizMatPlasticDesc": "Holds moisture longer",
+  "quizMatCeramic": "Ceramic",
+  "quizMatCeramicDesc": "Glazed, does not breathe",
+  "quizMatTerracotta": "Terracotta",
+  "quizMatTerracottaDesc": "Breathes, dries fast",
+  "quizMatUnknown": "Not sure",
+  "quizMatUnknownDesc": "We will take an average",
+  "quizDrainageLabel": "Drainage holes",
+  "quizDrainageYes": "Yes",
+  "quizDrainageYesDesc": "Extra water runs into the saucer",
+  "quizDrainageNo": "No",
+  "quizDrainageNoDesc": "Water sits at the roots",
+  "quizPlaceQuestion": "Where does the plant {accent}?",
+  "@quizPlaceQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPlaceQuestionAccent": "stand",
+  "quizPlaceWhy": "This tells us how much light it really gets — and whether it needs shading.",
+  "quizPlaceSouth": "South",
+  "quizPlaceSouthDesc": "Windowsill, plenty of sun",
+  "quizPlaceEast": "East / west",
+  "quizPlaceEastDesc": "Gentle morning sun",
+  "quizPlaceNorth": "North",
+  "quizPlaceNorthDesc": "Light, but no direct sun",
+  "quizPlaceRoom": "Away from the window",
+  "quizPlaceRoomDesc": "Far from any window",
+  "quizPlaceBalcony": "Balcony",
+  "quizPlaceBalconyDesc": "Outdoors, seasonal",
+  "quizPlaceBath": "Bathroom",
+  "quizPlaceBathDesc": "Humid, little light",
+  "quizHeatLabel": "Radiator or air conditioner nearby",
+  "quizHeatNo": "No",
+  "quizHeatNoDesc": "Ordinary room air",
+  "quizHeatYes": "Yes",
+  "quizHeatYesDesc": "Dries out the soil and the air",
+  "quizWaterQuestion": "When did you {accent} water it?",
+  "@quizWaterQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizWaterQuestionAccent": "last",
+  "quizWaterWhy": "The first watering date depends on it — otherwise the task is set blind.",
+  "quizWaterToday": "Today",
+  "quizWaterTodayDesc": "The soil is still damp",
+  "quizWaterFewDays": "2–3 days ago",
+  "quizWaterFewDaysDesc": "The top layer has dried out",
+  "quizWaterWeek": "About a week ago",
+  "quizWaterWeekDesc": "Probably time to water",
+  "quizWaterUnknown": "Not sure",
+  "quizWaterUnknownDesc": "We will check the photo and the soil",
+  "addPlantPlanTuned": "Built from your answers",
+  "addPlantCheckToday": "check the soil today",
+  "placeLightSouth": "6–8 h",
+  "placeLightEast": "4–6 h",
+  "placeLightNorth": "2–3 h",
+  "placeLightRoom": "Little light",
+  "placeLightBalcony": "6–9 h",
+  "placeLightBath": "2–3 h",
+  "soilModerate": "Moderately damp",
+  "addPlantAddLight": "Add light",
+  "addPlantAddLightDetail": "Closer to a window, or a grow lamp for 4–6 h",
+  "addPlantAddDrainage": "Add drainage",
+  "addPlantAddDrainageDetail": "Without holes the water sits at the roots",
+  "addPlantMoveFromHeat": "Move away from the heat",
+  "addPlantMoveFromHeatDetail": "A radiator dries the soil out",
+  "lockedLabelTrial": "Adding is paused",
+  "lockedLabelLimit": "Free plan limit",
+  "lockedLabelCancelled": "Subscription cancelled",
+  "lockedPillTrial": "Trial finished",
+  "lockedPillLimit": "Free plan · {count} of {limit}",
+  "@lockedPillLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedPillCancelled": "Access has ended",
+  "lockedLeadTrial": "New plants {accent}",
+  "@lockedLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadTrialAccent": "are waiting on a subscription",
+  "lockedLeadLimit": "The free plan holds {accent}",
+  "@lockedLeadLimit": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadLimitAccent": "{limit} plants",
+  "@lockedLeadLimitAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedLeadCancelled": "The subscription {accent}",
+  "@lockedLeadCancelled": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadCancelledAccent": "is not active",
+  "lockedSubTrial": "The trial ended on {date}",
+  "@lockedSubTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedSubLimit": "A subscription removes the limit — keep as many plants as you like.",
+  "lockedSubCancelled": "Premium was active until {date}",
+  "@lockedSubCancelled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedKeepTitle": "What stays",
+  "lockedUnlockTitle": "What a subscription brings back",
+  "lockedKeepPlants": "{count, plural, =1{1 plant looked after} other{{count} plants looked after}}",
+  "@lockedKeepPlants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedKeepPlantsDesc": "They stay in the garden along with their check history",
+  "lockedKeepReminders": "Watering reminders",
+  "lockedKeepRemindersDesc": "Keep arriving just as before",
+  "lockedUnlockNewPlants": "New plants",
+  "lockedUnlockNewPlantsDesc": "Species from a photo and a care plan of their own",
+  "lockedUnlockHealth": "Health check",
+  "lockedUnlockHealthDesc": "Photo analysis, a score and what to do about it",
+  "lockedUnlockChat": "AI assistant",
+  "lockedUnlockChatDesc": "Answers for each plant, aware of its conditions",
+  "lockedPlanYear": "Year",
+  "lockedPlanMonth": "Month",
+  "lockedPlanYearNote": "$21.99 a year · $1.83 a month",
+  "lockedPlanMonthNote": "$1.99 a month · cancel any time",
+  "lockedPlanBadge": "Best value",
+  "lockedFinePrint": "The subscription renews automatically. Cancel any time in your store settings.",
+  "lockedCtaResume": "Resume · {plan}",
+  "@lockedCtaResume": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCtaUpgrade": "Upgrade · {plan}",
+  "@lockedCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedRestore": "Restore purchases",
+  "lockedRestoreDone": "Purchases restored",
+  "lockedRestoreNothing": "Nothing to restore on this account",
+  "billingIssueTitle": "A payment did not go through",
+  "billingIssueBody": "Check your payment method — access stays on while the store retries.",
+  "duplicateSubscriptionTitle": "Two subscriptions found",
+  "duplicateSubscriptionBody": "You are paying in the App Store and on the web at the same time. Cancel one of them.",
+  "gateBarTitleTrial": "Trial finished",
+  "gateBarTitleExpired": "Subscription is not active",
+  "gateBarBody": "Watering keeps working; analysis and the assistant need a subscription",
+  "gateBarAction": "Resume",
+  "gateStaleScore": "The score is not updating — it needs a health check",
+  "gateSheetHealth": "Health check {accent}",
+  "@gateSheetHealth": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetChat": "The AI assistant {accent}",
+  "@gateSheetChat": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetAccent": "needs a subscription",
+  "gateSheetBody": "The trial has finished. The plant and its care stay with you — only what the AI works out comes back with a subscription.",
+  "gateSheetKeepWatering": "Watering and reminders keep working",
+  "gateSheetKeepHistory": "Check history and care cards stay open",
+  "gateSheetCta": "Resume subscription",
+  "gateSheetLater": "Later",
+  "limitLabel": "Every slot is taken",
+  "limitCountOf": "of {limit} slots",
+  "@limitCountOf": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitPlanTrial": "Trial",
+  "limitPlanFree": "Free plan",
+  "limitPlanPremium": "Premium",
+  "limitLegendUsed": "Taken",
+  "limitLegendLocked": "Opens with Premium",
+  "limitLeadTrial": "There are {accent}",
+  "@limitLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadTrialAccent": "no free slots left",
+  "limitLeadFree": "The free plan has {accent}",
+  "@limitLeadFree": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadFreeAccent": "{limit} slots",
+  "@limitLeadFreeAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitLeadPremium": "All ten slots {accent}",
+  "@limitLeadPremium": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadPremiumAccent": "are taken",
+  "limitBody": "Free up a slot or open ten of them.",
+  "limitBodyPremium": "Remove a plant you no longer keep to make room for a new one.",
+  "limitPathUpgrade": "Open 10 slots",
+  "limitPathUpgradeDesc": "Health checks and the assistant come with it",
+  "limitPathFree": "Free up a slot",
+  "limitPathFreeDesc": "Remove a plant you no longer keep",
+  "limitPremiumTitle": "Premium",
+  "limitCtaUpgrade": "Upgrade · {plan}",
+  "@limitCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherDetectedByNetwork": "Detected from network",
+  "profileCityLabel": "City",
+  "profileCityHint": "Affects care recommendations",
+  "unitsTemperature": "Temperature units",
+  "unitsCelsius": "°C",
+  "unitsFahrenheit": "°F",
+  "unitsAutomatic": "Automatic",
+  "weatherDegrees": "{value}°",
+  "@weatherDegrees": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

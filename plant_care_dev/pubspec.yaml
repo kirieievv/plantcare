@@ -116,6 +116,7 @@ flutter:
   assets:
     - assets/.env
     - assets/logo.png
+    - assets/flags/
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

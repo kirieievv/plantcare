@@ -109,7 +109,15 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String notificationsCount(int count) {
-    return '$count сповіщень';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сповіщення',
+      many: '$count сповіщень',
+      few: '$count сповіщення',
+      one: '$count сповіщення',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -340,12 +348,28 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String onceEveryNDays(int days) {
-    return 'Раз на $days днів';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Раз на $days дня',
+      many: 'Раз на $days днів',
+      few: 'Раз на $days дні',
+      one: 'Щодня',
+    );
+    return '$_temp0';
   }
 
   @override
   String onceEveryNWeeks(int weeks) {
-    return 'Раз на $weeks тижнів';
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: 'Раз на $weeks тижня',
+      many: 'Раз на $weeks тижнів',
+      few: 'Раз на $weeks тижні',
+      one: 'Щотижня',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -592,10 +616,10 @@ class AppLocalizationsUk extends AppLocalizations {
   String get plantCreatedSuccessfully => 'Рослину успішно створено! 🌱';
 
   @override
-  String get searchPlantsHint => 'Пошук рослин…';
+  String get searchPlantsHint => 'Пошук за назвою або видом';
 
   @override
-  String get filterAll => 'Всі';
+  String get filterAll => 'Усі';
 
   @override
   String get filterOverdue => 'Прострочено';
@@ -850,11 +874,19 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String nDaysAgo(int days) {
-    return '$days днів тому';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days дня тому',
+      many: '$days днів тому',
+      few: '$days дні тому',
+      one: '$days день тому',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get healthStatusOk => 'ОК';
+  String get healthStatusOk => 'Гаразд';
 
   @override
   String get healthStatusIssue => 'Проблема';
@@ -1048,7 +1080,15 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String nextInNDays(int days) {
-    return 'Наступний через $days днів';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Наступний через $days дня',
+      many: 'Наступний через $days днів',
+      few: 'Наступний через $days дні',
+      one: 'Наступний через $days день',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1149,7 +1189,15 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String subscriptionTrialDaysLeft(int days) {
-    return 'Залишилось $days днів';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Залишилось $days дня',
+      many: 'Залишилось $days днів',
+      few: 'Залишилось $days дні',
+      one: 'Залишився $days день',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1249,7 +1297,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get paywallSecured => 'Захищено Stripe';
 
   @override
-  String get paywallSecuredApple => 'Secured';
+  String get paywallSecuredApple => 'Захищено';
 
   @override
   String get paywallCancelAnytime => 'Скасування в будь-який час';
@@ -1364,7 +1412,15 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String subMetaNDayPreview(int n) {
-    return 'ПЕРЕГЛЯД $n ДНІВ';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'ПЕРЕГЛЯД $n ДНЯ',
+      many: 'ПЕРЕГЛЯД $n ДНІВ',
+      few: 'ПЕРЕГЛЯД $n ДНІ',
+      one: 'ПЕРЕГЛЯД $n ДЕНЬ',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1747,4 +1803,1156 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get careKvDose => 'Доза';
+
+  @override
+  String get healthAnalyzeCta => 'Перевірити стан';
+
+  @override
+  String get healthNeedsAttention => 'Потребує уваги';
+
+  @override
+  String get healthStatusHealthy => 'Здорова рослина';
+
+  @override
+  String get healthWhatToDo => 'Що зробити';
+
+  @override
+  String get healthClose => 'Закрити';
+
+  @override
+  String get healthNotSavedYet => 'Перевірка ще не в історії';
+
+  @override
+  String get healthAskAssistant => 'Запитати AI';
+
+  @override
+  String get healthAddedToPlan => 'Додано до плану';
+
+  @override
+  String get healthLockedNeedsWatering => 'Позначте полив, щоб перевірити знову';
+
+  @override
+  String get healthLockedLimitReached => 'Перевірки на цей цикл вичерпано';
+
+  @override
+  String get healthAdviceSub => 'Подивитися, що зробити';
+
+  @override
+  String get healthAnalyzingTitle => 'Аналізуємо…';
+
+  @override
+  String get healthStepRecognize => 'Розпізнаємо рослину';
+
+  @override
+  String get healthStepCompare => 'Порівнюємо з минулими перевірками';
+
+  @override
+  String get healthStepAdvice => 'Формуємо рекомендації';
+
+  @override
+  String healthStepPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count фото отримано',
+      few: '$count фото отримано',
+      one: '$count фото отримано',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String healthAdviceTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count рекомендацій після перевірки',
+      few: '$count рекомендації після перевірки',
+      one: '$count рекомендація після перевірки',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get healthHistoryLoadFailed => 'Не вдалося завантажити історію';
+
+  @override
+  String get healthUpToThreePhotos => 'До 3 фото';
+
+  @override
+  String get healthResultTitle => 'Результат';
+
+  @override
+  String get taskAllDone => 'Усе зроблено — рослина в порядку';
+
+  @override
+  String get taskBadgeScheduled => 'За розкладом';
+
+  @override
+  String get taskBadgeAnalysis => 'Після аналізу';
+
+  @override
+  String taskBadgeOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Прострочено $days дня',
+      many: 'Прострочено $days днів',
+      few: 'Прострочено $days дні',
+      one: 'Прострочено $days день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskDone => 'Готово';
+
+  @override
+  String get taskDoneAlready => 'Зроблено';
+
+  @override
+  String get taskLater => 'Пізніше';
+
+  @override
+  String get taskAskAssistant => 'Запитати асистента';
+
+  @override
+  String taskAskQuestion(String title) {
+    return 'Що потрібно зробити із завданням «$title»?';
+  }
+
+  @override
+  String get homeGardenTitleLead => 'Твій';
+
+  @override
+  String get homeGardenTitleAccent => 'сад';
+
+  @override
+  String get gardenHealthLabel => 'Здоров’я саду';
+
+  @override
+  String get gardenAllGood => 'Усі рослини в порядку';
+
+  @override
+  String gardenOneWeak(String name) {
+    return '$name тягне сад униз';
+  }
+
+  @override
+  String gardenManyWeak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count рослинам потрібен твій догляд',
+      few: '$count рослинам потрібен твій догляд',
+      one: '$count рослині потрібен твій догляд',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeOrbitHint => 'Натисни на рослину, щоб відкрити її';
+
+  @override
+  String get homeAllTasksLink => 'Усі завдання';
+
+  @override
+  String get deckAllClearTitle => 'Сад у порядку';
+
+  @override
+  String taskOverdueShort(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days днів',
+      few: '$days дні',
+      one: '$days день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskPostponed => 'Відкладено';
+
+  @override
+  String get allTasksTitle => 'Усі завдання';
+
+  @override
+  String allTasksSubtitle(int today, int later) {
+    return '$today сьогодні · $later далі';
+  }
+
+  @override
+  String get allTasksToday => 'Сьогодні';
+
+  @override
+  String get allTasksLater => 'Далі';
+
+  @override
+  String get allTasksRuleNote => 'Нові завдання не з’являться, доки не розберешся із сьогоднішніми.';
+
+  @override
+  String get allTasksNothingToday => 'На сьогодні все закрито';
+
+  @override
+  String get whenTomorrow => 'Завтра';
+
+  @override
+  String get whenInAWeek => 'Через тиждень';
+
+  @override
+  String whenInNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Через $days днів',
+      few: 'Через $days дні',
+      one: 'Через $days день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String careAskAbout(String title) {
+    return 'Запитати асистента про $title';
+  }
+
+  @override
+  String careAskQuestion(String title) {
+    return 'Розкажи докладніше про «$title» для моєї рослини';
+  }
+
+  @override
+  String get healthAskQuestionIssue => 'Що зробити за результатами аналізу насамперед?';
+
+  @override
+  String get healthAskQuestionOk => 'Аналіз показав, що рослина здорова — що можна покращити?';
+
+  @override
+  String get glassesOne => '1 склянка';
+
+  @override
+  String glassesAmount(String value) {
+    return '$value склянки';
+  }
+
+  @override
+  String addPlantStepOf(int step, int total) {
+    return 'Крок $step з $total';
+  }
+
+  @override
+  String get addPlantTitleLead => 'Додати';
+
+  @override
+  String get addPlantTitleAccent => 'рослину';
+
+  @override
+  String get addPlantNameHint => 'Як зватимеш цю квітку — Моня, Фікусик, Monstera. Кубик придумає за тебе.';
+
+  @override
+  String get addPlantPhotosTitle => 'Світлини';
+
+  @override
+  String get addPlantWholePlant => 'Уся рослина';
+
+  @override
+  String get addPlantWholePlantHint => 'з горщиком і ґрунтом';
+
+  @override
+  String get addPlantRequired => 'Треба';
+
+  @override
+  String get addPlantTwoAnglesHint => 'Два ракурси точніше визначають вид — друга світлина не обов’язкова, але допомагає.';
+
+  @override
+  String get addPlantTipLight => 'добре світло';
+
+  @override
+  String get addPlantTipLeaves => 'видно листя';
+
+  @override
+  String get addPlantTipSingle => 'одна рослина';
+
+  @override
+  String get addPlantIdentifyCta => 'Визначити вид';
+
+  @override
+  String get addPlantRandomNames => 'Моня|Паросток|Фікусик|Зеленко|Базилік Великий|Листик|Сонько|Пих';
+
+  @override
+  String get addPlantIsThisYourPlant => 'Це твоя рослина?';
+
+  @override
+  String get addPlantPickSpeciesHint => 'Обери найближчий варіант — від цього залежить план догляду.';
+
+  @override
+  String get addPlantNoneMatch => 'Нічого не підходить — введу сам';
+
+  @override
+  String get addPlantManualHint => 'Введи назву виду — пошукаємо заново.';
+
+  @override
+  String get addPlantManualPlaceholder => 'Наприклад, Monstera deliciosa';
+
+  @override
+  String get addPlantBuildPlanCta => 'Скласти план догляду';
+
+  @override
+  String addPlantStartingScore(int score) {
+    return 'Стартовий бал $score';
+  }
+
+  @override
+  String get addPlantPlanWatering => 'Полив';
+
+  @override
+  String get addPlantPlanLight => 'Світло';
+
+  @override
+  String get addPlantPlanSoil => 'Ґрунт';
+
+  @override
+  String get addPlantSoilSlightlyMoist => 'Злегка вологий';
+
+  @override
+  String addPlantEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Раз на $days днів',
+      few: 'Раз на $days дні',
+      one: 'Раз на $days день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addPlantCarePlan => 'План догляду';
+
+  @override
+  String addPlantNTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count завдань',
+      few: '$count завдання',
+      one: '$count завдання',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addPlantFirstWatering => 'Перший полив';
+
+  @override
+  String get addPlantToday => 'сьогодні';
+
+  @override
+  String get addPlantWaterToday => 'сьогодні';
+
+  @override
+  String get addPlantFertilising => 'Підживлення';
+
+  @override
+  String get addPlantFertilisingDetail => 'Через 2 тижні · половинна доза';
+
+  @override
+  String get addPlantHealthCheck => 'Перевірка здоров’я';
+
+  @override
+  String get addPlantHealthCheckDetail => 'Через місяць · 1–3 світлини';
+
+  @override
+  String get addPlantAddToGarden => 'Додати до саду';
+
+  @override
+  String get addPlantNoSpeciesFound => 'Не вдалося розпізнати рослину. Спробуй іншу світлину.';
+
+  @override
+  String get addPlantNoPlan => 'Не вдалося скласти план догляду. Спробуй ще раз.';
+
+  @override
+  String get addPlantLoaderPhotos => 'Світлини отримано';
+
+  @override
+  String get addPlantLoaderIdentify => 'Визначаємо вид';
+
+  @override
+  String get addPlantLoaderPlan => 'Складаємо план догляду';
+
+  @override
+  String get myPlantsTitleLead => 'Мої';
+
+  @override
+  String get myPlantsTitleAccent => 'рослини';
+
+  @override
+  String myPlantsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count рослин',
+      few: '$count рослини',
+      one: '$count рослина',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get myPlantsEmptyLabel => 'Поки порожньо';
+
+  @override
+  String get filterTomorrow => 'Завтра';
+
+  @override
+  String get filterNeedsCare => 'Потрібен догляд';
+
+  @override
+  String get myPlantsNothingFound => 'Нічого не знайдено';
+
+  @override
+  String get myPlantsNothingFoundHint => 'Спробуй іншу назву або вид.';
+
+  @override
+  String get myPlantsAllClearTitle => 'Усе гаразд';
+
+  @override
+  String get myPlantsAllClearHint => 'Зараз у цій групі порожньо — немає про що хвилюватися.';
+
+  @override
+  String get addFirstPlantHint => 'Додайте першу рослину, щоб почати';
+
+  @override
+  String get subHeroActiveLead => 'Сад';
+
+  @override
+  String get subHeroActiveAccent => 'під наглядом';
+
+  @override
+  String get subHeroForeverLead => 'Преміум';
+
+  @override
+  String get subHeroForeverAccent => 'назавжди';
+
+  @override
+  String get subHeroEndedLead => 'Пробний період';
+
+  @override
+  String get subHeroEndedAccent => 'завершено';
+
+  @override
+  String get subMetaNoCharges => 'Без списань';
+
+  @override
+  String get subFootAutoRenew => 'Автопродовження увімкнено · Можна скасувати';
+
+  @override
+  String get subFootTrial => 'Без обмежень · AI-догляд · Нагадування';
+
+  @override
+  String get subFootForever => 'Усі можливості відкриті';
+
+  @override
+  String get subFootFree => 'Обмежений доступ · Без AI-догляду';
+
+  @override
+  String get subCtaDetails => 'Деталі';
+
+  @override
+  String get subCtaResume => 'Відновити';
+
+  @override
+  String subTrialUntil(String date) {
+    return 'Пробний період до $date';
+  }
+
+  @override
+  String subEndedOn(String date) {
+    return 'Завершився $date';
+  }
+
+  @override
+  String get subscriptionManageTitle => 'Підписка';
+
+  @override
+  String get subscriptionPlanLabel => 'План';
+
+  @override
+  String get subscriptionNextChargeLabel => 'Наступне списання';
+
+  @override
+  String get subscriptionAutoRenewLabel => 'Автопродовження';
+
+  @override
+  String get subscriptionAutoRenewOn => 'Увімкнено';
+
+  @override
+  String get subscriptionAutoRenewOff => 'Вимкнено';
+
+  @override
+  String get subscriptionManageInStore => 'Списаннями керує App Store. Змінити або скасувати підписку можна в Налаштуваннях → Apple ID → Підписки.';
+
+  @override
+  String get deleteAccountContinue => 'Продовжити';
+
+  @override
+  String get deleteAccountKeyword => 'ВИДАЛИТИ';
+
+  @override
+  String deleteAccountTypeWord(String word) {
+    return 'Введіть $word для підтвердження.';
+  }
+
+  @override
+  String get settingsSavedToast => 'Налаштування збережено!';
+
+  @override
+  String get quietHoursUpdatedToast => 'Тихі години оновлено!';
+
+  @override
+  String get signedInChip => 'Ви увійшли';
+
+  @override
+  String get securityLabel => 'Безпека';
+
+  @override
+  String get emailNotificationsLabel => 'Email';
+
+  @override
+  String get changePasswordHint => 'Щонайменше 6 символів';
+
+  @override
+  String get quietHoursNeedsPush => 'Увімкніть push, щоб користуватися тихими годинами';
+
+  @override
+  String get quietHoursFrom => 'З';
+
+  @override
+  String get quietHoursTo => 'До';
+
+  @override
+  String quietHoursSummary(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Сповіщення не прийдуть $hours годин поспіль',
+      few: 'Сповіщення не прийдуть $hours години поспіль',
+      one: 'Сповіщення не прийдуть $hours годину поспіль',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get passwordTooShortError => 'Новий пароль має бути не коротшим за 6 символів.';
+
+  @override
+  String get passwordSameAsCurrentError => 'Новий пароль має відрізнятися від поточного.';
+
+  @override
+  String get passwordsDoNotMatchError => 'Паролі не збігаються.';
+
+  @override
+  String get passwordCurrentWrongError => 'Поточний пароль неправильний.';
+
+  @override
+  String get subscriptionLoading => 'Завантажуємо ваш план…';
+
+  @override
+  String get editPlantTitle => 'Редагування';
+
+  @override
+  String get newPhotoBadge => 'Нове фото';
+
+  @override
+  String get revertPhoto => 'Повернути попереднє фото';
+
+  @override
+  String get editPlantNameHint => 'Так рослина називатиметься в саду та в нагадуваннях';
+
+  @override
+  String get aiManagedNote => 'Вид і план догляду визначає ШІ — вони оновлюються після нового аналізу здоров\'я.';
+
+  @override
+  String get noPhotoYet => 'Фото поки немає';
+
+  @override
+  String get gardenLoadError => 'Не вдалося завантажити сад. Перевір з\'єднання та спробуй ще раз.';
+
+  @override
+  String get pullToRefreshHint => 'Потягни вниз, щоб оновити';
+
+  @override
+  String get refreshingGarden => 'Збираємо дані саду…';
+
+  @override
+  String get refreshFailed => 'Не вдалося оновити. Перевір з\'єднання.';
+
+  @override
+  String addPlantHeaderPhoto(String accent) {
+    return 'Додати $accent';
+  }
+
+  @override
+  String get addPlantHeaderPhotoAccent => 'рослину';
+
+  @override
+  String addPlantHeaderSpecies(String accent) {
+    return 'Уточнимо $accent';
+  }
+
+  @override
+  String get addPlantHeaderSpeciesAccent => 'вид';
+
+  @override
+  String addPlantHeaderConditions(String accent) {
+    return 'Про $accent';
+  }
+
+  @override
+  String get addPlantHeaderConditionsAccent => 'умови';
+
+  @override
+  String addPlantHeaderPlan(String accent) {
+    return 'План $accent';
+  }
+
+  @override
+  String get addPlantHeaderPlanAccent => 'догляду';
+
+  @override
+  String get addPlantBack => 'Назад';
+
+  @override
+  String quizQuestionOf(int step, int total) {
+    return 'Питання $step з $total';
+  }
+
+  @override
+  String get quizNext => 'Далі';
+
+  @override
+  String get quizBuildPlan => 'Скласти план';
+
+  @override
+  String quizPotQuestion(String accent) {
+    return 'Якого $accent горщик?';
+  }
+
+  @override
+  String get quizPotQuestionAccent => 'діаметра';
+
+  @override
+  String get quizPotWhy => 'Від обʼєму ґрунту залежить, скільки води потрібно за один полив.';
+
+  @override
+  String get quizPotHint => 'Діаметр по краю горщика, а не по рослині.';
+
+  @override
+  String get unitCm => 'см';
+
+  @override
+  String volumeMl(String value) {
+    return '$value мл';
+  }
+
+  @override
+  String volumeLitres(String value) {
+    return '$value л';
+  }
+
+  @override
+  String quizPotPerWatering(String volume) {
+    return '$volume за полив';
+  }
+
+  @override
+  String quizMaterialQuestion(String accent) {
+    return 'З чого горщик і чи є $accent?';
+  }
+
+  @override
+  String get quizMaterialQuestionAccent => 'дренаж';
+
+  @override
+  String get quizMaterialWhy => 'Теракота сохне вдвічі швидше за пластик. Без отворів зростає ризик кореневої гнилі.';
+
+  @override
+  String get quizMatPlastic => 'Пластик';
+
+  @override
+  String get quizMatPlasticDesc => 'Тримає вологу довше';
+
+  @override
+  String get quizMatCeramic => 'Кераміка';
+
+  @override
+  String get quizMatCeramicDesc => 'З глазурʼю, не дихає';
+
+  @override
+  String get quizMatTerracotta => 'Теракота';
+
+  @override
+  String get quizMatTerracottaDesc => 'Дихає, сохне швидко';
+
+  @override
+  String get quizMatUnknown => 'Не знаю';
+
+  @override
+  String get quizMatUnknownDesc => 'Візьмемо середнє';
+
+  @override
+  String get quizDrainageLabel => 'Отвори для води';
+
+  @override
+  String get quizDrainageYes => 'Є';
+
+  @override
+  String get quizDrainageYesDesc => 'Зайва вода йде в піддон';
+
+  @override
+  String get quizDrainageNo => 'Немає';
+
+  @override
+  String get quizDrainageNoDesc => 'Вода застоюється біля коренів';
+
+  @override
+  String quizPlaceQuestion(String accent) {
+    return 'Де рослина $accent?';
+  }
+
+  @override
+  String get quizPlaceQuestionAccent => 'стоїть';
+
+  @override
+  String get quizPlaceWhy => 'Так ми зрозуміємо, скільки світла воно справді отримує — і чи потрібне притінення.';
+
+  @override
+  String get quizPlaceSouth => 'Південь';
+
+  @override
+  String get quizPlaceSouthDesc => 'Підвіконня, багато сонця';
+
+  @override
+  String get quizPlaceEast => 'Схід / захід';
+
+  @override
+  String get quizPlaceEastDesc => 'Мʼяке ранкове сонце';
+
+  @override
+  String get quizPlaceNorth => 'Північ';
+
+  @override
+  String get quizPlaceNorthDesc => 'Світло є, сонця немає';
+
+  @override
+  String get quizPlaceRoom => 'У глибині кімнати';
+
+  @override
+  String get quizPlaceRoomDesc => 'Далеко від вікна';
+
+  @override
+  String get quizPlaceBalcony => 'Балкон';
+
+  @override
+  String get quizPlaceBalconyDesc => 'Вулиця, сезонно';
+
+  @override
+  String get quizPlaceBath => 'Ванна';
+
+  @override
+  String get quizPlaceBathDesc => 'Волого, мало світла';
+
+  @override
+  String get quizHeatLabel => 'Поруч батарея або кондиціонер';
+
+  @override
+  String get quizHeatNo => 'Ні';
+
+  @override
+  String get quizHeatNoDesc => 'Звичайне повітря в кімнаті';
+
+  @override
+  String get quizHeatYes => 'Так';
+
+  @override
+  String get quizHeatYesDesc => 'Пересушує ґрунт і повітря';
+
+  @override
+  String quizWaterQuestion(String accent) {
+    return 'Коли $accent поливав?';
+  }
+
+  @override
+  String get quizWaterQuestionAccent => 'востаннє';
+
+  @override
+  String get quizWaterWhy => 'Від цього залежить дата першого поливу — інакше завдання поставиться наосліп.';
+
+  @override
+  String get quizWaterToday => 'Сьогодні';
+
+  @override
+  String get quizWaterTodayDesc => 'Ґрунт ще вологий';
+
+  @override
+  String get quizWaterFewDays => '2–3 дні тому';
+
+  @override
+  String get quizWaterFewDaysDesc => 'Верхній шар підсох';
+
+  @override
+  String get quizWaterWeek => 'Близько тижня';
+
+  @override
+  String get quizWaterWeekDesc => 'Скоріш за все, час поливати';
+
+  @override
+  String get quizWaterUnknown => 'Не знаю';
+
+  @override
+  String get quizWaterUnknownDesc => 'Перевіримо за фото і ґрунтом';
+
+  @override
+  String get addPlantPlanTuned => 'План складено за твоїми відповідями';
+
+  @override
+  String get addPlantCheckToday => 'перевіримо сьогодні';
+
+  @override
+  String get placeLightSouth => '6–8 год';
+
+  @override
+  String get placeLightEast => '4–6 год';
+
+  @override
+  String get placeLightNorth => '2–3 год';
+
+  @override
+  String get placeLightRoom => 'Мало світла';
+
+  @override
+  String get placeLightBalcony => '6–9 год';
+
+  @override
+  String get placeLightBath => '2–3 год';
+
+  @override
+  String get soilModerate => 'Помірно волога';
+
+  @override
+  String get addPlantAddLight => 'Додати світла';
+
+  @override
+  String get addPlantAddLightDetail => 'Ближче до вікна або фітолампа на 4–6 год';
+
+  @override
+  String get addPlantAddDrainage => 'Зробити дренаж';
+
+  @override
+  String get addPlantAddDrainageDetail => 'Без отворів вода застоюється біля коренів';
+
+  @override
+  String get addPlantMoveFromHeat => 'Відсунути від тепла';
+
+  @override
+  String get addPlantMoveFromHeatDetail => 'Батарея пересушує ґрунт';
+
+  @override
+  String get lockedLabelTrial => 'Додавання на паузі';
+
+  @override
+  String get lockedLabelLimit => 'Ліміт безплатного плану';
+
+  @override
+  String get lockedLabelCancelled => 'Підписку скасовано';
+
+  @override
+  String get lockedPillTrial => 'Пробний період завершено';
+
+  @override
+  String lockedPillLimit(int count, int limit) {
+    return 'Безплатний план · $count з $limit';
+  }
+
+  @override
+  String get lockedPillCancelled => 'Доступ закінчився';
+
+  @override
+  String lockedLeadTrial(String accent) {
+    return 'Нові рослини $accent';
+  }
+
+  @override
+  String get lockedLeadTrialAccent => 'чекають на підписку';
+
+  @override
+  String lockedLeadLimit(String accent) {
+    return 'У безплатному плані $accent';
+  }
+
+  @override
+  String lockedLeadLimitAccent(int limit) {
+    return '$limit рослин';
+  }
+
+  @override
+  String lockedLeadCancelled(String accent) {
+    return 'Підписка $accent';
+  }
+
+  @override
+  String get lockedLeadCancelledAccent => 'не активна';
+
+  @override
+  String lockedSubTrial(String date) {
+    return 'Пробний період закінчився $date';
+  }
+
+  @override
+  String get lockedSubLimit => 'Підписка знімає ліміт — рослин може бути скільки завгодно.';
+
+  @override
+  String lockedSubCancelled(String date) {
+    return 'Преміум був активний до $date';
+  }
+
+  @override
+  String get lockedKeepTitle => 'Що залишається';
+
+  @override
+  String get lockedUnlockTitle => 'Що поверне підписка';
+
+  @override
+  String lockedKeepPlants(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count рослин під наглядом',
+      many: '$count рослин під наглядом',
+      few: '$count рослини під наглядом',
+      one: '$count рослина під наглядом',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lockedKeepPlantsDesc => 'Залишаються в саду разом з історією перевірок';
+
+  @override
+  String get lockedKeepReminders => 'Нагадування про полив';
+
+  @override
+  String get lockedKeepRemindersDesc => 'Продовжують надходити як раніше';
+
+  @override
+  String get lockedUnlockNewPlants => 'Нові рослини';
+
+  @override
+  String get lockedUnlockNewPlantsDesc => 'Визначення виду за фото та персональний план догляду';
+
+  @override
+  String get lockedUnlockHealth => 'Перевірка здоровʼя';
+
+  @override
+  String get lockedUnlockHealthDesc => 'Аналіз за фото, бал стану та рекомендації';
+
+  @override
+  String get lockedUnlockChat => 'AI-асистент';
+
+  @override
+  String get lockedUnlockChatDesc => 'Відповіді щодо кожної рослини з урахуванням її умов';
+
+  @override
+  String get lockedPlanYear => 'Рік';
+
+  @override
+  String get lockedPlanMonth => 'Місяць';
+
+  @override
+  String get lockedPlanYearNote => '\$21,99 на рік · \$1,83 на місяць';
+
+  @override
+  String get lockedPlanMonthNote => '\$1,99 на місяць · скасування будь-коли';
+
+  @override
+  String get lockedPlanBadge => 'Вигідно';
+
+  @override
+  String get lockedFinePrint => 'Підписка продовжується автоматично. Скасувати можна будь-коли в налаштуваннях магазину.';
+
+  @override
+  String lockedCtaResume(String plan) {
+    return 'Відновити · $plan';
+  }
+
+  @override
+  String lockedCtaUpgrade(String plan) {
+    return 'Покращити · $plan';
+  }
+
+  @override
+  String get lockedRestore => 'Відновити покупки';
+
+  @override
+  String get lockedRestoreDone => 'Покупки відновлено';
+
+  @override
+  String get lockedRestoreNothing => 'На цьому акаунті немає чого відновлювати';
+
+  @override
+  String get billingIssueTitle => 'Платіж не пройшов';
+
+  @override
+  String get billingIssueBody => 'Перевірте спосіб оплати — доступ працює, доки магазин повторює спроби.';
+
+  @override
+  String get duplicateSubscriptionTitle => 'Знайдено дві підписки';
+
+  @override
+  String get duplicateSubscriptionBody => 'Ви платите одночасно в App Store і на сайті. Одну з підписок варто скасувати.';
+
+  @override
+  String get gateBarTitleTrial => 'Пробний період завершено';
+
+  @override
+  String get gateBarTitleExpired => 'Підписка не активна';
+
+  @override
+  String get gateBarBody => 'Полив працює, аналіз і асистент — за підпискою';
+
+  @override
+  String get gateBarAction => 'Відновити';
+
+  @override
+  String get gateStaleScore => 'Бал не оновлюється — потрібна перевірка здоровʼя';
+
+  @override
+  String gateSheetHealth(String accent) {
+    return 'Перевірка здоровʼя $accent';
+  }
+
+  @override
+  String gateSheetChat(String accent) {
+    return 'AI-асистент $accent';
+  }
+
+  @override
+  String get gateSheetAccent => 'за підпискою';
+
+  @override
+  String get gateSheetBody => 'Пробний період завершено. Рослина та її догляд залишаються з тобою — повернеться лише те, що рахує AI.';
+
+  @override
+  String get gateSheetKeepWatering => 'Полив і нагадування працюють';
+
+  @override
+  String get gateSheetKeepHistory => 'Історія перевірок і картки догляду відкриваються';
+
+  @override
+  String get gateSheetCta => 'Відновити підписку';
+
+  @override
+  String get gateSheetLater => 'Пізніше';
+
+  @override
+  String get limitLabel => 'Усі місця зайняті';
+
+  @override
+  String limitCountOf(int limit) {
+    return 'з $limit місць';
+  }
+
+  @override
+  String get limitPlanTrial => 'Пробний період';
+
+  @override
+  String get limitPlanFree => 'Безплатний план';
+
+  @override
+  String get limitPlanPremium => 'Преміум';
+
+  @override
+  String get limitLegendUsed => 'Зайнято';
+
+  @override
+  String get limitLegendLocked => 'Відкриється з Преміумом';
+
+  @override
+  String limitLeadTrial(String accent) {
+    return 'Вільних місць $accent';
+  }
+
+  @override
+  String get limitLeadTrialAccent => 'більше немає';
+
+  @override
+  String limitLeadFree(String accent) {
+    return 'У безплатному плані $accent';
+  }
+
+  @override
+  String limitLeadFreeAccent(int limit) {
+    return '$limit місця';
+  }
+
+  @override
+  String limitLeadPremium(String accent) {
+    return 'Усі десять місць $accent';
+  }
+
+  @override
+  String get limitLeadPremiumAccent => 'зайняті';
+
+  @override
+  String get limitBody => 'Звільни місце або відкрий десять.';
+
+  @override
+  String get limitBodyPremium => 'Прибери рослину, якої більше немає, щоб звільнити місце для нової.';
+
+  @override
+  String get limitPathUpgrade => 'Відкрити 10 місць';
+
+  @override
+  String get limitPathUpgradeDesc => 'Разом із перевіркою здоровʼя та асистентом';
+
+  @override
+  String get limitPathFree => 'Звільнити місце';
+
+  @override
+  String get limitPathFreeDesc => 'Прибрати рослину, якої більше немає';
+
+  @override
+  String get limitPremiumTitle => 'Преміум';
+
+  @override
+  String limitCtaUpgrade(String plan) {
+    return 'Покращити · $plan';
+  }
+
+  @override
+  String get weatherDetectedByNetwork => 'Визначено за мережею';
+
+  @override
+  String get profileCityLabel => 'Місто';
+
+  @override
+  String get profileCityHint => 'Впливає на рекомендації з догляду';
+
+  @override
+  String get unitsTemperature => 'Одиниці температури';
+
+  @override
+  String get unitsCelsius => '°C';
+
+  @override
+  String get unitsFahrenheit => '°F';
+
+  @override
+  String get unitsAutomatic => 'Автоматично';
+
+  @override
+  String weatherDegrees(String value) {
+    return '$value°';
+  }
 }

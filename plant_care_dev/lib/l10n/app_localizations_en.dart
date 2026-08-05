@@ -109,7 +109,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String notificationsCount(int count) {
-    return '$count notifications';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notifications',
+      one: '$count notification',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -340,12 +346,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String onceEveryNDays(int days) {
-    return 'Once every $days days';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Once every $days days',
+      one: 'Every day',
+    );
+    return '$_temp0';
   }
 
   @override
   String onceEveryNWeeks(int weeks) {
-    return 'Once every $weeks weeks';
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: 'Once every $weeks weeks',
+      one: 'Every week',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -590,7 +608,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plantCreatedSuccessfully => 'Plant created successfully! 🌱';
 
   @override
-  String get searchPlantsHint => 'Search plants…';
+  String get searchPlantsHint => 'Search by name or species';
 
   @override
   String get filterAll => 'All';
@@ -848,7 +866,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String nDaysAgo(int days) {
-    return '$days days ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days ago',
+      one: '$days day ago',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1046,7 +1070,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String nextInNDays(int days) {
-    return 'Next in $days days';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Next in $days days',
+      one: 'Next in $days day',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1147,7 +1177,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String subscriptionTrialDaysLeft(int days) {
-    return '$days days left';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days left',
+      one: '$days day left',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1362,7 +1398,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String subMetaNDayPreview(int n) {
-    return '$n-DAY PREVIEW';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n-DAY PREVIEW',
+      one: '$n-DAY PREVIEW',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1743,4 +1785,1143 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get careKvDose => 'Dose';
+
+  @override
+  String get healthAnalyzeCta => 'Analyze health';
+
+  @override
+  String get healthNeedsAttention => 'Needs attention';
+
+  @override
+  String get healthStatusHealthy => 'Healthy';
+
+  @override
+  String get healthWhatToDo => 'What to do';
+
+  @override
+  String get healthClose => 'Close';
+
+  @override
+  String get healthNotSavedYet => 'Not saved to history yet';
+
+  @override
+  String get healthAskAssistant => 'Ask assistant';
+
+  @override
+  String get healthAddedToPlan => 'Added to plan';
+
+  @override
+  String get healthLockedNeedsWatering => 'Log a watering to check again';
+
+  @override
+  String get healthLockedLimitReached => 'Checks for this cycle are used up';
+
+  @override
+  String get healthAdviceSub => 'See what to do';
+
+  @override
+  String get healthAnalyzingTitle => 'Analyzing…';
+
+  @override
+  String get healthStepRecognize => 'Recognizing the plant';
+
+  @override
+  String get healthStepCompare => 'Comparing with previous checks';
+
+  @override
+  String get healthStepAdvice => 'Preparing recommendations';
+
+  @override
+  String healthStepPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos received',
+      one: '1 photo received',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String healthAdviceTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recommendations after the check',
+      one: '1 recommendation after the check',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get healthHistoryLoadFailed => 'Could not load history';
+
+  @override
+  String get healthUpToThreePhotos => 'Up to 3 photos';
+
+  @override
+  String get healthResultTitle => 'Result';
+
+  @override
+  String get taskAllDone => 'All done — this plant is fine';
+
+  @override
+  String get taskBadgeScheduled => 'On schedule';
+
+  @override
+  String get taskBadgeAnalysis => 'After analysis';
+
+  @override
+  String taskBadgeOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days overdue',
+      one: '1 day overdue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskDone => 'Done';
+
+  @override
+  String get taskDoneAlready => 'Completed';
+
+  @override
+  String get taskLater => 'Later';
+
+  @override
+  String get taskAskAssistant => 'Ask assistant';
+
+  @override
+  String taskAskQuestion(String title) {
+    return 'What should I do about the “$title” task?';
+  }
+
+  @override
+  String get homeGardenTitleLead => 'Your';
+
+  @override
+  String get homeGardenTitleAccent => 'garden';
+
+  @override
+  String get gardenHealthLabel => 'Garden health';
+
+  @override
+  String get gardenAllGood => 'Every plant is fine';
+
+  @override
+  String gardenOneWeak(String name) {
+    return '$name is pulling the garden down';
+  }
+
+  @override
+  String gardenManyWeak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plants need your care',
+      one: '1 plant needs your care',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeOrbitHint => 'Tap a plant to open it';
+
+  @override
+  String get homeAllTasksLink => 'All tasks';
+
+  @override
+  String get deckAllClearTitle => 'The garden is fine';
+
+  @override
+  String taskOverdueShort(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskPostponed => 'Postponed';
+
+  @override
+  String get allTasksTitle => 'All tasks';
+
+  @override
+  String allTasksSubtitle(int today, int later) {
+    return '$today today · $later later';
+  }
+
+  @override
+  String get allTasksToday => 'Today';
+
+  @override
+  String get allTasksLater => 'Later';
+
+  @override
+  String get allTasksRuleNote => 'New tasks will not appear until you deal with today\'s.';
+
+  @override
+  String get allTasksNothingToday => 'Nothing left for today';
+
+  @override
+  String get whenTomorrow => 'Tomorrow';
+
+  @override
+  String get whenInAWeek => 'In a week';
+
+  @override
+  String whenInNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'In $days days',
+      one: 'In 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String careAskAbout(String title) {
+    return 'Ask assistant about $title';
+  }
+
+  @override
+  String careAskQuestion(String title) {
+    return 'Tell me more about “$title” for my plant';
+  }
+
+  @override
+  String get healthAskQuestionIssue => 'What should I do first based on the analysis?';
+
+  @override
+  String get healthAskQuestionOk => 'The check says the plant is healthy — what could I improve?';
+
+  @override
+  String get glassesOne => '1 glass';
+
+  @override
+  String glassesAmount(String value) {
+    return '$value glasses';
+  }
+
+  @override
+  String addPlantStepOf(int step, int total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String get addPlantTitleLead => 'Add a';
+
+  @override
+  String get addPlantTitleAccent => 'plant';
+
+  @override
+  String get addPlantNameHint => 'What will you call it — Monty, Ficus Jr., Monstera. The dice will pick for you.';
+
+  @override
+  String get addPlantPhotosTitle => 'Photos';
+
+  @override
+  String get addPlantWholePlant => 'Whole plant';
+
+  @override
+  String get addPlantWholePlantHint => 'with the pot and soil';
+
+  @override
+  String get addPlantRequired => 'Needed';
+
+  @override
+  String get addPlantTwoAnglesHint => 'Two angles pin the species down more accurately — the second photo is optional but helps.';
+
+  @override
+  String get addPlantTipLight => 'good light';
+
+  @override
+  String get addPlantTipLeaves => 'leaves visible';
+
+  @override
+  String get addPlantTipSingle => 'one plant';
+
+  @override
+  String get addPlantIdentifyCta => 'Identify the species';
+
+  @override
+  String get addPlantRandomNames => 'Monty|Sprout|Ficus Jr.|Fernie|Basil the Great|Leafy|Sunny|Pip';
+
+  @override
+  String get addPlantIsThisYourPlant => 'Is this your plant?';
+
+  @override
+  String get addPlantPickSpeciesHint => 'Pick the closest match — the care plan follows from it.';
+
+  @override
+  String get addPlantNoneMatch => 'None of these — I\'ll type it';
+
+  @override
+  String get addPlantManualHint => 'Type the species name and we\'ll search again.';
+
+  @override
+  String get addPlantManualPlaceholder => 'For example, Monstera deliciosa';
+
+  @override
+  String get addPlantBuildPlanCta => 'Build the care plan';
+
+  @override
+  String addPlantStartingScore(int score) {
+    return 'Starting score $score';
+  }
+
+  @override
+  String get addPlantPlanWatering => 'Water';
+
+  @override
+  String get addPlantPlanLight => 'Light';
+
+  @override
+  String get addPlantPlanSoil => 'Soil';
+
+  @override
+  String get addPlantSoilSlightlyMoist => 'Slightly moist';
+
+  @override
+  String addPlantEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Every $days days',
+      one: 'Every day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addPlantCarePlan => 'Care plan';
+
+  @override
+  String addPlantNTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addPlantFirstWatering => 'First watering';
+
+  @override
+  String get addPlantToday => 'today';
+
+  @override
+  String get addPlantWaterToday => 'today';
+
+  @override
+  String get addPlantFertilising => 'Feeding';
+
+  @override
+  String get addPlantFertilisingDetail => 'In two weeks · half dose';
+
+  @override
+  String get addPlantHealthCheck => 'Health check';
+
+  @override
+  String get addPlantHealthCheckDetail => 'In a month · 1–3 photos';
+
+  @override
+  String get addPlantAddToGarden => 'Add to the garden';
+
+  @override
+  String get addPlantNoSpeciesFound => 'Could not recognise the plant. Try another photo.';
+
+  @override
+  String get addPlantNoPlan => 'Could not build the care plan. Try again.';
+
+  @override
+  String get addPlantLoaderPhotos => 'Photos received';
+
+  @override
+  String get addPlantLoaderIdentify => 'Working out the species';
+
+  @override
+  String get addPlantLoaderPlan => 'Writing the care plan';
+
+  @override
+  String get myPlantsTitleLead => 'My';
+
+  @override
+  String get myPlantsTitleAccent => 'plants';
+
+  @override
+  String myPlantsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plants',
+      one: '1 plant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get myPlantsEmptyLabel => 'Nothing here yet';
+
+  @override
+  String get filterTomorrow => 'Tomorrow';
+
+  @override
+  String get filterNeedsCare => 'Needs care';
+
+  @override
+  String get myPlantsNothingFound => 'Nothing found';
+
+  @override
+  String get myPlantsNothingFoundHint => 'Try a different name or species.';
+
+  @override
+  String get myPlantsAllClearTitle => 'All clear';
+
+  @override
+  String get myPlantsAllClearHint => 'Nothing in this group right now — nothing to worry about.';
+
+  @override
+  String get addFirstPlantHint => 'Add your first plant to get started';
+
+  @override
+  String get subHeroActiveLead => 'Your garden is';
+
+  @override
+  String get subHeroActiveAccent => 'looked after';
+
+  @override
+  String get subHeroForeverLead => 'Premium';
+
+  @override
+  String get subHeroForeverAccent => 'forever';
+
+  @override
+  String get subHeroEndedLead => 'The trial has';
+
+  @override
+  String get subHeroEndedAccent => 'ended';
+
+  @override
+  String get subMetaNoCharges => 'No charges';
+
+  @override
+  String get subFootAutoRenew => 'Auto-renew on · Cancel anytime';
+
+  @override
+  String get subFootTrial => 'No limits · AI care · Reminders';
+
+  @override
+  String get subFootForever => 'Everything is unlocked';
+
+  @override
+  String get subFootFree => 'Limited access · No AI care';
+
+  @override
+  String get subCtaDetails => 'Details';
+
+  @override
+  String get subCtaResume => 'Resume';
+
+  @override
+  String subTrialUntil(String date) {
+    return 'Trial until $date';
+  }
+
+  @override
+  String subEndedOn(String date) {
+    return 'Ended on $date';
+  }
+
+  @override
+  String get subscriptionManageTitle => 'Subscription';
+
+  @override
+  String get subscriptionPlanLabel => 'Plan';
+
+  @override
+  String get subscriptionNextChargeLabel => 'Next charge';
+
+  @override
+  String get subscriptionAutoRenewLabel => 'Auto-renew';
+
+  @override
+  String get subscriptionAutoRenewOn => 'On';
+
+  @override
+  String get subscriptionAutoRenewOff => 'Off';
+
+  @override
+  String get subscriptionManageInStore => 'Billing is handled by the App Store. Open Settings → Apple ID → Subscriptions to change or cancel it.';
+
+  @override
+  String get deleteAccountContinue => 'Continue';
+
+  @override
+  String get deleteAccountKeyword => 'DELETE';
+
+  @override
+  String deleteAccountTypeWord(String word) {
+    return 'Type $word to confirm.';
+  }
+
+  @override
+  String get settingsSavedToast => 'Settings saved!';
+
+  @override
+  String get quietHoursUpdatedToast => 'Quiet hours updated!';
+
+  @override
+  String get signedInChip => 'Signed in';
+
+  @override
+  String get securityLabel => 'Security';
+
+  @override
+  String get emailNotificationsLabel => 'Email';
+
+  @override
+  String get changePasswordHint => 'At least 6 characters';
+
+  @override
+  String get quietHoursNeedsPush => 'Turn push on to use quiet hours';
+
+  @override
+  String get quietHoursFrom => 'From';
+
+  @override
+  String get quietHoursTo => 'To';
+
+  @override
+  String quietHoursSummary(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'No notifications for $hours hours straight',
+      one: 'No notifications for 1 hour straight',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get passwordTooShortError => 'The new password must be at least 6 characters.';
+
+  @override
+  String get passwordSameAsCurrentError => 'The new password must be different from the current one.';
+
+  @override
+  String get passwordsDoNotMatchError => 'The passwords do not match.';
+
+  @override
+  String get passwordCurrentWrongError => 'The current password is wrong.';
+
+  @override
+  String get subscriptionLoading => 'Loading your plan…';
+
+  @override
+  String get editPlantTitle => 'Editing';
+
+  @override
+  String get newPhotoBadge => 'New photo';
+
+  @override
+  String get revertPhoto => 'Restore previous photo';
+
+  @override
+  String get editPlantNameHint => 'This is how the plant appears in your garden and in reminders';
+
+  @override
+  String get aiManagedNote => 'The species and care plan are set by AI — they update after a new health check.';
+
+  @override
+  String get noPhotoYet => 'No photo yet';
+
+  @override
+  String get gardenLoadError => 'Couldn\'t load your garden. Check the connection and try again.';
+
+  @override
+  String get pullToRefreshHint => 'Pull down to refresh';
+
+  @override
+  String get refreshingGarden => 'Gathering your garden…';
+
+  @override
+  String get refreshFailed => 'Couldn\'t refresh. Check your connection.';
+
+  @override
+  String addPlantHeaderPhoto(String accent) {
+    return 'Add a $accent';
+  }
+
+  @override
+  String get addPlantHeaderPhotoAccent => 'plant';
+
+  @override
+  String addPlantHeaderSpecies(String accent) {
+    return 'Confirm the $accent';
+  }
+
+  @override
+  String get addPlantHeaderSpeciesAccent => 'species';
+
+  @override
+  String addPlantHeaderConditions(String accent) {
+    return 'About the $accent';
+  }
+
+  @override
+  String get addPlantHeaderConditionsAccent => 'conditions';
+
+  @override
+  String addPlantHeaderPlan(String accent) {
+    return 'Care $accent';
+  }
+
+  @override
+  String get addPlantHeaderPlanAccent => 'plan';
+
+  @override
+  String get addPlantBack => 'Back';
+
+  @override
+  String quizQuestionOf(int step, int total) {
+    return 'Question $step of $total';
+  }
+
+  @override
+  String get quizNext => 'Next';
+
+  @override
+  String get quizBuildPlan => 'Build the plan';
+
+  @override
+  String quizPotQuestion(String accent) {
+    return 'What $accent is the pot?';
+  }
+
+  @override
+  String get quizPotQuestionAccent => 'diameter';
+
+  @override
+  String get quizPotWhy => 'The volume of soil decides how much water one watering needs.';
+
+  @override
+  String get quizPotHint => 'Measure across the rim of the pot, not the plant.';
+
+  @override
+  String get unitCm => 'cm';
+
+  @override
+  String volumeMl(String value) {
+    return '$value ml';
+  }
+
+  @override
+  String volumeLitres(String value) {
+    return '$value l';
+  }
+
+  @override
+  String quizPotPerWatering(String volume) {
+    return '$volume per watering';
+  }
+
+  @override
+  String quizMaterialQuestion(String accent) {
+    return 'What is the pot made of, and does it have $accent?';
+  }
+
+  @override
+  String get quizMaterialQuestionAccent => 'drainage';
+
+  @override
+  String get quizMaterialWhy => 'Terracotta dries twice as fast as plastic. Without holes, root rot gets likely.';
+
+  @override
+  String get quizMatPlastic => 'Plastic';
+
+  @override
+  String get quizMatPlasticDesc => 'Holds moisture longer';
+
+  @override
+  String get quizMatCeramic => 'Ceramic';
+
+  @override
+  String get quizMatCeramicDesc => 'Glazed, does not breathe';
+
+  @override
+  String get quizMatTerracotta => 'Terracotta';
+
+  @override
+  String get quizMatTerracottaDesc => 'Breathes, dries fast';
+
+  @override
+  String get quizMatUnknown => 'Not sure';
+
+  @override
+  String get quizMatUnknownDesc => 'We will take an average';
+
+  @override
+  String get quizDrainageLabel => 'Drainage holes';
+
+  @override
+  String get quizDrainageYes => 'Yes';
+
+  @override
+  String get quizDrainageYesDesc => 'Extra water runs into the saucer';
+
+  @override
+  String get quizDrainageNo => 'No';
+
+  @override
+  String get quizDrainageNoDesc => 'Water sits at the roots';
+
+  @override
+  String quizPlaceQuestion(String accent) {
+    return 'Where does the plant $accent?';
+  }
+
+  @override
+  String get quizPlaceQuestionAccent => 'stand';
+
+  @override
+  String get quizPlaceWhy => 'This tells us how much light it really gets — and whether it needs shading.';
+
+  @override
+  String get quizPlaceSouth => 'South';
+
+  @override
+  String get quizPlaceSouthDesc => 'Windowsill, plenty of sun';
+
+  @override
+  String get quizPlaceEast => 'East / west';
+
+  @override
+  String get quizPlaceEastDesc => 'Gentle morning sun';
+
+  @override
+  String get quizPlaceNorth => 'North';
+
+  @override
+  String get quizPlaceNorthDesc => 'Light, but no direct sun';
+
+  @override
+  String get quizPlaceRoom => 'Away from the window';
+
+  @override
+  String get quizPlaceRoomDesc => 'Far from any window';
+
+  @override
+  String get quizPlaceBalcony => 'Balcony';
+
+  @override
+  String get quizPlaceBalconyDesc => 'Outdoors, seasonal';
+
+  @override
+  String get quizPlaceBath => 'Bathroom';
+
+  @override
+  String get quizPlaceBathDesc => 'Humid, little light';
+
+  @override
+  String get quizHeatLabel => 'Radiator or air conditioner nearby';
+
+  @override
+  String get quizHeatNo => 'No';
+
+  @override
+  String get quizHeatNoDesc => 'Ordinary room air';
+
+  @override
+  String get quizHeatYes => 'Yes';
+
+  @override
+  String get quizHeatYesDesc => 'Dries out the soil and the air';
+
+  @override
+  String quizWaterQuestion(String accent) {
+    return 'When did you $accent water it?';
+  }
+
+  @override
+  String get quizWaterQuestionAccent => 'last';
+
+  @override
+  String get quizWaterWhy => 'The first watering date depends on it — otherwise the task is set blind.';
+
+  @override
+  String get quizWaterToday => 'Today';
+
+  @override
+  String get quizWaterTodayDesc => 'The soil is still damp';
+
+  @override
+  String get quizWaterFewDays => '2–3 days ago';
+
+  @override
+  String get quizWaterFewDaysDesc => 'The top layer has dried out';
+
+  @override
+  String get quizWaterWeek => 'About a week ago';
+
+  @override
+  String get quizWaterWeekDesc => 'Probably time to water';
+
+  @override
+  String get quizWaterUnknown => 'Not sure';
+
+  @override
+  String get quizWaterUnknownDesc => 'We will check the photo and the soil';
+
+  @override
+  String get addPlantPlanTuned => 'Built from your answers';
+
+  @override
+  String get addPlantCheckToday => 'check the soil today';
+
+  @override
+  String get placeLightSouth => '6–8 h';
+
+  @override
+  String get placeLightEast => '4–6 h';
+
+  @override
+  String get placeLightNorth => '2–3 h';
+
+  @override
+  String get placeLightRoom => 'Little light';
+
+  @override
+  String get placeLightBalcony => '6–9 h';
+
+  @override
+  String get placeLightBath => '2–3 h';
+
+  @override
+  String get soilModerate => 'Moderately damp';
+
+  @override
+  String get addPlantAddLight => 'Add light';
+
+  @override
+  String get addPlantAddLightDetail => 'Closer to a window, or a grow lamp for 4–6 h';
+
+  @override
+  String get addPlantAddDrainage => 'Add drainage';
+
+  @override
+  String get addPlantAddDrainageDetail => 'Without holes the water sits at the roots';
+
+  @override
+  String get addPlantMoveFromHeat => 'Move away from the heat';
+
+  @override
+  String get addPlantMoveFromHeatDetail => 'A radiator dries the soil out';
+
+  @override
+  String get lockedLabelTrial => 'Adding is paused';
+
+  @override
+  String get lockedLabelLimit => 'Free plan limit';
+
+  @override
+  String get lockedLabelCancelled => 'Subscription cancelled';
+
+  @override
+  String get lockedPillTrial => 'Trial finished';
+
+  @override
+  String lockedPillLimit(int count, int limit) {
+    return 'Free plan · $count of $limit';
+  }
+
+  @override
+  String get lockedPillCancelled => 'Access has ended';
+
+  @override
+  String lockedLeadTrial(String accent) {
+    return 'New plants $accent';
+  }
+
+  @override
+  String get lockedLeadTrialAccent => 'are waiting on a subscription';
+
+  @override
+  String lockedLeadLimit(String accent) {
+    return 'The free plan holds $accent';
+  }
+
+  @override
+  String lockedLeadLimitAccent(int limit) {
+    return '$limit plants';
+  }
+
+  @override
+  String lockedLeadCancelled(String accent) {
+    return 'The subscription $accent';
+  }
+
+  @override
+  String get lockedLeadCancelledAccent => 'is not active';
+
+  @override
+  String lockedSubTrial(String date) {
+    return 'The trial ended on $date';
+  }
+
+  @override
+  String get lockedSubLimit => 'A subscription removes the limit — keep as many plants as you like.';
+
+  @override
+  String lockedSubCancelled(String date) {
+    return 'Premium was active until $date';
+  }
+
+  @override
+  String get lockedKeepTitle => 'What stays';
+
+  @override
+  String get lockedUnlockTitle => 'What a subscription brings back';
+
+  @override
+  String lockedKeepPlants(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plants looked after',
+      one: '1 plant looked after',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lockedKeepPlantsDesc => 'They stay in the garden along with their check history';
+
+  @override
+  String get lockedKeepReminders => 'Watering reminders';
+
+  @override
+  String get lockedKeepRemindersDesc => 'Keep arriving just as before';
+
+  @override
+  String get lockedUnlockNewPlants => 'New plants';
+
+  @override
+  String get lockedUnlockNewPlantsDesc => 'Species from a photo and a care plan of their own';
+
+  @override
+  String get lockedUnlockHealth => 'Health check';
+
+  @override
+  String get lockedUnlockHealthDesc => 'Photo analysis, a score and what to do about it';
+
+  @override
+  String get lockedUnlockChat => 'AI assistant';
+
+  @override
+  String get lockedUnlockChatDesc => 'Answers for each plant, aware of its conditions';
+
+  @override
+  String get lockedPlanYear => 'Year';
+
+  @override
+  String get lockedPlanMonth => 'Month';
+
+  @override
+  String get lockedPlanYearNote => '\$21.99 a year · \$1.83 a month';
+
+  @override
+  String get lockedPlanMonthNote => '\$1.99 a month · cancel any time';
+
+  @override
+  String get lockedPlanBadge => 'Best value';
+
+  @override
+  String get lockedFinePrint => 'The subscription renews automatically. Cancel any time in your store settings.';
+
+  @override
+  String lockedCtaResume(String plan) {
+    return 'Resume · $plan';
+  }
+
+  @override
+  String lockedCtaUpgrade(String plan) {
+    return 'Upgrade · $plan';
+  }
+
+  @override
+  String get lockedRestore => 'Restore purchases';
+
+  @override
+  String get lockedRestoreDone => 'Purchases restored';
+
+  @override
+  String get lockedRestoreNothing => 'Nothing to restore on this account';
+
+  @override
+  String get billingIssueTitle => 'A payment did not go through';
+
+  @override
+  String get billingIssueBody => 'Check your payment method — access stays on while the store retries.';
+
+  @override
+  String get duplicateSubscriptionTitle => 'Two subscriptions found';
+
+  @override
+  String get duplicateSubscriptionBody => 'You are paying in the App Store and on the web at the same time. Cancel one of them.';
+
+  @override
+  String get gateBarTitleTrial => 'Trial finished';
+
+  @override
+  String get gateBarTitleExpired => 'Subscription is not active';
+
+  @override
+  String get gateBarBody => 'Watering keeps working; analysis and the assistant need a subscription';
+
+  @override
+  String get gateBarAction => 'Resume';
+
+  @override
+  String get gateStaleScore => 'The score is not updating — it needs a health check';
+
+  @override
+  String gateSheetHealth(String accent) {
+    return 'Health check $accent';
+  }
+
+  @override
+  String gateSheetChat(String accent) {
+    return 'The AI assistant $accent';
+  }
+
+  @override
+  String get gateSheetAccent => 'needs a subscription';
+
+  @override
+  String get gateSheetBody => 'The trial has finished. The plant and its care stay with you — only what the AI works out comes back with a subscription.';
+
+  @override
+  String get gateSheetKeepWatering => 'Watering and reminders keep working';
+
+  @override
+  String get gateSheetKeepHistory => 'Check history and care cards stay open';
+
+  @override
+  String get gateSheetCta => 'Resume subscription';
+
+  @override
+  String get gateSheetLater => 'Later';
+
+  @override
+  String get limitLabel => 'Every slot is taken';
+
+  @override
+  String limitCountOf(int limit) {
+    return 'of $limit slots';
+  }
+
+  @override
+  String get limitPlanTrial => 'Trial';
+
+  @override
+  String get limitPlanFree => 'Free plan';
+
+  @override
+  String get limitPlanPremium => 'Premium';
+
+  @override
+  String get limitLegendUsed => 'Taken';
+
+  @override
+  String get limitLegendLocked => 'Opens with Premium';
+
+  @override
+  String limitLeadTrial(String accent) {
+    return 'There are $accent';
+  }
+
+  @override
+  String get limitLeadTrialAccent => 'no free slots left';
+
+  @override
+  String limitLeadFree(String accent) {
+    return 'The free plan has $accent';
+  }
+
+  @override
+  String limitLeadFreeAccent(int limit) {
+    return '$limit slots';
+  }
+
+  @override
+  String limitLeadPremium(String accent) {
+    return 'All ten slots $accent';
+  }
+
+  @override
+  String get limitLeadPremiumAccent => 'are taken';
+
+  @override
+  String get limitBody => 'Free up a slot or open ten of them.';
+
+  @override
+  String get limitBodyPremium => 'Remove a plant you no longer keep to make room for a new one.';
+
+  @override
+  String get limitPathUpgrade => 'Open 10 slots';
+
+  @override
+  String get limitPathUpgradeDesc => 'Health checks and the assistant come with it';
+
+  @override
+  String get limitPathFree => 'Free up a slot';
+
+  @override
+  String get limitPathFreeDesc => 'Remove a plant you no longer keep';
+
+  @override
+  String get limitPremiumTitle => 'Premium';
+
+  @override
+  String limitCtaUpgrade(String plan) {
+    return 'Upgrade · $plan';
+  }
+
+  @override
+  String get weatherDetectedByNetwork => 'Detected from network';
+
+  @override
+  String get profileCityLabel => 'City';
+
+  @override
+  String get profileCityHint => 'Affects care recommendations';
+
+  @override
+  String get unitsTemperature => 'Temperature units';
+
+  @override
+  String get unitsCelsius => '°C';
+
+  @override
+  String get unitsFahrenheit => '°F';
+
+  @override
+  String get unitsAutomatic => 'Automatic';
+
+  @override
+  String weatherDegrees(String value) {
+    return '$value°';
+  }
 }

@@ -26,7 +26,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PlantChatScreen extends StatefulWidget {
   final Plant plant;
 
-  const PlantChatScreen({super.key, required this.plant});
+  /// Asked automatically once history has loaded.
+  ///
+  /// SPEC 1.4: entering the chat from a task or an analysis carries the question
+  /// with it — an empty chat makes the user retype what the app already knew.
+  final String? initialQuestion;
+
+  /// Which care topic the user came in from — `water`, `light`, … — or null for
+  /// the general chat.
+  ///
+  /// One conversation, several entry points: the topic tags the message and
+  /// tells the assistant which section of the care plan the user is reading. It
+  /// never narrows what the assistant knows.
+  final String? topic;
+
+  const PlantChatScreen({
+    super.key,
+    required this.plant,
+    this.initialQuestion,
+    this.topic,
+  });
 
   @override
   State<PlantChatScreen> createState() => _PlantChatScreenState();
@@ -67,7 +86,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMessageHistory();
+    _bootstrap();
     _loadImageQuota();
     _inputController.addListener(() {
       final hasText = _inputController.text.trim().isNotEmpty;
@@ -103,6 +122,16 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   String get _quotaDateKey =>
       'quota_date_${FirebaseAuth.instance.currentUser?.uid}_${widget.plant.id}';
 
+  /// History first, then the question that opened this screen — asking before
+  /// the history lands would put the answer above the conversation it belongs to.
+  Future<void> _bootstrap() async {
+    await _loadMessageHistory();
+    if (!mounted) return;
+    final question = widget.initialQuestion?.trim();
+    if (question == null || question.isEmpty) return;
+    await _sendMessage(question);
+  }
+
   Future<void> _loadImageQuota() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -123,10 +152,15 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 
     // Then fetch real value from CF and update
     try {
+      final idToken = await user.getIdToken();
+      if (idToken == null) return; // keep the cached badge rather than 401-ing
       final response = await http.post(
         Uri.parse(chatImageQuotaUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': user.uid, 'plantId': widget.plant.id}),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: jsonEncode({'plantId': widget.plant.id}),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -296,6 +330,10 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       'role': message.role,
       'text': message.text,
       'source': message.source,
+      // Where it was said, not what it is about. A question about light asked
+      // on the watering screen stays under `water`: the tag is what makes the
+      // filtered view match what the user remembers doing.
+      'topic': widget.topic,
       if (message.imageUrl != null) 'imageUrl': message.imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'createdAtClient': DateTime.now().toIso8601String(),
@@ -359,28 +397,33 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     ));
 
     try {
-      final conversation = _messages
-          .where((m) => m.role == 'user' || m.role == 'assistant')
-          .take(14)
-          .map((m) => {'role': m.role, 'text': m.text})
-          .toList();
-
+      // The conversation window is no longer assembled here. The server reads
+      // it from Firestore itself, which is both why it can be retuned without
+      // a release and why it can no longer be sent from the wrong end of the
+      // list — this used to `.take(14)` off an oldest-first list.
       final requestBody = <String, dynamic>{
-        'userId': user.uid,
         'plantId': widget.plant.id,
         'plantName': widget.plant.name,
         'species': widget.plant.species,
         'message': text.isNotEmpty ? text : 'I attached a photo of my plant.',
-        'conversation': conversation,
+        'topic': widget.topic,
         'locale': localeCode,
       };
       if (base64Image != null) {
         requestBody['base64Image'] = base64Image;
       }
 
+      // Nullable by signature. Interpolating it blind would post the literal
+      // string "Bearer null" and come back as an unexplained 401.
+      final idToken = await user.getIdToken();
+      if (idToken == null) throw Exception(requestFailedText);
+
       final response = await http.post(
         Uri.parse(chatPlantAssistantUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
         body: jsonEncode(requestBody),
       );
 

@@ -35,6 +35,15 @@ Map<String, dynamic>? _asStringKeyedMap(dynamic v) {
   return null;
 }
 
+/// A 0-100 score, or null when the analyzer returned nothing usable. Values out
+/// of range are clamped rather than dropped: a stray 120 still means "healthy",
+/// and dropping it would leave the plant with no starting score at all.
+int? _asScore(dynamic v) {
+  if (v == null) return null;
+  final n = v is num ? v.toInt() : int.tryParse(v.toString());
+  return n?.clamp(0, 100);
+}
+
 String? _safeString(dynamic v) {
   if (v == null) return null;
   if (v is String) return v.trim().isEmpty ? null : v.trim();
@@ -260,6 +269,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _aiGeneralDescription;
   String? _aiName;
   String? _aiMoistureLevel;
+
+  /// Starting score for the plant (SPEC 1.1). The add flow already runs an
+  /// analysis, so a new plant arrives with a real number instead of waiting
+  /// for the first health check.
+  int? _aiHealthScore;
   int? _aiMoistureMin;
   int? _aiMoistureMax;
   String? _aiLight;
@@ -342,6 +356,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     _aiGeneralDescription = null;
     _aiName = null;
     _aiMoistureLevel = null;
+    _aiHealthScore = null;
     _aiMoistureMin = null;
     _aiMoistureMax = null;
     _aiLight = null;
@@ -533,6 +548,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiGeneralDescription = _safeString(recommendations['general_description']);
         _aiName = _safeString(recommendations['name']);
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
+        _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
             : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
@@ -572,14 +588,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _refreshStatus = 'success';
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.aiAnalysisCompleted),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(l10n.aiAnalysisCompleted),
+      //       backgroundColor: Colors.green,
+      //     ),
+      //   );
+      // }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -669,6 +686,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiGeneralDescription = _safeString(recommendations['general_description']);
         _aiName = _safeString(recommendations['name']) ?? scientificName;
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
+        _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
             : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
@@ -720,6 +738,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _isFetchingFullAnalysis = false;
         _isAnalyzing = false;
         _refreshStatus = 'error';
+        // Without this the full-screen loader stays up showing a finished
+        // progress list, and the error snackbar goes unnoticed behind it.
+        _showAnalysisLoader = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -783,6 +804,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiGeneralDescription = _safeString(recommendations['general_description']);
         _aiName = _safeString(recommendations['name']);
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
+        _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
             : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
@@ -821,14 +843,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _refreshStatus = 'success';
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.aiAnalysisRefreshed),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(l10n.aiAnalysisRefreshed),
+      //       backgroundColor: Colors.green,
+      //     ),
+      //   );
+      // }
     } catch (e) {
       setState(() {
         _refreshStatus = 'error';
@@ -1137,18 +1160,35 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     );
   }
 
+  /// Saves the analysed plant and opens its screen.
+  ///
+  /// This runs on its own once the AI analysis finishes — there is no "add"
+  /// button any more. It used to start with the old button handler's form
+  /// checks, which bail out silently: correct when a person is looking at the
+  /// field they left blank, useless when nobody pressed anything. A failed
+  /// check simply ended the flow, leaving the user back on the form with no
+  /// explanation. Anything unusable now either gets filled in here or surfaces
+  /// as a real error.
   Future<void> _addPlant() async {
-    final nameEmpty = _nameController.text.trim().isEmpty;
-    if (nameEmpty) {
-      setState(() => _nameError = true);
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOut,
-      );
-      return;
+    // The name is normally pre-filled from the AI result before this runs; if
+    // that raced with the rebuild, fall back to the identified species rather
+    // than abandoning a finished analysis.
+    if (_nameController.text.trim().isEmpty) {
+      final fallback = (_aiName ?? _confirmedSpecies ?? '').trim();
+      if (fallback.isEmpty) {
+        setState(() {
+          _nameError = true;
+          _showAnalysisLoader = false;
+        });
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+        );
+        return;
+      }
+      _nameController.text = fallback;
     }
-    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
@@ -1219,6 +1259,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         wateringMode: _wateringMode,
         wateringIntervalDays: _nextWateringInDays,
         shouldWaterNow: _shouldWaterNow, // From AI analysis
+        scanScore: _aiHealthScore,
         healthStatus: null, // No health status for new plants
         healthMessage: null, // No health message for new plants
         lastHealthCheck: null, // No health check for new plants
@@ -1227,51 +1268,51 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final plantId = await PlantService().addPlant(plant);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.plantAddedSuccessfully),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(l10n.plantAddedSuccessfully),
+        //     backgroundColor: Colors.green,
+        //     duration: Duration(seconds: 2),
+        //   ),
+        // );
 
         // Defer navigation to next frame so the SnackBar animation doesn't
         // conflict with Navigator operations (avoids !_debugLocked assertion).
+        // Resolved now, while this screen is certainly still attached.
+        // onPlantAdded() switches the tab and main navigation renders
+        // `_screens[_currentIndex]`, which detaches this screen — an ancestor
+        // lookup afterwards throws. Resolving it inside the post-frame callback
+        // also meant a disposed screen skipped the redirect without a word.
+        final navigator = Navigator.of(context, rootNavigator: true);
+
         SchedulerBinding.instance.addPostFrameCallback((_) async {
-          if (!mounted) return;
 
-          // Resolve the navigator up front. onPlantAdded() switches the tab, and
-          // main navigation renders `_screens[_currentIndex]`, so that call
-          // detaches this screen from the tree — any ancestor lookup on this
-          // context afterwards throws "deactivated widget's ancestor".
-          final navigator = Navigator.of(context, rootNavigator: true);
-          var navigated = false;
-
+          // The plant we just wrote is already in hand, so re-reading it is only
+          // an optimisation: the server copy carries the scheduling fields
+          // addPlant() computes. It must never gate the redirect — a slow or
+          // failed read used to leave the user staring at a finished loader.
+          Plant newPlant = plant.copyWith(id: plantId);
           try {
             final plantDoc = await FirebaseFirestore.instance
                 .collection('plants')
                 .doc(plantId)
-                .get();
-
-            if (!mounted) return;
-
-            if (!plantDoc.exists) {
-              debugPrint('⚠️ Plant $plantId not found right after creation; '
-                  'staying on the tab (creation already succeeded).');
-              return;
+                .get()
+                .timeout(const Duration(seconds: 5));
+            final data = plantDoc.data();
+            if (data != null) {
+              newPlant = Plant.fromMap({...data, 'id': plantId});
             }
+          } catch (e) {
+            debugPrint('⚠️ Could not re-read plant $plantId ($e); '
+                'navigating with the locally built copy.');
+          }
 
-            final plantData = plantDoc.data()!;
-            plantData['id'] = plantId;
-            // Parsed before the tab switch so a malformed document leaves the
-            // user on a consistent screen.
-            final newPlant = Plant.fromMap(plantData);
-
+          try {
             // Switch the underlying tab to "My Plants" (index 1) BEFORE pushing,
             // so pressing Back from PlantDetailsScreen returns to the plant list
             // instead of to AddPlantScreen.
             widget.onPlantAdded?.call();
-            navigated = true;
 
             navigator.push(
               MaterialPageRoute(
@@ -1280,17 +1321,18 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             );
           } catch (e, stack) {
             debugPrint('❌ Error navigating to new plant: $e\n$stack');
-          } finally {
-            // Must run on every path: the loader covers the whole screen, so
-            // leaving it up on a failure strands the user with no way forward.
-            if (!navigated && mounted) {
-              setState(() => _showAnalysisLoader = false);
-            }
+            // The loader covers the whole screen; leaving it up on a failed
+            // push would strand the user with no way forward.
+            if (mounted) setState(() => _showAnalysisLoader = false);
           }
         });
       }
     } catch (e) {
       if (!mounted) return;
+      // Nothing was created, so nothing will navigate — drop the full-screen
+      // loader before showing the paywall or the error, otherwise it covers
+      // both and the user is stuck on a finished progress list.
+      setState(() => _showAnalysisLoader = false);
       if (e is SubscriptionLimitException) {
         // Show paywall instead of error snackbar
         final subscribed = await showPaywall(context);
@@ -2854,8 +2896,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                         Expanded(
                           child: SingleChildScrollView(
                             controller: _scrollController,
+                            // The tab bar floats over the content now, so the
+                            // last field needs room to clear it.
                             padding: EdgeInsets.fromLTRB(
-                                20, 16, 20, limitReached ? 108 : 32),
+                                20, 16, 20, limitReached ? 180 : 112),
                             child: Form(
                               key: _formKey,
                               child: Column(

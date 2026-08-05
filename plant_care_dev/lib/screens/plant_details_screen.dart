@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 
 import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/models/plant.dart';
+import 'package:plant_care/models/plant_health.dart';
 import 'package:plant_care/screens/edit_plant_screen.dart';
 import 'package:plant_care/screens/plant_chat_screen.dart';
 import 'package:plant_care/services/health_check_service.dart';
@@ -20,43 +21,64 @@ import 'package:plant_care/services/navigation_service.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/widgets/health_check_modal.dart';
 import 'package:plant_care/utils/care_sections.dart';
+import 'package:plant_care/models/task.dart';
+import 'package:plant_care/screens/main_navigation_screen.dart';
+import 'package:plant_care/services/subscription_service.dart';
+import 'package:plant_care/services/task_service.dart';
+import 'package:plant_care/widgets/subscription_gate.dart';
+import 'package:plant_care/theme/botanly_glass.dart';
+import 'package:plant_care/widgets/botanly_sheet.dart';
+import 'package:plant_care/widgets/health_result_view.dart';
+import 'package:plant_care/widgets/task_sheet.dart';
+import 'package:plant_care/widgets/todo_block.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Design tokens — Botanly Plant Screen v8 (Liquid Glass)
-//  Alpha channels are round(cssOpacity * 255).
+//  Defined in theme/botanly_glass.dart and aliased here so the rest of this file
+//  keeps its short local names. The health check sheet reads the same tokens.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kInk = Color(0xFF12160F); //  --ink   primary text
-const _kInk2 = Color(0xFF333B2F); //  --ink2  body text
-const _kMut = Color(0xFF5A6155); //  --mut   labels / secondary
-const _kMut2 = Color(0xFF6B7266); //  --mut2  meta text
-const _kChev = Color(0xFF8B9285); //  row chevrons
+const _kInk = kGlassInk;
+const _kInk2 = kGlassInk2;
+const _kMut = kGlassMut;
+const _kMut2 = kGlassMut2;
+const _kChev = kGlassChevron;
 
-const _kAccent = Color(0xFF3E8E3B); //  --accent  green CTA
-const _kWater = Color(0xFF2E86C8); //  --water   watering / history blue
-const _kSun = Color(0xFFC7891F); //  --sun     light / warnings
-const _kWarm = Color(0xFFC65644); //  temperature / destructive
+const _kAccent = kGlassAccent;
+const _kWater = kGlassWater;
+const _kSun = kGlassSun;
+const _kWarm = kGlassWarm;
 
-const _kBase = Color(0xFFEDF0EC); //  neutral base under the glass
-const _kGlassFill = Color(0x9EFFFFFF); //  rgba(255,255,255,.62)
-const _kGlassBorder = Color(0xBFFFFFFF); //  rgba(255,255,255,.75)
-const _kGlassSpecular = Color(0xD9FFFFFF); //  inset 0 1px 0 rgba(255,255,255,.85)
-const _kKnob = Color(0xE6FFFFFF); //  --glass-hi  rgba(255,255,255,.9)
+const _kBase = kGlassBase;
+const _kGlassFill = kGlassFill;
+const _kGlassBorder = kGlassBorder;
+const _kGlassSpecular = kGlassSpecular;
+const _kKnob = kGlassKnob;
 
-const _kIssuesFill = Color(0x9EFFFBF0); //  rgba(255,251,240,.62)
-const _kHistoryFill = Color(0x99F0F7FC); //  rgba(240,247,252,.6)
-const _kIssuesText = Color(0xFF7C6528);
+const _kIssuesFill = kGlassIssuesFill;
+const _kHistoryFill = kGlassHistoryFill;
+const _kIssuesText = kGlassIssuesText;
 
 // Category tints — background / foreground
-const _kLeafBg = Color(0x213E8E3B); //  rgba(62,142,59,.13)
-const _kWaterBg = Color(0x212E86C8); //  rgba(46,134,200,.13)
-const _kSunBg = Color(0x24C7891F); //  rgba(199,137,31,.14)
-const _kWarmBg = Color(0x21C65644); //  rgba(198,86,68,.13)
+const _kLeafBg = kGlassLeafBg;
+const _kWaterBg = kGlassWaterBg;
+const _kSunBg = kGlassSunBg;
+const _kWarmBg = kGlassWarmBg;
 
 // Elevation — shadow tint is rgba(20,30,15,α) = #141E0F
 const _kCardShadow = <BoxShadow>[
-  BoxShadow(color: Color(0x2E141E0F), blurRadius: 30, spreadRadius: -8, offset: Offset(0, 8)),
-  BoxShadow(color: Color(0x19141E0F), blurRadius: 8, spreadRadius: -2, offset: Offset(0, 2)),
+  BoxShadow(
+    color: Color(0x2E141E0F),
+    blurRadius: 30,
+    spreadRadius: -8,
+    offset: Offset(0, 8),
+  ),
+  BoxShadow(
+    color: Color(0x19141E0F),
+    blurRadius: 8,
+    spreadRadius: -2,
+    offset: Offset(0, 2),
+  ),
 ];
 
 // Motion
@@ -69,197 +91,37 @@ const _kSheetCurve = Cubic(0.22, 1.0, 0.36, 1.0); //  420 ms sheet rise
 //
 //  The prototype uses `-apple-system, BlinkMacSystemFont, "SF Pro Text", …`,
 //  i.e. the platform font, with a global `letter-spacing: -.01em` on <body>.
-//  Set [_kUseSystemFont] to false to fall back to the Botanly brand face used
+//  Set [kUseSystemFont] to false to fall back to the Botanly brand face used
 //  by the rest of the app (DM Sans via botanly_theme.dart) — the screen then
 //  matches the app instead of the prototype.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kUseSystemFont = true;
-
-// `-apple-system` switches optical size at 20 pt: Display above, Text below.
-// These are the engine aliases for the platform UI font — measured on device,
-// `.SF Pro Display` silently resolves to the Text variant, while
-// `CupertinoSystemDisplay` yields the real (tighter) Display cut.
-const _kFontDisplay = 'CupertinoSystemDisplay';
-const _kFontText = 'CupertinoSystemText';
-const _kFontFallback = <String>[
-  '.SF Pro Text',
-  '.SF UI Text',
-  'Helvetica Neue',
-  'Roboto', // Android
-];
-
-/// Drop-in for the prototype's text styling. [letterSpacing] is absolute px;
-/// when omitted it resolves to the `-.01em` inherited from the document body.
-TextStyle _font({
-  required double fontSize,
-  FontWeight fontWeight = FontWeight.w400,
-  double? letterSpacing,
-  double? height,
-  Color? color,
-}) {
-  final tracking = letterSpacing ?? fontSize * -0.01;
-  if (!_kUseSystemFont) {
-    return GoogleFonts.dmSans(
-      fontSize: fontSize,
-      fontWeight: fontWeight,
-      letterSpacing: tracking,
-      height: height,
-      color: color,
-    );
-  }
-  return TextStyle(
-    fontFamily: fontSize >= 20 ? _kFontDisplay : _kFontText,
-    fontFamilyFallback: _kFontFallback,
-    fontSize: fontSize,
-    fontWeight: fontWeight,
-    letterSpacing: tracking,
-    height: height,
-    color: color,
-  );
-}
+/// Typography helper, shared with the health check sheet.
+const _font = glassFont;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Backdrop filters
 //
-//  Every glass surface in the prototype is `blur(Npx) saturate(180%)`; the
-//  saturation is what keeps the foliage vivid through the glass. CSS blur radius
-//  N maps to a Gaussian sigma of N/2. ColorFilter is itself an ImageFilter, so
-//  the two compose.
+//  Every glass surface in the prototype is `blur(Npx) saturate(180%)`; the recipe
+//  itself lives in `glassFrost` so this screen and the home screen cannot drift
+//  apart. Called directly rather than through a local alias: aliasing a function
+//  as a top-level field turns a procedure into a getter, and hot reload refuses
+//  to swap one for the other.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kSaturate180 = ColorFilter.matrix(<double>[
-  1.6296, -0.5720, -0.0576, 0, 0, //
-  -0.1704, 1.2280, -0.0576, 0, 0, //
-  -0.1704, -0.5720, 1.7424, 0, 0, //
-  0, 0, 0, 1, 0, //
-]);
-
-ImageFilter _frost(double cssBlur) => ImageFilter.compose(
-      outer: _kSaturate180,
-      inner: ImageFilter.blur(sigmaX: cssBlur / 2, sigmaY: cssBlur / 2),
-    );
-
-final _kGlassFilter = _frost(26); //  .g
-final _kNavFilter = _frost(18); //  .gbtn
-final _kSheetFilter = _frost(40); //  .bs
+final _kGlassFilter = glassFrost(26); //  .g
+final _kNavFilter = glassFrost(18); //  .gbtn
+final _kSheetFilter = glassFrost(40); //  .bs
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Glyphs — verbatim SVG from the prototype, so stroke weights and silhouettes
 //  match rather than approximating with Material icons.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Svg {
-  const _Svg._();
-
-  static const _open =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-      'stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"';
-  static const _solid =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
-      'fill="currentColor"';
-
-  static const drop = '$_solid><path d="M12 2.6C8.8 7 5.8 10.6 5.8 14a6.2 6.2 0 '
-      '0 0 12.4 0c0-3.4-3-7-6.2-11.4z"/></svg>';
-
-  static const dropOutline = '$_open stroke-width="1.8"><path d="M12 2.6L5.5 '
-      '10.5a6.5 6.5 0 0013 0L12 2.6z"/></svg>';
-
-  static const leaf = '$_open stroke-width="1.8"><path d="M5 19c0-9 6-14 '
-      '15-14 0 9-6 14-15 14Z"/><path d="M5 19c3-6 7-9 12-10"/></svg>';
-
-  static const gallery = '$_open stroke-width="1.8"><rect x="3" y="4" '
-      'width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/>'
-      '<polyline points="20 15 15 10 5 20"/></svg>';
-
-  static const soil = '$_open stroke-width="1.8"><path d="M2 18h20M4 18c0-3 '
-      '2-5 4-5s3 1.5 4 1.5S14.5 13 16 13s4 2 4 5"/><path d="M12 13V8M12 '
-      '8c-1-3-4-4-6-4 0 3 2 5 6 4ZM12 8c1-2.5 3.5-3.5 5.5-3.5 0 2.5-2 '
-      '4.5-5.5 3.5Z"/></svg>';
-
-  static const sun = '$_open stroke-width="1.8"><circle cx="12" cy="12" '
-      'r="4.6"/><path d="M12 1.6v2.2M12 20.2v2.2M1.6 12h2.2M20.2 12h2.2M4.6 '
-      '4.6l1.6 1.6M17.8 17.8l1.6 1.6M19.4 4.6l-1.6 1.6M6.2 17.8l-1.6 '
-      '1.6"/></svg>';
-
-  static const thermometer = '$_open stroke-width="1.8"><path d="M14 '
-      '14.8V3.6a2.4 2.4 0 00-4.8 0v11.2a4.4 4.4 0 104.8 0z"/></svg>';
-
-  static const fertilizer = '$_open stroke-width="1.8"><path d="M12 22V12M12 '
-      '12C12 7 17 5 17 5M12 12C12 7 7 5 7 5"/></svg>';
-
-  static const pin = '$_open stroke-width="1.8"><path d="M12 21.5s7-6.2 '
-      '7-11.2a7 7 0 10-14 0c0 5 7 11.2 7 11.2z"/><circle cx="12" cy="10.3" '
-      'r="2.6"/></svg>';
-
-  static const trendingUp = '$_open stroke-width="1.8"><polyline points="22 7 '
-      '13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>';
-
-  static const warningTriangle = '$_open stroke-width="1.8"><path d="M12 '
-      '3.2l9 16H3z"/><path d="M12 10v4M12 16.8h.01"/></svg>';
-
-  static const infoCircle = '$_open stroke-width="1.8"><circle cx="12" '
-      'cy="12" r="9.2"/><path d="M12 7.6v5"/><circle cx="12" cy="16.2" '
-      'r=".7" fill="currentColor"/></svg>';
-
-  static const sparkle = '$_solid><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 '
-      '18l-1.8-6.2L4 10l6.2-1.8z"/></svg>';
-
-  static const chevronRight =
-      '$_open stroke-width="2.4"><polyline points="9 6 15 12 9 18"/></svg>';
-
-  static const chevronLeft =
-      '$_open stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>';
-
-  static const chat = '$_open stroke-width="2"><path d="M21 12a8.5 8.5 0 '
-      '01-8.5 8.5H5l-2 2V12A8.5 8.5 0 0111.5 3.5h1A8.5 8.5 0 0121 12z"/></svg>';
-
-  static const more = '$_solid><circle cx="12" cy="5" r="1.5"/><circle '
-      'cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>';
-
-  static const plus = '$_open stroke-width="2.2"><path d="M12 5.5v13M5.5 '
-      '12h13"/></svg>';
-
-  static const trash = '$_open stroke-width="1.8"><polyline points="3.5 6.5 '
-      '5.5 6.5 20.5 6.5"/><path d="M8.5 6.5V4.6a2 2 0 012-2h3a2 2 0 012 '
-      '2v1.9m2.6 0-1 13.4a2 2 0 01-2 1.9H9a2 2 0 01-2-1.9L6 6.5"/></svg>';
-
-  static const check =
-      '$_open stroke-width="2.6"><path d="M4 12.5l5 5L20 6.5"/></svg>';
-
-  static const close =
-      '$_open stroke-width="2.4"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-
-  static const clock = '$_open stroke-width="1.8"><circle cx="12" cy="12" '
-      'r="9.2"/><path d="M12 6.8V12l4 2.4"/></svg>';
-
-  static const edit = '$_open stroke-width="1.8"><path d="M4 20h4l10-10a2.8 '
-      '2.8 0 00-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
-
-  static const flower = '$_open stroke-width="1.8"><circle cx="12" cy="12" '
-      'r="2.6"/><path d="M12 9.4C12 6 10 4 12 4s0 2 0 5.4M12 14.6c0 3.4 2 '
-      '5.4 0 5.4s0-2 0-5.4M9.4 12C6 12 4 14 4 12s2 0 5.4 0M14.6 12c3.4 0 '
-      '5.4-2 5.4 0s-2 0-5.4 0"/></svg>';
-}
-
-/// Renders one of the [_Svg] paths at [size], recoloured to [color].
-class _Glyph extends StatelessWidget {
-  final String svg;
-  final double size;
-  final Color color;
-
-  const _Glyph(this.svg, {required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return SvgPicture.string(
-      svg,
-      width: size,
-      height: size,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-    );
-  }
-}
+/// The shared glass icon set and its renderer, aliased to the short local
+/// names this file already uses.
+typedef _Svg = BotanlySvg;
+typedef _Glyph = BotanlyGlyph;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -275,6 +137,20 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     with TickerProviderStateMixin {
   late Plant _plant;
   late Stream<List<HealthCheckRecord>> _healthCheckStream;
+
+  /// This plant's open tasks. One subscription feeds both the health score and
+  /// the "what to do" block — they are two readings of the same list, and a
+  /// second stream would let them disagree.
+  StreamSubscription<List<CareTask>>? _tasksSub;
+  List<CareTask> _tasks = const [];
+
+  /// Tasks ticked off in this session, kept by value.
+  ///
+  /// The stream carries open tasks only, so a completed one disappears the
+  /// instant it is written. Holding it here is what lets the row cross itself
+  /// out instead of vanishing, and what lets the block reach "all done" —
+  /// otherwise closing the last task would just hide the block (SPEC 3.3).
+  Map<String, CareTask> _justCompletedTasks = const {};
   bool _isLoading = false;
   int _activeTab = 0; // 0 = Care, 1 = About, 2 = History
   bool _wateredJustNow = false;
@@ -282,7 +158,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   Timer? _wateringCountdownTimer;
   int? _wateringCountdownDays;
-  final HealthCheckAnalysisMode _healthCheckMode = HealthCheckAnalysisMode.aiAgent;
+  final HealthCheckAnalysisMode _healthCheckMode =
+      HealthCheckAnalysisMode.aiAgent;
   int _checksInCurrentCycle = 0;
   static const _maxChecksPerCycle = 2;
 
@@ -292,11 +169,18 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
+  /// Every `DateFormat` on this screen needs this — without it `intl` falls
+  /// back to en_US and prints "Aug 3" no matter what language the app is in.
+  String get _localeTag => Localizations.localeOf(context).toLanguageTag();
+
   @override
   void initState() {
     super.initState();
     _plant = widget.plant;
     _healthCheckStream = HealthCheckService().getHealthCheckHistory(_plant.id);
+    _tasksSub = TaskService().watchPlantTasks(_plant.id).listen((tasks) {
+      if (mounted) setState(() => _tasks = tasks);
+    });
     _saveNavigationState();
     _startWateringCountdownTimer();
     _loadHealthCheckCount();
@@ -316,6 +200,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   @override
   void dispose() {
     _wateringCountdownTimer?.cancel();
+    _tasksSub?.cancel();
     _pulseCtrl.dispose();
     super.dispose();
   }
@@ -346,6 +231,49 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   bool _canDoHealthCheck() =>
       !_canWaterPlant() && _checksInCurrentCycle < _maxChecksPerCycle;
 
+  /// Whether the paid doors on this screen are shut right now.
+  ///
+  /// Read from the live subscription stream rather than fetched per tap, so the
+  /// padlocks appear and disappear the moment the user's document changes —
+  /// paying should not require restarting the app (SPEC 5.3).
+  bool get _paidLocked =>
+      !(SubscriptionService().currentInfo?.hasAccess ?? true);
+
+  /// Gate for the paid features reachable from this screen (SPEC 10, §4).
+  ///
+  /// Shows the shared "needs a subscription" sheet, not the full paywall: at
+  /// this point the user tapped one control, and the first thing they need is
+  /// reassurance that the plant in front of them is not going anywhere. The
+  /// paywall itself is one more tap, from the sheet's CTA.
+  ///
+  /// Returns true when the caller may proceed.
+  Future<bool> _requirePaidAccess(GateAction action) async {
+    final info =
+        SubscriptionService().currentInfo ??
+        await SubscriptionService().fetchInfo();
+    if (info.hasAccess) return true;
+    if (!mounted) return false;
+
+    await showSubscriptionGate(context, action: action, onResume: _openPaywall);
+    return false;
+  }
+
+  /// Sends the user to the paywall — the real one, in the "Add" tab.
+  ///
+  /// Not a second sheet stacked on the first. That version rebuilt the locked
+  /// screen inside a 94%-height sheet, where its pinned footer and its scroll
+  /// had to be re-tuned for a container they were never laid out for. The tab
+  /// already holds this screen, correctly sized, so the CTA goes there instead
+  /// of cloning it.
+  void _openPaywall() {
+    // Two steps, the same pair the delete flow uses: unwind whatever is stacked
+    // over the shell, then tell it which tab to show. Route-level navigation
+    // cannot do the second part — go_router reuses the existing shell and never
+    // re-runs its initState.
+    Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
+    MainNavigationScreen.requestTab(kAddPlantTabIndex);
+  }
+
   Future<void> _refreshPlantData() async {
     final p = await PlantService().getPlantById(_plant.id);
     if (p != null && mounted) {
@@ -356,9 +284,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   // ── actions ───────────────────────────────────────────────────────────────
 
-  void _openHealthCheckModal() {
+  Future<void> _openHealthCheckModal() async {
+    // Money first, then the care rules: an expired account should meet the
+    // paywall, not a lecture about watering the plant before scanning it.
+    if (!await _requirePaidAccess(GateAction.healthCheck)) return;
+    if (!mounted) return;
+
+    // The gate lives here as well as on the buttons: the analysis is now also
+    // reachable from a task row, and a check run while the plant is still
+    // thirsty is exactly what the watering-first sequence exists to prevent.
+    final blocked = _analyzeBlockedReason();
+    if (blocked != null) {
+      _toast(blocked, _kSun);
+      return;
+    }
+
     HapticFeedback.lightImpact();
-    showModalBottomSheet(
+    final asked = await showModalBottomSheet<HealthCheckRecord>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -369,12 +311,52 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         onHealthCheckComplete: _handleHealthCheckComplete,
       ),
     );
+    if (!mounted || asked == null) return;
+
+    // The check is already saved, so coming back means reopening it from
+    // history — the same result, now a stored record.
+    await _askInChat(
+      _analysisQuestion(asked),
+      () async => _openStoredResultSheet(asked),
+    );
   }
 
-  void _openPlantChat() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PlantChatScreen(plant: _plant)),
+  String _analysisQuestion(HealthCheckRecord record) => record.status == 'issue'
+      ? l10n.healthAskQuestionIssue
+      : l10n.healthAskQuestionOk;
+
+  Future<void> _openPlantChat({String? question}) async {
+    if (!await _requirePaidAccess(GateAction.chat)) return;
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            PlantChatScreen(plant: _plant, initialQuestion: question),
+      ),
     );
+  }
+
+  /// SPEC 1.4: leaving the chat puts the user back on the sheet they left from.
+  ///
+  /// Every entry point — care card, task, analysis result — goes through here,
+  /// so none of them can quietly forget to come back. The 120 ms is the
+  /// handoff's: reopening on the same frame reads as if the chat never closed.
+  Future<void> _askInChat(
+    String question,
+    Future<void> Function() reopen,
+  ) async {
+    if (!await _requirePaidAccess(GateAction.chat)) return;
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            PlantChatScreen(plant: _plant, initialQuestion: question),
+      ),
+    );
+    if (!mounted) return;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
+    await reopen();
   }
 
   void _handleHealthCheckComplete(Map<String, dynamic> result) async {
@@ -421,12 +403,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       }
 
       final care = result['care_recommendations'] as Map?;
-      final newMoisture = str(result['moisture_level']) ?? str(care?['moisture']);
+      final newMoisture =
+          str(result['moisture_level']) ?? str(care?['moisture']);
       final newLight = str(result['light']) ?? str(care?['light']);
       final newAmountMl = result['amount_ml'];
       final newRangeMl = result['range_ml'];
 
+      // The scan is the only thing allowed to raise the score (SPEC 1.1). Every
+      // other change can subtract penalties; none of them lifts the ceiling.
+      final scanned = result['health_score'];
+      final newScanScore =
+          (scanned is num
+                  ? scanned.toInt()
+                  : int.tryParse(scanned?.toString() ?? ''))
+              ?.clamp(0, 100);
+
       final updated = _plant.copyWith(
+        scanScore: newScanScore ?? _plant.scanScore,
         healthStatus: result['status'],
         healthMessage: result['message'],
         lastHealthCheck: now,
@@ -436,22 +429,27 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         aiMoistureLevel: newMoisture ?? _plant.aiMoistureLevel,
         aiLight: newLight ?? _plant.aiLight,
         aiCareTips: _plant.aiCareTips,
-        careDetails: result['care_details'] as Map<String, String>? ??
+        careDetails:
+            result['care_details'] as Map<String, String>? ??
             _plant.careDetails,
         interestingFacts: _plant.interestingFacts,
         wateringAmountMl: newAmountMl != null
             ? (newAmountMl is int
-                ? newAmountMl
-                : newAmountMl is double
-                    ? newAmountMl.toInt()
-                    : int.tryParse(newAmountMl.toString()))
+                  ? newAmountMl
+                  : newAmountMl is double
+                  ? newAmountMl.toInt()
+                  : int.tryParse(newAmountMl.toString()))
             : _plant.wateringAmountMl,
         wateringRangeMl: newRangeMl is List
             ? List<int>.from(
-                newRangeMl.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0))
+                newRangeMl.map(
+                  (e) => e is int ? e : int.tryParse(e.toString()) ?? 0,
+                ),
+              )
             : _plant.wateringRangeMl,
         nextAfterWateringHours:
-            result['next_after_watering_in_hours'] ?? _plant.nextAfterWateringHours,
+            result['next_after_watering_in_hours'] ??
+            _plant.nextAfterWateringHours,
         nextCheckHours: result['next_check_in_hours'] ?? _plant.nextCheckHours,
         wateringMode: str(result['mode']) ?? _plant.wateringMode,
         nextDueAt: newNext ?? _plant.nextDueAt,
@@ -461,21 +459,85 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       );
 
       await PlantService().updatePlant(updated);
+      await _syncPlanWithAnalysis(result);
       if (!mounted) return;
       setState(() => _plant = updated);
       _updateWateringCountdown();
       await _loadHealthCheckCount();
-
-      if (!mounted) return;
-      _toast(
-        result['status'] == 'ok'
-            ? 'Plant analyzed! 🌱'
-            : 'Plant Care Assistant has advice for you! 🌿',
-        result['status'] == 'ok' ? _kAccent : _kSun,
-      );
+      // No toast: this now runs while the result sheet is still open, and the
+      // verdict it would announce is already the headline the user is reading.
     } catch (e) {
       if (mounted) _toast(l10n.errorUpdatingPlant(e.toString()), _kWarm);
     }
+  }
+
+  /// Folds a finished analysis into the plant's plan.
+  ///
+  /// The recommendations shown in the result and the tasks in "what to do" are
+  /// the same objects — SPEC 3.4 requires their titles to match word for word,
+  /// which only holds if the plan is built from the result rather than typed
+  /// again. There is no "add to plan" button: arriving is the whole point.
+  Future<void> _syncPlanWithAnalysis(Map<String, dynamic> result) async {
+    final service = TaskService();
+    try {
+      // The check itself satisfies the "rescan" trigger, so that task retires
+      // (SPEC 1.3.5) rather than lingering next to its own result.
+      await service.completeCategory(_plant.id, TaskCategory.scan);
+
+      final raw = result['recommendations'];
+      if (raw is! List || raw.isEmpty) return;
+
+      // dueAt = now keeps ageDays at 0: a recommendation the user received
+      // seconds ago must never be presented as overdue (SPEC 1.3.6).
+      final now = DateTime.now();
+      final tasks = <CareTask>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        final rec = HealthRecommendation.fromMap(
+          Map<String, dynamic>.from(item),
+        );
+        if (rec.title.isEmpty) continue;
+        tasks.add(
+          CareTask(
+            id: '',
+            plantId: _plant.id,
+            userId: '',
+            title: rec.title,
+            detail: rec.explanation,
+            source: TaskSource.analysis,
+            category: _taskCategoryFor(rec),
+            dueAt: now,
+            body: rec.explanation,
+          ),
+        );
+      }
+      if (tasks.isEmpty) return;
+
+      await service.createFromAnalysis(plantId: _plant.id, tasks: tasks);
+    } catch (e) {
+      // The check is already saved; a failed plan sync must not undo it.
+      debugPrint(
+        '⚠️ Could not sync analysis recommendations into the plan: $e',
+      );
+    }
+  }
+
+  /// Best-effort category for a recommendation so the row gets a sensible icon.
+  /// The analyzer categorises findings but not actions, so this reads the title.
+  TaskCategory _taskCategoryFor(HealthRecommendation rec) {
+    final text = '${rec.title} ${rec.explanation}'.toLowerCase();
+    bool has(List<String> words) => words.any(text.contains);
+
+    if (has(['полив', 'вод', 'water', 'moist', 'влаж']))
+      return TaskCategory.water;
+    if (has(['свет', 'солнц', 'light', 'sun'])) return TaskCategory.light;
+    if (has(['почв', 'грунт', 'горшок', 'пересад', 'soil', 'repot'])) {
+      return TaskCategory.soil;
+    }
+    if (has(['подкорм', 'удобр', 'fertil'])) return TaskCategory.fertilizer;
+    if (has(['скан', 'провер', 'фото', 'scan', 'check']))
+      return TaskCategory.scan;
+    return TaskCategory.other;
   }
 
   Future<void> _waterPlant() async {
@@ -486,12 +548,26 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     });
     try {
       await PlantService().waterPlant(_plant.id);
+      // The trigger is satisfied, so the watering task retires with it — the
+      // home deck must not still be asking for water the user just gave
+      // (SPEC 1.3.5).
+      try {
+        await TaskService().completeCategory(
+          _plant.id,
+          TaskCategory.water,
+          source: TaskSource.schedule,
+        );
+      } catch (e) {
+        debugPrint('⚠️ Could not close the watering task: $e');
+      }
       await _refreshPlantData();
       await _loadHealthCheckCount();
       if (!mounted) return;
       _updateWateringCountdown();
       HapticFeedback.heavyImpact();
-      _toast(l10n.plantWateredSuccess(_plant.name), _kAccent);
+      // LEGACY SNACKBAR (disabled 2026-08-03) — the green "… has been watered!"
+      // badge from the screenshot. Haptic + the updated card already confirm it.
+      // _toast(l10n.plantWateredSuccess(_plant.name), _kAccent);
     } catch (e) {
       if (!mounted) return;
       // Optimistic update failed — roll the widget back and surface the error.
@@ -503,25 +579,40 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   void _showDeleteConfirmation() {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Row(children: [
-          const Icon(Icons.delete_forever_rounded, color: _kWarm),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(l10n.deletePlant,
-                style: const TextStyle(color: _kWarm, fontWeight: FontWeight.bold)),
-          ),
-        ]),
+      // The dialog's own context, not the screen's: both buttons mean "close
+      // this dialog", and popping via the screen's context only happened to
+      // work because the dialog was the topmost route.
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.delete_forever_rounded, color: _kWarm),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.deletePlant,
+                style: const TextStyle(
+                  color: _kWarm,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
         content: Text(l10n.deletePlantConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await _deletePlant();
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: _kWarm, foregroundColor: Colors.white),
+              backgroundColor: _kWarm,
+              foregroundColor: Colors.white,
+            ),
             child: Text(l10n.delete),
           ),
         ],
@@ -532,10 +623,40 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   Future<void> _deletePlant() async {
     try {
       setState(() => _isLoading = true);
+      // Resolved before the await chain: the toast and the unwind both need a
+      // live navigator, and `mounted` alone has proven unreliable here.
+      final navigator = Navigator.of(context, rootNavigator: true);
+
       await PlantService().deletePlant(_plant.id);
-      if (!mounted) return;
-      _toast(l10n.plantDeletedMessage(_plant.name), _kAccent);
-      Navigator.of(context, rootNavigator: true).pop();
+      // Without this the plant's tasks outlive it: the deck hides them because
+      // it drops tasks whose plant is gone, but they keep loading, keep
+      // counting on the all-tasks screen and never expire on their own.
+      try {
+        await TaskService().deleteForPlant(_plant.id);
+      } catch (e) {
+        debugPrint('⚠️ Could not clear tasks of the deleted plant: $e');
+      }
+
+      // No farewell toast, on purpose. Announcing the deletion means asking a
+      // ScaffoldMessenger to show a snack bar from a screen that is about to be
+      // torn down, and it throws every time — the messenger still holds this
+      // route's Scaffold and looking up a deactivated element's ancestor is an
+      // error. Deferring it a frame does not help either; the messenger only
+      // drops the dead Scaffold when it rebuilds.
+      //
+      // That throw is what used to break deleting a second plant: it escaped
+      // into the catch below, the unwind never ran, and the user was left on
+      // the page of a plant that no longer existed. The message was never worth
+      // that — the user lands on Home and the plant is visibly gone.
+      //
+      // Two steps, because either one alone has failed in practice. popUntil
+      // clears this screen and anything still stacked over it — the "⋯" sheet
+      // or the confirm dialog; the notifier then puts the shell on Home, which
+      // route-level navigation cannot do because go_router reuses the existing
+      // MainNavigationScreen and never re-runs its initState.
+      debugPrint('🗑️ Plant ${_plant.id} deleted — returning to Home');
+      navigator.popUntil((route) => route.isFirst);
+      MainNavigationScreen.requestTab(0);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -548,13 +669,31 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     // awaits, by which point this element can already be deactivated — and an
     // ancestor lookup on a deactivated element throws even while mounted is
     // still true.
-    _messenger?.showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: background,
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
+    //
+    // Guarded on top of that, because holding the messenger is not enough:
+    // `showSnackBar` walks the messenger's own list of registered Scaffolds,
+    // and a Scaffold from a screen that was popped while a snack bar was up
+    // stays in that list until it is rebuilt. Looking up its ancestor throws.
+    //
+    // That is how deleting a second plant used to fail: this throw escaped
+    // into the caller's catch, the screen never unwound, and the user was left
+    // staring at a plant that no longer existed. A toast is decoration — it
+    // must never take down the operation it is announcing.
+    try {
+      _messenger?.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: background,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('⚠️ Could not show a toast: $e');
+    }
   }
 
   // ── watering schedule ─────────────────────────────────────────────────────
@@ -564,8 +703,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   void _startWateringCountdownTimer() {
     _wateringCountdownTimer?.cancel();
     _updateWateringCountdown();
-    _wateringCountdownTimer =
-        Timer.periodic(const Duration(minutes: 1), (_) => _updateWateringCountdown());
+    _wateringCountdownTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _updateWateringCountdown(),
+    );
   }
 
   void _updateWateringCountdown() {
@@ -576,9 +717,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     }
     final target = _nextWateringDate();
     final now = DateTime.now().toLocal();
-    final days = DateTime(target.year, target.month, target.day)
-        .difference(DateTime(now.year, now.month, now.day))
-        .inDays;
+    final days = DateTime(
+      target.year,
+      target.month,
+      target.day,
+    ).difference(DateTime(now.year, now.month, now.day)).inDays;
     setState(() => _wateringCountdownDays = days <= 0 ? null : days);
   }
 
@@ -586,6 +729,22 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     if (_wateredJustNow) return false;
     if (_plant.shouldWaterNow) return true;
     return !_nextWateringDate().isAfter(DateTime.now());
+  }
+
+  /// True until the first watering is actually logged.
+  ///
+  /// Adding a plant stamps `lastWatered` with the creation time so the cycle
+  /// has an anchor, but the user never poured anything — printing "last watered
+  /// today" under a card that says the plant is thirsty is the app arguing with
+  /// itself. [_wateringSubtitle] drops the claim until it is true.
+  bool get _neverWatered =>
+      _plant.lastWatered.isAtSameMomentAs(_plant.createdAt);
+
+  String _wateringSubtitle(int interval) {
+    if (_neverWatered && !_wateredJustNow) return _everyN(interval);
+    final last = _plant.lastWateredAt ?? _plant.lastWatered;
+    final day = DateFormat.MMMd(_localeTag).format(last);
+    return '${l10n.lastWatered} $day · ${_everyN(interval)}';
   }
 
   double _cycleProgress() {
@@ -621,26 +780,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   // ── health status ─────────────────────────────────────────────────────────
 
-  String _healthStatusLabel() {
-    if (_plant.healthStatus == 'issue') return l10n.healthStatusIssue;
-    if (_plant.healthStatus == 'ok') return l10n.healthy;
-    final msg = _plant.healthMessage?.toLowerCase();
-    if (msg == null) return '';
-    const issueWords = [
-      'wilted', 'drooping', 'yellow', 'brown', 'problem', 'issue',
-      'concern', 'sick', 'overwatered', 'pest', 'disease',
-    ];
-    if (issueWords.any(msg.contains)) return l10n.healthStatusIssue;
-    const healthyWords = ['healthy', 'thriving', 'robust', 'flourishing'];
-    if (healthyWords.any(msg.contains)) return l10n.healthy;
-    return '';
-  }
+  /// Live score of this plant, 0-100 (SPEC 1.1).
+  ///
+  /// Replaces the old keyword sniffing of `healthMessage`: every plant has a
+  /// score at all times, and it is derived, never guessed from prose.
+  int get _score => livePlantScore(_plant, _tasks);
+
+  bool get _needsAttention => plantNeedsAttention(_score);
 
   Map<String, dynamic>? _tryParsePlantAssistant(String? msg) {
     if (msg == null || !msg.trim().startsWith('{')) return null;
     try {
       final m = jsonDecode(msg.trim()) as Map<String, dynamic>;
-      if (m['status'] != null || m['praise_phrase'] != null || m['problem_name'] != null) {
+      if (m['status'] != null ||
+          m['praise_phrase'] != null ||
+          m['problem_name'] != null) {
         return m;
       }
     } catch (_) {
@@ -680,8 +834,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   /// "Every 1 day" reads wrong in every language, so the daily case has its own
   /// phrasing rather than a plural branch.
-  String _everyN(int days) =>
-      days == 1 ? l10n.everyDay : l10n.everyNDays(days);
+  String _everyN(int days) => days == 1 ? l10n.everyDay : l10n.everyNDays(days);
 
   /// A care row shows a value at a glance, so give it the opening sentence
   /// rather than an arbitrary slice of the paragraph. Anything still too long
@@ -704,14 +857,24 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     final v = _plant.aiMoistureLevel;
     if (v == null || v.isEmpty) return '';
     final l = v.toLowerCase();
-    if (l.contains('very dry') || l.contains('arid')) return l10n.moistureLevelVeryDry;
+    if (l.contains('very dry') || l.contains('arid'))
+      return l10n.moistureLevelVeryDry;
     if (l.contains('slightly moist') || l.contains('slightly damp')) {
       return l10n.moistureLevelSlightlyMoist;
     }
     if (l.contains('very moist')) return l10n.moistureLevelVeryMoist;
     if (l.contains('dry')) return l10n.moistureLevelDry;
-    if (l.contains('moist') || l.contains('damp')) return l10n.moistureLevelMoist;
+    if (l.contains('moist') || l.contains('damp'))
+      return l10n.moistureLevelMoist;
     if (l.contains('wet') || l.contains('saturated')) return l10n.moistureWet;
+    // The analyser is told to keep this field an English enum, and "moderate"
+    // is the value it returns most often — without this branch it fell through
+    // to the raw value and the card read "Moderate" in every language.
+    if (l.contains('moderate') ||
+        l.contains('medium') ||
+        l.contains('average')) {
+      return l10n.medium;
+    }
     return v;
   }
 
@@ -756,8 +919,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     if (stored != null && stored > 0) return stored;
     final raw = _plant.aiWateringAmount;
     if (raw == null) return null;
-    final m = RegExp(r'(\d+)\s*(?:ml|мл|ml\.)', caseSensitive: false)
-        .firstMatch(raw);
+    final m = RegExp(
+      r'(\d+)\s*(?:ml|мл|ml\.)',
+      caseSensitive: false,
+    ).firstMatch(raw);
     final parsed = m != null ? int.tryParse(m.group(1)!) : null;
     return (parsed != null && parsed > 0) ? parsed : null;
   }
@@ -790,7 +955,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               const Positioned.fill(
                 child: ColoredBox(
                   color: Color(0x44000000),
-                  child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
                 ),
               ),
           ],
@@ -876,7 +1043,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
             onTap: () => Navigator.of(context).pop(),
           ),
           const Spacer(),
-          _navButton(glyph: _Svg.chat, onTap: _openPlantChat),
+          // The paid controls keep their place and gain a padlock — a button
+          // that disappears reads as a bug, a padlock reads as a rule.
+          GateLocked(
+            locked: _paidLocked,
+            dim: false,
+            child: _navButton(glyph: _Svg.chat, onTap: _openPlantChat),
+          ),
           const SizedBox(width: 8),
           _navButton(glyph: _Svg.more, onTap: _showMoreMenu),
         ],
@@ -896,7 +1069,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: Color(0x24000000), blurRadius: 14, offset: Offset(0, 4)),
+                BoxShadow(
+                  color: Color(0x24000000),
+                  blurRadius: 14,
+                  offset: Offset(0, 4),
+                ),
               ],
             ),
             child: ClipOval(
@@ -908,7 +1085,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(0x47FFFFFF), // rgba(255,255,255,.28)
-                    border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
+                    border: Border.all(
+                      color: const Color(0x99FFFFFF),
+                      width: 0.5,
+                    ),
                   ),
                   child: Center(
                     child: _Glyph(glyph, size: 17, color: Colors.white),
@@ -934,7 +1114,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         onEdit: () {
           Navigator.pop(ctx);
           Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => EditPlantScreen(plant: _plant)))
+              .push(
+                MaterialPageRoute(
+                  builder: (_) => EditPlantScreen(plant: _plant),
+                ),
+              )
               .then((_) => _refreshPlantData());
         },
         onDelete: () {
@@ -964,6 +1148,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                 const SizedBox(height: 12),
                 _buildWateringCard(),
                 const SizedBox(height: 12),
+                _buildTodoBlock(),
                 _buildSegmentedControl(),
                 const SizedBox(height: 12),
                 AnimatedSwitcher(
@@ -1022,7 +1207,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                   left: 0,
                   right: 0,
                   height: 1,
-                  child: IgnorePointer(child: ColoredBox(color: _kGlassSpecular)),
+                  child: IgnorePointer(
+                    child: ColoredBox(color: _kGlassSpecular),
+                  ),
                 ),
               ],
             ),
@@ -1061,7 +1248,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   }
 
   Widget _buildTitleCard() {
-    final status = _healthStatusLabel();
     final latin = _botanicalName();
 
     return _glass(
@@ -1093,10 +1279,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               ],
             ),
           ),
-          if (status.isNotEmpty) ...[
-            const SizedBox(width: 12),
-            _healthChip(status),
-          ],
+          // Always present: SPEC 1.1 has no "no data" state, so the chip is not
+          // conditional on a check having been run.
+          const SizedBox(width: 12),
+          _healthChip(),
         ],
       ),
     );
@@ -1104,14 +1290,20 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   // pill: padding 6 11 · rgba(tint,.14) · .5px rgba(tint,.22) · 12.5/600
   // dot: 7 px, pulse 2.4 s — ring grows 0 → 5 px while alpha fades .4 → 0
-  Widget _healthChip(String status) {
-    final healthy = status == 'Healthy';
-    final tone = healthy ? _kAccent : _kWarm;
+  Widget _healthChip() {
+    final healthy = !_needsAttention;
+    // Amber, not the destructive red: a check that flagged something is a nudge,
+    // not an error. Text is darkened to stay legible on glass over a photo.
+    final tone = healthy ? _kAccent : kGlassAttnText;
+    final label = healthy
+        ? l10n.healthStatusHealthy
+        : l10n.healthNeedsAttention;
+    final blockedReason = _analyzeBlockedReason();
 
-    return Container(
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
       decoration: BoxDecoration(
-        color: tone.withAlpha(36), // .14
+        color: healthy ? _kAccent.withAlpha(36) : kGlassAttnBg,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: tone.withAlpha(56), width: 0.5), // .22
       ),
@@ -1142,11 +1334,34 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           ),
           const SizedBox(width: 6),
           Text(
-            status,
+            label,
             style: _font(
-                fontSize: 12.5, fontWeight: FontWeight.w600, color: tone),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: tone,
+            ),
           ),
+          if (blockedReason == null) ...[
+            const SizedBox(width: 5),
+            _Glyph(_Svg.scan, size: 13, color: tone.withAlpha(191)), // .75
+          ],
         ],
+      ),
+    );
+
+    if (blockedReason != null) return chip;
+
+    // Visual size stays as designed; the tap target is padded out to 44 px.
+    return Semantics(
+      button: true,
+      label: l10n.healthAnalyzeCta,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openHealthCheckModal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: GateLocked(locked: _paidLocked, child: chip),
+        ),
       ),
     );
   }
@@ -1157,7 +1372,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     final canWater = _canWaterPlant();
     final amount = _doseMl();
     final interval = _wateringInterval();
-    final lastWatered = _plant.lastWateredAt ?? _plant.lastWatered;
     final progress = _wateredJustNow ? 0.04 : _cycleProgress();
 
     return _glass(
@@ -1200,9 +1414,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '${l10n.lastWatered} '
-                            '${DateFormat.MMMd().format(lastWatered)} · '
-                            '${_everyN(interval)}',
+                            _wateringSubtitle(interval),
                             style: _font(fontSize: 13, color: _kMut),
                           ),
                         ],
@@ -1234,6 +1446,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                 ),
                 const SizedBox(height: 14),
                 _wateringCta(canWater),
+                const SizedBox(height: 9),
+                _analyzeHealthButton(),
               ],
             ),
           ),
@@ -1261,7 +1475,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           Text(
             '$amount',
             style: _font(
-                fontSize: 15, fontWeight: FontWeight.w600, color: _kWater),
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: _kWater,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
@@ -1273,9 +1490,41 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               color: _kMut,
             ),
           ),
+          // Second unit under a hairline (SPEC 3.2): millilitres are exact but
+          // unimaginable, glasses are the thing the user actually pours with.
+          Container(
+            width: 34,
+            height: 0.5,
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            color: _kWater.withAlpha(46),
+          ),
+          Text(
+            _glassesLabel(amount),
+            style: _font(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: kGlassBlueText,
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  /// Millilitres as glasses, rounded to a quarter. The base is a 200 ml glass;
+  /// change the constant, not the text, if production ever uses another one.
+  String _glassesLabel(int ml) {
+    const glassMl = 200;
+    final quarters = (ml * 4 / glassMl).round().clamp(1, 1 << 20);
+    if (quarters == 4) return l10n.glassesOne;
+
+    final whole = quarters ~/ 4;
+    const marks = ['', '¼', '½', '¾'];
+    final fraction = marks[quarters % 4];
+    final value = whole == 0
+        ? fraction
+        : (fraction.isEmpty ? '$whole' : '$whole $fraction');
+    return l10n.glassesAmount(value);
   }
 
   // track 6 px radius 4 rgba(20,30,15,.10) · fill gradient #7BC0EA → #2E86C8
@@ -1301,7 +1550,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               child: const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                      colors: [Color(0xFF7BC0EA), Color(0xFF2E86C8)]),
+                    colors: [Color(0xFF7BC0EA), Color(0xFF2E86C8)],
+                  ),
                   borderRadius: BorderRadius.all(Radius.circular(4)),
                 ),
               ),
@@ -1315,6 +1565,289 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   // full width · radius 18 · padding 15 · #3E8E3B · white 16/600/-.01em
   // shadow 0 8px 20px -8px rgba(62,142,59,.7) · press scale(.975) · ripple 700 ms
   // Confirmed state: rgba(62,142,59,.16) fill, accent text, no shadow, disabled.
+  /// Shortcut back into the latest check's action list.
+  ///
+  /// Once the analysis sheet is closed the recommendations are easy to lose, so
+  /// the banner keeps them one tap away until every step is ticked off — at
+  /// which point it disappears on its own.
+  /// "What to do" — SPEC 3.3. Replaces the old recommendations banner.
+  ///
+  /// Watering never appears here: it is the hero widget right above, and the
+  /// spec forbids the duplicate. Everything else this plant owes is one list,
+  /// the same objects the home deck shows.
+  Widget _buildTodoBlock() {
+    final open = _tasks.map((t) => t.id).toSet();
+    final merged = [
+      ..._tasks,
+      ..._justCompletedTasks.values.where((t) => !open.contains(t.id)),
+    ];
+    final visible = TodoBlock.visibleTasks(merged, DateTime.now());
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _glass(
+        padding: EdgeInsets.zero,
+        child: TodoBlock(
+          tasks: visible,
+          justCompleted: _justCompletedTasks.keys.toSet(),
+          // The scan row says why it is locked instead of offering a tick that
+          // would be a lie.
+          lockedReason: (task) =>
+              isScheduledScan(task) ? _analyzeBlockedReason() : null,
+          onOpen: _openTaskSheet,
+          onToggle: (task, done) =>
+              done ? _completeTask(task) : _reopenTask(task),
+        ),
+      ),
+    );
+  }
+
+  /// Marks a task done, keeping the row visible for a beat.
+  ///
+  /// The tick is optimistic on purpose: the write is a round-trip to Firestore
+  /// and a checkbox that waits for it feels broken. A failure puts the row back.
+  Future<void> _completeTask(CareTask task) async {
+    setState(
+      () => _justCompletedTasks = {..._justCompletedTasks, task.id: task},
+    );
+    try {
+      // Feeding leaves its mark on the plant, the way watering does. Without it
+      // the scheduler has no idea the chore was done and hands it back.
+      if (task.category == TaskCategory.fertilizer) {
+        await PlantService().markFertilised(_plant.id);
+      }
+      await TaskService().complete(task.id);
+    } catch (e) {
+      if (!mounted) return;
+      setState(
+        () => _justCompletedTasks = {..._justCompletedTasks}..remove(task.id),
+      );
+      _toast(l10n.errorUpdatingPlant(e.toString()), _kWarm);
+    }
+  }
+
+  Future<void> _reopenTask(CareTask task) async {
+    setState(
+      () => _justCompletedTasks = {..._justCompletedTasks}..remove(task.id),
+    );
+    try {
+      await TaskService().reopen(task.id);
+    } catch (_) {
+      // The stream is the source of truth; a failed reopen simply leaves the
+      // task as it was on the server and the next snapshot restores the tick.
+    }
+  }
+
+  /// Opens the task sheet and applies whatever the user chose there.
+  Future<void> _openTaskSheet(CareTask task) async {
+    // A scheduled scan is not a task you tick — it is the health check itself.
+    // Tapping it runs the analysis, and the gate decides whether it can.
+    if (isScheduledScan(task)) {
+      await _openHealthCheckModal();
+      return;
+    }
+
+    final choice = await showTaskSheet(context: context, task: task);
+    if (!mounted || choice == null) return;
+
+    switch (choice) {
+      case TaskSheetResult.done:
+        await _completeTask(task);
+      case TaskSheetResult.later:
+        // "Later" never removes the task or touches the counter (SPEC 1.3.4).
+        try {
+          await TaskService().postpone(task.id);
+        } catch (_) {
+          // Ordering only; a failed write leaves the task where it was.
+        }
+      case TaskSheetResult.ask:
+        await _askInChat(
+          l10n.taskAskQuestion(task.title),
+          () => _openTaskSheet(task),
+        );
+    }
+  }
+
+  /// Reopens a stored check in the result view.
+  ///
+  /// Reading history must not touch the plant: the verdict, score and steps all
+  /// come from the record, and ticking a step writes back to that check only.
+  Future<void> _openStoredResultSheet(HealthCheckRecord record) async {
+    var current = record;
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        // Same shape as the analysis sheet — reopening a check is the same view,
+        // so it must not arrive in a different kind of container.
+        builder: (sheetContext, setSheetState) => Container(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            10,
+            18,
+            18 + MediaQuery.of(sheetContext).padding.bottom,
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.94,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xF5FCFDFB),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x66142010),
+                blurRadius: 50,
+                spreadRadius: -18,
+                offset: Offset(0, -20),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Grabber and date row stay outside the scroll view. The sheet's
+              // own drag-to-dismiss loses the gesture arena to a scrollable, so
+              // with everything inside one the grabber was drawn but dead.
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0x29141E0F),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      DateFormat.yMMMd(_localeTag).format(current.timestamp),
+                      style: _font(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: _kMut,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // 32 px visual, 44 px hit area — same close button as the
+                  // analysis sheet.
+                  _PressScale(
+                    scale: 0.9,
+                    onTap: () => Navigator.of(sheetContext).pop(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          color: Color(0x12141E0F), // rgba(20,30,15,.07)
+                          shape: BoxShape.circle,
+                        ),
+                        child: const _Glyph(_Svg.close, size: 15, color: _kMut),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // `Flexible`, not `Expanded`: a short check hugs its content and
+              // only scrolls once it hits the 94% cap.
+              Flexible(
+                child: SingleChildScrollView(
+                  child: HealthResultView(
+                    record: current,
+                    onClose: () => Navigator.of(sheetContext).pop(),
+                    onAsk: () => Navigator.of(sheetContext).pop('ask'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted || choice != 'ask') return;
+    await _askInChat(
+      _analysisQuestion(current),
+      () async => _openStoredResultSheet(current),
+    );
+  }
+
+  /// Why the analysis entry points are disabled, or null when they are live.
+  ///
+  /// The gate itself is deliberately unchanged: a check only counts once the
+  /// cycle has been closed with a watering, and two per cycle is the budget. The
+  /// design asks for the entry points to stay visible regardless, so instead of
+  /// hiding them we say what is blocking.
+  String? _analyzeBlockedReason() {
+    if (_canDoHealthCheck()) return null;
+    if (_canWaterPlant()) return l10n.healthLockedNeedsWatering;
+    return l10n.healthLockedLimitReached;
+  }
+
+  /// Secondary CTA under "I have watered" — the primary way into the analysis.
+  Widget _analyzeHealthButton() {
+    final blockedReason = _analyzeBlockedReason();
+    final enabled = blockedReason == null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Opacity(
+          opacity: enabled ? 1 : 0.55,
+          child: GateLocked(
+            locked: _paidLocked,
+            // Already dimmed by the Opacity above when the care rules block it.
+            dim: false,
+            child: _RippleButton(
+              // Locked by subscription is still tappable: the tap is what opens
+              // the sheet that explains why. Only the care rules disable it.
+              enabled: enabled || _paidLocked,
+              onTap: _openHealthCheckModal,
+              fill: const Color(0x242E86C8), // rgba(46,134,200,.14)
+              border: Border.all(color: const Color(0x422E86C8), width: 0.5),
+              shadow: const [],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const _Glyph(_Svg.scan, size: 17, color: Color(0xFF1F6BA5)),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.healthAnalyzeCta,
+                    style: _font(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w600,
+                      color: kGlassBlueText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // The care-rule reason only. A subscription lock explains itself in the
+        // sheet, so repeating it here would be a second, quieter refusal.
+        if (!enabled) ...[
+          const SizedBox(height: 7),
+          Text(
+            blockedReason,
+            textAlign: TextAlign.center,
+            style: _font(fontSize: 11.5, color: _kMut2),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _wateringCta(bool canWater) {
     final done = _wateredJustNow;
 
@@ -1335,7 +1868,11 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       foreground = Colors.white;
       shadow = const [
         BoxShadow(
-            color: Color(0xB33E8E3B), blurRadius: 20, spreadRadius: -8, offset: Offset(0, 8)),
+          color: Color(0xB33E8E3B),
+          blurRadius: 20,
+          spreadRadius: -8,
+          offset: Offset(0, 8),
+        ),
       ];
       glyph = _Svg.drop;
       label = l10n.iHaveWatered;
@@ -1415,8 +1952,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
     // The watering sheet is where the finger test belongs: it is the check you
     // run right before you decide to water.
-    final waterSheetBody =
-        [waterBody, moistureCheck].where((s) => s.isNotEmpty).join('\n\n');
+    final waterSheetBody = [
+      waterBody,
+      moistureCheck,
+    ].where((s) => s.isNotEmpty).join('\n\n');
 
     final rows = <Widget>[
       _careRow(
@@ -1434,7 +1973,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               l10n.wateringAmount,
               range != null && range.length == 2
                   ? '${range[0]}–${l10n.milliliters(range[1])}'
-                  : l10n.milliliters(amount)
+                  : l10n.milliliters(amount),
             ),
           if (_detail(CareDetail.wateringSeason) case final season?)
             (l10n.careKvSeason, season),
@@ -1455,10 +1994,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           title: l10n.careSectionSoilMoisture,
           value: [
             _moistureLabel(),
-            if (_plant.idealSoilMoistureMin != null && _plant.idealSoilMoistureMax != null)
+            if (_plant.idealSoilMoistureMin != null &&
+                _plant.idealSoilMoistureMax != null)
               '${_plant.idealSoilMoistureMin}–${_plant.idealSoilMoistureMax}%',
           ].where((s) => s.isNotEmpty).join(' · '),
-          body: moistureBody.isNotEmpty ? moistureBody : (_plant.aiMoistureLevel ?? ''),
+          body: moistureBody.isNotEmpty
+              ? moistureBody
+              : (_plant.aiMoistureLevel ?? ''),
           showMoistureScale: true,
         ),
       if (_plant.aiLight != null)
@@ -1536,20 +2078,21 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     bool showMoistureScale = false,
   }) {
     final (tint, foreground) = _toneColors(tone);
-    final tappable = body.isNotEmpty || keyValues.isNotEmpty || showMoistureScale;
+    final tappable =
+        body.isNotEmpty || keyValues.isNotEmpty || showMoistureScale;
 
     return _PressScale(
       scale: 0.985,
       onTap: tappable
           ? () => _openCareSheet(
-                tone: tone,
-                glyph: glyph,
-                title: title,
-                value: value,
-                body: body,
-                keyValues: keyValues,
-                showMoistureScale: showMoistureScale,
-              )
+              tone: tone,
+              glyph: glyph,
+              title: title,
+              value: value,
+              body: body,
+              keyValues: keyValues,
+              showMoistureScale: showMoistureScale,
+            )
           : null,
       child: _glass(
         radius: 22,
@@ -1564,9 +2107,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
               ),
-              child: Center(
-                child: _Glyph(glyph, size: 19, color: foreground),
-              ),
+              child: Center(child: _Glyph(glyph, size: 19, color: foreground)),
             ),
             const SizedBox(width: 13),
             Expanded(
@@ -1589,7 +2130,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: _font(
-                          fontSize: 12.5, fontWeight: FontWeight.w500, color: _kMut),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: _kMut,
+                      ),
                     ),
                   ],
                 ],
@@ -1606,13 +2150,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   }
 
   (Color, Color) _toneColors(_CareTone t) => switch (t) {
-        _CareTone.water => (_kWaterBg, _kWater),
-        _CareTone.leaf => (_kLeafBg, _kAccent),
-        _CareTone.sun => (_kSunBg, _kSun),
-        _CareTone.warm => (_kWarmBg, _kWarm),
-      };
+    _CareTone.water => (_kWaterBg, _kWater),
+    _CareTone.leaf => (_kLeafBg, _kAccent),
+    _CareTone.sun => (_kSunBg, _kSun),
+    _CareTone.warm => (_kWarmBg, _kWarm),
+  };
 
-  void _openCareSheet({
+  Future<void> _openCareSheet({
     required _CareTone tone,
     required String glyph,
     required String title,
@@ -1620,28 +2164,45 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     required String body,
     required List<(String, String)> keyValues,
     required bool showMoistureScale,
-  }) {
+  }) async {
     HapticFeedback.lightImpact();
     final (tint, foreground) = _toneColors(tone);
 
     // A custom route rather than showModalBottomSheet: the scrim must fade in
     // place while only the sheet rises, and barrierColor cannot carry a blur.
-    Navigator.of(context).push(_CareSheetRoute(
-      builder: (_) => _CareDetailSheet(
+    final choice = await Navigator.of(context).push<String>(
+      _CareSheetRoute(
+        builder: (_) => _CareDetailSheet(
+          glyph: glyph,
+          tint: tint,
+          foreground: foreground,
+          title: title,
+          value: value,
+          body: body,
+          keyValues: keyValues,
+          showMoistureScale: showMoistureScale,
+          moistureMin: _plant.idealSoilMoistureMin,
+          moistureMax: _plant.idealSoilMoistureMax,
+          dryLabel: l10n.moistureDry,
+          wetLabel: l10n.moistureWet,
+          askLabel: l10n.careAskAbout(title.toLowerCase()),
+        ),
+      ),
+    );
+    if (!mounted || choice != 'ask') return;
+
+    await _askInChat(
+      l10n.careAskQuestion(title),
+      () => _openCareSheet(
+        tone: tone,
         glyph: glyph,
-        tint: tint,
-        foreground: foreground,
         title: title,
         value: value,
         body: body,
         keyValues: keyValues,
         showMoistureScale: showMoistureScale,
-        moistureMin: _plant.idealSoilMoistureMin,
-        moistureMax: _plant.idealSoilMoistureMax,
-        dryLabel: l10n.moistureDry,
-        wetLabel: l10n.moistureWet,
       ),
-    ));
+    );
   }
 
   // Specific issues — padding 16 18 on rgba(255,251,240,.62)
@@ -1660,21 +2221,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            const _Glyph(_Svg.infoCircle, size: 17, color: _kSun),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                l10n.specificIssues,
-                style: _font(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 15.5 * -0.015,
-                  color: _kSun,
+          Row(
+            children: [
+              const _Glyph(_Svg.infoCircle, size: 17, color: _kSun),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  l10n.specificIssues,
+                  style: _font(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 15.5 * -0.015,
+                    color: _kSun,
+                  ),
                 ),
               ),
-            ),
-          ]),
+            ],
+          ),
           const SizedBox(height: 10),
           for (final b in bullets)
             Padding(
@@ -1687,14 +2250,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                     height: 5,
                     margin: const EdgeInsets.only(top: 7),
                     decoration: BoxDecoration(
-                        color: _kSun.withAlpha(166), shape: BoxShape.circle), // .65
+                      color: _kSun.withAlpha(166),
+                      shape: BoxShape.circle,
+                    ), // .65
                   ),
                   const SizedBox(width: 9),
                   Expanded(
                     child: Text(
                       b,
                       style: _font(
-                          fontSize: 13, height: 1.5, color: _kIssuesText),
+                        fontSize: 13,
+                        height: 1.5,
+                        color: _kIssuesText,
+                      ),
                     ),
                   ),
                 ],
@@ -1715,20 +2283,26 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     final growth = _section(CareSection.growthRate);
     final personality = _section(CareSection.personality);
     final toxicity = _section(CareSection.toxicity);
-    final growthBody =
-        [growth, personality].where((s) => s.isNotEmpty).join('\n\n');
+    final growthBody = [
+      growth,
+      personality,
+    ].where((s) => s.isNotEmpty).join('\n\n');
     final description = _plant.aiGeneralDescription?.trim().isNotEmpty ?? false
         ? _plant.aiGeneralDescription!
         : _section(CareSection.generalDescription);
 
     // Short trait chips. interestingFacts are full sentences and already have
     // their own card, so they must not be reused here.
-    final traits = <String>[
-      ?_plant.aiGrowthStage,
-      ?_plant.aiPlantSize,
-      ?_plant.aiPotSize,
-      _lightType(),
-    ].map((s) => s.trim()).where((s) => s.isNotEmpty && s.length <= 28).toList();
+    final traits =
+        <String>[
+              ?_plant.aiGrowthStage,
+              ?_plant.aiPlantSize,
+              ?_plant.aiPotSize,
+              _lightType(),
+            ]
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty && s.length <= 28)
+            .toList();
 
     final cards = <Widget>[
       if (description.isNotEmpty)
@@ -1745,7 +2319,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           glyph: _Svg.trendingUp,
           tint: _kLeafBg,
           foreground: _kAccent,
-          title: '${l10n.careSectionGrowthRate} & '
+          title:
+              '${l10n.careSectionGrowthRate} & '
               '${l10n.careSectionPersonality.toLowerCase()}',
           body: growthBody,
         ),
@@ -1796,26 +2371,25 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            _iconTile(glyph: glyph, tint: tint, foreground: foreground),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(
-                title,
-                style: _font(
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 16.5 * -0.02,
-                  color: _kInk,
+          Row(
+            children: [
+              _iconTile(glyph: glyph, tint: tint, foreground: foreground),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  title,
+                  style: _font(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 16.5 * -0.02,
+                    color: _kInk,
+                  ),
                 ),
               ),
-            ),
-          ]),
-          const SizedBox(height: 11),
-          Text(
-            body,
-            style: _font(fontSize: 14, height: 1.55, color: _kInk2),
+            ],
           ),
+          const SizedBox(height: 11),
+          Text(body, style: _font(fontSize: 14, height: 1.55, color: _kInk2)),
           if (tags.isNotEmpty) ...[
             const SizedBox(height: 13),
             Wrap(
@@ -1824,16 +2398,25 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               children: [
                 for (final t in tags)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xB8FFFFFF), // rgba(255,255,255,.72)
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: const Color(0xD9FFFFFF), width: 0.5),
+                      border: Border.all(
+                        color: const Color(0xD9FFFFFF),
+                        width: 0.5,
+                      ),
                     ),
                     child: Text(
                       t,
                       style: _font(
-                          fontSize: 12, fontWeight: FontWeight.w500, color: _kInk2),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _kInk2,
+                      ),
                     ),
                   ),
               ],
@@ -1873,30 +2456,38 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            _iconTile(glyph: _Svg.sparkle, tint: _kSunBg, foreground: _kSun),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(
-                l10n.interestingFactsTitle,
-                style: _font(
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 16.5 * -0.02,
-                  color: _kInk,
+          Row(
+            children: [
+              _iconTile(glyph: _Svg.sparkle, tint: _kSunBg, foreground: _kSun),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  l10n.interestingFactsTitle,
+                  style: _font(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 16.5 * -0.02,
+                    color: _kInk,
+                  ),
                 ),
               ),
-            ),
-          ]),
+            ],
+          ),
           for (var i = 0; i < items.length; i++)
             Padding(
               padding: EdgeInsets.only(top: i == 0 ? 13 : 10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0x99FFFFFF), // rgba(255,255,255,.6)
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xCCFFFFFF), width: 0.5),
+                  border: Border.all(
+                    color: const Color(0xCCFFFFFF),
+                    width: 0.5,
+                  ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1905,15 +2496,16 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                       width: 6,
                       height: 6,
                       margin: const EdgeInsets.only(top: 7),
-                      decoration:
-                          const BoxDecoration(color: _kAccent, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(
+                        color: _kAccent,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         items[i],
-                        style: _font(
-                            fontSize: 13, height: 1.5, color: _kInk2),
+                        style: _font(fontSize: 13, height: 1.5, color: _kInk2),
                       ),
                     ),
                   ],
@@ -1945,46 +2537,34 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: Row(children: [
-                      const _Glyph(_Svg.gallery, size: 17, color: _kWater),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: Text(
-                          l10n.healthCheckHistoryTitle,
-                          style: _font(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 16 * -0.02,
-                            color: _kWater,
-                          ),
-                        ),
-                      ),
-                      _PressScale(
-                        scale: 0.94,
-                        onTap: _canDoHealthCheck() ? _openHealthCheckModal : null,
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: _kWater.withAlpha(36), // .14
-                            borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: const Color(0xB3FFFFFF), width: 0.5),
-                          ),
-                          child: Center(
-                            child: _Glyph(
-                              _Svg.plus,
-                              size: 17,
-                              color: _canDoHealthCheck()
-                                  ? _kWater
-                                  : _kWater.withAlpha(68),
+                    child: Row(
+                      children: [
+                        const _Glyph(_Svg.gallery, size: 17, color: _kWater),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            l10n.healthCheckHistoryTitle,
+                            style: _font(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 16 * -0.02,
+                              color: _kWater,
                             ),
                           ),
                         ),
-                      ),
-                    ]),
+                        // No "+" here: SPEC 3.4 leaves exactly two entry points to
+                        // the analysis — the widget button and the health chip.
+                        // History is for reading, so a third one only made the
+                        // check-per-cycle budget harder to reason about.
+                      ],
+                    ),
                   ),
-                  if (checks.isEmpty)
+                  // An failed query and a genuinely empty history used to render
+                  // the same "no checks yet" state, which is how a broken read
+                  // stayed invisible.
+                  if (snap.hasError)
+                    _buildHistoryError(snap.error!)
+                  else if (checks.isEmpty)
                     _buildEmptyHistory()
                   else
                     for (final c in checks.take(5)) _buildHistoryRow(c),
@@ -2000,6 +2580,37 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
   }
 
   // padding 26 10 8 · 56 px circle · title 15.5/600 · copy 13, max-width 210
+  /// Shown when the history query itself fails. The message is intentionally the
+  /// raw error: this is a state the user should report, not one they can fix.
+  Widget _buildHistoryError(Object error) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 6),
+      child: Column(
+        children: [
+          const _Glyph(_Svg.warningTriangle, size: 24, color: _kWarm),
+          const SizedBox(height: 10),
+          Text(
+            l10n.healthHistoryLoadFailed,
+            textAlign: TextAlign.center,
+            style: _font(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w600,
+              color: _kInk,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$error',
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: _font(fontSize: 12, color: _kMut),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyHistory() {
     return Padding(
       // .hempty padding 26 10 8, inside the card's own 18 px horizontal inset.
@@ -2009,8 +2620,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           Container(
             width: 56,
             height: 56,
-            decoration:
-                BoxDecoration(color: _kWater.withAlpha(26), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: _kWater.withAlpha(26),
+              shape: BoxShape.circle,
+            ),
             child: const Center(
               child: _Glyph(_Svg.gallery, size: 24, color: _kWater),
             ),
@@ -2019,7 +2632,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           Text(
             l10n.noHealthChecksYet,
             style: _font(
-                fontSize: 15.5, fontWeight: FontWeight.w600, color: _kInk),
+              fontSize: 15.5,
+              fontWeight: FontWeight.w600,
+              color: _kInk,
+            ),
           ),
           const SizedBox(height: 7),
           ConstrainedBox(
@@ -2062,11 +2678,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: imgUrl != null && imgUrl.isNotEmpty
-                  ? Image.network(imgUrl,
+                  ? Image.network(
+                      imgUrl,
                       width: 46,
                       height: 46,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _historyThumbFallback())
+                      errorBuilder: (_, __, ___) => _historyThumbFallback(),
+                    )
                   : _historyThumbFallback(),
             ),
             const SizedBox(width: 12),
@@ -2075,11 +2693,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    DateFormat.yMMMd().format(record.timestamp),
+                    DateFormat.yMMMd(_localeTag).format(record.timestamp),
                     style: _font(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: _kInk),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: _kInk,
+                    ),
                   ),
                   const SizedBox(height: 1),
                   Text(
@@ -2091,6 +2710,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                 ],
               ),
             ),
+            if (record.score != null) ...[
+              _scorePill(record.score!),
+              const SizedBox(width: 8),
+            ],
             const _Glyph(_Svg.chevronRight, size: 15, color: _kChev),
           ],
         ),
@@ -2098,12 +2721,34 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     );
   }
 
+  /// Score badge on a timeline row. Green above the healthy floor, amber below —
+  /// the same threshold the backend ties `health_score` to `status`, so the pill
+  /// never disagrees with the verdict next to it.
+  Widget _scorePill(int score) {
+    final good = score >= kHealthyScoreFloor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: good ? _kLeafBg : kGlassAttnBg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$score',
+        style: _font(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: good ? _kAccent : const Color(0xFFA5701A),
+        ),
+      ),
+    );
+  }
+
   String _severityLabel(String raw) => switch (raw.toLowerCase().trim()) {
-        'low' || 'mild' || 'minor' => l10n.severityLow,
-        'medium' || 'moderate' => l10n.severityMedium,
-        'high' || 'severe' || 'critical' => l10n.severityHigh,
-        _ => raw,
-      };
+    'low' || 'mild' || 'minor' => l10n.severityLow,
+    'medium' || 'moderate' => l10n.severityMedium,
+    'high' || 'severe' || 'critical' => l10n.severityHigh,
+    _ => raw,
+  };
 
   /// Expands a stored check into the same glass sheet the care rows use. The
   /// analyzer writes one of two shapes — a praise/summary pair when the plant
@@ -2113,6 +2758,17 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     Map<String, dynamic>? assistant,
   ) {
     HapticFeedback.selectionClick();
+
+    // Checks recorded since scoring landed get the full result view — the same
+    // one a fresh analysis shows. Older records have none of those fields and
+    // fall through to the prose sheet below.
+    if (record.score != null ||
+        record.findings.isNotEmpty ||
+        record.recommendations.isNotEmpty) {
+      _openStoredResultSheet(record);
+      return;
+    }
+
     final ok = record.status == 'ok';
 
     String? text(String key) {
@@ -2120,7 +2776,8 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       return (v == null || v.isEmpty) ? null : v;
     }
 
-    final steps = (assistant?['action_steps'] as List?)
+    final steps =
+        (assistant?['action_steps'] as List?)
             ?.map((s) => s.toString().trim())
             .where((s) => s.isNotEmpty)
             .map((s) => '• $s') ??
@@ -2140,38 +2797,43 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
     final severity = text('severity');
     final followUp = assistant?['follow_up_days'];
-    final followUpDays =
-        followUp is int ? followUp : int.tryParse('${followUp ?? ''}');
+    final followUpDays = followUp is int
+        ? followUp
+        : int.tryParse('${followUp ?? ''}');
 
-    Navigator.of(context).push(_CareSheetRoute(
-      builder: (_) => _CareDetailSheet(
-        glyph: ok ? _Svg.check : _Svg.warningTriangle,
-        tint: ok ? _kLeafBg : _kWarmBg,
-        foreground: ok ? _kAccent : _kWarm,
-        title: _verdictOf(record, assistant),
-        value: DateFormat.yMMMMd().add_jm().format(record.timestamp),
-        body: body.isNotEmpty ? body : l10n.noDataAvailable,
-        keyValues: [
-          if (severity != null)
-            (l10n.healthCheckSeverity, _severityLabel(severity)),
-          if (followUpDays != null && followUpDays > 0)
-            (l10n.healthCheckFollowUp, l10n.nDays(followUpDays)),
-        ],
-        imageUrl: _checkImageUrl(record),
-        dryLabel: l10n.moistureDry,
-        wetLabel: l10n.moistureWet,
+    Navigator.of(context).push(
+      _CareSheetRoute(
+        builder: (_) => _CareDetailSheet(
+          glyph: ok ? _Svg.check : _Svg.warningTriangle,
+          tint: ok ? _kLeafBg : _kWarmBg,
+          foreground: ok ? _kAccent : _kWarm,
+          title: _verdictOf(record, assistant),
+          value: DateFormat.yMMMMd(
+            _localeTag,
+          ).add_jm().format(record.timestamp),
+          body: body.isNotEmpty ? body : l10n.noDataAvailable,
+          keyValues: [
+            if (severity != null)
+              (l10n.healthCheckSeverity, _severityLabel(severity)),
+            if (followUpDays != null && followUpDays > 0)
+              (l10n.healthCheckFollowUp, l10n.nDays(followUpDays)),
+          ],
+          imageUrl: _checkImageUrl(record),
+          dryLabel: l10n.moistureDry,
+          wetLabel: l10n.moistureWet,
+        ),
       ),
-    ));
+    );
   }
 
   Widget _historyThumbFallback() => Container(
-        width: 46,
-        height: 46,
-        color: _kLeafBg,
-        child: Center(
-          child: _Glyph(_Svg.flower, size: 20, color: _kAccent.withAlpha(153)),
-        ),
-      );
+    width: 46,
+    height: 46,
+    color: _kLeafBg,
+    child: Center(
+      child: _Glyph(_Svg.flower, size: 20, color: _kAccent.withAlpha(153)),
+    ),
+  );
 
   // rgba(255,255,255,.55) + blur(20px) · .5px rgba(198,86,68,.28) · 14/600
   Widget _deleteButton() {
@@ -2187,7 +2849,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
             decoration: BoxDecoration(
               color: const Color(0x8CFFFFFF),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _kWarm.withAlpha(71), width: 0.5), // .28
+              border: Border.all(
+                color: _kWarm.withAlpha(71),
+                width: 0.5,
+              ), // .28
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -2197,7 +2862,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
                 Text(
                   l10n.deletePlant,
                   style: _font(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: _kWarm),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _kWarm,
+                  ),
                 ),
               ],
             ),
@@ -2292,7 +2960,8 @@ class _DropletBurstState extends State<_DropletBurst>
     super.didUpdateWidget(old);
     if (widget.trigger != old.trigger && widget.trigger > 0) {
       _drops = List.generate(_count, (_) {
-        final delayFraction = _rng.nextDouble() *
+        final delayFraction =
+            _rng.nextDouble() *
             (_maxDelay.inMilliseconds / _ctrl.duration!.inMilliseconds);
         return (
           0.10 + _rng.nextDouble() * 0.78, // left 10–88%
@@ -2330,8 +2999,11 @@ class _DropletBurstState extends State<_DropletBurst>
             clipBehavior: Clip.none,
             children: [
               for (final (left, top, delay) in _drops)
-                _droplet(c.maxWidth * left, top,
-                    ((_ctrl.value - delay) / span).clamp(0.0, 1.0)),
+                _droplet(
+                  c.maxWidth * left,
+                  top,
+                  ((_ctrl.value - delay) / span).clamp(0.0, 1.0),
+                ),
             ],
           ),
         );
@@ -2576,10 +3248,11 @@ class _LiquidSegmentedControl extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: const [
                     BoxShadow(
-                        color: Color(0x47141E0F),
-                        blurRadius: 12,
-                        spreadRadius: -4,
-                        offset: Offset(0, 4)),
+                      color: Color(0x47141E0F),
+                      blurRadius: 12,
+                      spreadRadius: -4,
+                      offset: Offset(0, 4),
+                    ),
                   ],
                 ),
                 // inset 0 1px 0 #fff
@@ -2675,9 +3348,11 @@ class _CareSheetRoute<T> extends PopupRoute<T> {
   // to supply a DefaultTextStyle — without one, text inherits WidgetsApp's debug
   // error style and picks up its yellow double underline.
   @override
-  Widget buildPage(BuildContext context, Animation<double> animation,
-          Animation<double> secondaryAnimation) =>
-      Material(type: MaterialType.transparency, child: builder(context));
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) => Material(type: MaterialType.transparency, child: builder(context));
 }
 
 /// Inset floating sheet: 8 px insets, radius 34, max-height 76%,
@@ -2701,6 +3376,10 @@ class _CareDetailSheet extends StatefulWidget {
   final String wetLabel;
   final String? imageUrl;
 
+  /// Label of the "ask assistant" row. Empty hides it — the sheet is also used
+  /// for cards that have nothing to ask about.
+  final String askLabel;
+
   const _CareDetailSheet({
     required this.glyph,
     required this.tint,
@@ -2711,6 +3390,7 @@ class _CareDetailSheet extends StatefulWidget {
     required this.keyValues,
     required this.dryLabel,
     required this.wetLabel,
+    this.askLabel = '',
     this.imageUrl,
     this.showMoistureScale = false,
     this.moistureMin,
@@ -2767,7 +3447,9 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
       animation: animation ?? const AlwaysStoppedAnimation(1.0),
       builder: (context, _) {
         final raw = animation?.value ?? 1.0;
-        final rise = _kSheetCurve.transform(raw.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+        final rise = _kSheetCurve
+            .transform(raw.clamp(0.0, 1.0))
+            .clamp(0.0, 1.0);
         // Scrim fades over 300 ms of the 420 ms enter.
         final scrimT = Curves.easeOut.transform((raw / 0.71).clamp(0.0, 1.0));
 
@@ -2815,10 +3497,11 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
           borderRadius: BorderRadius.all(Radius.circular(34)),
           boxShadow: [
             BoxShadow(
-                color: Color(0x6614200F),
-                blurRadius: 50,
-                spreadRadius: -18,
-                offset: Offset(0, -20)),
+              color: Color(0x6614200F),
+              blurRadius: 50,
+              spreadRadius: -18,
+              offset: Offset(0, -20),
+            ),
           ],
         ),
         child: ClipRRect(
@@ -2847,7 +3530,9 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                           height: 5,
                           margin: const EdgeInsets.only(top: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0x29141E0F), // rgba(20,30,15,.16)
+                            color: const Color(
+                              0x29141E0F,
+                            ), // rgba(20,30,15,.16)
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -2867,12 +3552,24 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                           for (var i = 0; i < paragraphs.length; i++)
                             Padding(
                               padding: EdgeInsets.only(
-                                  bottom: i == paragraphs.length - 1 ? 0 : 12),
+                                bottom: i == paragraphs.length - 1 ? 0 : 12,
+                              ),
                               child: Text(
                                 paragraphs[i],
                                 style: _font(
-                                    fontSize: 15, height: 1.6, color: _kInk2),
+                                  fontSize: 15,
+                                  height: 1.6,
+                                  color: _kInk2,
+                                ),
                               ),
+                            ),
+                          if (widget.askLabel.isNotEmpty)
+                            BotanlyAskRow(
+                              label: widget.askLabel,
+                              // Popped with a result rather than pushing the
+                              // chat from here: the host owns the return trip
+                              // back to this sheet (SPEC 1.4).
+                              onTap: () => Navigator.of(context).pop('ask'),
                             ),
                         ],
                       ),
@@ -2940,7 +3637,10 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                 if (widget.value.isNotEmpty) ...[
                   const SizedBox(height: 5),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: widget.tint,
                       borderRadius: BorderRadius.circular(999),
@@ -2948,9 +3648,10 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                     child: Text(
                       widget.value,
                       style: _font(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: widget.foreground),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: widget.foreground,
+                      ),
                     ),
                   ),
                 ],
@@ -2989,11 +3690,17 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
             if (i > 0) const SizedBox(width: 8),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 11,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xB3FFFFFF),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xE6FFFFFF), width: 0.5),
+                  border: Border.all(
+                    color: const Color(0xE6FFFFFF),
+                    width: 0.5,
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -3016,7 +3723,10 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: _font(
-                          fontSize: 14.5, fontWeight: FontWeight.w600, color: _kInk),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: _kInk,
+                      ),
                     ),
                   ],
                 ),
@@ -3051,12 +3761,14 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.all(Radius.circular(5)),
-                        gradient: LinearGradient(colors: [
-                          Color(0xFFE8D3A6),
-                          Color(0xFFA9CE8C),
-                          Color(0xFF3E8E3B),
-                          Color(0xFF2E86C8),
-                        ]),
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFE8D3A6),
+                            Color(0xFFA9CE8C),
+                            Color(0xFF3E8E3B),
+                            Color(0xFF2E86C8),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -3072,9 +3784,10 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
                         border: Border.all(color: _kAccent, width: 3),
                         boxShadow: const [
                           BoxShadow(
-                              color: Color(0x38000000),
-                              blurRadius: 8,
-                              offset: Offset(0, 2)),
+                            color: Color(0x38000000),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
                         ],
                       ),
                     ),
@@ -3087,13 +3800,10 @@ class _CareDetailSheetState extends State<_CareDetailSheet>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(widget.dryLabel,
-                  style: _font(fontSize: 11, color: _kMut2)),
+              Text(widget.dryLabel, style: _font(fontSize: 11, color: _kMut2)),
               if (min != null && max != null)
-                Text('$min–$max%',
-                    style: _font(fontSize: 11, color: _kMut2)),
-              Text(widget.wetLabel,
-                  style: _font(fontSize: 11, color: _kMut2)),
+                Text('$min–$max%', style: _font(fontSize: 11, color: _kMut2)),
+              Text(widget.wetLabel, style: _font(fontSize: 11, color: _kMut2)),
             ],
           ),
         ],
@@ -3127,10 +3837,11 @@ class _MoreMenuSheet extends StatelessWidget {
         borderRadius: BorderRadius.all(Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-              color: Color(0x6614200F),
-              blurRadius: 50,
-              spreadRadius: -18,
-              offset: Offset(0, -20)),
+            color: Color(0x6614200F),
+            blurRadius: 50,
+            spreadRadius: -18,
+            offset: Offset(0, -20),
+          ),
         ],
       ),
       child: ClipRRect(
@@ -3157,7 +3868,11 @@ class _MoreMenuSheet extends StatelessWidget {
                 ),
                 _item(_Svg.edit, _kAccent, editLabel, _kInk, onEdit),
                 const Divider(
-                    height: 1, indent: 20, endIndent: 20, color: Color(0x12141E0F)),
+                  height: 1,
+                  indent: 20,
+                  endIndent: 20,
+                  color: Color(0x12141E0F),
+                ),
                 _item(_Svg.trash, _kWarm, deleteLabel, _kWarm, onDelete),
                 SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
               ],
@@ -3168,22 +3883,32 @@ class _MoreMenuSheet extends StatelessWidget {
     );
   }
 
-  Widget _item(String glyph, Color iconColor, String label, Color textColor,
-      VoidCallback onTap) {
+  Widget _item(
+    String glyph,
+    Color iconColor,
+    String label,
+    Color textColor,
+    VoidCallback onTap,
+  ) {
     return _PressScale(
       scale: 0.99,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(children: [
-          _Glyph(glyph, size: 20, color: iconColor),
-          const SizedBox(width: 14),
-          Text(
-            label,
-            style: _font(
-                fontSize: 16, fontWeight: FontWeight.w500, color: textColor),
-          ),
-        ]),
+        child: Row(
+          children: [
+            _Glyph(glyph, size: 20, color: iconColor),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: _font(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

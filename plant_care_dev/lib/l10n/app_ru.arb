@@ -33,7 +33,7 @@
   "getNotifiedWhenPlantsNeedWater": "Получайте уведомления, когда растениям нужен полив",
   "quietHours": "Тихие часы",
   "maxNotificationsPerDay": "Макс. уведомлений в день",
-  "notificationsCount": "{count} уведомлений",
+  "notificationsCount": "{count, plural, one{{count} уведомление} few{{count} уведомления} many{{count} уведомлений} other{{count} уведомления}}",
   "@notificationsCount": {
     "placeholders": {
       "count": {
@@ -153,7 +153,7 @@
   "onceEvery7Days": "Раз в 7 дней",
   "oncePerDay": "Раз в день",
   "oncePerWeek": "Раз в неделю",
-  "onceEveryNDays": "Раз в {days} дней",
+  "onceEveryNDays": "{days, plural, one{Каждый день} few{Раз в {days} дня} many{Раз в {days} дней} other{Раз в {days} дня}}",
   "@onceEveryNDays": {
     "placeholders": {
       "days": {
@@ -161,7 +161,7 @@
       }
     }
   },
-  "onceEveryNWeeks": "Раз в {weeks} недель",
+  "onceEveryNWeeks": "{weeks, plural, one{Каждую неделю} few{Раз в {weeks} недели} many{Раз в {weeks} недель} other{Раз в {weeks} недели}}",
   "@onceEveryNWeeks": {
     "placeholders": {
       "weeks": {
@@ -286,7 +286,7 @@
   "healthy": "Здоровые",
   "yourPlants": "Мои растения",
   "plantCreatedSuccessfully": "Растение успешно создано! 🌱",
-  "searchPlantsHint": "Поиск растений…",
+  "searchPlantsHint": "Поиск по имени или виду",
   "filterAll": "Все",
   "filterOverdue": "Просрочено",
   "noResultsTitle": "Ничего не найдено",
@@ -393,7 +393,7 @@
   "uploadPhotosToTrackHealth": "Загружайте фото для отслеживания здоровья растения",
   "today": "Сегодня",
   "yesterday": "Вчера",
-  "nDaysAgo": "{days} дней назад",
+  "nDaysAgo": "{days, plural, one{{days} день назад} few{{days} дня назад} many{{days} дней назад} other{{days} дня назад}}",
   "@nDaysAgo": {
     "placeholders": {
       "days": {
@@ -494,7 +494,7 @@
   "wateringLabel": "Полив",
   "nowLabel": "Сейчас",
   "nextIn1Day": "Следующий через 1 день",
-  "nextInNDays": "Следующий через {days} дней",
+  "nextInNDays": "{days, plural, one{Следующий через {days} день} few{Следующий через {days} дня} many{Следующий через {days} дней} other{Следующий через {days} дня}}",
   "@nextInNDays": {
     "placeholders": {
       "days": {
@@ -553,7 +553,7 @@
       }
     }
   },
-  "subscriptionTrialDaysLeft": "Осталось {days} дней",
+  "subscriptionTrialDaysLeft": "{days, plural, one{Остался {days} день} few{Осталось {days} дня} many{Осталось {days} дней} other{Осталось {days} дня}}",
   "@subscriptionTrialDaysLeft": {
     "placeholders": {
       "days": {
@@ -610,6 +610,7 @@
   },
   "paywallStartPremium": "Начать Premium",
   "paywallSecured": "Защищено Stripe",
+  "paywallSecuredApple": "Защищено",
   "paywallCancelAnytime": "Отмена в любое время",
   "paywallAutoRenews": "автопродление",
   "stripeSuccessTitle": "Подписка активирована!",
@@ -673,7 +674,7 @@
   "subMetaActivePlan": "АКТИВНЫЙ ПЛАН",
   "subMetaForeverPremium": "ВЕЧНЫЙ ПРЕМИУМ",
   "subMetaTrialEnded": "ПРОБНЫЙ ПЕРИОД ЗАВЕРШЁН",
-  "subMetaNDayPreview": "ПРЕДПРОСМОТР {n} ДНЕЙ",
+  "subMetaNDayPreview": "{n, plural, one{ПРЕДПРОСМОТР {n} ДЕНЬ} few{ПРЕДПРОСМОТР {n} ДНЯ} many{ПРЕДПРОСМОТР {n} ДНЕЙ} other{ПРЕДПРОСМОТР {n} ДНЯ}}",
   "@subMetaNDayPreview": {
     "placeholders": {
       "n": {
@@ -843,5 +844,551 @@
   "careKvSeason": "Сезон",
   "careKvOptimal": "Оптимум",
   "careKvMinimum": "Минимум",
-  "careKvDose": "Доза"
+  "careKvDose": "Доза",
+  "healthAnalyzeCta": "Проверить состояние",
+  "healthNeedsAttention": "Требует внимания",
+  "healthStatusHealthy": "Здоровое растение",
+  "healthWhatToDo": "Что сделать",
+  "healthClose": "Закрыть",
+  "healthNotSavedYet": "Проверка ещё не в истории",
+  "healthAskAssistant": "Спросить AI",
+  "healthAddedToPlan": "Добавлено в план",
+  "healthLockedNeedsWatering": "Отметьте полив, чтобы проверить снова",
+  "healthLockedLimitReached": "Проверки на этот цикл исчерпаны",
+  "healthAdviceSub": "Посмотреть, что сделать",
+  "healthAnalyzingTitle": "Анализируем…",
+  "healthStepRecognize": "Распознаём растение",
+  "healthStepCompare": "Сравниваем с прошлыми проверками",
+  "healthStepAdvice": "Формируем рекомендации",
+  "healthStepPhotos": "{count, plural, one{{count} фото получено} few{{count} фото получено} other{{count} фото получено}}",
+  "healthAdviceTitle": "{count, plural, one{{count} рекомендация после проверки} few{{count} рекомендации после проверки} other{{count} рекомендаций после проверки}}",
+  "healthHistoryLoadFailed": "Не удалось загрузить историю",
+  "healthUpToThreePhotos": "До 3 фото",
+  "healthResultTitle": "Результат",
+  "taskAllDone": "Всё сделано — растение в порядке",
+  "taskBadgeScheduled": "По расписанию",
+  "taskBadgeAnalysis": "После анализа",
+  "taskBadgeOverdue": "{days, plural, one{Просрочено {days} день} few{Просрочено {days} дня} many{Просрочено {days} дней} other{Просрочено {days} дня}}",
+  "taskDone": "Готово",
+  "taskDoneAlready": "Сделано",
+  "taskLater": "Позже",
+  "taskAskAssistant": "Спросить ассистента",
+  "taskAskQuestion": "Что нужно сделать по задаче «{title}»?",
+  "homeGardenTitleLead": "Твой",
+  "homeGardenTitleAccent": "сад",
+  "gardenHealthLabel": "Здоровье сада",
+  "gardenAllGood": "Все растения в порядке",
+  "gardenOneWeak": "{name} тянет сад вниз",
+  "gardenManyWeak": "{count, plural, one{{count} растению нужен твой уход} few{{count} растениям нужен твой уход} other{{count} растениям нужен твой уход}}",
+  "homeOrbitHint": "Нажми на растение, чтобы открыть его",
+  "homeAllTasksLink": "Все задачи",
+  "deckAllClearTitle": "Сад в порядке",
+  "taskOverdueShort": "{days, plural, one{{days} день} few{{days} дня} other{{days} дней}}",
+  "taskPostponed": "Отложено",
+  "allTasksTitle": "Все задачи",
+  "allTasksSubtitle": "{today} сегодня · {later} дальше",
+  "allTasksToday": "Сегодня",
+  "allTasksLater": "Дальше",
+  "allTasksRuleNote": "Новые задачи не появятся, пока не разберёшься с сегодняшними.",
+  "allTasksNothingToday": "На сегодня всё закрыто",
+  "whenTomorrow": "Завтра",
+  "whenInAWeek": "Через неделю",
+  "whenInNDays": "{days, plural, one{Через {days} день} few{Через {days} дня} other{Через {days} дней}}",
+  "careAskAbout": "Спросить ассистента про {title}",
+  "careAskQuestion": "Расскажи подробнее про «{title}» для моего растения",
+  "healthAskQuestionIssue": "Что сделать по результатам анализа в первую очередь?",
+  "healthAskQuestionOk": "Анализ показал, что растение здорово — что можно улучшить?",
+  "glassesOne": "1 стакан",
+  "glassesAmount": "{value} стакана",
+  "addPlantStepOf": "Шаг {step} из {total}",
+  "addPlantTitleLead": "Добавить",
+  "addPlantTitleAccent": "растение",
+  "addPlantNameHint": "Как будешь звать этот цветок — Моня, Фикусыч, Monstera. Кубик придумает за тебя.",
+  "addPlantPhotosTitle": "Фотографии",
+  "addPlantWholePlant": "Всё растение",
+  "addPlantWholePlantHint": "с горшком и почвой",
+  "addPlantRequired": "Нужно",
+  "addPlantTwoAnglesHint": "Два ракурса помогают точнее определить вид — второе фото не обязательно, но повышает точность.",
+  "addPlantTipLight": "хороший свет",
+  "addPlantTipLeaves": "видно листья",
+  "addPlantTipSingle": "одно растение",
+  "addPlantIdentifyCta": "Определить вид",
+  "addPlantRandomNames": "Моня|Фикусыч|Зелёныш|Кактус Петрович|Листик|Бобо|Тихон|Пушок",
+  "addPlantIsThisYourPlant": "Это твоё растение?",
+  "addPlantPickSpeciesHint": "Выбери подходящий вариант — от этого зависит план ухода.",
+  "addPlantNoneMatch": "Ничего не подходит — введу сам",
+  "addPlantManualHint": "Введи название вида — поищем заново по нему.",
+  "addPlantManualPlaceholder": "Например, Monstera deliciosa",
+  "addPlantBuildPlanCta": "Составить план ухода",
+  "addPlantStartingScore": "Стартовый балл {score}",
+  "addPlantPlanWatering": "Полив",
+  "addPlantPlanLight": "Свет",
+  "addPlantPlanSoil": "Почва",
+  "addPlantSoilSlightlyMoist": "Слегка влажная",
+  "addPlantEveryNDays": "{days, plural, one{Раз в {days} день} few{Раз в {days} дня} other{Раз в {days} дней}}",
+  "addPlantCarePlan": "План ухода",
+  "addPlantNTasks": "{count, plural, one{{count} задача} few{{count} задачи} other{{count} задач}}",
+  "addPlantFirstWatering": "Первый полив",
+  "addPlantToday": "сегодня",
+  "addPlantWaterToday": "сегодня",
+  "addPlantFertilising": "Подкормка",
+  "addPlantFertilisingDetail": "Через 2 недели · половинная доза",
+  "addPlantHealthCheck": "Проверка здоровья",
+  "addPlantHealthCheckDetail": "Через месяц · 1–3 фото",
+  "addPlantAddToGarden": "Добавить в сад",
+  "addPlantNoSpeciesFound": "Не удалось распознать растение. Попробуй другое фото.",
+  "addPlantNoPlan": "Не удалось составить план ухода. Попробуй ещё раз.",
+  "addPlantLoaderPhotos": "Фото получены",
+  "addPlantLoaderIdentify": "Определяем вид",
+  "addPlantLoaderPlan": "Составляем план ухода",
+  "myPlantsTitleLead": "Мои",
+  "myPlantsTitleAccent": "растения",
+  "myPlantsCount": "{count, plural, one{{count} растение} few{{count} растения} other{{count} растений}}",
+  "myPlantsEmptyLabel": "Пока пусто",
+  "filterTomorrow": "Завтра",
+  "filterNeedsCare": "Нужен уход",
+  "myPlantsNothingFound": "Ничего не найдено",
+  "myPlantsNothingFoundHint": "Попробуйте другое имя или вид.",
+  "myPlantsAllClearTitle": "Всё в порядке",
+  "myPlantsAllClearHint": "Сейчас в этой группе пусто — не о чем беспокоиться.",
+  "addFirstPlantHint": "Добавьте первое растение для начала",
+  "subHeroActiveLead": "Сад",
+  "subHeroActiveAccent": "под присмотром",
+  "subHeroForeverLead": "Премиум",
+  "subHeroForeverAccent": "навсегда",
+  "subHeroEndedLead": "Пробный период",
+  "subHeroEndedAccent": "завершён",
+  "subMetaNoCharges": "Без списаний",
+  "subFootAutoRenew": "Автопродление включено · Можно отменить",
+  "subFootTrial": "Без ограничений · AI-уход · Напоминания",
+  "subFootForever": "Все возможности открыты",
+  "subFootFree": "Ограниченный доступ · Без AI-ухода",
+  "subCtaDetails": "Детали",
+  "subCtaResume": "Возобновить",
+  "subTrialUntil": "Пробный период до {date}",
+  "subEndedOn": "Закончился {date}",
+  "subscriptionManageTitle": "Подписка",
+  "subscriptionPlanLabel": "План",
+  "subscriptionNextChargeLabel": "Следующее списание",
+  "subscriptionAutoRenewLabel": "Автопродление",
+  "subscriptionAutoRenewOn": "Включено",
+  "subscriptionAutoRenewOff": "Выключено",
+  "subscriptionManageInStore": "Списаниями управляет App Store. Изменить или отменить подписку можно в Настройках → Apple ID → Подписки.",
+  "deleteAccountContinue": "Продолжить",
+  "deleteAccountKeyword": "УДАЛИТЬ",
+  "deleteAccountTypeWord": "Введите {word} для подтверждения.",
+  "settingsSavedToast": "Настройки сохранены!",
+  "quietHoursUpdatedToast": "Тихие часы обновлены!",
+  "signedInChip": "Вы вошли",
+  "securityLabel": "Безопасность",
+  "emailNotificationsLabel": "Email",
+  "changePasswordHint": "Минимум 6 символов",
+  "quietHoursNeedsPush": "Включите push, чтобы использовать тихие часы",
+  "quietHoursFrom": "С",
+  "quietHoursTo": "До",
+  "quietHoursSummary": "{hours, plural, one{Уведомления не придут {hours} час подряд} few{Уведомления не придут {hours} часа подряд} other{Уведомления не придут {hours} часов подряд}}",
+  "passwordTooShortError": "Новый пароль должен быть не короче 6 символов.",
+  "passwordSameAsCurrentError": "Новый пароль должен отличаться от текущего.",
+  "passwordsDoNotMatchError": "Пароли не совпадают.",
+  "passwordCurrentWrongError": "Текущий пароль неверный.",
+  "subscriptionLoading": "Загружаем ваш план…",
+  "editPlantTitle": "Редактирование",
+  "newPhotoBadge": "Новое фото",
+  "revertPhoto": "Вернуть прежнее фото",
+  "editPlantNameHint": "Так растение будет называться в саду и в напоминаниях",
+  "aiManagedNote": "Вид и план ухода определяет ИИ — они обновляются после нового анализа здоровья.",
+  "noPhotoYet": "Фото пока нет",
+  "gardenLoadError": "Не удалось загрузить сад. Проверь соединение и попробуй ещё раз.",
+  "pullToRefreshHint": "Потяни вниз, чтобы обновить",
+  "refreshingGarden": "Собираем данные сада…",
+  "refreshFailed": "Не удалось обновить. Проверь соединение.",
+  "addPlantHeaderPhoto": "Добавить {accent}",
+  "@addPlantHeaderPhoto": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPhotoAccent": "растение",
+  "addPlantHeaderSpecies": "Уточним {accent}",
+  "@addPlantHeaderSpecies": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderSpeciesAccent": "вид",
+  "addPlantHeaderConditions": "Про {accent}",
+  "@addPlantHeaderConditions": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderConditionsAccent": "условия",
+  "addPlantHeaderPlan": "План {accent}",
+  "@addPlantHeaderPlan": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPlanAccent": "ухода",
+  "addPlantBack": "Назад",
+  "quizQuestionOf": "Вопрос {step} из {total}",
+  "@quizQuestionOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quizNext": "Далее",
+  "quizBuildPlan": "Составить план",
+  "quizPotQuestion": "Какого {accent} горшок?",
+  "@quizPotQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotQuestionAccent": "диаметра",
+  "quizPotWhy": "От объёма грунта зависит, сколько воды нужно за один полив.",
+  "quizPotHint": "Диаметр по краю горшка, а не по растению.",
+  "unitCm": "см",
+  "volumeMl": "{value} мл",
+  "@volumeMl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLitres": "{value} л",
+  "@volumeLitres": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotPerWatering": "{volume} за полив",
+  "@quizPotPerWatering": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestion": "Из чего горшок и есть ли {accent}?",
+  "@quizMaterialQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestionAccent": "дренаж",
+  "quizMaterialWhy": "Терракота сохнет вдвое быстрее пластика. Без отверстий растёт риск корневой гнили.",
+  "quizMatPlastic": "Пластик",
+  "quizMatPlasticDesc": "Держит влагу дольше",
+  "quizMatCeramic": "Керамика",
+  "quizMatCeramicDesc": "С глазурью, не дышит",
+  "quizMatTerracotta": "Терракота",
+  "quizMatTerracottaDesc": "Дышит, сохнет быстро",
+  "quizMatUnknown": "Не знаю",
+  "quizMatUnknownDesc": "Возьмём среднее",
+  "quizDrainageLabel": "Отверстия для воды",
+  "quizDrainageYes": "Есть",
+  "quizDrainageYesDesc": "Лишняя вода уходит в поддон",
+  "quizDrainageNo": "Нет",
+  "quizDrainageNoDesc": "Вода застаивается у корней",
+  "quizPlaceQuestion": "Где растение {accent}?",
+  "@quizPlaceQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPlaceQuestionAccent": "стоит",
+  "quizPlaceWhy": "Так мы поймём, сколько света оно реально получает — и нужно ли притенение.",
+  "quizPlaceSouth": "Юг",
+  "quizPlaceSouthDesc": "Подоконник, много солнца",
+  "quizPlaceEast": "Восток / запад",
+  "quizPlaceEastDesc": "Мягкое утреннее солнце",
+  "quizPlaceNorth": "Север",
+  "quizPlaceNorthDesc": "Свет есть, солнца нет",
+  "quizPlaceRoom": "В глубине комнаты",
+  "quizPlaceRoomDesc": "Далеко от окна",
+  "quizPlaceBalcony": "Балкон",
+  "quizPlaceBalconyDesc": "Улица, сезонно",
+  "quizPlaceBath": "Ванная",
+  "quizPlaceBathDesc": "Влажно, мало света",
+  "quizHeatLabel": "Рядом батарея или кондиционер",
+  "quizHeatNo": "Нет",
+  "quizHeatNoDesc": "Обычный воздух в комнате",
+  "quizHeatYes": "Да",
+  "quizHeatYesDesc": "Пересушивает грунт и воздух",
+  "quizWaterQuestion": "Когда {accent} поливал?",
+  "@quizWaterQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizWaterQuestionAccent": "последний раз",
+  "quizWaterWhy": "От этого зависит дата первого полива — иначе задача поставится вслепую.",
+  "quizWaterToday": "Сегодня",
+  "quizWaterTodayDesc": "Грунт ещё влажный",
+  "quizWaterFewDays": "2–3 дня назад",
+  "quizWaterFewDaysDesc": "Верхний слой подсох",
+  "quizWaterWeek": "Около недели",
+  "quizWaterWeekDesc": "Скорее всего пора поливать",
+  "quizWaterUnknown": "Не знаю",
+  "quizWaterUnknownDesc": "Проверим по фото и почве",
+  "addPlantPlanTuned": "План собран по твоим ответам",
+  "addPlantCheckToday": "проверим сегодня",
+  "placeLightSouth": "6–8 ч",
+  "placeLightEast": "4–6 ч",
+  "placeLightNorth": "2–3 ч",
+  "placeLightRoom": "Мало света",
+  "placeLightBalcony": "6–9 ч",
+  "placeLightBath": "2–3 ч",
+  "soilModerate": "Умеренно влажная",
+  "addPlantAddLight": "Добавить света",
+  "addPlantAddLightDetail": "Ближе к окну или фитолампа на 4–6 ч",
+  "addPlantAddDrainage": "Сделать дренаж",
+  "addPlantAddDrainageDetail": "Без отверстий вода застаивается у корней",
+  "addPlantMoveFromHeat": "Отодвинуть от тепла",
+  "addPlantMoveFromHeatDetail": "Батарея пересушивает грунт",
+  "lockedLabelTrial": "Добавление на паузе",
+  "lockedLabelLimit": "Лимит бесплатного плана",
+  "lockedLabelCancelled": "Подписка отменена",
+  "lockedPillTrial": "Пробный период завершён",
+  "lockedPillLimit": "Бесплатный план · {count} из {limit}",
+  "@lockedPillLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedPillCancelled": "Доступ закончился",
+  "lockedLeadTrial": "Новые растения {accent}",
+  "@lockedLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadTrialAccent": "ждут подписки",
+  "lockedLeadLimit": "В бесплатном плане {accent}",
+  "@lockedLeadLimit": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadLimitAccent": "{limit} растений",
+  "@lockedLeadLimitAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedLeadCancelled": "Подписка {accent}",
+  "@lockedLeadCancelled": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadCancelledAccent": "не активна",
+  "lockedSubTrial": "Пробный период закончился {date}",
+  "@lockedSubTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedSubLimit": "Подписка снимает лимит — растений может быть сколько угодно.",
+  "lockedSubCancelled": "Премиум был активен до {date}",
+  "@lockedSubCancelled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedKeepTitle": "Что остаётся",
+  "lockedUnlockTitle": "Что вернёт подписка",
+  "lockedKeepPlants": "{count, plural, one{{count} растение под присмотром} few{{count} растения под присмотром} many{{count} растений под присмотром} other{{count} растений под присмотром}}",
+  "@lockedKeepPlants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedKeepPlantsDesc": "Остаются в саду вместе с историей проверок",
+  "lockedKeepReminders": "Напоминания о поливе",
+  "lockedKeepRemindersDesc": "Продолжают приходить как раньше",
+  "lockedUnlockNewPlants": "Новые растения",
+  "lockedUnlockNewPlantsDesc": "Определение вида по фото и персональный план ухода",
+  "lockedUnlockHealth": "Проверка здоровья",
+  "lockedUnlockHealthDesc": "Анализ по фото, балл состояния и рекомендации",
+  "lockedUnlockChat": "AI-ассистент",
+  "lockedUnlockChatDesc": "Ответы по каждому растению с учётом его условий",
+  "lockedPlanYear": "Год",
+  "lockedPlanMonth": "Месяц",
+  "lockedPlanYearNote": "$21,99 в год · $1,83 в месяц",
+  "lockedPlanMonthNote": "$1,99 в месяц · отмена в любой момент",
+  "lockedPlanBadge": "Выгодно",
+  "lockedFinePrint": "Подписка продлевается автоматически. Отменить можно в любой момент в настройках магазина.",
+  "lockedCtaResume": "Возобновить · {plan}",
+  "@lockedCtaResume": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCtaUpgrade": "Улучшить · {plan}",
+  "@lockedCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedRestore": "Восстановить покупки",
+  "lockedRestoreDone": "Покупки восстановлены",
+  "lockedRestoreNothing": "На этом аккаунте нечего восстанавливать",
+  "billingIssueTitle": "Не прошёл платёж",
+  "billingIssueBody": "Проверьте способ оплаты — доступ работает, пока магазин повторяет попытки.",
+  "duplicateSubscriptionTitle": "Найдены две подписки",
+  "duplicateSubscriptionBody": "Вы платите одновременно в App Store и на сайте. Одну из подписок стоит отменить.",
+  "gateBarTitleTrial": "Пробный период завершён",
+  "gateBarTitleExpired": "Подписка не активна",
+  "gateBarBody": "Полив работает, анализ и ассистент — по подписке",
+  "gateBarAction": "Возобновить",
+  "gateStaleScore": "Балл не обновляется — нужна проверка здоровья",
+  "gateSheetHealth": "Проверка здоровья {accent}",
+  "@gateSheetHealth": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetChat": "AI-ассистент {accent}",
+  "@gateSheetChat": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetAccent": "по подписке",
+  "gateSheetBody": "Пробный период завершён. Растение и его уход остаются с тобой — вернётся только то, что считает AI.",
+  "gateSheetKeepWatering": "Полив и напоминания работают",
+  "gateSheetKeepHistory": "История проверок и карточки ухода открываются",
+  "gateSheetCta": "Возобновить подписку",
+  "gateSheetLater": "Позже",
+  "limitLabel": "Все места заняты",
+  "limitCountOf": "из {limit} мест",
+  "@limitCountOf": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitPlanTrial": "Пробный период",
+  "limitPlanFree": "Бесплатный план",
+  "limitPlanPremium": "Премиум",
+  "limitLegendUsed": "Занято",
+  "limitLegendLocked": "Откроется с Премиумом",
+  "limitLeadTrial": "Свободных мест {accent}",
+  "@limitLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadTrialAccent": "больше нет",
+  "limitLeadFree": "В бесплатном плане {accent}",
+  "@limitLeadFree": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadFreeAccent": "{limit} места",
+  "@limitLeadFreeAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitLeadPremium": "Все десять мест {accent}",
+  "@limitLeadPremium": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadPremiumAccent": "заняты",
+  "limitBody": "Освободи место или открой десять.",
+  "limitBodyPremium": "Убери растение, которого больше нет, чтобы освободить место для нового.",
+  "limitPathUpgrade": "Открыть 10 мест",
+  "limitPathUpgradeDesc": "Вместе с проверкой здоровья и ассистентом",
+  "limitPathFree": "Освободить место",
+  "limitPathFreeDesc": "Убрать растение, которого больше нет",
+  "limitPremiumTitle": "Премиум",
+  "limitCtaUpgrade": "Улучшить · {plan}",
+  "@limitCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherDetectedByNetwork": "Определено по сети",
+  "profileCityLabel": "Город",
+  "profileCityHint": "Влияет на рекомендации по уходу",
+  "unitsTemperature": "Единицы температуры",
+  "unitsCelsius": "°C",
+  "unitsFahrenheit": "°F",
+  "unitsAutomatic": "Автоматически",
+  "weatherDegrees": "{value}°",
+  "@weatherDegrees": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

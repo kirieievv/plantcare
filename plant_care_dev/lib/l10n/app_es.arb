@@ -33,7 +33,7 @@
   "getNotifiedWhenPlantsNeedWater": "Recibe avisos cuando tus plantas necesiten agua",
   "quietHours": "Horas de silencio",
   "maxNotificationsPerDay": "Máx. notificaciones por día",
-  "notificationsCount": "{count} notificaciones",
+  "notificationsCount": "{count, plural, one{{count} notificación} other{{count} notificaciones}}",
   "@notificationsCount": {
     "placeholders": {
       "count": {
@@ -151,7 +151,7 @@
   "onceEvery7Days": "Una vez cada 7 días",
   "oncePerDay": "Una vez al día",
   "oncePerWeek": "Una vez por semana",
-  "onceEveryNDays": "Una vez cada {days} días",
+  "onceEveryNDays": "{days, plural, one{Todos los días} other{Una vez cada {days} días}}",
   "@onceEveryNDays": {
     "placeholders": {
       "days": {
@@ -159,7 +159,7 @@
       }
     }
   },
-  "onceEveryNWeeks": "Una vez cada {weeks} semanas",
+  "onceEveryNWeeks": "{weeks, plural, one{Todas las semanas} other{Una vez cada {weeks} semanas}}",
   "@onceEveryNWeeks": {
     "placeholders": {
       "weeks": {
@@ -284,7 +284,7 @@
   "healthy": "Saludables",
   "yourPlants": "Mis plantas",
   "plantCreatedSuccessfully": "¡Planta creada con éxito! 🌱",
-  "searchPlantsHint": "Buscar plantas…",
+  "searchPlantsHint": "Buscar por nombre o especie",
   "filterAll": "Todas",
   "filterOverdue": "Atrasadas",
   "noResultsTitle": "Sin resultados",
@@ -378,7 +378,7 @@
   "uploadPhotosToTrackHealth": "Sube fotos para seguir la salud de tu planta a lo largo del tiempo",
   "today": "Hoy",
   "yesterday": "Ayer",
-  "nDaysAgo": "Hace {days} días",
+  "nDaysAgo": "{days, plural, one{Hace {days} día} other{Hace {days} días}}",
   "@nDaysAgo": {
     "placeholders": {
       "days": {
@@ -386,7 +386,7 @@
       }
     }
   },
-  "healthStatusOk": "OK",
+  "healthStatusOk": "Bien",
   "healthStatusIssue": "Problema",
   "assistantTyping": "El asistente está escribiendo...",
   "chatSourceLabel": "Fuente: {source}",
@@ -492,7 +492,7 @@
   "wateringLabel": "Riego",
   "nowLabel": "Ahora",
   "nextIn1Day": "Siguiente en 1 día",
-  "nextInNDays": "Siguiente en {days} días",
+  "nextInNDays": "{days, plural, one{Siguiente en {days} día} other{Siguiente en {days} días}}",
   "@nextInNDays": {
     "placeholders": {
       "days": {
@@ -533,7 +533,7 @@
   "subscriptionActiveTitle": "Premium activo",
   "subscriptionExpiredTitle": "Suscripción caducada",
   "subscriptionGrandfatheredTitle": "Acceso de por vida",
-  "subscriptionTrialDaysLeft": "{days} días restantes",
+  "subscriptionTrialDaysLeft": "{days, plural, one{Queda {days} día} other{Quedan {days} días}}",
   "@subscriptionTrialDaysLeft": {
     "placeholders": {
       "days": {
@@ -674,7 +674,7 @@
   "subMetaActivePlan": "PLAN ACTIVO",
   "subMetaForeverPremium": "PREMIUM ETERNO",
   "subMetaTrialEnded": "PRUEBA FINALIZADA",
-  "subMetaNDayPreview": "VISTA PREVIA {n} DÍAS",
+  "subMetaNDayPreview": "{n, plural, one{VISTA PREVIA {n} DÍA} other{VISTA PREVIA {n} DÍAS}}",
   "@subMetaNDayPreview": {
     "placeholders": {
       "n": {
@@ -844,5 +844,551 @@
   "careKvSeason": "Temporada",
   "careKvOptimal": "Óptima",
   "careKvMinimum": "Mínima",
-  "careKvDose": "Dosis"
+  "careKvDose": "Dosis",
+  "healthAnalyzeCta": "Analizar salud",
+  "healthNeedsAttention": "Requiere atención",
+  "healthStatusHealthy": "Planta saludable",
+  "healthWhatToDo": "Qué hacer",
+  "healthClose": "Cerrar",
+  "healthNotSavedYet": "Aún no está en el historial",
+  "healthAskAssistant": "Preguntar a la IA",
+  "healthAddedToPlan": "Añadido al plan",
+  "healthLockedNeedsWatering": "Registra un riego para volver a comprobar",
+  "healthLockedLimitReached": "Comprobaciones agotadas para este ciclo",
+  "healthAdviceSub": "Ver qué hacer",
+  "healthAnalyzingTitle": "Analizando…",
+  "healthStepRecognize": "Reconociendo la planta",
+  "healthStepCompare": "Comparando con revisiones anteriores",
+  "healthStepAdvice": "Preparando recomendaciones",
+  "healthStepPhotos": "{count, plural, =1{1 foto recibida} other{{count} fotos recibidas}}",
+  "healthAdviceTitle": "{count, plural, =1{1 recomendación tras la revisión} other{{count} recomendaciones tras la revisión}}",
+  "healthHistoryLoadFailed": "No se pudo cargar el historial",
+  "healthUpToThreePhotos": "Hasta 3 fotos",
+  "healthResultTitle": "Resultado",
+  "taskAllDone": "Todo hecho: la planta está bien",
+  "taskBadgeScheduled": "Programado",
+  "taskBadgeAnalysis": "Tras el análisis",
+  "taskBadgeOverdue": "{days, plural, =1{1 día de retraso} other{{days} días de retraso}}",
+  "taskDone": "Hecho",
+  "taskDoneAlready": "Completado",
+  "taskLater": "Más tarde",
+  "taskAskAssistant": "Preguntar al asistente",
+  "taskAskQuestion": "¿Qué debo hacer con la tarea «{title}»?",
+  "homeGardenTitleLead": "Tu",
+  "homeGardenTitleAccent": "jardín",
+  "gardenHealthLabel": "Salud del jardín",
+  "gardenAllGood": "Todas las plantas están bien",
+  "gardenOneWeak": "{name} baja la media del jardín",
+  "gardenManyWeak": "{count, plural, =1{1 planta necesita tu cuidado} other{{count} plantas necesitan tu cuidado}}",
+  "homeOrbitHint": "Toca una planta para abrirla",
+  "homeAllTasksLink": "Todas las tareas",
+  "deckAllClearTitle": "El jardín está bien",
+  "taskOverdueShort": "{days, plural, =1{1 día} other{{days} días}}",
+  "taskPostponed": "Aplazada",
+  "allTasksTitle": "Todas las tareas",
+  "allTasksSubtitle": "{today} hoy · {later} después",
+  "allTasksToday": "Hoy",
+  "allTasksLater": "Después",
+  "allTasksRuleNote": "No aparecerán tareas nuevas hasta que resuelvas las de hoy.",
+  "allTasksNothingToday": "Nada pendiente para hoy",
+  "whenTomorrow": "Mañana",
+  "whenInAWeek": "En una semana",
+  "whenInNDays": "{days, plural, =1{En 1 día} other{En {days} días}}",
+  "careAskAbout": "Preguntar al asistente sobre {title}",
+  "careAskQuestion": "Cuéntame más sobre «{title}» para mi planta",
+  "healthAskQuestionIssue": "¿Qué hago primero según el análisis?",
+  "healthAskQuestionOk": "El análisis dice que la planta está sana, ¿qué puedo mejorar?",
+  "glassesOne": "1 vaso",
+  "glassesAmount": "{value} vasos",
+  "addPlantStepOf": "Paso {step} de {total}",
+  "addPlantTitleLead": "Añadir una",
+  "addPlantTitleAccent": "planta",
+  "addPlantNameHint": "¿Cómo la vas a llamar? Monty, Ficus Jr., Monstera. El dado elige por ti.",
+  "addPlantPhotosTitle": "Fotos",
+  "addPlantWholePlant": "Planta entera",
+  "addPlantWholePlantHint": "con la maceta y la tierra",
+  "addPlantRequired": "Necesaria",
+  "addPlantTwoAnglesHint": "Dos ángulos identifican la especie con más precisión: la segunda foto es opcional, pero ayuda.",
+  "addPlantTipLight": "buena luz",
+  "addPlantTipLeaves": "hojas visibles",
+  "addPlantTipSingle": "una planta",
+  "addPlantIdentifyCta": "Identificar la especie",
+  "addPlantRandomNames": "Monty|Brotecito|Ficus Jr.|Helechito|Albahaca Magna|Hojitas|Solete|Pip",
+  "addPlantIsThisYourPlant": "¿Es esta tu planta?",
+  "addPlantPickSpeciesHint": "Elige la opción más parecida: de ahí sale el plan de cuidados.",
+  "addPlantNoneMatch": "Ninguna coincide, la escribo yo",
+  "addPlantManualHint": "Escribe el nombre de la especie y buscamos de nuevo.",
+  "addPlantManualPlaceholder": "Por ejemplo, Monstera deliciosa",
+  "addPlantBuildPlanCta": "Crear el plan de cuidados",
+  "addPlantStartingScore": "Puntuación inicial {score}",
+  "addPlantPlanWatering": "Riego",
+  "addPlantPlanLight": "Luz",
+  "addPlantPlanSoil": "Tierra",
+  "addPlantSoilSlightlyMoist": "Ligeramente húmeda",
+  "addPlantEveryNDays": "{days, plural, =1{Cada día} other{Cada {days} días}}",
+  "addPlantCarePlan": "Plan de cuidados",
+  "addPlantNTasks": "{count, plural, =1{1 tarea} other{{count} tareas}}",
+  "addPlantFirstWatering": "Primer riego",
+  "addPlantToday": "hoy",
+  "addPlantWaterToday": "hoy",
+  "addPlantFertilising": "Abono",
+  "addPlantFertilisingDetail": "En dos semanas · media dosis",
+  "addPlantHealthCheck": "Chequeo de salud",
+  "addPlantHealthCheckDetail": "En un mes · 1–3 fotos",
+  "addPlantAddToGarden": "Añadir al jardín",
+  "addPlantNoSpeciesFound": "No se ha reconocido la planta. Prueba con otra foto.",
+  "addPlantNoPlan": "No se ha podido crear el plan de cuidados. Inténtalo de nuevo.",
+  "addPlantLoaderPhotos": "Fotos recibidas",
+  "addPlantLoaderIdentify": "Determinando la especie",
+  "addPlantLoaderPlan": "Creando el plan de cuidados",
+  "myPlantsTitleLead": "Mis",
+  "myPlantsTitleAccent": "plantas",
+  "myPlantsCount": "{count, plural, =1{1 planta} other{{count} plantas}}",
+  "myPlantsEmptyLabel": "Aún no hay nada",
+  "filterTomorrow": "Mañana",
+  "filterNeedsCare": "Necesita cuidados",
+  "myPlantsNothingFound": "No se ha encontrado nada",
+  "myPlantsNothingFoundHint": "Prueba con otro nombre u otra especie.",
+  "myPlantsAllClearTitle": "Todo en orden",
+  "myPlantsAllClearHint": "Ahora mismo no hay nada en este grupo: no hay de qué preocuparse.",
+  "addFirstPlantHint": "Add your first plant to get started",
+  "subHeroActiveLead": "Tu jardín está",
+  "subHeroActiveAccent": "bien cuidado",
+  "subHeroForeverLead": "Premium",
+  "subHeroForeverAccent": "para siempre",
+  "subHeroEndedLead": "El periodo de prueba ha",
+  "subHeroEndedAccent": "terminado",
+  "subMetaNoCharges": "Sin cargos",
+  "subFootAutoRenew": "Renovación automática activada · Cancela cuando quieras",
+  "subFootTrial": "Sin límites · Cuidado con IA · Recordatorios",
+  "subFootForever": "Todo desbloqueado",
+  "subFootFree": "Acceso limitado · Sin cuidado con IA",
+  "subCtaDetails": "Detalles",
+  "subCtaResume": "Reanudar",
+  "subTrialUntil": "Prueba hasta el {date}",
+  "subEndedOn": "Terminó el {date}",
+  "subscriptionManageTitle": "Suscripción",
+  "subscriptionPlanLabel": "Plan",
+  "subscriptionNextChargeLabel": "Próximo cargo",
+  "subscriptionAutoRenewLabel": "Renovación automática",
+  "subscriptionAutoRenewOn": "Activada",
+  "subscriptionAutoRenewOff": "Desactivada",
+  "subscriptionManageInStore": "La facturación la gestiona la App Store. Ve a Ajustes → ID de Apple → Suscripciones para cambiarla o cancelarla.",
+  "deleteAccountContinue": "Continuar",
+  "deleteAccountKeyword": "ELIMINAR",
+  "deleteAccountTypeWord": "Escribe {word} para confirmar.",
+  "settingsSavedToast": "¡Ajustes guardados!",
+  "quietHoursUpdatedToast": "¡Horas de silencio actualizadas!",
+  "signedInChip": "Sesión iniciada",
+  "securityLabel": "Seguridad",
+  "emailNotificationsLabel": "Email",
+  "changePasswordHint": "Al menos 6 caracteres",
+  "quietHoursNeedsPush": "Activa las push para usar las horas de silencio",
+  "quietHoursFrom": "Desde",
+  "quietHoursTo": "Hasta",
+  "quietHoursSummary": "{hours, plural, =1{Sin notificaciones durante 1 hora seguida} other{Sin notificaciones durante {hours} horas seguidas}}",
+  "passwordTooShortError": "La nueva contraseña debe tener al menos 6 caracteres.",
+  "passwordSameAsCurrentError": "La nueva contraseña debe ser distinta de la actual.",
+  "passwordsDoNotMatchError": "Las contraseñas no coinciden.",
+  "passwordCurrentWrongError": "La contraseña actual es incorrecta.",
+  "subscriptionLoading": "Cargando tu plan…",
+  "editPlantTitle": "Edición",
+  "newPhotoBadge": "Nueva foto",
+  "revertPhoto": "Restaurar la foto anterior",
+  "editPlantNameHint": "Así aparecerá la planta en el jardín y en los recordatorios",
+  "aiManagedNote": "La especie y el plan de cuidados los define la IA: se actualizan tras un nuevo análisis de salud.",
+  "noPhotoYet": "Aún no hay foto",
+  "gardenLoadError": "No se pudo cargar el jardín. Comprueba la conexión e inténtalo de nuevo.",
+  "pullToRefreshHint": "Desliza hacia abajo para actualizar",
+  "refreshingGarden": "Recopilando datos del jardín…",
+  "refreshFailed": "No se pudo actualizar. Comprueba la conexión.",
+  "addPlantHeaderPhoto": "Añadir una {accent}",
+  "@addPlantHeaderPhoto": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPhotoAccent": "planta",
+  "addPlantHeaderSpecies": "Confirmar la {accent}",
+  "@addPlantHeaderSpecies": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderSpeciesAccent": "especie",
+  "addPlantHeaderConditions": "Sobre las {accent}",
+  "@addPlantHeaderConditions": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderConditionsAccent": "condiciones",
+  "addPlantHeaderPlan": "{accent} de cuidados",
+  "@addPlantHeaderPlan": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPlanAccent": "Plan",
+  "addPlantBack": "Atrás",
+  "quizQuestionOf": "Pregunta {step} de {total}",
+  "@quizQuestionOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quizNext": "Siguiente",
+  "quizBuildPlan": "Crear el plan",
+  "quizPotQuestion": "¿Qué {accent} tiene la maceta?",
+  "@quizPotQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotQuestionAccent": "diámetro",
+  "quizPotWhy": "El volumen de sustrato decide cuánta agua necesita cada riego.",
+  "quizPotHint": "Mide por el borde de la maceta, no la planta.",
+  "unitCm": "cm",
+  "volumeMl": "{value} ml",
+  "@volumeMl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLitres": "{value} l",
+  "@volumeLitres": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotPerWatering": "{volume} por riego",
+  "@quizPotPerWatering": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestion": "¿De qué es la maceta y tiene {accent}?",
+  "@quizMaterialQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestionAccent": "drenaje",
+  "quizMaterialWhy": "El barro se seca el doble de rápido que el plástico. Sin agujeros crece el riesgo de pudrición.",
+  "quizMatPlastic": "Plástico",
+  "quizMatPlasticDesc": "Retiene la humedad más tiempo",
+  "quizMatCeramic": "Cerámica",
+  "quizMatCeramicDesc": "Esmaltada, no transpira",
+  "quizMatTerracotta": "Barro",
+  "quizMatTerracottaDesc": "Transpira, se seca rápido",
+  "quizMatUnknown": "No lo sé",
+  "quizMatUnknownDesc": "Tomaremos la media",
+  "quizDrainageLabel": "Agujeros de drenaje",
+  "quizDrainageYes": "Sí",
+  "quizDrainageYesDesc": "El agua sobrante cae al plato",
+  "quizDrainageNo": "No",
+  "quizDrainageNoDesc": "El agua se estanca en las raíces",
+  "quizPlaceQuestion": "¿Dónde {accent} la planta?",
+  "@quizPlaceQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPlaceQuestionAccent": "está",
+  "quizPlaceWhy": "Así sabremos cuánta luz recibe de verdad — y si necesita sombra.",
+  "quizPlaceSouth": "Sur",
+  "quizPlaceSouthDesc": "Alféizar, mucho sol",
+  "quizPlaceEast": "Este / oeste",
+  "quizPlaceEastDesc": "Sol suave de la mañana",
+  "quizPlaceNorth": "Norte",
+  "quizPlaceNorthDesc": "Hay luz, no sol",
+  "quizPlaceRoom": "En el interior",
+  "quizPlaceRoomDesc": "Lejos de la ventana",
+  "quizPlaceBalcony": "Balcón",
+  "quizPlaceBalconyDesc": "Al aire libre, por temporada",
+  "quizPlaceBath": "Baño",
+  "quizPlaceBathDesc": "Húmedo, poca luz",
+  "quizHeatLabel": "Radiador o aire acondicionado cerca",
+  "quizHeatNo": "No",
+  "quizHeatNoDesc": "Aire normal de la habitación",
+  "quizHeatYes": "Sí",
+  "quizHeatYesDesc": "Reseca el sustrato y el aire",
+  "quizWaterQuestion": "¿Cuándo la regaste por {accent}?",
+  "@quizWaterQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizWaterQuestionAccent": "última vez",
+  "quizWaterWhy": "De esto depende la fecha del primer riego — si no, la tarea se fija a ciegas.",
+  "quizWaterToday": "Hoy",
+  "quizWaterTodayDesc": "El sustrato aún está húmedo",
+  "quizWaterFewDays": "Hace 2–3 días",
+  "quizWaterFewDaysDesc": "La capa superior se ha secado",
+  "quizWaterWeek": "Hace una semana",
+  "quizWaterWeekDesc": "Seguramente toca regar",
+  "quizWaterUnknown": "No lo sé",
+  "quizWaterUnknownDesc": "Lo comprobaremos con la foto y el sustrato",
+  "addPlantPlanTuned": "Hecho con tus respuestas",
+  "addPlantCheckToday": "lo comprobamos hoy",
+  "placeLightSouth": "6–8 h",
+  "placeLightEast": "4–6 h",
+  "placeLightNorth": "2–3 h",
+  "placeLightRoom": "Poca luz",
+  "placeLightBalcony": "6–9 h",
+  "placeLightBath": "2–3 h",
+  "soilModerate": "Moderadamente húmedo",
+  "addPlantAddLight": "Añadir luz",
+  "addPlantAddLightDetail": "Más cerca de la ventana o lámpara de cultivo 4–6 h",
+  "addPlantAddDrainage": "Hacer drenaje",
+  "addPlantAddDrainageDetail": "Sin agujeros el agua se estanca en las raíces",
+  "addPlantMoveFromHeat": "Alejar del calor",
+  "addPlantMoveFromHeatDetail": "El radiador reseca el sustrato",
+  "lockedLabelTrial": "Añadir está en pausa",
+  "lockedLabelLimit": "Límite del plan gratuito",
+  "lockedLabelCancelled": "Suscripción cancelada",
+  "lockedPillTrial": "Prueba finalizada",
+  "lockedPillLimit": "Plan gratuito · {count} de {limit}",
+  "@lockedPillLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedPillCancelled": "El acceso ha terminado",
+  "lockedLeadTrial": "Las plantas nuevas {accent}",
+  "@lockedLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadTrialAccent": "esperan una suscripción",
+  "lockedLeadLimit": "El plan gratuito admite {accent}",
+  "@lockedLeadLimit": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadLimitAccent": "{limit} plantas",
+  "@lockedLeadLimitAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedLeadCancelled": "La suscripción {accent}",
+  "@lockedLeadCancelled": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadCancelledAccent": "no está activa",
+  "lockedSubTrial": "La prueba terminó el {date}",
+  "@lockedSubTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedSubLimit": "La suscripción quita el límite: tantas plantas como quieras.",
+  "lockedSubCancelled": "Premium estuvo activo hasta {date}",
+  "@lockedSubCancelled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedKeepTitle": "Lo que se queda",
+  "lockedUnlockTitle": "Lo que devuelve la suscripción",
+  "lockedKeepPlants": "{count, plural, =1{1 planta cuidada} other{{count} plantas cuidadas}}",
+  "@lockedKeepPlants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedKeepPlantsDesc": "Se quedan en el jardín junto con su historial",
+  "lockedKeepReminders": "Recordatorios de riego",
+  "lockedKeepRemindersDesc": "Siguen llegando como antes",
+  "lockedUnlockNewPlants": "Plantas nuevas",
+  "lockedUnlockNewPlantsDesc": "Identificación por foto y un plan de cuidados propio",
+  "lockedUnlockHealth": "Chequeo de salud",
+  "lockedUnlockHealthDesc": "Análisis por foto, puntuación y recomendaciones",
+  "lockedUnlockChat": "Asistente de IA",
+  "lockedUnlockChatDesc": "Respuestas por planta, teniendo en cuenta sus condiciones",
+  "lockedPlanYear": "Año",
+  "lockedPlanMonth": "Mes",
+  "lockedPlanYearNote": "21,99 $ al año · 1,83 $ al mes",
+  "lockedPlanMonthNote": "1,99 $ al mes · cancela cuando quieras",
+  "lockedPlanBadge": "Mejor precio",
+  "lockedFinePrint": "La suscripción se renueva automáticamente. Cancélala cuando quieras en los ajustes de la tienda.",
+  "lockedCtaResume": "Reanudar · {plan}",
+  "@lockedCtaResume": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCtaUpgrade": "Mejorar · {plan}",
+  "@lockedCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedRestore": "Restaurar compras",
+  "lockedRestoreDone": "Compras restauradas",
+  "lockedRestoreNothing": "No hay nada que restaurar en esta cuenta",
+  "billingIssueTitle": "Un pago no se completó",
+  "billingIssueBody": "Revisa tu método de pago: el acceso sigue mientras la tienda lo reintenta.",
+  "duplicateSubscriptionTitle": "Se encontraron dos suscripciones",
+  "duplicateSubscriptionBody": "Estás pagando en la App Store y en la web a la vez. Cancela una de las dos.",
+  "gateBarTitleTrial": "Prueba finalizada",
+  "gateBarTitleExpired": "La suscripción no está activa",
+  "gateBarBody": "El riego sigue; el análisis y el asistente requieren suscripción",
+  "gateBarAction": "Reanudar",
+  "gateStaleScore": "La puntuación no se actualiza: hace falta un chequeo de salud",
+  "gateSheetHealth": "Chequeo de salud {accent}",
+  "@gateSheetHealth": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetChat": "El asistente de IA {accent}",
+  "@gateSheetChat": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetAccent": "requiere suscripción",
+  "gateSheetBody": "La prueba ha terminado. La planta y sus cuidados se quedan; solo vuelve lo que calcula la IA.",
+  "gateSheetKeepWatering": "El riego y los recordatorios siguen funcionando",
+  "gateSheetKeepHistory": "El historial y las fichas de cuidado siguen accesibles",
+  "gateSheetCta": "Reanudar la suscripción",
+  "gateSheetLater": "Más tarde",
+  "limitLabel": "Todas las plazas ocupadas",
+  "limitCountOf": "de {limit} plazas",
+  "@limitCountOf": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitPlanTrial": "Prueba",
+  "limitPlanFree": "Plan gratuito",
+  "limitPlanPremium": "Premium",
+  "limitLegendUsed": "Ocupado",
+  "limitLegendLocked": "Se abre con Premium",
+  "limitLeadTrial": "No {accent}",
+  "@limitLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadTrialAccent": "quedan plazas libres",
+  "limitLeadFree": "El plan gratuito tiene {accent}",
+  "@limitLeadFree": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadFreeAccent": "{limit} plazas",
+  "@limitLeadFreeAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitLeadPremium": "Las diez plazas {accent}",
+  "@limitLeadPremium": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadPremiumAccent": "están ocupadas",
+  "limitBody": "Libera una plaza o abre diez.",
+  "limitBodyPremium": "Quita una planta que ya no tengas para hacer sitio.",
+  "limitPathUpgrade": "Abrir 10 plazas",
+  "limitPathUpgradeDesc": "Junto con el chequeo de salud y el asistente",
+  "limitPathFree": "Liberar una plaza",
+  "limitPathFreeDesc": "Quitar una planta que ya no tengas",
+  "limitPremiumTitle": "Premium",
+  "limitCtaUpgrade": "Mejorar · {plan}",
+  "@limitCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherDetectedByNetwork": "Detectado por la red",
+  "profileCityLabel": "Ciudad",
+  "profileCityHint": "Influye en las recomendaciones de cuidado",
+  "unitsTemperature": "Unidades de temperatura",
+  "unitsCelsius": "°C",
+  "unitsFahrenheit": "°F",
+  "unitsAutomatic": "Automático",
+  "weatherDegrees": "{value}°",
+  "@weatherDegrees": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

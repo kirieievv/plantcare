@@ -3,6 +3,15 @@ const admin = require('firebase-admin');
 const OpenAI = require('openai');
 const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
+const { taskStrings, normaliseLocale } = require('./task_strings');
+const {
+  clientIpOf,
+  describeWeather,
+  locationOf,
+  lookupCityByIp,
+  weatherForCity,
+  weatherSnapshot,
+} = require('./weather');
 
 // ── AI Model Configuration ──────────────────────────────────────────
 // Model for watering reminder emails — cheap, template-style text.
@@ -371,14 +380,18 @@ exports.confirmPasswordResetPin = functions.https.onRequest((req, res) => {
   });
 });
 
-// Initialize OpenAI with API key from Firebase config
+// Initialize OpenAI with the key from the environment.
+//
+// This used to read `functions.config().openai.api_key`. The Runtime Config API
+// behind that call is being shut down and deploys fail once it goes, so the key
+// now travels the same way every other secret here does — through `.env`, which
+// is git-ignored and set per project.
 let openai;
 async function initializeOpenAI() {
   if (!openai) {
-    // Try to get API key from Firebase config
-    const apiKey = functions.config().openai?.api_key;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not configured in Firebase Functions');
+      throw new Error('OPENAI_API_KEY is not set in the functions environment');
     }
     openai = new OpenAI({
       apiKey: apiKey,
@@ -641,6 +654,11 @@ async function loadHealthCheckAgentContext(plantId, userId) {
     recentHealthChecks: [],
     recentWateringEvents: [],
     recentImageUrls: [],
+    // Assembled here rather than per call site (SPEC 5.1): the health check,
+    // the care plan and the chat all read this one context, so weather reaches
+    // every one of them without its own integration.
+    weather: null,
+    location: null,
   };
 
   if (!plantId || !userId) return context;
@@ -661,6 +679,18 @@ async function loadHealthCheckAgentContext(plantId, userId) {
           lastWateredAt: plantData.lastWateredAt || null,
           lastHealthCheck: plantData.lastHealthCheck || null,
           healthStatus: plantData.healthStatus || null,
+          // The add-plant quiz answers. None of this can be read off a photo,
+          // and all of it changes the diagnosis: "the soil is not drying" is a
+          // different problem in a sealed plastic pot than in terracotta.
+          potDiameterCm: plantData.potDiameterCm ?? null,
+          potMaterial: plantData.potMaterial || null,
+          hasDrainage: typeof plantData.hasDrainage === 'boolean'
+            ? plantData.hasDrainage
+            : null,
+          placement: plantData.placement || null,
+          nearHeatSource: typeof plantData.nearHeatSource === 'boolean'
+            ? plantData.nearHeatSource
+            : null,
         };
       }
     }
@@ -718,6 +748,18 @@ async function loadHealthCheckAgentContext(plantId, userId) {
     console.warn('⚠️ Agent context: failed to load watering events:', e.message);
   }
 
+  // Weather last and best-effort: it is context, not a precondition, and a
+  // provider outage must not cost the user their analysis.
+  try {
+    const location = await locationOf(userId);
+    if (location) {
+      context.location = location;
+      context.weather = await weatherForCity(location.lat, location.lon);
+    }
+  } catch (e) {
+    console.warn('⚠️ Agent context: weather unavailable:', e.message);
+  }
+
   return context;
 }
 
@@ -755,6 +797,32 @@ function evaluateHealthCheckAgentResult(recommendations, context) {
   const reasonShort = wateringPlan.reason_short ? String(wateringPlan.reason_short).trim() : '';
   if (reasonShort.length < 8) {
     return { ok: false, reason: 'weak_reason_short' };
+  }
+
+  // The result screen renders a score ring, finding cards and an action checklist —
+  // all three have to arrive or the user gets an empty layout.
+  const score = Number(recommendations.health_score);
+  if (!Number.isFinite(score) || score < 0 || score > 100) {
+    return { ok: false, reason: 'missing_health_score' };
+  }
+
+  const hasTitled = (arr) =>
+    Array.isArray(arr) && arr.some((x) => x && String(x.title || '').trim().length > 0);
+  if (!hasTitled(recommendations.findings)) {
+    return { ok: false, reason: 'missing_findings' };
+  }
+  if (!hasTitled(recommendations.recommendations)) {
+    return { ok: false, reason: 'missing_recommendations_list' };
+  }
+
+  // A "healthy" verdict paired with a failing score (or vice versa) reads as broken
+  // to the user: green chip over a red ring.
+  const status = String(plantAssistant.status || '').toLowerCase();
+  if (status === 'healthy' && score < 75) {
+    return { ok: false, reason: 'score_contradicts_healthy' };
+  }
+  if (status === 'issue_detected' && score >= 75) {
+    return { ok: false, reason: 'score_contradicts_issue' };
   }
 
   // Contradiction heuristic: if watered recently and soil is moist/wet, "water now" is likely unstable.
@@ -980,9 +1048,71 @@ function normalizeRecommendations(recommendations, reqBody = {}) {
     };
 
     recommendations = enforceWateringConsistencyGuard(recommendations);
+    recommendations = normalizeHealthReport(recommendations);
   } catch (e) {
     console.error('❌ Error normalizing recommendations:', e);
   }
+  return recommendations;
+}
+
+/** Categories the client can render an icon for; anything else falls back to 'leaves'. */
+const FINDING_CATEGORIES = ['light', 'water', 'soil', 'leaves', 'pests'];
+
+const MAX_FINDINGS = 3;
+const MAX_HEALTH_RECOMMENDATIONS = 3;
+
+/**
+ * Clamps and trims the health-report fields (score / findings / recommendations)
+ * so the client can render them without defensive checks. Drops entries with no
+ * title rather than showing an empty card.
+ */
+function normalizeHealthReport(recommendations) {
+  if (!recommendations || typeof recommendations !== 'object') return recommendations;
+
+  const str = (v) => (typeof v === 'string' ? v.trim() : '');
+
+  // Score: keep AI value when usable, otherwise derive from status so the ring
+  // always has something to draw.
+  let score = Number(recommendations.health_score);
+  if (!Number.isFinite(score)) {
+    const status = str(recommendations.plant_assistant?.status).toLowerCase();
+    score = status === 'issue_detected' ? 60 : status === 'healthy' ? 90 : NaN;
+  }
+  recommendations.health_score = Number.isFinite(score)
+    ? Math.max(0, Math.min(100, Math.round(score)))
+    : null;
+
+  const rawFindings = Array.isArray(recommendations.findings) ? recommendations.findings : [];
+  recommendations.findings = rawFindings
+    .map((f) => {
+      const category = str(f?.category).toLowerCase();
+      return {
+        category: FINDING_CATEGORIES.includes(category) ? category : 'leaves',
+        title: str(f?.title),
+        text: str(f?.text),
+      };
+    })
+    .filter((f) => f.title)
+    .slice(0, MAX_FINDINGS);
+
+  const rawRecs = Array.isArray(recommendations.recommendations)
+    ? recommendations.recommendations
+    : [];
+  recommendations.recommendations = rawRecs
+    .map((r, idx) => {
+      const priority = Number(r?.priority);
+      return {
+        priority: Number.isFinite(priority) ? Math.max(1, Math.min(3, Math.round(priority))) : idx + 1,
+        title: str(r?.title),
+        explanation: str(r?.explanation),
+        action_label: str(r?.action_label),
+        done: false,
+      };
+    })
+    .filter((r) => r.title)
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, MAX_HEALTH_RECOMMENDATIONS);
+
   return recommendations;
 }
 
@@ -995,6 +1125,43 @@ function resolveLanguageName(code) {
     uk: 'Ukrainian',
   };
   return map[code] || 'English';
+}
+
+/** Placement keys as the model should read them, not as we store them. */
+const PLACEMENT_PHRASES = {
+  south: 'south-facing window (6-8 h direct sun)',
+  east: 'east or west window (4-6 h gentle sun)',
+  north: 'north-facing window (2-3 h, no direct sun)',
+  room: 'away from any window, indoors (very little light)',
+  balcony: 'balcony, outdoors (6-9 h, seasonal)',
+  bath: 'bathroom (humid air, 2-3 h of light)',
+};
+
+/**
+ * The growing conditions in one line, or null when the plant predates the quiz.
+ *
+ * Written out in prose rather than left as raw JSON keys: the model reasons
+ * about "terracotta, no drainage" far better than about `hasDrainage:false`,
+ * and the line is short enough to sit in every prompt about this plant.
+ */
+function describeGrowingConditions(plant) {
+  if (!plant) return null;
+  const parts = [];
+
+  const pot = [];
+  if (Number.isFinite(plant.potDiameterCm)) pot.push(`${plant.potDiameterCm} cm`);
+  if (plant.potMaterial && plant.potMaterial !== 'unknown') pot.push(plant.potMaterial);
+  if (plant.hasDrainage === true) pot.push('with drainage holes');
+  if (plant.hasDrainage === false) pot.push('with NO drainage holes');
+  if (pot.length) parts.push(`Pot: ${pot.join(' ')}.`);
+
+  const place = PLACEMENT_PHRASES[plant.placement];
+  if (place) parts.push(`Placement: ${place}.`);
+  if (plant.nearHeatSource === true) {
+    parts.push('A radiator or air conditioner stands nearby and dries the soil and air.');
+  }
+
+  return parts.length ? parts.join(' ') : null;
 }
 
 function buildHealthCheckAgentPrompt(context, plantNameHint, language) {
@@ -1012,10 +1179,23 @@ function buildHealthCheckAgentPrompt(context, plantNameHint, language) {
     amountMl: w.amountMl,
   }));
 
+  const conditions = describeGrowingConditions(plantSummary);
+  const weather = describeWeather(context.weather, context.location);
+
   return `You are Plant Care Health Check Agent.
 Analyze the CURRENT image first. Then use historical context and previous images as secondary signals.
 Plant name hint: ${plantNameHint || plantSummary.name || 'unknown'}.
-
+${conditions ? `
+Growing conditions the owner told us (authoritative — the photo cannot show these):
+${conditions}
+Use them: they change both the diagnosis and the advice. Never recommend moving the
+plant to a spot it is already in, and never ask about something stated here.
+` : ''}${weather ? `
+Weather where the plant lives:
+${weather}
+Weigh it yourself against the species, the pot and the placement above — decide
+whether it matters for this plant rather than assuming it always does.
+` : ''}
 Historical context (JSON):
 ${JSON.stringify({
     plant: plantSummary,
@@ -1051,6 +1231,9 @@ Return ONLY valid JSON (no markdown) using this schema:
   "interesting_facts": ["fact 1", "fact 2", "fact 3", "fact 4"],
   "specific_issues": ["risk 1", "risk 2", "risk 3 max"],
   "health_assessment": "current health assessment text",
+  "health_score": 0,
+  "findings": [ { "category": "light|water|soil|leaves|pests", "title": "string", "text": "string" } ],
+  "recommendations": [ { "priority": 1, "title": "string", "explanation": "string", "action_label": "string" } ],
   "plant_assistant": {
     "status": "healthy or issue_detected", "praise_phrase": "string", "health_summary": "string",
     "maintenance_footer": "string", "problem_name": "string", "problem_description": "string",
@@ -1059,6 +1242,14 @@ Return ONLY valid JSON (no markdown) using this schema:
 }
 
 Rules:
+- health_score is an integer 0-100 summarising overall condition from the CURRENT image:
+  90-100 thriving, 75-89 healthy with minor notes, 55-74 needs attention, 30-54 struggling, 0-29 critical.
+  It must agree with plant_assistant.status: status="healthy" implies >= 75, "issue_detected" implies < 75.
+- findings: 2-3 items, each a specific observation from the image. "title" is 2-4 words, "text" is one
+  sentence. Report positive observations too — a healthy plant still gets findings (e.g. watering on schedule).
+- recommendations: 1-3 concrete actions, ordered by importance. "priority" is 1 (most important) to 3.
+  "title" is the action in 2-5 words, "explanation" is one sentence on why, "action_label" is the button
+  text for adding it to the care plan. A healthy plant gets 1 preventive recommendation.
 - Keep watering_plan in whole days (1-60).
 - amount_ml must be integer and clamped to 50..2500.
 - In care_recommendations.name, return botanical/cultivar identification from analysis (e.g., "Fittonia albivenis"), not the user nickname/plant label from app.
@@ -1073,7 +1264,7 @@ Rules:
 - plant_assistant fields by status — REQUIRED, never omit:
   - If status="healthy": praise_phrase (encouraging short phrase), health_summary (1-2 sentence assessment), maintenance_footer (short care reminder). Leave problem_name/problem_description/severity/action_steps/reassurance empty.
   - If status="issue_detected": problem_name, problem_description, severity, action_steps (array), follow_up_days, reassurance. Leave praise_phrase/health_summary/maintenance_footer empty.
-- CRITICAL: Write ALL string text fields in ${resolveLanguageName(language)}. Keep ONLY scientific names (species.ai_species_guess) and fixed enum values (soil.visual_state, other_care.growth_stage, plant_assistant.status, plant_assistant.severity) in English.`;
+- CRITICAL: Write ALL string text fields in ${resolveLanguageName(language)}. Keep ONLY scientific names (species.ai_species_guess) and fixed enum values (soil.visual_state, other_care.growth_stage, findings[].category, plant_assistant.status, plant_assistant.severity) in English.`;
 }
 
 function buildPlantChatSystemPrompt(context, options = {}) {
@@ -1092,13 +1283,24 @@ function buildPlantChatSystemPrompt(context, options = {}) {
     amountMl: w.amountMl,
   }));
 
+  const conditions = describeGrowingConditions(plantSummary);
+  const weather = describeWeather(context.weather, context.location);
+
   return `You are Plant Care chat assistant for one specific plant.
 Respond in language locale="${locale}" unless user asks for another language.
 
 Plant identity:
 - Name hint: ${options.plantNameHint || plantSummary.name || 'unknown'}
 - Species hint: ${options.speciesHint || plantSummary.species || 'unknown'}
-
+${conditions ? `
+Growing conditions the owner already told us:
+${conditions}
+Treat these as known. Do not ask the user about them again, and do not suggest a
+place the plant is already standing in.
+` : ''}${weather ? `
+Weather where the plant lives:
+${weather}
+` : ''}
 Authoritative context (JSON):
 ${JSON.stringify({
     plant: plantSummary,
@@ -1139,6 +1341,83 @@ function wikiImageSearch(scientificName) {
     }).on('error', () => resolve(null));
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  resolveUserLocation — city from the caller's IP (SPEC 12, §3)
+//
+//  No geolocation permission is requested anywhere in this flow. For weather
+//  an IP lookup is accurate enough, and a location dialog on first launch
+//  costs a slice of sign-ups.
+//
+//  A manually corrected city is never overwritten: otherwise the correction
+//  would be undone on the next launch, every launch.
+// ═══════════════════════════════════════════════════════════════════
+exports.resolveUserLocation = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      const userId = req.body?.userId || req.query?.userId;
+      const language = req.body?.language || 'en';
+      if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+      const db = admin.firestore();
+      const userRef = db.collection('users').doc(userId);
+      const existing = (await userRef.get()).data()?.location || null;
+
+      if (existing?.source === 'manual') {
+        return res.json({ location: existing, source: 'manual' });
+      }
+
+      const found = await lookupCityByIp(clientIpOf(req), language);
+      if (!found) {
+        // Nothing to show is a valid answer — the header falls back to the
+        // date alone rather than printing a dash.
+        return res.json({ location: existing || null, source: 'unknown' });
+      }
+
+      const location = {
+        ...found,
+        source: 'ip',
+        updatedAt: admin.firestore.Timestamp.now(),
+      };
+      await userRef.set({ location }, { merge: true });
+      return res.json({ location, source: 'ip' });
+    } catch (error) {
+      console.error('❌ resolveUserLocation error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  getWeather — current conditions for a city, from the shared cache
+// ═══════════════════════════════════════════════════════════════════
+exports.getWeather = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      const lat = Number(req.body?.lat ?? req.query?.lat);
+      const lon = Number(req.body?.lon ?? req.query?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return res.status(400).json({ error: 'lat and lon are required' });
+      }
+
+      const weather = await weatherForCity(lat, lon);
+      if (!weather) return res.json({ weather: null });
+
+      return res.json({
+        weather: {
+          tempC: weather.tempC,
+          condition: weather.condition,
+          humidity: weather.humidity ?? null,
+          forecast: weather.forecast || [],
+          fetchedAt: weather.fetchedAt?.toDate?.()?.toISOString() || null,
+        },
+      });
+    } catch (error) {
+      console.error('❌ getWeather error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+});
 
 exports.searchPlantImages = functions.https.onRequest((req, res) => {
   return cors(req, res, async () => {
@@ -1220,6 +1499,10 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
           }],
           [ANALYSIS_TOKEN_PARAM]: 3000,
           temperature: 0.5,
+          // Same guard as the health check: a single malformed bracket sends
+          // parseAIResponse into its text-scraping fallback, which silently
+          // produces a half-empty plant instead of failing loudly.
+          response_format: { type: 'json_object' },
         });
 
         if (response.usage) {
@@ -1245,6 +1528,7 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
         }],
         [ANALYSIS_TOKEN_PARAM]: 1000,
         temperature: 0.7,
+        response_format: { type: 'json_object' },
       });
 
       if (idResponse.usage) {
@@ -1448,32 +1732,65 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
       const promptText = buildHealthCheckAgentPrompt(context, plantName, language);
       const currentImageUrl = imageList.map(b64 => `data:image/jpeg;base64,${b64}`);
 
-      const previousImageUrls = getPreviousImagesForTier(context, 1);
-      const contentBlocks = buildHealthCheckContentBlocks(
-        promptText,
-        currentImageUrl,
-        previousImageUrls,
-        false
-      );
+      const accUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
-      const response = await openaiClient.chat.completions.create({
-        model: ANALYSIS_MODEL,
-        messages: [{ role: 'user', content: contentBlocks }],
-        [ANALYSIS_TOKEN_PARAM]: 3000,
-        temperature: 0.8,
-      });
+      // One retry: the result screen needs score + findings + recommendations, and a
+      // single sampling at temperature 0.8 drops them often enough to be worth asking
+      // again. The retry also widens the historical image tier so the model has more
+      // to compare against.
+      let content = '';
+      let parsed = null;
+      let verdict = { ok: false, reason: 'not_attempted' };
+      let previousImagesUsed = 0;
+      let attemptsUsed = 0;
 
-      const accUsage = response.usage
-        ? {
-            prompt_tokens: response.usage.prompt_tokens || 0,
-            completion_tokens: response.usage.completion_tokens || 0,
-            total_tokens: response.usage.total_tokens || 0,
-          }
-        : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+      for (let attempt = 0; attempt < HEALTH_CHECK_IMAGE_TIERS.length; attempt++) {
+        const isRetry = attempt > 0;
+        const previousImageUrls = getPreviousImagesForTier(
+          context,
+          HEALTH_CHECK_IMAGE_TIERS[attempt]
+        );
+        const contentBlocks = buildHealthCheckContentBlocks(
+          promptText,
+          currentImageUrl,
+          previousImageUrls,
+          isRetry
+        );
 
-      const content = response.choices?.[0]?.message?.content || '';
-      let recommendations = parseAIResponse(content);
-      recommendations = normalizeRecommendations(recommendations, req.body || {});
+        const response = await openaiClient.chat.completions.create({
+          model: ANALYSIS_MODEL,
+          messages: [{ role: 'user', content: contentBlocks }],
+          [ANALYSIS_TOKEN_PARAM]: 3000,
+          temperature: 0.8,
+          // Without this the model occasionally closes an array with `}` — the
+          // parse then fails, parseAIResponse silently drops to its text-scraping
+          // fallback, and the whole structured payload is lost.
+          response_format: { type: 'json_object' },
+        });
+
+        attemptsUsed = attempt + 1;
+        previousImagesUsed = previousImageUrls.length;
+
+        if (response.usage) {
+          accUsage.prompt_tokens += response.usage.prompt_tokens || 0;
+          accUsage.completion_tokens += response.usage.completion_tokens || 0;
+          accUsage.total_tokens += response.usage.total_tokens || 0;
+        }
+
+        content = response.choices?.[0]?.message?.content || '';
+        parsed = parseAIResponse(content);
+        verdict = evaluateHealthCheckAgentResult(parsed, context);
+        if (verdict.ok) break;
+
+        console.warn(
+          `⚠️ Health check attempt ${attemptsUsed} rejected: ${verdict.reason}` +
+            (attempt < HEALTH_CHECK_IMAGE_TIERS.length - 1 ? ' — retrying' : ' — using anyway')
+        );
+      }
+
+      // Even a rejected result gets normalized and returned: the fallbacks there give
+      // the user a usable screen, which beats an error toast after a 30-second wait.
+      let recommendations = normalizeRecommendations(parsed, req.body || {});
 
       if (accUsage.total_tokens > 0) {
         const db = admin.firestore();
@@ -1484,9 +1801,16 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
         success: true,
         recommendations,
         rawResponse: content,
+        // Handed back so the client can store it on the check document
+        // (SPEC 5.2). A month later the weather has moved on but the advice
+        // has not, and without this there is no way to see why the agent said
+        // what it said.
+        weatherSnapshot: weatherSnapshot(context.weather),
         agent: {
-          attemptsUsed: 1,
-          previousImagesUsed: previousImageUrls.length,
+          attemptsUsed,
+          previousImagesUsed,
+          accepted: verdict.ok,
+          rejectedReason: verdict.ok ? null : verdict.reason,
           context: {
             healthChecksLoaded: context.recentHealthChecks.length,
             wateringEventsLoaded: context.recentWateringEvents.length,
@@ -1503,6 +1827,112 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
     }
   });
 });
+
+// ── Auth ────────────────────────────────────────────────────────────
+
+/**
+ * Verifies the Firebase ID token on an https.onRequest endpoint.
+ *
+ * Returns the caller's uid, or null after having already written the error
+ * response — so a caller only has to `if (!uid) return;`.
+ *
+ * The uid is deliberately the *only* thing that comes back. Endpoints used to
+ * take `userId` from the request body and trust it, which meant anyone who
+ * knew a plant id could read that plant's chat context.
+ */
+async function verifyCaller(req, res) {
+  const authHeader = String(req.headers.authorization || '');
+  const bearerToken = authHeader.startsWith('Bearer ')
+    ? authHeader.slice('Bearer '.length).trim()
+    : '';
+  if (!bearerToken) {
+    res.status(401).json({ success: false, error: 'Missing bearer token.' });
+    return null;
+  }
+  try {
+    const decoded = await admin.auth().verifyIdToken(bearerToken);
+    if (!decoded || !decoded.uid) {
+      res.status(401).json({ success: false, error: 'Invalid auth token.' });
+      return null;
+    }
+    return decoded.uid;
+  } catch (_) {
+    res.status(401).json({ success: false, error: 'Invalid auth token.' });
+    return null;
+  }
+}
+
+// ── Chat history ────────────────────────────────────────────────────
+
+/**
+ * How many past messages the model sees.
+ *
+ * Long-term knowledge is meant to live in the plant's structured memory, so
+ * this window only has to carry the current thread of conversation — about six
+ * exchanges. It sits here rather than in the app so it can be retuned against
+ * real conversations without shipping a release.
+ */
+const CHAT_HISTORY_WINDOW = 12;
+
+/**
+ * Reads the tail of a plant's chat straight from Firestore.
+ *
+ * The app used to assemble this window and post it in the request body, which
+ * is how it came to send the *first* fourteen messages of a conversation
+ * instead of the last fourteen — a bug that could not have existed if the
+ * server had owned the window in the first place.
+ *
+ * `historyClearedAt` on the parent doc is a soft clear: the message documents
+ * stay in the database, but neither the user nor the model sees anything from
+ * before the mark. Without applying it here the assistant would go on quoting
+ * a conversation the user is looking at an empty screen for.
+ */
+async function loadChatHistory(db, uid, plantId, currentMessage) {
+  const chatRef = db
+    .collection('users')
+    .doc(uid)
+    .collection('plant_chats')
+    .doc(plantId);
+
+  let clearedAt = null;
+  try {
+    const chatDoc = await chatRef.get();
+    if (chatDoc.exists) clearedAt = chatDoc.data().historyClearedAt || null;
+  } catch (e) {
+    console.warn('⚠️ Chat history: could not read clear marker:', e.message);
+  }
+
+  let query = chatRef.collection('messages');
+  if (clearedAt) query = query.where('createdAt', '>', clearedAt);
+
+  const snap = await query
+    .orderBy('createdAt', 'desc')
+    .limit(CHAT_HISTORY_WINDOW)
+    .get();
+
+  // Firestore hands back newest first; the model needs oldest first.
+  const history = snap.docs
+    .reverse()
+    .map((doc) => {
+      const d = doc.data() || {};
+      return {
+        role: d.role === 'assistant' ? 'assistant' : 'user',
+        content: String(d.text || '').slice(0, 1500),
+      };
+    })
+    .filter((m) => m.content.length > 0);
+
+  // The app persists the user's message before calling us, so whether it has
+  // landed by now is a race. Drop it when it has: passing the same text both
+  // as history and as the current turn reads to the model as the user saying
+  // it twice.
+  const last = history[history.length - 1];
+  if (last && last.role === 'user' && last.content === String(currentMessage || '').slice(0, 1500)) {
+    history.pop();
+  }
+
+  return history;
+}
 
 // ── Chat image quota helpers ────────────────────────────────────────
 const CHAT_IMAGE_DAILY_LIMIT = 2;
@@ -1535,9 +1965,12 @@ async function incrementChatImageQuota(db, userId, plantId) {
 exports.chatImageQuota = functions.https.onRequest((req, res) => {
   return cors(req, res, async () => {
     try {
-      const { userId, plantId } = req.method === 'GET' ? req.query : (req.body || {});
-      if (!userId || !plantId) {
-        return res.status(400).json({ success: false, error: 'userId and plantId are required' });
+      const userId = await verifyCaller(req, res);
+      if (!userId) return;
+
+      const { plantId } = req.method === 'GET' ? req.query : (req.body || {});
+      if (!plantId) {
+        return res.status(400).json({ success: false, error: 'plantId is required' });
       }
       const db = admin.firestore();
       const { usedToday } = await getChatImageQuota(db, userId, plantId);
@@ -1563,22 +1996,26 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         throw new Error('OPENAI_API_KEY is not configured');
       }
 
+      // Identity comes from the verified token, never from the body. `userId`
+      // used to be whatever the caller claimed it was.
+      const userId = await verifyCaller(req, res);
+      if (!userId) return;
+
       const {
         plantId,
-        userId,
         message,
+        topic,       // which care topic the user came in from, null for the general chat
         locale,
         plantName,
         species,
-        conversation,
         base64Image, // base64-encoded JPEG sent directly (no Storage upload)
         imageUrl,    // legacy: Storage URL (kept for backwards compat)
       } = req.body || {};
 
-      if (!plantId || !userId || !message) {
+      if (!plantId || !message) {
         return res.status(400).json({
           success: false,
-          error: 'plantId, userId and message are required',
+          error: 'plantId and message are required',
         });
       }
 
@@ -1631,15 +2068,7 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         speciesHint: species,
       });
 
-      const history = Array.isArray(conversation)
-        ? conversation
-            .slice(-20)
-            .map((m) => ({
-              role: m?.role === 'assistant' ? 'assistant' : 'user',
-              content: String(m?.text || '').slice(0, 1500),
-            }))
-            .filter((m) => m.content.length > 0)
-        : [];
+      const history = await loadChatHistory(db, userId, plantId, message);
 
       // ── Build user message content (text only, or text + image) ────
       const userMessageContent = resolvedImageUrl
@@ -1683,9 +2112,11 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
           wateringEventsLoaded: (context.recentWateringEvents || []).length,
           previousImagesLoaded: (context.recentImageUrls || []).length,
           imageAttached: hasImage,
+          historyLoaded: history.length,
         },
         context: {
           plantId,
+          topic: topic || null,
           plantName: context.plant?.name || plantName || null,
           species: context.plant?.species || species || null,
         },
@@ -2486,6 +2917,14 @@ function transformNewJsonToLegacy(jsonData) {
     // Pass the full structured object so the client can build
     // localized section titles in the user's language.
     care_recommendations: careRec,
+    // Health-report fields. This transform rebuilds the payload field by field,
+    // so anything not listed here is dropped before the client ever sees it.
+    health_score: jsonData.health_score ?? null,
+    findings: Array.isArray(jsonData.findings) ? jsonData.findings : [],
+    recommendations: Array.isArray(jsonData.recommendations) ? jsonData.recommendations : [],
+    // The result validator reads soil state to spot "water now" advice that
+    // contradicts a recent watering; without it that guard silently no-ops.
+    soil,
   };
 
   if (scientificWatering) {
@@ -3664,14 +4103,23 @@ exports.onStripeWebhook = functions.https.onRequest(async (req, res) => {
           stripeSubscriptionId: subscriptionId || null,
           subscriptionExpiresAt: null,
           autoRenewEnabled: true,
+          // Which store to send the user to for "Manage subscription".
+          // Inferring it from the presence of stripeSubscriptionId breaks for
+          // anyone who has ever paid both ways.
+          subscriptionProvider: 'stripe',
+          billingIssue: false,
         };
 
         // Fetch subscription to get period end
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          // No fallback to `billing_cycle_anchor`: that is where the cycle
+          // *starts*. Using it as the end date writes an expiry in the past,
+          // and the subscription reads as lapsed the moment it is paid for.
+          // With no usable date we leave the field alone — the client then
+          // treats the subscription as open-ended rather than already dead.
           const periodEndRaw = subscription.current_period_end
-            || subscription.items?.data?.[0]?.current_period_end
-            || subscription.billing_cycle_anchor;
+            || subscription.items?.data?.[0]?.current_period_end;
           if (periodEndRaw && typeof periodEndRaw === 'number') {
             const periodEnd = new Date(periodEndRaw * 1000);
             if (!isNaN(periodEnd.getTime())) {
@@ -3730,9 +4178,10 @@ exports.onStripeWebhook = functions.https.onRequest(async (req, res) => {
 
 async function _updateStripeSubscription(db, uid, subscription, previousAttributes = {}) {
   const status = subscription.status;
+  // See the note at the checkout handler: `billing_cycle_anchor` is the start
+  // of the cycle, never its end.
   const periodEndRaw = subscription.current_period_end
-    || subscription.items?.data?.[0]?.current_period_end
-    || subscription.billing_cycle_anchor;
+    || subscription.items?.data?.[0]?.current_period_end;
   const periodEnd = periodEndRaw ? new Date(periodEndRaw * 1000) : null;
 
   let subscriptionStatus;
@@ -3744,9 +4193,16 @@ async function _updateStripeSubscription(db, uid, subscription, previousAttribut
     subscriptionStatus = 'active'; // past_due, incomplete — keep active for grace period
   }
 
+  // The grace period is kept, but it stops being silent. Access continues while
+  // Stripe retries the card; the flag is what lets the app say so, instead of
+  // going dark days later with no explanation.
+  const billingIssue = status === 'past_due' || status === 'incomplete';
+
   const updateData = {
     subscriptionStatus,
     stripeSubscriptionId: subscription.id,
+    subscriptionProvider: 'stripe',
+    billingIssue,
   };
 
   // Subscription is cancelled when cancel_at_period_end=true OR cancel_at is set to a future date.
@@ -3798,6 +4254,9 @@ exports.onRevenueCatWebhook = functions.https.onRequest(async (req, res) => {
     app_user_id: appUserId,
     expiration_at_ms: expirationAtMs,
     original_transaction_id: originalTransactionId,
+    // 'APP_STORE' | 'MAC_APP_STORE' | 'PLAY_STORE' | 'STRIPE' | 'AMAZON'.
+    // Decides where "Manage subscription" sends the user.
+    store,
   } = event;
 
   if (!appUserId) {
@@ -3822,8 +4281,23 @@ exports.onRevenueCatWebhook = functions.https.onRequest(async (req, res) => {
     if (directDoc.exists) {
       userRef = directDoc.ref;
     } else {
+      // A purchase we cannot attribute is money that changed hands with no
+      // account behind it. Answering 200 and forgetting means RevenueCat never
+      // retries and the event is gone for good, so park it for a human.
       console.warn(`⚠️ RevenueCat webhook: no user found for app_user_id=${appUserId}`);
-      return res.status(200).send('User not found — ignored');
+      try {
+        await db.collection('orphanedPurchases').add({
+          appUserId: appUserId || null,
+          originalTransactionId: originalTransactionId || null,
+          eventType: type || null,
+          expirationAtMs: expirationAtMs || null,
+          receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+          payload: event || null,
+        });
+      } catch (e) {
+        console.error('❌ RevenueCat webhook: could not park orphaned purchase:', e);
+      }
+      return res.status(200).send('User not found — parked for review');
     }
   }
 
@@ -3842,6 +4316,9 @@ exports.onRevenueCatWebhook = functions.https.onRequest(async (req, res) => {
         subscriptionExpiresAt: expiresAt,
         autoRenewEnabled: true,
         originalTransactionId: originalTransactionId || null,
+        subscriptionProvider: store === 'PLAY_STORE' ? 'google' : 'apple',
+        // A successful renewal clears any earlier payment failure.
+        billingIssue: false,
       };
       break;
 
@@ -3862,9 +4339,11 @@ exports.onRevenueCatWebhook = functions.https.onRequest(async (req, res) => {
       break;
 
     case 'BILLING_ISSUE':
-      // Keep active status but note expiry approaching
+      // Access continues through the store's retry window; the flag is what
+      // lets the app warn instead of simply stopping one day.
       update = {
         subscriptionExpiresAt: expiresAt,
+        billingIssue: true,
       };
       break;
 
@@ -4036,6 +4515,122 @@ exports.verifyEmailPin = functions.https.onRequest((req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
+//  enforcePlantSlotLimit — on every new plant document
+//
+//  The client checks the allowance before writing, but plants are created by
+//  writing to Firestore directly, and a client check is a suggestion. This is
+//  the half that cannot be skipped.
+//
+//  Counted the way SPEC 11 §1.2 requires: live documents, right now. No
+//  `plantCount` field anywhere — a counter kept beside the data drifts from it
+//  sooner or later, and that drift is exactly the bug where deleting a plant
+//  did not give the slot back.
+//
+//  An over-limit plant is soft-deleted rather than destroyed: the same tombstone
+//  the app already uses, so nothing is lost if this ever fires wrongly.
+// ═══════════════════════════════════════════════════════════════════
+const PLANT_SLOTS_FREE = 3;
+const PLANT_SLOTS_PREMIUM = 10;
+
+exports.enforcePlantSlotLimit = functions.firestore
+  .document('plants/{plantId}')
+  .onCreate(async (snap, context) => {
+    const db = admin.firestore();
+    const plant = snap.data() || {};
+    const userId = plant.userId;
+    if (!userId) return null;
+
+    // Already a tombstone — nothing to police.
+    if (plant.deletedAt) return null;
+
+    let limit = PLANT_SLOTS_FREE;
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      const user = userDoc.data() || {};
+      const status = user.subscriptionStatus || 'trial';
+      const expiresAt = user.subscriptionExpiresAt;
+      // Same rule the client applies: `active` with a date in the past is a
+      // webhook we never received, not access.
+      const live =
+        status === 'grandfathered' ||
+        (status === 'active' &&
+          (!expiresAt || expiresAt.toMillis() > Date.now()));
+      if (live) limit = PLANT_SLOTS_PREMIUM;
+    } catch (e) {
+      console.warn(`⚠️ enforcePlantSlotLimit: could not read user ${userId}: ${e}`);
+    }
+
+    const liveSnap = await db
+      .collection('plants')
+      .where('userId', '==', userId)
+      .where('deletedAt', '==', null)
+      .get();
+
+    if (liveSnap.size <= limit) return null;
+
+    console.warn(
+      `🚫 enforcePlantSlotLimit: ${userId} has ${liveSnap.size} live plants, ` +
+        `limit ${limit} — rolling back ${context.params.plantId}`
+    );
+    await snap.ref.update({
+      deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+      deletedReason: 'slot_limit',
+    });
+    return null;
+  });
+
+// ═══════════════════════════════════════════════════════════════════
+//  reconcileExpiredSubscriptions — hourly
+//
+//  A subscription only ever became `expired` when the store's EXPIRATION
+//  webhook arrived. Webhooks get delayed, retried and dropped; when one is
+//  lost the row stays `active` for good and the account keeps the paid tier
+//  without paying. This walks the ones whose own expiry date has passed and
+//  closes them.
+//
+//  The client applies the same rule on read (SubscriptionInfo.hasAccess), so
+//  access closes immediately either way — this exists so the stored state
+//  eventually matches what the user is actually seeing.
+//
+//  Deliberately narrow: only rows that claim to be active *and* carry a date
+//  in the past. Grandfathered accounts have no date and are never touched.
+// ═══════════════════════════════════════════════════════════════════
+exports.reconcileExpiredSubscriptions = functions.pubsub
+  .schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+
+    const snap = await db
+      .collection('users')
+      .where('subscriptionStatus', '==', 'active')
+      .where('subscriptionExpiresAt', '<', now)
+      .limit(500)
+      .get();
+
+    if (snap.empty) {
+      console.log('🧾 reconcileExpiredSubscriptions: nothing to close');
+      return null;
+    }
+
+    const batch = db.batch();
+    for (const doc of snap.docs) {
+      batch.update(doc.ref, {
+        subscriptionStatus: 'expired',
+        subscriptionExpiredBy: 'reconcile',
+        subscriptionReconciledAt: now,
+      });
+    }
+    await batch.commit();
+
+    console.log(
+      `🧾 reconcileExpiredSubscriptions: closed ${snap.size} lapsed subscription(s)`
+    );
+    return null;
+  });
+
+// ═══════════════════════════════════════════════════════════════════
 //  aggregateAiUsageDaily — runs daily at 00:05 UTC
 //  Aggregates ai_usage records for the previous day into ai_usage_daily/{date}
 // ═══════════════════════════════════════════════════════════════════
@@ -4151,3 +4746,256 @@ exports.getAiStats = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+// ── Care task scheduler ─────────────────────────────────────────────────────
+//
+// Tasks are not generated daily. Each source has its own rhythm (SPEC v3 1.3),
+// and — crucially — nothing new is created for a plant while that plant still
+// has open tasks. Without that rule a neglected plant accumulates a backlog the
+// user can never clear, which is exactly what the "Сегодня" group is meant to
+// prevent.
+
+const TASK_FERTILIZE_EVERY_DAYS = 14;
+const TASK_RESCAN_EVERY_DAYS = 30;
+
+/** Стакан как база пересчёта дозы — та же, что на экране растения. */
+const GLASS_ML = 200;
+
+/** Календарные сутки между двумя моментами. */
+function daysBetween(from, to) {
+  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.floor((b - a) / 86400000);
+}
+
+/**
+ * Builds the task documents a plant is due for. Pure apart from `now` so the
+ * rules stay testable.
+ *
+ * `openCategories` holds the categories of the plant's open **scheduled** tasks.
+ * SPEC 1.3.3 held everything back while any task was open; that is now
+ * per-category, because watering pairs with a health check and a health check
+ * people skip must never stop the watering reminder.
+ */
+function plannedTasksFor(plant, openCategories, now, locale = 'en') {
+  const t = taskStrings(locale);
+  const out = [];
+  const lastFertilised = toDateSafe(plant.lastFertilisedAt);
+  const lastScan = toDateSafe(plant.lastHealthCheck);
+  const lastScanTask = toDateSafe(plant.lastScanTaskAt);
+  const cycleStart = toDateSafe(plant.lastWateredAt) || toDateSafe(plant.lastWatered);
+
+  // Watering is a task on the home deck (SPEC 1.3) even though the plant screen
+  // shows it as its hero widget — "no duplicates" applies to the plant's own
+  // "what to do" block, which filters watering out client-side.
+  const wateringDue = toDateSafe(plant.nextDueAt) || toDateSafe(plant.nextWatering);
+  // The client also treats a sticky `shouldWaterNow` from the analyser as "due"
+  // (`_canWaterPlant`). Without it the screen locks the health check while the
+  // scheduler issues nothing at all.
+  const wateringDueNow =
+    (wateringDue && wateringDue <= now) || plant.shouldWaterNow === true;
+
+  if (wateringDueNow && !openCategories.has('water')) {
+    const ml = Number(plant.wateringAmountMl);
+    const interval = Number(plant.wateringIntervalDays || plant.wateringFrequency);
+    const kv = [];
+    if (Number.isFinite(ml) && ml > 0) {
+      kv.push({ k: t.kvVolume, v: `${Math.round(ml)} ${t.unitMl}` });
+      kv.push({
+        k: t.kvThisIs,
+        v: `${(ml / GLASS_ML).toFixed(1).replace('.0', '')} ${t.unitGlasses}`,
+      });
+    }
+    if (Number.isFinite(interval) && interval > 0) {
+      kv.push({ k: t.kvCycle, v: t.valEveryNDays(interval) });
+    }
+    out.push({
+      title: t.waterTitle,
+      detail:
+        Number.isFinite(ml) && ml > 0
+          ? t.waterDetail(Math.round(ml))
+          : t.waterDetailPlain,
+      category: 'water',
+      // Numbers travel next to the text so a client can rebuild the whole card
+      // in its own language when the user switches the interface.
+      params: {
+        ml: Number.isFinite(ml) && ml > 0 ? Math.round(ml) : null,
+        intervalDays: Number.isFinite(interval) && interval > 0 ? interval : null,
+      },
+      // The real due date, not "now": a watering three days late has to read as
+      // three days late, both in the sort order and in the plant's score.
+      dueAt: wateringDue.toISOString(),
+      kv,
+      body: t.waterBody,
+    });
+  }
+
+  const needsFertiliser =
+    !lastFertilised || daysBetween(lastFertilised, now) >= TASK_FERTILIZE_EVERY_DAYS;
+  if (needsFertiliser && !openCategories.has('fertilizer')) {
+    out.push({
+      title: t.fertTitle,
+      detail: t.fertDetail,
+      category: 'fertilizer',
+      params: {},
+      kv: [
+        { k: t.kvRhythm, v: t.valFortnightly },
+        { k: t.kvDose, v: t.valHalfDose },
+      ],
+      body: t.fertBody,
+    });
+  }
+
+  // The health check rides along with watering: it goes out on the watering day
+  // whether or not the plant has been watered yet, so the user can water, tap
+  // "I have watered" (which unlocks the check) and then run it from the task.
+  //
+  // Both watermarks are anchored on the watering cycle, not on `now`. Anchoring
+  // on `now` would re-issue the task every six hours for as long as the plant
+  // stays thirsty — once after every completed check, forever. `lastScanTaskAt`
+  // is written when the task is created, so the rule holds no matter *how* the
+  // task was closed.
+  const scannedThisCycle =
+    lastScan && cycleStart && lastScan > cycleStart;
+  const issuedThisCycle =
+    lastScanTask && cycleStart && lastScanTask > cycleStart;
+
+  const needsRescan =
+    !scannedThisCycle &&
+    !issuedThisCycle &&
+    !openCategories.has('scan') &&
+    // Two triggers, one watermark. Letting the ceiling skip `issuedThisCycle`
+    // put a plant with an old check straight back into the six-hourly loop the
+    // watermark exists to prevent.
+    //
+    // The ceiling keeps slow-cycle plants honest: a cactus watered every 45 days
+    // would otherwise go a month and a half without a look.
+    (wateringDueNow ||
+      !lastScan ||
+      daysBetween(lastScan, now) >= TASK_RESCAN_EVERY_DAYS);
+
+  if (needsRescan) {
+    out.push({
+      title: t.scanTitle,
+      detail: t.scanDetail,
+      category: 'scan',
+      params: {},
+      // Same due date as its watering twin, so the pair ages together and the
+      // deck shows them as one cycle rather than two unrelated chores.
+      dueAt: wateringDueNow && wateringDue ? wateringDue.toISOString() : undefined,
+      kv: [
+        { k: t.kvRhythm, v: t.valMonthly },
+        { k: t.kvNeeds, v: t.valPhotos },
+      ],
+      body: t.scanBody,
+    });
+  }
+
+  return out;
+}
+
+// Exported for the unit tests under functions/test.
+exports.plannedTasksFor = plannedTasksFor;
+exports.describeGrowingConditions = describeGrowingConditions;
+exports.loadChatHistory = loadChatHistory;
+exports.CHAT_HISTORY_WINDOW = CHAT_HISTORY_WINDOW;
+
+exports.scheduleCareTasks = functions.pubsub
+  .schedule('every 6 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = new Date();
+
+    const plantsSnap = await db
+      .collection('plants')
+      .where('deletedAt', '==', null)
+      .limit(500)
+      .get();
+
+    let created = 0;
+    let skipped = 0;
+    /** userId → language code, so each user's document is read once per tick. */
+    const localeByUser = new Map();
+
+    for (const doc of plantsSnap.docs) {
+      const plant = doc.data() || {};
+      if (!plant.userId) continue;
+
+      const openSnap = await db
+        .collection('tasks')
+        .where('userId', '==', plant.userId)
+        .where('plantId', '==', doc.id)
+        .where('done', '==', false)
+        .get();
+
+      // Only scheduled tasks hold back the rhythm. An analysis recommendation
+      // that `_taskCategoryFor` filed under "water" must not silence the
+      // watering reminder.
+      const openCategories = new Set(
+        openSnap.docs
+          .map((d) => d.data() || {})
+          .filter((t) => t.source === 'schedule')
+          .map((t) => t.category)
+          .filter(Boolean)
+      );
+
+      // One lookup per user, not per plant: a garden of twenty plants would
+      // otherwise read the same user document twenty times every tick.
+      if (!localeByUser.has(plant.userId)) {
+        let code = 'en';
+        try {
+          const userDoc = await db.collection('users').doc(plant.userId).get();
+          const u = userDoc.data() || {};
+          code = normaliseLocale(u.locale || u.language);
+        } catch (e) {
+          console.warn(`⚠️ locale lookup failed for ${plant.userId}: ${e}`);
+        }
+        localeByUser.set(plant.userId, code);
+      }
+      const planned = plannedTasksFor(
+        plant,
+        openCategories,
+        now,
+        localeByUser.get(plant.userId)
+      );
+      if (planned.length === 0) {
+        skipped++;
+        continue;
+      }
+
+      const batch = db.batch();
+      let issuedScan = false;
+      for (const task of planned) {
+        if (task.category === 'scan') issuedScan = true;
+        const ref = db.collection('tasks').doc();
+        batch.set(ref, {
+          ...task,
+          id: ref.id,
+          plantId: doc.id,
+          userId: plant.userId,
+          source: 'schedule',
+          // Most tasks start today; watering carries its own overdue date.
+          dueAt: task.dueAt || now.toISOString(),
+          postponedAt: null,
+          done: false,
+          completedAt: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        created++;
+      }
+      // The watermark that makes the scan rule idempotent: written with the task
+      // itself, so a check the user ticked off, skipped or completed properly all
+      // look the same to the next tick.
+      if (issuedScan) {
+        batch.update(doc.ref, { lastScanTaskAt: now.toISOString() });
+      }
+      await batch.commit();
+    }
+
+    console.log(
+      `🗓️ scheduleCareTasks: ${created} created, ${skipped} plants already busy ` +
+        `(of ${plantsSnap.size})`
+    );
+    return null;
+  });
