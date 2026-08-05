@@ -1332,10 +1332,11 @@ The owner is reading this section of the plant's own care plan right now:
 """
 ${topicBrief}
 """
-It is authoritative for this plant. Continue it — do not restate it, and do not
-replace its figures with the generic ones for the species. Other subjects stay
-in scope: use light, temperature, soil or anything else whenever it changes the
-answer.
+It is authoritative for this plant: use its figures rather than the generic ones
+for the species, and assume the owner has already read it, so do not recite it
+back. Your answer is a new, complete message of its own — begin a fresh
+sentence, never a continuation of the text above. Other subjects stay in scope:
+use light, temperature, soil or anything else whenever it changes the answer.
 ` : ''}${conditions ? `
 Growing conditions the owner already told us:
 ${conditions}
