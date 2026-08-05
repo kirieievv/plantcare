@@ -19,6 +19,12 @@ String get chatPlantAssistantUrl {
   return 'https://us-central1-$projectId.cloudfunctions.net/chatPlantAssistant';
 }
 
+/// Apply or decline a change the assistant proposed in chat.
+String get applyChatProposalUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/applyChatProposal';
+}
+
 /// Request one-time reset PIN for password recovery.
 String get requestPasswordResetPinUrl {
   final projectId = Firebase.app().options.projectId;

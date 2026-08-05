@@ -2924,4 +2924,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String weatherDegrees(String value) {
     return '$value°';
   }
+
+  @override
+  String get chatProposalApply => 'Apply';
+
+  @override
+  String get chatProposalDecline => 'No thanks';
+
+  @override
+  String get chatProposalApplied => 'Applied';
+
+  @override
+  String get chatProposalDeclined => 'Declined';
+
+  @override
+  String get chatProposalOutdated => 'Outdated';
+
+  @override
+  String get chatProposalPot => 'Pot';
+
+  @override
+  String get chatProposalSpecies => 'Species';
+
+  @override
+  String get chatProposalPause => 'Pause reminders until';
+
+  @override
+  String chatProposalChange(String label, String from, String to) {
+    return '$label: $from → $to';
+  }
+
+  @override
+  String chatProposalSet(String label, String to) {
+    return '$label: $to';
+  }
 }

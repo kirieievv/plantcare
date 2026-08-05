@@ -2955,4 +2955,38 @@ class AppLocalizationsRu extends AppLocalizations {
   String weatherDegrees(String value) {
     return '$value°';
   }
+
+  @override
+  String get chatProposalApply => 'Применить';
+
+  @override
+  String get chatProposalDecline => 'Не надо';
+
+  @override
+  String get chatProposalApplied => 'Применено';
+
+  @override
+  String get chatProposalDeclined => 'Отклонено';
+
+  @override
+  String get chatProposalOutdated => 'Устарело';
+
+  @override
+  String get chatProposalPot => 'Горшок';
+
+  @override
+  String get chatProposalSpecies => 'Вид';
+
+  @override
+  String get chatProposalPause => 'Пауза напоминаний до';
+
+  @override
+  String chatProposalChange(String label, String from, String to) {
+    return '$label: $from → $to';
+  }
+
+  @override
+  String chatProposalSet(String label, String to) {
+    return '$label: $to';
+  }
 }

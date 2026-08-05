@@ -2955,4 +2955,38 @@ class AppLocalizationsUk extends AppLocalizations {
   String weatherDegrees(String value) {
     return '$value°';
   }
+
+  @override
+  String get chatProposalApply => 'Застосувати';
+
+  @override
+  String get chatProposalDecline => 'Не треба';
+
+  @override
+  String get chatProposalApplied => 'Застосовано';
+
+  @override
+  String get chatProposalDeclined => 'Відхилено';
+
+  @override
+  String get chatProposalOutdated => 'Застаріло';
+
+  @override
+  String get chatProposalPot => 'Горщик';
+
+  @override
+  String get chatProposalSpecies => 'Вид';
+
+  @override
+  String get chatProposalPause => 'Пауза нагадувань до';
+
+  @override
+  String chatProposalChange(String label, String from, String to) {
+    return '$label: $from → $to';
+  }
+
+  @override
+  String chatProposalSet(String label, String to) {
+    return '$label: $to';
+  }
 }

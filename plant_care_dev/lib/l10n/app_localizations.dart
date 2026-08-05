@@ -5280,6 +5280,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{value}°'**
   String weatherDegrees(String value);
+
+  /// No description provided for @chatProposalApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get chatProposalApply;
+
+  /// No description provided for @chatProposalDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'No thanks'**
+  String get chatProposalDecline;
+
+  /// No description provided for @chatProposalApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied'**
+  String get chatProposalApplied;
+
+  /// No description provided for @chatProposalDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get chatProposalDeclined;
+
+  /// No description provided for @chatProposalOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Outdated'**
+  String get chatProposalOutdated;
+
+  /// No description provided for @chatProposalPot.
+  ///
+  /// In en, this message translates to:
+  /// **'Pot'**
+  String get chatProposalPot;
+
+  /// No description provided for @chatProposalSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Species'**
+  String get chatProposalSpecies;
+
+  /// No description provided for @chatProposalPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause reminders until'**
+  String get chatProposalPause;
+
+  /// No description provided for @chatProposalChange.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {from} → {to}'**
+  String chatProposalChange(String label, String from, String to);
+
+  /// No description provided for @chatProposalSet.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {to}'**
+  String chatProposalSet(String label, String to);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

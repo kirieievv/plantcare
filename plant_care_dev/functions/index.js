@@ -13,6 +13,19 @@ const {
   weatherSnapshot,
 } = require('./weather');
 const { careBriefForTopic, isKnownTopic } = require('./care-sections');
+const {
+  FACT_KIND_NAMES,
+  buildMemoryBlock,
+  loadMemory,
+  recordFacts,
+} = require('./memory');
+const {
+  PROPOSABLE_FIELDS_HINT,
+  invalidatesPlan,
+  invalidatesSchedule,
+  proposalUpdate,
+  sanitizeProposal,
+} = require('./proposals');
 
 // ── AI Model Configuration ──────────────────────────────────────────
 // Model for watering reminder emails — cheap, template-style text.
@@ -1305,6 +1318,7 @@ function buildPlantChatSystemPrompt(context, options = {}) {
   // repeats the generic figure at someone staring at the specific one.
   const carePlan = context.carePlan || {};
   const topicBrief = careBriefForTopic(options.topic, carePlan.tips, carePlan.details);
+  const memoryBlock = buildMemoryBlock(context.memory, options.topic);
 
   return `You are Plant Care chat assistant for one specific plant.
 Speak about the plant in the third person, by name. Never speak as the plant.
@@ -1330,12 +1344,18 @@ place the plant is already standing in.
 ` : ''}${weather ? `
 Weather where the plant lives:
 ${weather}
+` : ''}${memoryBlock ? `
+What is already known about this plant, from earlier conversations:
+${memoryBlock}
+This outlives the messages above. Treat it as established unless the owner says
+otherwise now, and do not ask again about anything it already answers.
 ` : ''}
 Authoritative context (JSON):
 ${JSON.stringify({
     plant: plantSummary,
     recentHealthChecks: checksSummary,
     recentWateringEvents: waterSummary,
+    openAdvice: (context.openAdvice || []).slice(0, 5),
   }, null, 2)}
 
 Rules:
@@ -1343,10 +1363,32 @@ Rules:
 - Prefer this plant's own figures over what is typical for the species.
 - If the data conflicts, choose the conservative action and say why.
 - Never suggest "water now" when signs indicate overwatering risk or wet soil.
+- Do not repeat advice listed in openAdvice as if it were new. Ask how it went.
 - If uncertain, say so plainly rather than guessing.
-- Plain text only. No markdown: no **bold**, no headings, no bullet or number
-  markers. Separate thoughts with line breaks.
+- "answer" is plain text. No markdown: no **bold**, no headings, no bullet or
+  number markers. Separate thoughts with line breaks.
 - Three to six short lines. If the user asks what to do, make them steps.
+
+Return one JSON object with the keys "answer", "facts", "proposal", "task".
+
+"facts": things the OWNER has just stated as fact about their plant or their
+situation. Never your own inferences, however confident — "you seem to be
+overwatering" is a conclusion, "I water it every Sunday" is a fact. Empty array
+if the message states nothing. Each item is {"kind", "text"}, text a short
+sentence in the owner's language. Allowed kinds:
+${FACT_KIND_NAMES.join(', ')}
+placement/container/watering_habit/species_correction hold one value at a time;
+the rest accumulate.
+
+"proposal": at most one change to the plant's stored data, or null. Only when
+this conversation gives a concrete reason for it — never to tidy up, never on a
+guess. {"field", "value", "reason"}, reason one short sentence in the owner's
+language explaining what changed. Allowed fields and value types:
+${JSON.stringify(PROPOSABLE_FIELDS_HINT)}
+
+"task": a one-off reminder the owner needs on a future date, or null.
+{"title", "dueInDays"}, title short and in the owner's language. Only when the
+action genuinely belongs to a later date — routine care is already scheduled.
 `;
 }
 
@@ -1890,6 +1932,87 @@ async function verifyCaller(req, res) {
   }
 }
 
+/**
+ * Advice the owner was given and has not acted on.
+ *
+ * These are the `analysis` tasks a health check leaves behind — "let the soil
+ * dry out further before the next watering". They are not chores and they are
+ * not recomputed; they sit open, carrying a health-score penalty, until the
+ * owner does something about them.
+ *
+ * The assistant needs them so it stops offering the same advice as if for the
+ * first time. Without this it has no way to tell a suggestion it made last week
+ * from a new idea, and asking "how did that go?" is the difference between an
+ * assistant and a search box.
+ */
+async function loadOpenAdvice(db, plantId, userId) {
+  try {
+    const snap = await db
+      .collection('tasks')
+      .where('plantId', '==', plantId)
+      .where('userId', '==', userId)
+      .where('source', '==', 'analysis')
+      .where('done', '==', false)
+      .limit(5)
+      .get();
+    return snap.docs.map((doc) => {
+      const t = doc.data() || {};
+      return {
+        title: t.title || null,
+        createdAt: t.createdAt?.toDate?.()?.toISOString?.() || t.createdAt || null,
+      };
+    });
+  } catch (e) {
+    console.warn('⚠️ Open advice: could not load:', e.message);
+    return [];
+  }
+}
+
+/**
+ * Reads the model's JSON turn, and degrades to plain text rather than to
+ * nothing.
+ *
+ * `response_format: json_object` makes malformed JSON unlikely, not
+ * impossible — and the one thing that must survive every failure here is the
+ * answer. Losing an extracted fact costs the assistant a little memory; showing
+ * the owner an error because a bracket was missing costs them the reply they
+ * were waiting for.
+ */
+function parseChatCompletion(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return { answer: '', facts: [], proposal: null, task: null };
+
+  try {
+    const data = JSON.parse(text);
+    return {
+      answer: String(data.answer || '').trim(),
+      facts: Array.isArray(data.facts) ? data.facts : [],
+      proposal: data.proposal || null,
+      task: data.task || null,
+    };
+  } catch (_) {
+    console.warn('⚠️ Chat: model returned non-JSON, using it as the answer');
+    return { answer: text, facts: [], proposal: null, task: null };
+  }
+}
+
+/**
+ * A one-off reminder the assistant offered, or null.
+ *
+ * Bounded to a season: routine care is already scheduled, so anything the model
+ * wants a date for is a one-time act like repotting. A reminder a year out is a
+ * mistake rather than foresight, and one due today is a chore the deck already
+ * covers.
+ */
+function sanitizeSuggestedTask(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const title = String(raw.title || '').trim().slice(0, 80);
+  const dueInDays = Math.round(Number(raw.dueInDays));
+  if (!title || !Number.isFinite(dueInDays)) return null;
+  if (dueInDays < 1 || dueInDays > 180) return null;
+  return { title, dueInDays };
+}
+
 // ── Chat history ────────────────────────────────────────────────────
 
 /**
@@ -2016,6 +2139,166 @@ exports.chatImageQuota = functions.https.onRequest((req, res) => {
   });
 });
 
+/**
+ * Rebuilds the scheduled chores for one plant after its numbers changed.
+ *
+ * Deliberately narrow. `source: 'schedule'` tasks are derived — they can be
+ * thrown away and recomputed from the plant's fields, which is exactly what
+ * happens here. `source: 'analysis'` tasks cannot: they are advice a health
+ * check gave and the owner has not acted on, they carry a health-score penalty
+ * while open, and sweeping them would hand that penalty back silently. The same
+ * distinction is already defended in TaskService.completeCategory on the app
+ * side; this is the server half of it.
+ *
+ * Runs on confirmation rather than waiting for the six-hourly tick: an owner who
+ * has just tapped "Apply" and still sees the old date on the home deck has been
+ * told the change did not work.
+ */
+async function rebuildScheduledTasks(db, plantId, plant, userId) {
+  const now = new Date();
+
+  const openSnap = await db
+    .collection('tasks')
+    .where('userId', '==', userId)
+    .where('plantId', '==', plantId)
+    .where('done', '==', false)
+    .get();
+
+  const batch = db.batch();
+  const openCategories = new Set();
+  for (const doc of openSnap.docs) {
+    const task = doc.data() || {};
+    if (task.source === 'schedule') {
+      batch.delete(doc.ref);
+    } else if (task.category) {
+      // Analysis advice survives, but it still holds its category: reissuing a
+      // watering chore next to "let the soil dry out" is the contradiction the
+      // scheduler already guards against.
+      openCategories.add(task.category);
+    }
+  }
+
+  // A paused schedule issues nothing. The owner agreed to an absence in chat;
+  // reminding them daily to water a plant they are away from is the failure
+  // this exists to prevent.
+  const pausedUntil = Date.parse(plant.tasksPausedUntil || '');
+  const paused = Number.isFinite(pausedUntil) && pausedUntil > now.getTime();
+
+  let created = 0;
+  if (!paused) {
+    let locale = 'en';
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      const u = userDoc.data() || {};
+      locale = normaliseLocale(u.locale || u.language);
+    } catch (_) {
+      // English is a worse reminder, not a broken one.
+    }
+
+    for (const task of plannedTasksFor(plant, openCategories, now, locale)) {
+      const ref = db.collection('tasks').doc();
+      batch.set(ref, {
+        ...task,
+        id: ref.id,
+        plantId,
+        userId,
+        source: 'schedule',
+        dueAt: task.dueAt || now.toISOString(),
+        postponedAt: null,
+        done: false,
+        completedAt: null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      created++;
+    }
+  }
+
+  await batch.commit();
+  return { created, paused };
+}
+
+/**
+ * Applies or declines a change the assistant proposed.
+ *
+ * The proposal is re-validated here rather than trusted: it travels to the app
+ * and back, and "the server sent it to us" is not a reason to write whatever
+ * comes in. Everything outside the whitelist is refused on the way in, exactly
+ * as it was on the way out.
+ *
+ * Declining is recorded, and that is the point of having a second button. A
+ * proposal nobody touched and a proposal someone rejected look identical
+ * otherwise, so the assistant would keep offering the same thing every week to
+ * someone who has already said no.
+ */
+exports.applyChatProposal = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      const userId = await verifyCaller(req, res);
+      if (!userId) return;
+
+      const { plantId, proposal, decision, locale } = req.body || {};
+      if (!plantId || !proposal || !['apply', 'decline'].includes(decision)) {
+        return res.status(400).json({
+          success: false,
+          error: 'plantId, proposal and decision (apply|decline) are required',
+        });
+      }
+
+      const db = admin.firestore();
+      const plantRef = db.collection('plants').doc(plantId);
+      const plantDoc = await plantRef.get();
+      if (!plantDoc.exists || plantDoc.data().userId !== userId) {
+        return res.status(403).json({ success: false, error: 'Plant not found or access denied' });
+      }
+      const plant = plantDoc.data();
+
+      // `to` on the way in is what `value` was on the way out.
+      const clean = sanitizeProposal(
+        { field: proposal.field, value: proposal.to, reason: proposal.reason },
+        plant,
+      );
+      if (!clean) {
+        return res.status(400).json({ success: false, error: 'Proposal is no longer valid' });
+      }
+
+      if (decision === 'decline') {
+        await recordFacts(db, plantId, [{
+          kind: 'preference',
+          text: `Declined: ${clean.reason}`,
+          lang: locale || null,
+        }], { source: 'proposal_declined' });
+        return res.json({ success: true, decision: 'decline' });
+      }
+
+      const update = proposalUpdate(clean);
+      // The standing plan is prose, and regenerating it costs a model call. It
+      // is marked stale here and rewritten at the next health check instead:
+      // making the owner wait on a language model behind a confirmation button
+      // buys nothing they can see.
+      if (invalidatesPlan(clean.field)) {
+        update.carePlanStaleAt = new Date().toISOString();
+      }
+      await plantRef.update(update);
+
+      let schedule = null;
+      if (invalidatesSchedule(clean.field) || invalidatesPlan(clean.field)) {
+        try {
+          schedule = await rebuildScheduledTasks(db, plantId, { ...plant, ...update }, userId);
+        } catch (e) {
+          // The field change is the promise that was made; the reminders can
+          // catch up on the next tick.
+          console.warn('⚠️ Proposal: applied but could not rebuild tasks:', e.message);
+        }
+      }
+
+      return res.json({ success: true, decision: 'apply', applied: clean, schedule });
+    } catch (error) {
+      console.error('❌ applyChatProposal error:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+});
+
 exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
   return cors(req, res, async () => {
     try {
@@ -2078,12 +2361,20 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         });
       }
 
+      // What the plant's own record cannot say: everything the owner has told
+      // us in past conversations, and the advice they were given and have not
+      // come back on. Both outlive the twelve-message window.
+      context.memory = await loadMemory(db, plantId);
+      context.openAdvice = await loadOpenAdvice(db, plantId, userId);
+
       const hasContextSignals =
         (context.recentHealthChecks || []).length > 0 ||
         (context.recentWateringEvents || []).length > 0 ||
         (context.recentImageUrls || []).length > 0;
-      // Placeholder for future RAG integration.
-      const hasKnowledgeBaseEvidence = false;
+      // The chip finally means something: an answer built on what this owner
+      // told us about this plant is a different kind of answer from one built
+      // on what is true of the species.
+      const hasKnowledgeBaseEvidence = (context.memory.current || []).length > 0;
       const responseSource = hasKnowledgeBaseEvidence
         ? 'knowledge_base'
         : hasContextSignals
@@ -2121,6 +2412,7 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         messages,
         [CHAT_TOKEN_PARAM]: 2000,
         temperature: 0.4,
+        response_format: { type: 'json_object' },
       });
 
       if (response.usage) {
@@ -2128,8 +2420,26 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         await saveAiUsage(dbUsage, { userId, plantId, type: 'chat', model: CHAT_MODEL, usage: response.usage });
       }
 
-      const answer = response.choices?.[0]?.message?.content?.trim() ||
+      const parsed = parseChatCompletion(response.choices?.[0]?.message?.content);
+      const answer = parsed.answer ||
         'I could not generate a response right now. Please try again.';
+
+      // Recorded without asking. The owner has just told us where the plant
+      // stands — coming back with "shall I write that down?" is asking them to
+      // confirm their own sentence. What gets confirmed is the consequence, one
+      // block down.
+      let factsRecorded = [];
+      try {
+        factsRecorded = await recordFacts(db, plantId, parsed.facts, {
+          source: 'chat',
+          topic: isKnownTopic(topic) ? topic : null,
+        });
+      } catch (e) {
+        // A lost fact must never cost the owner their answer.
+        console.warn('⚠️ Chat: could not record facts:', e.message);
+      }
+
+      const proposal = sanitizeProposal(parsed.proposal, context.plant);
 
       return res.json({
         success: true,
@@ -2145,7 +2455,15 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
           previousImagesLoaded: (context.recentImageUrls || []).length,
           imageAttached: hasImage,
           historyLoaded: history.length,
+          factsLoaded: (context.memory?.current || []).length,
+          factsRecorded: factsRecorded.length,
+          openAdviceLoaded: (context.openAdvice || []).length,
         },
+        // Shown as a card under the answer, with Apply and No thanks. Null
+        // whenever the model asked for something outside the whitelist, or for
+        // a value the plant already holds.
+        proposal,
+        task: sanitizeSuggestedTask(parsed.task),
         context: {
           plantId,
           topic: topic || null,

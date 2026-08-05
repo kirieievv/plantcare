@@ -1390,5 +1390,38 @@
         "type": "String"
       }
     }
+  },
+  "chatProposalApply": "Aplicar",
+  "chatProposalDecline": "No, gracias",
+  "chatProposalApplied": "Aplicado",
+  "chatProposalDeclined": "Rechazado",
+  "chatProposalOutdated": "Obsoleto",
+  "chatProposalPot": "Maceta",
+  "chatProposalSpecies": "Especie",
+  "chatProposalPause": "Pausar recordatorios hasta",
+  "chatProposalChange": "{label}: {from} → {to}",
+  "@chatProposalChange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalSet": "{label}: {to}",
+  "@chatProposalSet": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
   }
 }

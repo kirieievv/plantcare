@@ -1390,5 +1390,38 @@
         "type": "String"
       }
     }
+  },
+  "chatProposalApply": "Застосувати",
+  "chatProposalDecline": "Не треба",
+  "chatProposalApplied": "Застосовано",
+  "chatProposalDeclined": "Відхилено",
+  "chatProposalOutdated": "Застаріло",
+  "chatProposalPot": "Горщик",
+  "chatProposalSpecies": "Вид",
+  "chatProposalPause": "Пауза нагадувань до",
+  "chatProposalChange": "{label}: {from} → {to}",
+  "@chatProposalChange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalSet": "{label}: {to}",
+  "@chatProposalSet": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
   }
 }

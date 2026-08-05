@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -14,6 +15,7 @@ import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/image_upload_service.dart';
 import 'package:plant_care/theme/botanly_theme.dart';
+import 'package:plant_care/models/chat_proposal.dart';
 import 'package:plant_care/utils/cloud_functions.dart';
 import 'package:plant_care/widgets/botanly_loader.dart';
 import 'package:plant_care/widgets/botanly_shimmer.dart';
@@ -40,11 +42,16 @@ class PlantChatScreen extends StatefulWidget {
   /// never narrows what the assistant knows.
   final String? topic;
 
+  /// Called when a confirmed proposal has changed the plant's stored data, so
+  /// the screen underneath can reload rather than keep showing the old figures.
+  final VoidCallback? onPlantChanged;
+
   const PlantChatScreen({
     super.key,
     required this.plant,
     this.initialQuestion,
     this.topic,
+    this.onPlantChanged,
   });
 
   @override
@@ -281,12 +288,20 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       final snapshot = await ref.orderBy('createdAt').limit(60).get();
       final loaded = snapshot.docs.map((doc) {
         final data = doc.data();
+        final createdAt = _parseMessageDate(data);
         return _ChatMessage(
           role: (data['role'] ?? 'assistant').toString(),
           text: (data['text'] ?? '').toString(),
           source: data['source']?.toString(),
           imageUrl: data['imageUrl']?.toString(),
-          createdAt: _parseMessageDate(data),
+          createdAt: createdAt,
+          // Falls back to the message's own timestamp: a card written before
+          // `offeredAt` existed still has to know when it was offered, or it
+          // would read as brand new forever.
+          proposal: ChatProposal.fromJson(
+            (data['proposal'] as Map?)?.cast<String, dynamic>(),
+            offeredAt: createdAt,
+          ),
         );
       }).where((m) => m.text.trim().isNotEmpty || m.imageUrl != null).toList();
 
@@ -334,6 +349,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       // on the watering screen stays under `water`: the tag is what makes the
       // filtered view match what the user remembers doing.
       'topic': widget.topic,
+      if (message.proposal != null) 'proposal': message.proposal!.toMap(),
       if (message.imageUrl != null) 'imageUrl': message.imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'createdAtClient': DateTime.now().toIso8601String(),
@@ -445,6 +461,9 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         text: assistantText,
         source: source,
         createdAt: DateTime.now(),
+        proposal: ChatProposal.fromJson(
+          payload['proposal'] as Map<String, dynamic>?,
+        ),
       );
       setState(() => _messages.add(assistantMessage));
       await _persistMessage(assistantMessage);
@@ -464,6 +483,78 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
+  }
+
+  /// Sends the owner's verdict on a proposed change.
+  ///
+  /// Optimistic on purpose: the card settles the moment it is tapped, and rolls
+  /// back only if the server refuses. Making someone watch a spinner to find out
+  /// whether their own "no" registered is worse than the rare rollback.
+  Future<void> _decideProposal(_ChatMessage message, bool accepted) async {
+    final proposal = message.proposal;
+    if (proposal == null || !proposal.isActionableAt(DateTime.now())) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final outcome =
+        accepted ? ProposalOutcome.applied : ProposalOutcome.declined;
+    _replaceProposal(message, proposal.resolved(outcome));
+
+    try {
+      final idToken = await user.getIdToken();
+      if (idToken == null) throw Exception(l10n.plantChatRequestFailed);
+
+      final response = await http.post(
+        Uri.parse(applyChatProposalUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: jsonEncode({
+          'plantId': widget.plant.id,
+          'decision': accepted ? 'apply' : 'decline',
+          'proposal': proposal.toMap(),
+          'locale': Localizations.localeOf(context).languageCode,
+        }),
+      );
+      if (response.statusCode != 200) {
+        throw Exception(
+          jsonDecode(response.body)['error'] ?? l10n.plantChatRequestFailed,
+        );
+      }
+      // The plant's numbers have moved; whoever pushed this screen is showing
+      // the old ones.
+      if (accepted && mounted) widget.onPlantChanged?.call();
+    } catch (e) {
+      if (!mounted) return;
+      _replaceProposal(message, proposal);
+      _showSnackBar(e.toString());
+    }
+  }
+
+  /// Swaps a proposal in place, in memory and in the stored message.
+  void _replaceProposal(_ChatMessage message, ChatProposal next) {
+    final index = _messages.indexOf(message);
+    if (index == -1) return;
+    final updated = message.withProposal(next);
+    setState(() => _messages[index] = updated);
+
+    // Best effort: the outcome is worth keeping so reopening the chat does not
+    // offer a settled change again, but failing to store it must not undo the
+    // decision the owner just made.
+    final ref = _messagesCollection();
+    if (ref == null) return;
+    ref
+        .where('createdAtClient',
+            isEqualTo: message.createdAt.toIso8601String())
+        .limit(1)
+        .get()
+        .then((snap) {
+      for (final doc in snap.docs) {
+        doc.reference.update({'proposal': next.toMap()});
+      }
+    }).catchError((_) {});
   }
 
   void _scrollToBottom() {
@@ -593,6 +684,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
                           isFirstInGroup: _isFirstInGroup(index),
                           formatTime: _formatTime,
                           sourceLabel: _sourceLabel,
+                          onProposalDecision: _decideProposal,
                         );
                       },
                     ),
@@ -990,11 +1082,13 @@ class _MessageBubble extends StatelessWidget {
   final bool isFirstInGroup;
   final String Function(DateTime) formatTime;
   final String Function(String) sourceLabel;
+  final void Function(_ChatMessage, bool accepted)? onProposalDecision;
   const _MessageBubble({
     required this.message,
     required this.isFirstInGroup,
     required this.formatTime,
     required this.sourceLabel,
+    this.onProposalDecision,
   });
 
   @override
@@ -1090,6 +1184,14 @@ class _MessageBubble extends StatelessWidget {
                                   color: BotanlyColors.sageDark,
                                 ),
                               ),
+                            ),
+                          ],
+                          if (!isUser && message.proposal != null) ...[
+                            const SizedBox(height: 10),
+                            _ProposalCard(
+                              proposal: message.proposal!,
+                              onDecision: (accepted) =>
+                                  onProposalDecision?.call(message, accepted),
                             ),
                           ],
                           if (message.imageUrl == null) ...[
@@ -1602,6 +1704,176 @@ class _SendButton extends StatelessWidget {
   }
 }
 
+/// The change offered under an answer.
+///
+/// Deliberately quiet: it sits inside the assistant's own bubble rather than
+/// interrupting the conversation, because most of the time the answer is what
+/// the owner came for and the change is a footnote to it.
+///
+/// Three states, and the third is the one that matters. Open shows both
+/// buttons. Resolved states its outcome. Expired greys out but stays in the
+/// transcript — the conversation happened, and a card that vanishes leaves the
+/// reply above it referring to nothing.
+class _ProposalCard extends StatelessWidget {
+  final ChatProposal proposal;
+  final void Function(bool accepted) onDecision;
+
+  const _ProposalCard({required this.proposal, required this.onDecision});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final actionable = proposal.isActionableAt(DateTime.now());
+    final settled = proposal.outcome != ProposalOutcome.open;
+
+    final String status = switch (proposal.outcome) {
+      ProposalOutcome.applied => l10n.chatProposalApplied,
+      ProposalOutcome.declined => l10n.chatProposalDeclined,
+      ProposalOutcome.open =>
+        actionable ? '' : l10n.chatProposalOutdated,
+    };
+
+    return Opacity(
+      opacity: actionable ? 1 : 0.55,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF2F7EE),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0x33489B58)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _headline(l10n),
+              style: GoogleFonts.dmSans(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: BotanlyColors.sageDark,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              proposal.reason,
+              style: GoogleFonts.dmSans(
+                fontSize: 12.5,
+                height: 1.35,
+                color: const Color(0xFF41513E),
+              ),
+            ),
+            if (status.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                status,
+                style: GoogleFonts.dmSans(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: BotanlyColors.inkMute,
+                ),
+              ),
+            ],
+            if (actionable && !settled) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ProposalButton(
+                      label: l10n.chatProposalApply,
+                      filled: true,
+                      onTap: () => onDecision(true),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ProposalButton(
+                      label: l10n.chatProposalDecline,
+                      filled: false,
+                      onTap: () => onDecision(false),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "Every 9 days → every 11 days" where both ends are known, otherwise just
+  /// the new value: a plant that never had the field set has no "from" to show,
+  /// and inventing one would misdescribe what is happening.
+  String _headline(AppLocalizations l10n) {
+    final to = _format(proposal.to);
+    if (proposal.from == null) return l10n.chatProposalSet(_label(l10n), to);
+    return l10n.chatProposalChange(_label(l10n), _format(proposal.from), to);
+  }
+
+  String _label(AppLocalizations l10n) => switch (proposal.field) {
+    'wateringIntervalDays' => l10n.careKvFrequency,
+    'wateringAmountMl' => l10n.wateringAmount,
+    'placement' => l10n.careSectionPlacement,
+    'potMaterial' || 'potDiameterCm' || 'hasDrainage' => l10n.chatProposalPot,
+    'nearHeatSource' => l10n.careSectionTemperature,
+    'species' => l10n.chatProposalSpecies,
+    'tasksPausedUntil' => l10n.chatProposalPause,
+    _ => proposal.field,
+  };
+
+  String _format(Object? value) {
+    if (value == null) return '—';
+    if (value is bool) return value ? '✓' : '✗';
+    final text = value.toString();
+    // A pause is stored as an instant; the owner cares about the day.
+    if (proposal.field == 'tasksPausedUntil' && text.length >= 10) {
+      return text.substring(0, 10);
+    }
+    return text;
+  }
+}
+
+class _ProposalButton extends StatelessWidget {
+  final String label;
+  final bool filled;
+  final VoidCallback onTap;
+
+  const _ProposalButton({
+    required this.label,
+    required this.filled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: filled ? BotanlyColors.sageDark : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: filled ? BotanlyColors.sageDark : const Color(0x33489B58),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.dmSans(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: filled ? Colors.white : BotanlyColors.sageDark,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatMessage {
   final String role;
   final String text;
@@ -1609,11 +1881,24 @@ class _ChatMessage {
   final String? imageUrl;
   final DateTime createdAt;
 
+  /// A change the assistant offered alongside this answer, if any.
+  final ChatProposal? proposal;
+
   const _ChatMessage({
     required this.role,
     required this.text,
     this.source,
     this.imageUrl,
     required this.createdAt,
+    this.proposal,
   });
+
+  _ChatMessage withProposal(ChatProposal? next) => _ChatMessage(
+    role: role,
+    text: text,
+    source: source,
+    imageUrl: imageUrl,
+    createdAt: createdAt,
+    proposal: next,
+  );
 }

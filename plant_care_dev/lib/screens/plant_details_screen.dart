@@ -373,6 +373,9 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
           plant: _plant,
           initialQuestion: question,
           topic: topic,
+          // A confirmed change rewrites the very figures this screen is
+          // showing behind the chat.
+          onPlantChanged: _refreshPlantData,
         ),
       ),
     );
