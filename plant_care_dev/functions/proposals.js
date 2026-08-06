@@ -18,6 +18,42 @@
  * given the vocabulary to ask for it.
  */
 
+/**
+ * Who is right about each observation, when two sources disagree.
+ *
+ * Not a ranking of sources but a property of the thing observed: whoever is
+ * closest to it wins. The owner holds the pot in their hands, so the pot is
+ * theirs; a photograph sees the whole leaf at once, so symptoms are the health
+ * check's. Without this the field simply belongs to whoever wrote last, which
+ * is how `wateringIntervalDays` came to be overwritten by every scan.
+ *
+ * `owner` fields are also the ones applied silently. Asking someone to confirm
+ * the sentence they just typed is absurd — what gets a card is the consequence
+ * drawn from it.
+ */
+const OBSERVATION_OWNERS = {
+  placement: 'owner',
+  potMaterial: 'owner',
+  potDiameterCm: 'owner',
+  hasDrainage: 'owner',
+  nearHeatSource: 'owner',
+  // The owner may hold a nursery label, but they usually do not know the
+  // species and the photograph usually does. They can still override it, which
+  // is why this is not simply 'analysis'.
+  species: 'analysis-unless-stated',
+  // Derived, not observed: nobody owns it, it is recomputed from the above.
+  wateringIntervalDays: 'derived',
+  wateringAmountMl: 'derived',
+  // Confirmed, not silent: it changes when the reminders fire, and an absence
+  // the owner mentioned in passing is not the same as one they agreed to.
+  tasksPausedUntil: 'derived',
+};
+
+/** Whether a field is the owner's to state, and so applies without a card. */
+function isOwnerObservation(field) {
+  return OBSERVATION_OWNERS[field] === 'owner';
+}
+
 const PLACEMENTS = ['south', 'east', 'north', 'room', 'balcony', 'bath'];
 const POT_MATERIALS = ['plastic', 'ceramic', 'terracotta', 'unknown'];
 
@@ -180,6 +216,8 @@ function invalidatesSchedule(field) {
 
 module.exports = {
   PROPOSABLE_FIELDS,
+  OBSERVATION_OWNERS,
+  isOwnerObservation,
   carePlanFingerprint,
   carePlanIsCurrent,
   PROPOSABLE_FIELDS_HINT,

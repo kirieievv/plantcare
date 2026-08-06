@@ -3220,4 +3220,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String chatCtxFertilizer(String value) {
     return 'Підживлення $value';
   }
+
+  @override
+  String get careDiscussWithAssistant => 'Обговорити з асистентом';
 }

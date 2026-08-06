@@ -3190,4 +3190,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String chatCtxFertilizer(String value) {
     return 'Feed $value';
   }
+
+  @override
+  String get careDiscussWithAssistant => 'Discuss with the assistant';
 }

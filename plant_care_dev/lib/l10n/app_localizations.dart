@@ -5595,6 +5595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feed {value}'**
   String chatCtxFertilizer(String value);
+
+  /// No description provided for @careDiscussWithAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Discuss with the assistant'**
+  String get careDiscussWithAssistant;
 }
 
 class _AppLocalizationsDelegate

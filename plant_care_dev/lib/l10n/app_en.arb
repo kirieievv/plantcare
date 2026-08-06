@@ -1691,5 +1691,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "careDiscussWithAssistant": "Discuss with the assistant"
 }

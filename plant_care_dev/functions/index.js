@@ -17,8 +17,12 @@ const { careBriefForTopic, isKnownTopic, wholeCarePlan } = require('./care-secti
 const {
   FACT_KIND_NAMES,
   buildMemoryBlock,
+  buildSummary,
   loadMemory,
   recordFacts,
+  setPendingQuestion,
+  takePendingQuestion,
+  wateringHabit,
 } = require('./memory');
 const {
   PROPOSABLE_FIELDS_HINT,
@@ -28,6 +32,7 @@ const {
   sanitizeProposal,
   carePlanFingerprint,
   carePlanIsCurrent,
+  isOwnerObservation,
 } = require('./proposals');
 
 // ── AI Model Configuration ──────────────────────────────────────────
@@ -1368,6 +1373,8 @@ place the plant is already standing in.
 ` : ''}${weather ? `
 Weather where the plant lives:
 ${weather}
+` : ''}${context.memory?.summary ? `
+This plant in one line: ${context.memory.summary}
 ` : ''}${memoryBlock ? `
 What is already known about this plant, from earlier conversations:
 ${memoryBlock}
@@ -1393,6 +1400,12 @@ Rules:
   number markers. Separate thoughts with line breaks.
 - Three to six short lines. If the user asks what to do, make them steps.
 
+${options.pendingQuestion ? `
+Before anything else, ask the owner this — a health check raised it and there
+was no conversation open at the time. Ask it in one short sentence, then answer
+whatever they came here for:
+${options.pendingQuestion}
+` : ''}
 Return one JSON object with the keys "answer", "facts", "proposal", "task".
 
 "facts": things the OWNER has just stated as fact about their plant or their
@@ -1889,6 +1902,20 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
       // Even a rejected result gets normalized and returned: the fallbacks there give
       // the user a usable screen, which beats an error toast after a 30-second wait.
       let recommendations = normalizeRecommendations(parsed, req.body || {});
+
+      // The photo disagreeing with what the owner told us about their own pot
+      // is not something to resolve silently in either direction: they are the
+      // authority on it, but ignoring the image throws away a real observation.
+      // It waits for the next conversation instead.
+      const seenMaterial = parsed?.pot?.material || parsed?.container?.material || null;
+      const statedMaterial = context.plant?.potMaterial || null;
+      if (seenMaterial && statedMaterial && statedMaterial !== 'unknown' &&
+          String(seenMaterial).toLowerCase() !== String(statedMaterial).toLowerCase()) {
+        await setPendingQuestion(
+          admin.firestore(), plantId,
+          `The photo looks like a ${seenMaterial} pot, but ${statedMaterial} is on file. Which is it?`
+        );
+      }
 
       if (accUsage.total_tokens > 0) {
         const db = admin.firestore();
@@ -2427,7 +2454,15 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       // us in past conversations, and the advice they were given and have not
       // come back on. Both outlive the twelve-message window.
       context.memory = await loadMemory(db, plantId);
+      // Derived from the watering events the app has always recorded and never
+      // once read: someone who waters two days early every time is not on a
+      // nine-day plan, and advice that assumes they are stays wrong.
+      context.memory.habit = wateringHabit(context.plant, context.recentWateringEvents);
+      context.memory.summary = buildSummary(context.memory);
       context.openAdvice = await loadOpenAdvice(db, plantId, userId);
+      // Raised by a health check that found something contradicting what the
+      // owner told us. There was nobody to ask at the time; this is that time.
+      context.pendingQuestion = await takePendingQuestion(db, plantId);
 
       const hasContextSignals =
         (context.recentHealthChecks || []).length > 0 ||
@@ -2451,6 +2486,7 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         plantNameHint: plantName,
         speciesHint: species,
         topic: isKnownTopic(topic) ? topic : null,
+        pendingQuestion: context.pendingQuestion,
       });
 
       const history = await loadChatHistory(db, userId, plantId, message);
@@ -2491,6 +2527,7 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       // confirm their own sentence. What gets confirmed is the consequence, one
       // block down.
       let factsRecorded = [];
+      let silentlyApplied = null;
       try {
         factsRecorded = await recordFacts(db, plantId, parsed.facts, {
           source: 'chat',
@@ -2501,7 +2538,32 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         console.warn('⚠️ Chat: could not record facts:', e.message);
       }
 
-      const proposal = sanitizeProposal(parsed.proposal, context.plant);
+      let proposal = sanitizeProposal(parsed.proposal, context.plant);
+
+      // An observation the owner owns is applied without asking. They have just
+      // said where the plant stands; coming back with "shall I write that down?"
+      // asks them to confirm their own sentence. The card is for the
+      // consequence — the schedule that shifts because of it.
+      //
+      // Guarded on the same turn having recorded a fact: that is what
+      // distinguishes "the owner told us" from the model volunteering a change
+      // nobody asked for.
+      if (proposal && isOwnerObservation(proposal.field) && factsRecorded.length) {
+        try {
+          await db.collection('plants').doc(plantId).update({
+            [proposal.field]: proposal.to,
+            ...(invalidatesPlan(proposal.field)
+              ? { carePlanStaleAt: new Date().toISOString() }
+              : {}),
+          });
+          silentlyApplied = proposal;
+          proposal = null;
+        } catch (e) {
+          // Falling back to the card is the safe failure: the owner sees the
+          // change offered rather than silently lost.
+          console.warn('⚠️ Chat: could not apply observation silently:', e.message);
+        }
+      }
 
       return res.json({
         success: true,
@@ -2522,9 +2584,11 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
           openAdviceLoaded: (context.openAdvice || []).length,
         },
         // Shown as a card under the answer, with Apply and No thanks. Null
-        // whenever the model asked for something outside the whitelist, or for
-        // a value the plant already holds.
+        // whenever the model asked for something outside the whitelist, for a
+        // value the plant already holds, or because it was the owner's own
+        // observation and has already been applied.
         proposal,
+        appliedSilently: silentlyApplied,
         task: sanitizeSuggestedTask(parsed.task),
         context: {
           plantId,

@@ -1524,5 +1524,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "careDiscussWithAssistant": "Consultar con el asistente"
 }
