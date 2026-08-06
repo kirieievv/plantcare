@@ -12,6 +12,7 @@ const {
   weatherForCity,
   weatherSnapshot,
 } = require('./weather');
+const { wateringAdjustment } = require('./watering-adjust');
 const { careBriefForTopic, isKnownTopic, wholeCarePlan } = require('./care-sections');
 const {
   FACT_KIND_NAMES,
@@ -2246,7 +2247,17 @@ async function rebuildScheduledTasks(db, plantId, plant, userId) {
       // English is a worse reminder, not a broken one.
     }
 
-    for (const task of plannedTasksFor(plant, openCategories, now, locale)) {
+    // Same weather the deck is built with, so a schedule rebuilt right after a
+    // confirmation does not disagree with the one the six-hourly tick produces.
+    let weather = null;
+    try {
+      const location = await locationOf(db, userId);
+      if (location) weather = await weatherForCity(location.lat, location.lon);
+    } catch (_) {
+      // No weather is the plan unadjusted, which is the correct fallback.
+    }
+
+    for (const task of plannedTasksFor(plant, openCategories, now, locale, weather)) {
       const ref = db.collection('tasks').doc();
       batch.set(ref, {
         ...task,
@@ -4933,6 +4944,89 @@ exports.verifyEmailPin = functions.https.onRequest((req, res) => {
 const PLANT_SLOTS_FREE = 3;
 const PLANT_SLOTS_PREMIUM = 10;
 
+/**
+ * Deletes everything that only existed because the plant did.
+ *
+ * Removing a plant used to leave its conversation, its extracted facts and its
+ * memory document behind indefinitely. Nothing surfaced them again, which is
+ * exactly what makes it a retention problem rather than clutter: the owner
+ * believes the plant and everything they said about it are gone, and the
+ * transcript of what their home looks like is still there.
+ *
+ * Runs server-side on the document itself rather than from the app, so it does
+ * not depend on the app still being open when the deletion lands — and so it
+ * covers a hard delete too, which no client path performs today but which the
+ * admin tooling can.
+ *
+ * Tasks are already cleared by TaskService.deleteForPlant; they are swept again
+ * here because "the app did it" is not a guarantee the server can rely on.
+ */
+async function purgePlantData(db, plantId, userId) {
+  const deleted = { facts: 0, memory: 0, messages: 0, tasks: 0 };
+
+  const deleteAll = async (query, key) => {
+    try {
+      const snap = await query.limit(400).get();
+      if (snap.empty) return;
+      const batch = db.batch();
+      for (const doc of snap.docs) batch.delete(doc.ref);
+      await batch.commit();
+      deleted[key] += snap.size;
+      // A plant with more than this has an unusual history; go round again
+      // rather than silently keeping the tail.
+      if (snap.size === 400) await deleteAll(query, key);
+    } catch (e) {
+      console.warn(`⚠️ Purge ${key} for ${plantId}:`, e.message);
+    }
+  };
+
+  const plantRef = db.collection('plants').doc(plantId);
+  await deleteAll(plantRef.collection('facts'), 'facts');
+  await deleteAll(plantRef.collection('memory'), 'memory');
+
+  if (userId) {
+    const chatRef = db
+      .collection('users').doc(userId)
+      .collection('plant_chats').doc(plantId);
+    await deleteAll(chatRef.collection('messages'), 'messages');
+    try {
+      await chatRef.delete();
+    } catch (e) {
+      console.warn(`⚠️ Purge chat doc for ${plantId}:`, e.message);
+    }
+
+    await deleteAll(
+      db.collection('tasks')
+        .where('userId', '==', userId)
+        .where('plantId', '==', plantId),
+      'tasks',
+    );
+  }
+
+  console.log(
+    `🧹 Purged plant ${plantId}: ${deleted.facts} facts, ${deleted.memory} memory, ` +
+    `${deleted.messages} messages, ${deleted.tasks} tasks`
+  );
+  return deleted;
+}
+
+exports.purgeDeletedPlantData = functions.firestore
+  .document('plants/{plantId}')
+  .onWrite(async (change, context) => {
+    const before = change.before.exists ? change.before.data() : null;
+    const after = change.after.exists ? change.after.data() : null;
+
+    // Two ways a plant goes away: the app's soft delete stamps `deletedAt`, and
+    // a hard delete removes the document. The first is the one users take.
+    const softDeleted = !!after?.deletedAt && !before?.deletedAt;
+    const hardDeleted = !!before && !after;
+    if (!softDeleted && !hardDeleted) return null;
+
+    const userId = (after || before)?.userId || null;
+    await purgePlantData(admin.firestore(), context.params.plantId, userId);
+    return null;
+  });
+
 exports.enforcePlantSlotLimit = functions.firestore
   .document('plants/{plantId}')
   .onCreate(async (snap, context) => {
@@ -5178,7 +5272,7 @@ function daysBetween(from, to) {
  * per-category, because watering pairs with a health check and a health check
  * people skip must never stop the watering reminder.
  */
-function plannedTasksFor(plant, openCategories, now, locale = 'en') {
+function plannedTasksFor(plant, openCategories, now, locale = 'en', weather = null) {
   const t = taskStrings(locale);
   const out = [];
   const lastFertilised = toDateSafe(plant.lastFertilisedAt);
@@ -5189,7 +5283,15 @@ function plannedTasksFor(plant, openCategories, now, locale = 'en') {
   // Watering is a task on the home deck (SPEC 1.3) even though the plant screen
   // shows it as its hero widget — "no duplicates" applies to the plant's own
   // "what to do" block, which filters watering out client-side.
-  const wateringDue = toDateSafe(plant.nextDueAt) || toDateSafe(plant.nextWatering);
+  // Weather shifts when the chore falls due, never the plan behind it. Soil in
+  // a 34 degree week does not dry at the pace it does at 18, and an owner
+  // following the calendar waters a dry plant three days late; the offset is
+  // recomputed here every tick and stored nowhere, so there is nothing to drift.
+  const adjustment = wateringAdjustment(plant, weather);
+  const plannedDue = toDateSafe(plant.nextDueAt) || toDateSafe(plant.nextWatering);
+  const wateringDue = adjustment && plannedDue
+    ? new Date(plannedDue.getTime() + adjustment.days * 86400000)
+    : plannedDue;
   // The client also treats a sticky `shouldWaterNow` from the analyser as "due"
   // (`_canWaterPlant`). Without it the screen locks the health check while the
   // scheduler issues nothing at all.
@@ -5210,6 +5312,15 @@ function plannedTasksFor(plant, openCategories, now, locale = 'en') {
     if (Number.isFinite(interval) && interval > 0) {
       kv.push({ k: t.kvCycle, v: t.valEveryNDays(interval) });
     }
+    // Said out loud, because the alternative is a date that quietly moved. A
+    // shifted reminder with no reason next to it reads as the app being wrong,
+    // and the owner stops trusting the schedule rather than the weather.
+    if (adjustment) {
+      kv.push({
+        k: t.kvWeather,
+        v: t.valWeatherShift(adjustment.reasonKey, adjustment.tempC),
+      });
+    }
     out.push({
       title: t.waterTitle,
       detail:
@@ -5222,6 +5333,7 @@ function plannedTasksFor(plant, openCategories, now, locale = 'en') {
       params: {
         ml: Number.isFinite(ml) && ml > 0 ? Math.round(ml) : null,
         intervalDays: Number.isFinite(interval) && interval > 0 ? interval : null,
+        weatherShiftDays: adjustment ? adjustment.days : null,
       },
       // The real due date, not "now": a watering three days late has to read as
       // three days late, both in the sort order and in the plant's score.
@@ -5318,6 +5430,8 @@ exports.scheduleCareTasks = functions.pubsub
     let skipped = 0;
     /** userId → language code, so each user's document is read once per tick. */
     const localeByUser = new Map();
+    /** userId → weather, for the same reason. */
+    const weatherByUser = new Map();
 
     for (const doc of plantsSnap.docs) {
       const plant = doc.data() || {};
@@ -5354,11 +5468,25 @@ exports.scheduleCareTasks = functions.pubsub
         }
         localeByUser.set(plant.userId, code);
       }
+      // One weather lookup per user, like the locale above: a garden of twenty
+      // plants shares one sky.
+      if (!weatherByUser.has(plant.userId)) {
+        let reading = null;
+        try {
+          const location = await locationOf(db, plant.userId);
+          if (location) reading = await weatherForCity(location.lat, location.lon);
+        } catch (e) {
+          console.warn(`⚠️ weather lookup failed for ${plant.userId}: ${e.message}`);
+        }
+        weatherByUser.set(plant.userId, reading);
+      }
+
       const planned = plannedTasksFor(
         plant,
         openCategories,
         now,
-        localeByUser.get(plant.userId)
+        localeByUser.get(plant.userId),
+        weatherByUser.get(plant.userId)
       );
       if (planned.length === 0) {
         skipped++;

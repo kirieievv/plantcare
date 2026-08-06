@@ -15,6 +15,12 @@ const LOCALES = ['en', 'ru', 'uk', 'de', 'fr', 'es'];
 
 const STRINGS = {
   en: {
+    kvWeather: 'Weather',
+    valWeatherShift: (key, t) => ({
+      heat: `earlier — heat ${t}°`,
+      heating: `earlier — heating, ${t}° outside`,
+      cool: `later — cool ${t}°`,
+    })[key] || '',
     waterTitle: 'Water the plant',
     waterDetail: (ml) => `${ml} ml — until the saucer is damp`,
     waterDetailPlain: 'Water until the saucer is damp',
@@ -49,6 +55,12 @@ const STRINGS = {
     unitGlasses: 'glasses',
   },
   ru: {
+    kvWeather: 'Погода',
+    valWeatherShift: (key, t) => ({
+      heat: `раньше — жара ${t}°`,
+      heating: `раньше — отопление, на улице ${t}°`,
+      cool: `позже — прохладно ${t}°`,
+    })[key] || '',
     waterTitle: 'Полить растение',
     waterDetail: (ml) => `${ml} мл — до появления влаги в поддоне`,
     waterDetailPlain: 'Полейте до появления влаги в поддоне',
@@ -83,6 +95,12 @@ const STRINGS = {
     unitGlasses: 'стакана',
   },
   uk: {
+    kvWeather: 'Погода',
+    valWeatherShift: (key, t) => ({
+      heat: `раніше — спека ${t}°`,
+      heating: `раніше — опалення, надворі ${t}°`,
+      cool: `пізніше — прохолодно ${t}°`,
+    })[key] || '',
     waterTitle: 'Полити рослину',
     waterDetail: (ml) => `${ml} мл — до появи вологи в піддоні`,
     waterDetailPlain: 'Полийте до появи вологи в піддоні',
@@ -117,6 +135,12 @@ const STRINGS = {
     unitGlasses: 'склянки',
   },
   de: {
+    kvWeather: 'Wetter',
+    valWeatherShift: (key, t) => ({
+      heat: `früher — Hitze ${t}°`,
+      heating: `früher — Heizung, draußen ${t}°`,
+      cool: `später — kühl ${t}°`,
+    })[key] || '',
     waterTitle: 'Pflanze gießen',
     waterDetail: (ml) => `${ml} ml — bis der Untersetzer feucht ist`,
     waterDetailPlain: 'Gießen, bis der Untersetzer feucht ist',
@@ -152,6 +176,12 @@ const STRINGS = {
     unitGlasses: 'Gläser',
   },
   fr: {
+    kvWeather: 'Météo',
+    valWeatherShift: (key, t) => ({
+      heat: `plus tôt — chaleur ${t}°`,
+      heating: `plus tôt — chauffage, ${t}° dehors`,
+      cool: `plus tard — frais ${t}°`,
+    })[key] || '',
     waterTitle: 'Arroser la plante',
     waterDetail: (ml) => `${ml} ml — jusqu'à ce que la soucoupe soit humide`,
     waterDetailPlain: "Arrosez jusqu'à ce que la soucoupe soit humide",
@@ -186,6 +216,12 @@ const STRINGS = {
     unitGlasses: 'verres',
   },
   es: {
+    kvWeather: 'Clima',
+    valWeatherShift: (key, t) => ({
+      heat: `antes — calor ${t}°`,
+      heating: `antes — calefacción, ${t}° fuera`,
+      cool: `después — fresco ${t}°`,
+    })[key] || '',
     waterTitle: 'Regar la planta',
     waterDetail: (ml) => `${ml} ml — hasta que el plato esté húmedo`,
     waterDetailPlain: 'Riega hasta que el plato esté húmedo',
