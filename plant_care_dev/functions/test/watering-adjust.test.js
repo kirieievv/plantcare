@@ -83,3 +83,55 @@ test('missing weather or interval leaves the schedule alone', () => {
   assert.strictEqual(wateringAdjustment({ placement: 'south' }, { tempC: 34 }), null);
   assert.strictEqual(adjustedInterval(PLANT, null), 9);
 });
+
+// ── The wiring, not just the rule ───────────────────────────────────
+
+const { plannedTasksFor } = require('../index.js');
+
+test('the planner actually moves the due date when given weather', () => {
+  // The rule above was right and still did nothing, because the call that fed
+  // it weather passed the wrong arguments and failed into an empty catch. Unit
+  // tests on the rule cannot see that; this at least pins the contract between
+  // the planner and the offset, so a future change to either is caught here
+  // rather than in production silence.
+  const now = new Date('2026-08-06T12:00:00Z');
+  const plant = {
+    wateringIntervalDays: 9,
+    wateringAmountMl: 400,
+    placement: 'south',
+    nextDueAt: '2026-08-06T12:00:00Z',
+    lastWateredAt: '2026-07-28T12:00:00Z',
+  };
+
+  const plain = plannedTasksFor(plant, new Set(), now, 'en', null);
+  const hot = plannedTasksFor(plant, new Set(), now, 'en', { tempC: 34, humidity: 40 });
+
+  const water = (tasks) => tasks.find((t) => t.category === 'water');
+  assert.ok(water(plain), 'a due plant must produce a watering task');
+  assert.ok(water(hot), 'weather must not remove the task');
+
+  assert.notStrictEqual(
+    water(hot).dueAt,
+    water(plain).dueAt,
+    'heat must move the due date',
+  );
+  assert.ok(
+    Date.parse(water(hot).dueAt) < Date.parse(water(plain).dueAt),
+    'heat must move it earlier, not later',
+  );
+  assert.strictEqual(water(hot).params.weatherShiftDays, -2);
+});
+
+test('the reason travels with the moved date', () => {
+  // A date that shifted with nothing next to it explaining why reads as the app
+  // being wrong, and the owner stops trusting the schedule rather than the sky.
+  const now = new Date('2026-08-06T12:00:00Z');
+  const tasks = plannedTasksFor(
+    { wateringIntervalDays: 9, wateringAmountMl: 400, placement: 'south',
+      nextDueAt: '2026-08-06T12:00:00Z' },
+    new Set(), now, 'en', { tempC: 34, humidity: 40 },
+  );
+  const water = tasks.find((t) => t.category === 'water');
+  const weatherRow = (water.kv || []).find((row) => /34/.test(row.v || ''));
+  assert.ok(weatherRow, `no weather row in ${JSON.stringify(water.kv)}`);
+});

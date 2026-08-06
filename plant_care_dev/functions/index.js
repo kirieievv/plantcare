@@ -2278,10 +2278,14 @@ async function rebuildScheduledTasks(db, plantId, plant, userId) {
     // confirmation does not disagree with the one the six-hourly tick produces.
     let weather = null;
     try {
-      const location = await locationOf(db, userId);
+      const location = await locationOf(userId);
       if (location) weather = await weatherForCity(location.lat, location.lon);
-    } catch (_) {
-      // No weather is the plan unadjusted, which is the correct fallback.
+    } catch (e) {
+      // Unadjusted is a fine fallback; silence is not. An empty catch here hid
+      // a wrong-arity call to locationOf for a whole day: weather simply never
+      // reached this path, the tests stayed green because they do not cover it,
+      // and the log said nothing at all.
+      console.warn('⚠️ Rebuild: weather lookup failed:', e.message);
     }
 
     for (const task of plannedTasksFor(plant, openCategories, now, locale, weather)) {
@@ -5537,7 +5541,7 @@ exports.scheduleCareTasks = functions.pubsub
       if (!weatherByUser.has(plant.userId)) {
         let reading = null;
         try {
-          const location = await locationOf(db, plant.userId);
+          const location = await locationOf(plant.userId);
           if (location) reading = await weatherForCity(location.lat, location.lon);
         } catch (e) {
           console.warn(`⚠️ weather lookup failed for ${plant.userId}: ${e.message}`);
