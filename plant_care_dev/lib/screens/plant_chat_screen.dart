@@ -17,6 +17,7 @@ import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/image_upload_service.dart';
 import 'package:plant_care/theme/botanly_theme.dart';
 import 'package:plant_care/models/chat_proposal.dart';
+import 'package:plant_care/utils/care_sections.dart';
 import 'package:plant_care/models/task.dart';
 import 'package:plant_care/services/task_service.dart';
 import 'package:plant_care/screens/plant_memory_screen.dart';
@@ -170,7 +171,55 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   /// Openers, not a menu. They exist because a blank chat asks the owner to
   /// invent a question, and the ones worth asking depend on the topic — and, for
   /// watering, on whether the plant is actually due.
+  /// What the app already knows about this topic, in one line.
+  ///
+  /// Shown before a word is typed because it often answers the question by
+  /// itself — "next watering in 4 days, soil still damp" is the reply to "should
+  /// I water today?" without a model call. Only real data goes in: an invented
+  /// line here is the first thing the owner reads, and being wrong there costs
+  /// more trust than saying nothing.
+  String? _topicContext() {
+    final p = widget.plant;
+    final d = p.careDetails ?? const <String, String>{};
+    String? v(String key) {
+      final value = d[key]?.trim();
+      return (value == null || value.isEmpty) ? null : value;
+    }
+
+    switch (_activeTopic) {
+      case ChatTopic.water:
+        if (p.shouldWaterNow) return l10n.chatCtxWaterToday;
+        final due = p.nextDueAt ?? p.nextWatering;
+        final days = due.difference(DateTime.now()).inDays;
+        if (days >= 0) return l10n.chatCtxNextWatering(days);
+        final last = p.lastWateredAt;
+        return last == null
+            ? null
+            : l10n.chatCtxLastWatered(DateFormat.MMMd().format(last));
+      case ChatTopic.light:
+        final hours = v(CareDetail.lightHours);
+        final type = v(CareDetail.lightType);
+        if (hours == null || type == null) return null;
+        return l10n.chatCtxLight(hours, type);
+      case ChatTopic.temperature:
+        final optimal = v(CareDetail.temperatureOptimal);
+        return optimal == null ? null : l10n.chatCtxTemperature(optimal);
+      case ChatTopic.fertilizer:
+        final freq = v(CareDetail.fertilizerFrequency);
+        return freq == null ? null : l10n.chatCtxFertilizer(freq);
+      default:
+        // Soil, diagnostics and the general chat have no standing figure worth
+        // a line. An empty strip is better than a filled one.
+        return null;
+    }
+  }
+
   List<String> _quickQuestions() {
+    final entry = widget.initialQuestion?.trim();
+    return [if (entry != null && entry.isNotEmpty) entry, ..._topicQuestions()];
+  }
+
+  List<String> _topicQuestions() {
     switch (_activeTopic) {
       case ChatTopic.water:
         return [
@@ -214,14 +263,18 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   String get _quotaDateKey =>
       'quota_date_${FirebaseAuth.instance.currentUser?.uid}_${widget.plant.id}';
 
-  /// History first, then the question that opened this screen — asking before
-  /// the history lands would put the answer above the conversation it belongs to.
+  /// Loads the history. Nothing is sent.
+  ///
+  /// Opening a screen is not asking a question. This used to fire
+  /// [PlantChatScreen.initialQuestion] the moment the history landed, so
+  /// glancing at the watering card and backing out still wrote "tell me more
+  /// about watering" into the conversation and paid for an answer nobody read —
+  /// and doing it twice left two identical questions in a row.
+  ///
+  /// The question it carried is not thrown away: it becomes the first quick
+  /// reply, one tap from being asked, which is where it belonged.
   Future<void> _bootstrap() async {
     await _loadMessageHistory();
-    if (!mounted) return;
-    final question = widget.initialQuestion?.trim();
-    if (question == null || question.isEmpty) return;
-    await _sendMessage(question);
   }
 
   Future<void> _loadImageQuota() async {
@@ -847,15 +900,18 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
               onOpenMemory: _openMemory,
               statusLabel: l10n.aiAssistantOnline,
             ),
+            if (_topicMode) ...[
+              if (_topicContext() case final ctx?) _TopicContextBar(text: ctx),
+            ],
             if (_topicMode)
               _TopicFilterBar(
                 label: l10n.chatShowWholeConversation,
                 onTap: () => setState(() => _topicMode = false),
               ),
-            if (!_hasUserMessage && !_isLoadingHistory)
+            if (!_isLoadingHistory && !_hasText && !_isSending)
               _QuickReplies(
                 items: _quickQuestions(),
-                onTap: _isSending ? null : (q) => _sendMessage(q),
+                onTap: (q) => _sendMessage(q),
               ),
             Expanded(
               child: _isLoadingHistory
@@ -918,6 +974,35 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 /// Deliberately a strip under the header rather than a chip row: there is only
 /// one thing to do here — see everything — and tapping it also leaves the topic,
 /// so the heading above stops claiming a subject the list no longer has.
+/// The one line of real state above a topic conversation.
+///
+/// Sits above the filter strip rather than inside the message list: it is the
+/// screen describing itself, not the assistant speaking, and putting it in the
+/// thread would make it look like a message nobody sent.
+class _TopicContextBar extends StatelessWidget {
+  final String text;
+
+  const _TopicContextBar({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF7FAF5),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.dmSans(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w500,
+          color: BotanlyColors.inkMute,
+        ),
+      ),
+    );
+  }
+}
+
 class _TopicFilterBar extends StatelessWidget {
   final String label;
   final VoidCallback onTap;

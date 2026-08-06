@@ -3103,4 +3103,32 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatTaskCreated => 'Напоминание создано';
+
+  @override
+  String chatCtxNextWatering(int days) {
+    return 'Следующий полив через $days дн.';
+  }
+
+  @override
+  String get chatCtxWaterToday => 'Полив сегодня';
+
+  @override
+  String chatCtxLastWatered(String date) {
+    return 'Последний полив $date';
+  }
+
+  @override
+  String chatCtxLight(String hours, String type) {
+    return '$hours ч · $type';
+  }
+
+  @override
+  String chatCtxTemperature(String value) {
+    return 'Оптимум $value';
+  }
+
+  @override
+  String chatCtxFertilizer(String value) {
+    return 'Подкормка $value';
+  }
 }

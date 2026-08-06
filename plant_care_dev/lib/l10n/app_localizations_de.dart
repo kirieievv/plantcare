@@ -3072,4 +3072,32 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chatTaskCreated => 'Erinnerung gesetzt';
+
+  @override
+  String chatCtxNextWatering(int days) {
+    return 'Nächstes Gießen in $days T.';
+  }
+
+  @override
+  String get chatCtxWaterToday => 'Heute gießen';
+
+  @override
+  String chatCtxLastWatered(String date) {
+    return 'Zuletzt gegossen $date';
+  }
+
+  @override
+  String chatCtxLight(String hours, String type) {
+    return '$hours Std · $type';
+  }
+
+  @override
+  String chatCtxTemperature(String value) {
+    return 'Optimum $value';
+  }
+
+  @override
+  String chatCtxFertilizer(String value) {
+    return 'Düngen $value';
+  }
 }

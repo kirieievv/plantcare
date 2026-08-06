@@ -3072,4 +3072,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get chatTaskCreated => 'Recordatorio creado';
+
+  @override
+  String chatCtxNextWatering(int days) {
+    return 'Próximo riego en $days d.';
+  }
+
+  @override
+  String get chatCtxWaterToday => 'Riego hoy';
+
+  @override
+  String chatCtxLastWatered(String date) {
+    return 'Último riego $date';
+  }
+
+  @override
+  String chatCtxLight(String hours, String type) {
+    return '$hours h · $type';
+  }
+
+  @override
+  String chatCtxTemperature(String value) {
+    return 'Óptimo $value';
+  }
+
+  @override
+  String chatCtxFertilizer(String value) {
+    return 'Abonado $value';
+  }
 }

@@ -3103,4 +3103,32 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get chatTaskCreated => 'Нагадування створено';
+
+  @override
+  String chatCtxNextWatering(int days) {
+    return 'Наступний полив через $days дн.';
+  }
+
+  @override
+  String get chatCtxWaterToday => 'Полив сьогодні';
+
+  @override
+  String chatCtxLastWatered(String date) {
+    return 'Останній полив $date';
+  }
+
+  @override
+  String chatCtxLight(String hours, String type) {
+    return '$hours год · $type';
+  }
+
+  @override
+  String chatCtxTemperature(String value) {
+    return 'Оптимум $value';
+  }
+
+  @override
+  String chatCtxFertilizer(String value) {
+    return 'Підживлення $value';
+  }
 }

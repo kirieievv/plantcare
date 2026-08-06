@@ -5556,6 +5556,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reminder set'**
   String get chatTaskCreated;
+
+  /// No description provided for @chatCtxNextWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Next watering in {days} d.'**
+  String chatCtxNextWatering(int days);
+
+  /// No description provided for @chatCtxWaterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering due today'**
+  String get chatCtxWaterToday;
+
+  /// No description provided for @chatCtxLastWatered.
+  ///
+  /// In en, this message translates to:
+  /// **'Last watered {date}'**
+  String chatCtxLastWatered(String date);
+
+  /// No description provided for @chatCtxLight.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h · {type}'**
+  String chatCtxLight(String hours, String type);
+
+  /// No description provided for @chatCtxTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimum {value}'**
+  String chatCtxTemperature(String value);
+
+  /// No description provided for @chatCtxFertilizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed {value}'**
+  String chatCtxFertilizer(String value);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

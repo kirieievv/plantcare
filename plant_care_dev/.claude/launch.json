@@ -3,17 +3,16 @@
   "configurations": [
     {
       "name": "botanly-dev-web",
-      "runtimeExecutable": "flutter",
+      "runtimeExecutable": "python3",
       "runtimeArgs": [
-        "run",
-        "-d",
-        "web-server",
-        "--web-port",
+        "-m",
+        "http.server",
         "8080",
-        "--web-hostname",
-        "127.0.0.1"
+        "-d",
+        "build/web"
       ],
-      "port": 8080
+      "port": 8080,
+      "url": "http://localhost:8080"
     }
   ]
 }
