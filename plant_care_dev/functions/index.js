@@ -13,7 +13,7 @@ const {
   weatherSnapshot,
 } = require('./weather');
 const { wateringAdjustment } = require('./watering-adjust');
-const { careBriefForTopic, isKnownTopic, wholeCarePlan } = require('./care-sections');
+const { wholeCarePlan } = require('./care-sections');
 const {
   FACT_KIND_NAMES,
   buildMemoryBlock,
@@ -1344,9 +1344,15 @@ function buildPlantChatSystemPrompt(context, options = {}) {
   // the sheet says "every 3 days, 220 ml" while the prose underneath it says
   // "every 7-14 days", and an assistant that has seen neither confidently
   // repeats the generic figure at someone staring at the specific one.
-  const carePlan = context.carePlan || {};
-  const topicBrief = careBriefForTopic(options.topic, carePlan.tips, carePlan.details);
-  const memoryBlock = buildMemoryBlock(context.memory, options.topic);
+  // The whole plan, always, regardless of which card the owner came in from.
+  // One conversation means one prompt: an answer that depends on the door you
+  // walked through is a different assistant wearing the same name.
+  //
+  // It is still here rather than dropped, because the failure it fixes has
+  // nothing to do with topics: without the plan the assistant answers "every
+  // 7-14 days" to someone looking at a sheet that says every 3.
+  const carePlan = wholeCarePlan(context.carePlan);
+  const memoryBlock = buildMemoryBlock(context.memory, null);
 
   return `You are Plant Care chat assistant for one specific plant.
 Speak about the plant in the third person, by name. Never speak as the plant.
@@ -1355,16 +1361,15 @@ Respond in language locale="${locale}" unless user asks for another language.
 Plant identity:
 - Name hint: ${options.plantNameHint || plantSummary.name || 'unknown'}
 - Species hint: ${options.speciesHint || plantSummary.species || 'unknown'}
-${topicBrief ? `
-The owner is reading this section of the plant's own care plan right now:
+${carePlan ? `
+This plant's own care plan, which the owner can read in the app:
 """
-${topicBrief}
+${carePlan}
 """
 It is authoritative for this plant: use its figures rather than the generic ones
 for the species, and assume the owner has already read it, so do not recite it
 back. Your answer is a new, complete message of its own — begin a fresh
-sentence, never a continuation of the text above. Other subjects stay in scope:
-use light, temperature, soil or anything else whenever it changes the answer.
+sentence, never a continuation of the text above.
 ` : ''}${conditions ? `
 Growing conditions the owner already told us:
 ${conditions}
@@ -2408,7 +2413,6 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       const {
         plantId,
         message,
-        topic,       // which care topic the user came in from, null for the general chat
         locale,
         plantName,
         species,
@@ -2482,14 +2486,10 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
           ? 'context'
           : 'agent';
 
-      // An unrecognised topic is dropped rather than passed through: it would
-      // otherwise reach the prompt as a heading for a section that does not
-      // exist, which reads to the model as a subject it has no data on.
       const systemPrompt = buildPlantChatSystemPrompt(context, {
         locale,
         plantNameHint: plantName,
         speciesHint: species,
-        topic: isKnownTopic(topic) ? topic : null,
         pendingQuestion: context.pendingQuestion,
       });
 
@@ -2535,7 +2535,6 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       try {
         factsRecorded = await recordFacts(db, plantId, parsed.facts, {
           source: 'chat',
-          topic: isKnownTopic(topic) ? topic : null,
         });
       } catch (e) {
         // A lost fact must never cost the owner their answer.
@@ -2596,7 +2595,6 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
         task: sanitizeSuggestedTask(parsed.task),
         context: {
           plantId,
-          topic: topic || null,
           plantName: context.plant?.name || plantName || null,
           species: context.plant?.species || species || null,
         },

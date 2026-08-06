@@ -187,7 +187,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     _saveNavigationState();
     _startWateringCountdownTimer();
     _loadHealthCheckCount();
-    _loadChatTopics();
 
     _pulseCtrl = AnimationController(
       vsync: this,
@@ -276,37 +275,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
     // re-runs its initState.
     Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
     MainNavigationScreen.requestTab(kAddPlantTabIndex);
-  }
-
-  /// Topics this plant already has a conversation under.
-  ///
-  /// Only a dot, deliberately: nothing here is unread — the assistant never
-  /// writes first — so a count would be a number that means nothing. What it
-  /// answers is "did I already ask about this?", which is worth a glance and
-  /// not worth a badge.
-  Set<String> _topicsWithHistory = const {};
-
-  Future<void> _loadChatTopics() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('plant_chats')
-          .doc(_plant.id)
-          .collection('messages')
-          .where('role', isEqualTo: 'user')
-          .limit(200)
-          .get();
-      final topics = snap.docs
-          .map((d) => d.data()['topic']?.toString())
-          .whereType<String>()
-          .toSet();
-      if (mounted) setState(() => _topicsWithHistory = topics);
-    } catch (_) {
-      // A missing dot is a cosmetic loss; nothing else depends on it.
-    }
   }
 
   Future<void> _refreshPlantData() async {
@@ -2199,17 +2167,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
               child: Center(child: _Glyph(glyph, size: 19, color: foreground)),
             ),
             const SizedBox(width: 13),
-            if (_topicsWithHistory.contains(topic)) ...[
-              Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: const BoxDecoration(
-                  color: _kAccent,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2306,7 +2263,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       ),
       topic: topic,
     );
-    await _loadChatTopics();
   }
 
   // Specific issues — padding 16 18 on rgba(255,251,240,.62)

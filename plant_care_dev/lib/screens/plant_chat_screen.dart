@@ -43,9 +43,10 @@ class PlantChatScreen extends StatefulWidget {
   /// Which care topic the user came in from — `water`, `light`, … — or null for
   /// the general chat.
   ///
-  /// One conversation, several entry points: the topic tags the message and
-  /// tells the assistant which section of the care plan the user is reading. It
-  /// never narrows what the assistant knows.
+  /// It chooses the hints and the status line above them, and nothing else. The
+  /// conversation is one conversation and looks the same from every door: it is
+  /// not filtered, not tagged, and the assistant's prompt does not depend on
+  /// which card was tapped.
   final String? topic;
 
   /// Called when a confirmed proposal has changed the plant's stored data, so
@@ -80,32 +81,20 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   Uint8List? _pendingImageBytes;
   bool _isUploadingImage = false;
 
-  /// Whether the topic the screen was opened with is still active.
-  ///
-  /// One flag for two things on purpose. Turning the filter off also leaves the
-  /// topic, so what the header says is always what is happening: a list showing
-  /// everything under a heading that still says "Watering" would be a lie about
-  /// where the next message is going to be filed.
-  late bool _topicMode =
-      widget.topic != null && widget.topic != ChatTopic.general;
-
   bool _quotaLoaded = true; // show badge immediately with defaults
   int _quotaUsed = 0;
   int _quotaLimit = 2;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
-  /// The topic a message sent right now would be filed under.
-  String? get _activeTopic => _topicMode ? widget.topic : null;
-
-  /// The messages on screen. Filtering happens here rather than in the query:
-  /// the assistant is answering from the whole history either way, so a second
-  /// round trip to show a subset of what is already loaded buys nothing.
-  List<_ChatMessage> get _visibleMessages => _topicMode
-      ? _messages
-            .where((m) => m.topic == null || m.topic == widget.topic)
-            .toList()
-      : _messages;
+  /// The section the owner came in from.
+  ///
+  /// It chooses the hints and the status line above them, and nothing else.
+  /// There is one conversation and it looks the same from every door — a list
+  /// that changed with the entry point could show an answer whose question was
+  /// filed elsewhere, which is exactly what it did.
+  String? get _activeTopic =>
+      widget.topic == ChatTopic.general ? null : widget.topic;
 
   /// The per-plant chat document. Never written before — it existed only as a
   /// path segment above `messages`. It now carries the clear marker.
@@ -157,16 +146,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     ChatTopic.diagnostics => l10n.chatTopicDiagnostics,
     _ => null,
   };
-
-  /// The heading always states what is actually happening. Leaving the filter
-  /// leaves the topic, so a list showing everything can never sit under a
-  /// heading that still claims to be about watering.
-  String _screenTitle() {
-    final label = _topicMode ? _topicLabel(widget.topic) : null;
-    return label == null
-        ? l10n.plantChatTitle(widget.plant.name)
-        : l10n.chatTitleWithTopic(label);
-  }
 
   /// Openers, not a menu. They exist because a blank chat asks the owner to
   /// invent a question, and the ones worth asking depend on the topic — and, for
@@ -454,7 +433,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
               source: data['source']?.toString(),
               imageUrl: data['imageUrl']?.toString(),
               createdAt: createdAt,
-              topic: data['topic']?.toString(),
               // Falls back to the message's own timestamp: a card written before
               // `offeredAt` existed still has to know when it was offered, or it
               // would read as brand new forever.
@@ -511,10 +489,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       'role': message.role,
       'text': message.text,
       'source': message.source,
-      // Where it was said, not what it is about. A question about light asked
-      // on the watering screen stays under `water`: the tag is what makes the
-      // filtered view match what the user remembers doing.
-      'topic': message.topic,
       if (message.proposal != null) 'proposal': message.proposal!.toMap(),
       if (message.imageUrl != null) 'imageUrl': message.imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
@@ -567,7 +541,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       text: text,
       imageUrl: imageUrl,
       createdAt: DateTime.now(),
-      topic: _activeTopic,
     );
     setState(() => _messages.add(userMessage));
     _scrollToBottom();
@@ -591,7 +564,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         'plantName': widget.plant.name,
         'species': widget.plant.species,
         'message': text.isNotEmpty ? text : 'I attached a photo of my plant.',
-        'topic': _activeTopic,
         'locale': localeCode,
       };
       if (base64Image != null) {
@@ -630,9 +602,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         text: assistantText,
         source: source,
         createdAt: DateTime.now(),
-        // The answer inherits the question's topic without exception, so a
-        // filtered view never shows a reply whose question lives elsewhere.
-        topic: userMessage.topic,
         proposal: ChatProposal.fromJson(
           payload['proposal'] as Map<String, dynamic>?,
         ),
@@ -727,7 +696,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
           source: message.source,
           imageUrl: message.imageUrl,
           createdAt: message.createdAt,
-          topic: message.topic,
           proposal: message.proposal,
         ),
       );
@@ -894,20 +862,13 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
         child: Column(
           children: [
             _AppBar(
-              title: _screenTitle(),
+              title: l10n.plantChatTitle(widget.plant.name),
               onBack: () => Navigator.of(context).maybePop(),
               onClear: _clearHistory,
               onOpenMemory: _openMemory,
               statusLabel: l10n.aiAssistantOnline,
             ),
-            if (_topicMode) ...[
-              if (_topicContext() case final ctx?) _TopicContextBar(text: ctx),
-            ],
-            if (_topicMode)
-              _TopicFilterBar(
-                label: l10n.chatShowWholeConversation,
-                onTap: () => setState(() => _topicMode = false),
-              ),
+            if (_topicContext() case final ctx?) _TopicContextBar(text: ctx),
             if (!_isLoadingHistory && !_hasText && !_isSending)
               _QuickReplies(
                 items: _quickQuestions(),
@@ -919,12 +880,12 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
                   : ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                      itemCount: _visibleMessages.length + (_isSending ? 1 : 0),
+                      itemCount: _messages.length + (_isSending ? 1 : 0),
                       itemBuilder: (context, index) {
-                        if (_isSending && index == _visibleMessages.length) {
+                        if (_isSending && index == _messages.length) {
                           return const _TypingBubble();
                         }
-                        final m = _visibleMessages[index];
+                        final m = _messages[index];
                         return _MessageBubble(
                           message: m,
                           isFirstInGroup: _isFirstInGroup(index),
@@ -961,7 +922,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 
   bool _isFirstInGroup(int index) {
     if (index == 0) return true;
-    return _visibleMessages[index - 1].role != _visibleMessages[index].role;
+    return _messages[index - 1].role != _messages[index].role;
   }
 }
 
@@ -969,16 +930,12 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 //  App bar
 // ────────────────────────────────────────────────────────────
 
-/// The way out of a filtered view.
+/// The one line of real state above the hints.
 ///
-/// Deliberately a strip under the header rather than a chip row: there is only
-/// one thing to do here — see everything — and tapping it also leaves the topic,
-/// so the heading above stops claiming a subject the list no longer has.
-/// The one line of real state above a topic conversation.
-///
-/// Sits above the filter strip rather than inside the message list: it is the
-/// screen describing itself, not the assistant speaking, and putting it in the
-/// thread would make it look like a message nobody sent.
+/// Belongs to the section the owner came in from, like the hints themselves —
+/// not to the conversation, which is the same from every door. Often it answers
+/// the question outright: "watering due today" is the reply to "should I water
+/// it?" without a model call.
 class _TopicContextBar extends StatelessWidget {
   final String text;
 
@@ -997,43 +954,6 @@ class _TopicContextBar extends StatelessWidget {
           fontSize: 12.5,
           fontWeight: FontWeight.w500,
           color: BotanlyColors.inkMute,
-        ),
-      ),
-    );
-  }
-}
-
-class _TopicFilterBar extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _TopicFilterBar({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        width: double.infinity,
-        color: const Color(0xFFEFF5EA),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: BotanlyColors.sageDark,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(Icons.expand_more, size: 15, color: BotanlyColors.sageDark),
-          ],
         ),
       ),
     );
@@ -2310,11 +2230,6 @@ class _ChatMessage {
   final String? imageUrl;
   final DateTime createdAt;
 
-  /// Where it was said, not what it is about. A question about light asked on
-  /// the watering screen stays under `water` — the tag is what makes the
-  /// filtered view match what the owner remembers doing.
-  final String? topic;
-
   /// A change the assistant offered alongside this answer, if any.
   final ChatProposal? proposal;
 
@@ -2329,7 +2244,6 @@ class _ChatMessage {
     this.source,
     this.imageUrl,
     required this.createdAt,
-    this.topic,
     this.proposal,
     this.suggestedTask,
   });
@@ -2340,7 +2254,6 @@ class _ChatMessage {
     source: source,
     imageUrl: imageUrl,
     createdAt: createdAt,
-    topic: topic,
     proposal: next,
   );
 }
