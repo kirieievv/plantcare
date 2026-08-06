@@ -100,7 +100,8 @@ class _RegisterCompleteScreenState extends State<RegisterCompleteScreen> {
                 textInputAction: TextInputAction.next,
                 onSubmitted: (_) => _confirmFocusNode.requestFocus(),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return l10n.pleaseEnterYourPassword;
+                  if (v == null || v.isEmpty)
+                    return l10n.pleaseEnterYourPassword;
                   if (v.length < 6) return l10n.passwordAtLeast6;
                   return null;
                 },
@@ -112,10 +113,14 @@ class _RegisterCompleteScreenState extends State<RegisterCompleteScreen> {
                 hint: l10n.confirmPassword,
                 autofillHints: AutofillHints.newPassword,
                 textInputAction: TextInputAction.done,
-                onSubmitted: (_) { if (!_isLoading) _submit(); },
+                onSubmitted: (_) {
+                  if (!_isLoading) _submit();
+                },
                 validator: (v) {
-                  if (v == null || v.isEmpty) return l10n.pleaseConfirmYourPassword;
-                  if (v != _passwordController.text) return l10n.passwordsDoNotMatch;
+                  if (v == null || v.isEmpty)
+                    return l10n.pleaseConfirmYourPassword;
+                  if (v != _passwordController.text)
+                    return l10n.passwordsDoNotMatch;
                   return null;
                 },
               ),
@@ -189,15 +194,22 @@ class _PasswordFieldState extends State<_PasswordField> {
         ),
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.6),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(left: 14, right: 6),
-          child: Icon(Icons.lock_outline,
-              color: BotanlyColors.moss.withValues(alpha: 0.5), size: 20),
+          child: Icon(
+            Icons.lock_outline,
+            color: BotanlyColors.moss.withValues(alpha: 0.5),
+            size: 20,
+          ),
         ),
-        prefixIconConstraints:
-            const BoxConstraints(minWidth: 44, minHeight: 20),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 44,
+          minHeight: 20,
+        ),
         suffixIcon: IconButton(
           icon: Icon(
             _showPassword
@@ -224,8 +236,8 @@ class _PasswordFieldState extends State<_PasswordField> {
         color: error
             ? const Color(0xFFB91C1C)
             : focused
-                ? BotanlyColors.moss.withValues(alpha: 0.6)
-                : BotanlyColors.moss.withValues(alpha: 0.2),
+            ? BotanlyColors.moss.withValues(alpha: 0.6)
+            : BotanlyColors.moss.withValues(alpha: 0.2),
         width: focused ? 1.5 : 1,
       ),
     );

@@ -65,9 +65,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Package? _pickDefaultPackage(List<Package> packages) {
-    final annual = packages.where((p) =>
-        p.packageType == PackageType.annual ||
-        p.storeProduct.identifier.contains('annual')).toList();
+    final annual = packages
+        .where(
+          (p) =>
+              p.packageType == PackageType.annual ||
+              p.storeProduct.identifier.contains('annual'),
+        )
+        .toList();
     if (annual.isNotEmpty) return annual.first;
     return packages.isNotEmpty ? packages.first : null;
   }
@@ -78,7 +82,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _purchase() async {
     if (_selected == null) return;
-    setState(() { _purchasing = true; _error = null; });
+    setState(() {
+      _purchasing = true;
+      _error = null;
+    });
     try {
       final success = await _service.purchase(_selected!);
       if (!mounted) return;
@@ -93,7 +100,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _restore() async {
-    setState(() { _restoring = true; _error = null; });
+    setState(() {
+      _restoring = true;
+      _error = null;
+    });
     try {
       final l10n = AppLocalizations.of(context)!;
       final success = await _service.restorePurchases();
@@ -101,9 +111,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
       if (success) {
         Navigator.of(context).pop(true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.paywallRestoreNotFound)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.paywallRestoreNotFound)));
       }
     } catch (e) {
       if (!mounted) return;
@@ -114,7 +124,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _stripeCheckout() async {
-    setState(() { _purchasing = true; _error = null; });
+    setState(() {
+      _purchasing = true;
+      _error = null;
+    });
     try {
       final url = await StripeService.createCheckoutUrl(
         priceId: _selectedStripePriceId,
@@ -153,9 +166,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   child: _closeButton(),
                 ),
               ),
-              const Expanded(
-                child: Center(child: BotanlyLoader(size: 80)),
-              ),
+              const Expanded(child: Center(child: BotanlyLoader(size: 80))),
             ],
           ),
         ),
@@ -176,17 +187,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   const SizedBox(height: 22),
                   _buildSectionDivider(),
                   const SizedBox(height: 2),
-                  kIsWeb
-                      ? _buildStripeCards(l10n)
-                      : _buildPackageCards(l10n),
+                  kIsWeb ? _buildStripeCards(l10n) : _buildPackageCards(l10n),
                   const SizedBox(height: 8),
                   if (_error != null) ...[
                     _buildErrorBox(_error!),
                     const SizedBox(height: 12),
                   ],
-                  kIsWeb
-                      ? _buildStripeCTAButton(l10n)
-                      : _buildCTAButton(l10n),
+                  kIsWeb ? _buildStripeCTAButton(l10n) : _buildCTAButton(l10n),
                   const SizedBox(height: 12),
                   _buildTrustRow(),
                   const SizedBox(height: 12),
@@ -197,10 +204,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               ),
             ),
             // Floating close button
-            Positioned(
-              top: 16, right: 16,
-              child: _closeButton(),
-            ),
+            Positioned(top: 16, right: 16, child: _closeButton()),
           ],
         ),
       ),
@@ -211,12 +215,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return GestureDetector(
       onTap: () => Navigator.of(context).pop(false),
       child: Container(
-        width: 34, height: 34,
+        width: 34,
+        height: 34,
         decoration: const BoxDecoration(
           color: Color(0x0F2D3D2A),
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.close_rounded, size: 16, color: BotanlyColors.moss),
+        child: const Icon(
+          Icons.close_rounded,
+          size: 16,
+          color: BotanlyColors.moss,
+        ),
       ),
     );
   }
@@ -251,7 +260,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 gradient: RadialGradient(
                   center: const Alignment(-1.3, -1.3),
                   radius: 2.0,
-                  colors: [BotanlyColors.sage.withValues(alpha: 0.22), Colors.transparent],
+                  colors: [
+                    BotanlyColors.sage.withValues(alpha: 0.22),
+                    Colors.transparent,
+                  ],
                 ),
               ),
             ),
@@ -263,14 +275,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 gradient: RadialGradient(
                   center: const Alignment(1.4, -1.2),
                   radius: 1.8,
-                  colors: [BotanlyColors.sageLight.withValues(alpha: 0.18), Colors.transparent],
+                  colors: [
+                    BotanlyColors.sageLight.withValues(alpha: 0.18),
+                    Colors.transparent,
+                  ],
                 ),
               ),
             ),
           ),
           // Leaf decoration
           Positioned(
-            top: -10, right: -12,
+            top: -10,
+            right: -12,
             child: Opacity(
               opacity: 0.4,
               child: CustomPaint(
@@ -289,10 +305,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 Row(
                   children: [
                     Container(
-                      width: 28, height: 28,
+                      width: 28,
+                      height: 28,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [BotanlyColors.sageLight, BotanlyColors.sageDark],
+                          colors: [
+                            BotanlyColors.sageLight,
+                            BotanlyColors.sageDark,
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -300,74 +320,115 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         boxShadow: [
                           BoxShadow(
                             color: BotanlyColors.sage.withValues(alpha: 0.32),
-                            blurRadius: 10, offset: const Offset(0, 4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.eco_rounded, color: Colors.white, size: 14),
+                      child: const Icon(
+                        Icons.eco_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'BOTANLY · PREMIUM',
                       style: GoogleFonts.dmSans(
-                        fontSize: 11, fontWeight: FontWeight.w700,
-                        letterSpacing: 1.4, color: BotanlyColors.sageDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.4,
+                        color: BotanlyColors.sageDark,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 // Title — split first word plain, rest italic
-                Builder(builder: (ctx) {
-                  final title = AppLocalizations.of(ctx)!.paywallHeroTitle;
-                  final spaceIdx = title.indexOf(' ');
-                  final part1 = spaceIdx >= 0 ? '${title.substring(0, spaceIdx)} ' : title;
-                  final part2 = spaceIdx >= 0 ? title.substring(spaceIdx + 1) : '';
-                  return RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: part1,
-                          style: GoogleFonts.fraunces(
-                            fontSize: 32, fontWeight: FontWeight.w500,
-                            letterSpacing: -1.0, color: BotanlyColors.moss, height: 1.05,
-                          ),
-                        ),
-                        if (part2.isNotEmpty)
+                Builder(
+                  builder: (ctx) {
+                    final title = AppLocalizations.of(ctx)!.paywallHeroTitle;
+                    final spaceIdx = title.indexOf(' ');
+                    final part1 = spaceIdx >= 0
+                        ? '${title.substring(0, spaceIdx)} '
+                        : title;
+                    final part2 = spaceIdx >= 0
+                        ? title.substring(spaceIdx + 1)
+                        : '';
+                    return RichText(
+                      text: TextSpan(
+                        children: [
                           TextSpan(
-                            text: part2,
+                            text: part1,
                             style: GoogleFonts.fraunces(
-                              fontSize: 32, fontWeight: FontWeight.w500,
-                              letterSpacing: -1.0, color: BotanlyColors.sage,
-                              fontStyle: FontStyle.italic, height: 1.05,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: -1.0,
+                              color: BotanlyColors.moss,
+                              height: 1.05,
                             ),
                           ),
-                      ],
-                    ),
-                  );
-                }),
+                          if (part2.isNotEmpty)
+                            TextSpan(
+                              text: part2,
+                              style: GoogleFonts.fraunces(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -1.0,
+                                color: BotanlyColors.sage,
+                                fontStyle: FontStyle.italic,
+                                height: 1.05,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 8),
                 Text(
                   l10n.paywallHeroDescription,
                   style: GoogleFonts.dmSans(
-                    fontSize: 13.5, color: BotanlyColors.inkSoft, height: 1.5,
+                    fontSize: 13.5,
+                    color: BotanlyColors.inkSoft,
+                    height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 16),
                 // 2×2 perks grid
                 Row(
                   children: [
-                    Expanded(child: _buildPerk(Icons.eco_rounded, l10n.paywallFeature1(10))),
+                    Expanded(
+                      child: _buildPerk(
+                        Icons.eco_rounded,
+                        l10n.paywallFeature1(10),
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildPerk(Icons.notifications_active_rounded, l10n.paywallFeature2)),
+                    Expanded(
+                      child: _buildPerk(
+                        Icons.notifications_active_rounded,
+                        l10n.paywallFeature2,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _buildPerk(Icons.smart_toy_rounded, l10n.paywallFeature3)),
+                    Expanded(
+                      child: _buildPerk(
+                        Icons.smart_toy_rounded,
+                        l10n.paywallFeature3,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildPerk(Icons.edit_rounded, l10n.paywallFeature4)),
+                    Expanded(
+                      child: _buildPerk(
+                        Icons.edit_rounded,
+                        l10n.paywallFeature4,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -389,7 +450,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
       child: Row(
         children: [
           Container(
-            width: 26, height: 26,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               color: BotanlyColors.sageSoft,
               borderRadius: BorderRadius.circular(8),
@@ -401,8 +463,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
             child: Text(
               text,
               style: GoogleFonts.dmSans(
-                fontSize: 11.5, fontWeight: FontWeight.w600,
-                color: BotanlyColors.moss, height: 1.25,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: BotanlyColors.moss,
+                height: 1.25,
               ),
             ),
           ),
@@ -417,13 +481,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
         const Expanded(child: Divider(color: Color(0x1F2D3D2A))),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Builder(builder: (ctx) => Text(
-            AppLocalizations.of(ctx)!.paywallChoosePlan,
-            style: GoogleFonts.dmMono(
-              fontSize: 10.5, fontWeight: FontWeight.w500,
-              letterSpacing: 1.5, color: BotanlyColors.inkMute,
+          child: Builder(
+            builder: (ctx) => Text(
+              AppLocalizations.of(ctx)!.paywallChoosePlan,
+              style: GoogleFonts.dmMono(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.5,
+                color: BotanlyColors.inkMute,
+              ),
             ),
-          )),
+          ),
         ),
         const Expanded(child: Divider(color: Color(0x1F2D3D2A))),
       ],
@@ -453,7 +521,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
           name: annual ? l10n.paywallAnnual : l10n.paywallMonthly,
           nameItalic: annual,
           price: pkg.storeProduct.priceString,
-          perMonth: annual ? l10n.paywallPerMonth(_monthlyFromAnnual(pkg.storeProduct.price)) : null,
+          perMonth: annual
+              ? l10n.paywallPerMonth(_monthlyFromAnnual(pkg.storeProduct.price))
+              : null,
           badge: annual ? l10n.paywallBestValue : null,
           onTap: () => setState(() => _selected = pkg),
         );
@@ -489,15 +559,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
     ];
 
     return Column(
-      children: plans.map((plan) => _buildPlanCard(
-        isSelected: _selectedStripePriceId == plan.id,
-        name: plan.name,
-        nameItalic: plan.nameItalic,
-        price: plan.price,
-        perMonth: plan.perMonth,
-        badge: plan.badge,
-        onTap: () => setState(() => _selectedStripePriceId = plan.id),
-      )).toList(),
+      children: plans
+          .map(
+            (plan) => _buildPlanCard(
+              isSelected: _selectedStripePriceId == plan.id,
+              name: plan.name,
+              nameItalic: plan.nameItalic,
+              price: plan.price,
+              perMonth: plan.perMonth,
+              badge: plan.badge,
+              onTap: () => setState(() => _selectedStripePriceId = plan.id),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -527,7 +601,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
               ? [
                   BoxShadow(
                     color: BotanlyColors.sage.withValues(alpha: 0.18),
-                    blurRadius: 20, offset: const Offset(0, 8),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ]
               : null,
@@ -540,11 +615,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 // Radio circle
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: 22, height: 22,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? BotanlyColors.sage : const Color(0xFFE4EBE1),
+                      color: isSelected
+                          ? BotanlyColors.sage
+                          : const Color(0xFFE4EBE1),
                       width: 2,
                     ),
                     color: isSelected ? BotanlyColors.sage : Colors.white,
@@ -552,9 +630,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   child: isSelected
                       ? Center(
                           child: Container(
-                            width: 8, height: 8,
+                            width: 8,
+                            height: 8,
                             decoration: const BoxDecoration(
-                              shape: BoxShape.circle, color: Colors.white,
+                              shape: BoxShape.circle,
+                              color: Colors.white,
                             ),
                           ),
                         )
@@ -569,15 +649,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       Text(
                         name,
                         style: GoogleFonts.fraunces(
-                          fontSize: 17, fontWeight: FontWeight.w500,
-                          color: BotanlyColors.moss, letterSpacing: -0.3,
-                          fontStyle: nameItalic ? FontStyle.italic : FontStyle.normal,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                          color: BotanlyColors.moss,
+                          letterSpacing: -0.3,
+                          fontStyle: nameItalic
+                              ? FontStyle.italic
+                              : FontStyle.normal,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(price, style: GoogleFonts.dmSans(fontSize: 13, color: BotanlyColors.inkSoft)),
+                      Text(
+                        price,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 13,
+                          color: BotanlyColors.inkSoft,
+                        ),
+                      ),
                       if (perMonth != null)
-                        Text(perMonth, style: GoogleFonts.dmSans(fontSize: 11.5, color: BotanlyColors.inkMute)),
+                        Text(
+                          perMonth,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11.5,
+                            color: BotanlyColors.inkMute,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -586,9 +682,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
             // Badge
             if (badge != null)
               Positioned(
-                top: -25, right: 0,
+                top: -25,
+                right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFC08E3C), Color(0xFFA47626)],
@@ -599,15 +699,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFFC08E3C).withValues(alpha: 0.32),
-                        blurRadius: 10, offset: const Offset(0, 4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Text(
                     badge,
                     style: GoogleFonts.dmSans(
-                      fontSize: 10, fontWeight: FontWeight.w700,
-                      letterSpacing: 0.6, color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -636,7 +739,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Widget _buildStripeCTAButton(AppLocalizations l10n) {
     final isAnnual = _selectedStripePriceId == _stripeAnnualPriceId;
     return _mossCTAButton(
-      label: '${l10n.paywallStartPremium} · ${isAnnual ? l10n.paywallAnnual : l10n.paywallMonthly}',
+      label:
+          '${l10n.paywallStartPremium} · ${isAnnual ? l10n.paywallAnnual : l10n.paywallMonthly}',
       loading: _purchasing,
       onTap: _purchasing ? null : _stripeCheckout,
     );
@@ -650,12 +754,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Container(
       height: 54,
       decoration: BoxDecoration(
-        color: onTap != null ? BotanlyColors.moss : BotanlyColors.moss.withValues(alpha: 0.6),
+        color: onTap != null
+            ? BotanlyColors.moss
+            : BotanlyColors.moss.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: BotanlyColors.moss.withValues(alpha: 0.22),
-            blurRadius: 24, offset: const Offset(0, 10),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -669,8 +776,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
           child: Center(
             child: loading
                 ? const SizedBox(
-                    width: 22, height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : Row(
                     mainAxisSize: MainAxisSize.min,
@@ -678,11 +789,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       Text(
                         label,
                         style: GoogleFonts.dmSans(
-                          fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 16),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ],
                   ),
           ),
@@ -697,16 +814,43 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.lock_outline_rounded, size: 11, color: BotanlyColors.inkMute),
+        const Icon(
+          Icons.lock_outline_rounded,
+          size: 11,
+          color: BotanlyColors.inkMute,
+        ),
         const SizedBox(width: 5),
-        Builder(builder: (ctx) {
-          final l = AppLocalizations.of(ctx)!;
-          return Text(kIsWeb ? l.paywallSecured : l.paywallSecuredApple, style: GoogleFonts.dmSans(fontSize: 11, color: BotanlyColors.inkMute));
-        }),
+        Builder(
+          builder: (ctx) {
+            final l = AppLocalizations.of(ctx)!;
+            return Text(
+              kIsWeb ? l.paywallSecured : l.paywallSecuredApple,
+              style: GoogleFonts.dmSans(
+                fontSize: 11,
+                color: BotanlyColors.inkMute,
+              ),
+            );
+          },
+        ),
         const SizedBox(width: 14),
-        Container(width: 3, height: 3, decoration: BoxDecoration(shape: BoxShape.circle, color: BotanlyColors.inkMute.withValues(alpha: 0.5))),
+        Container(
+          width: 3,
+          height: 3,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: BotanlyColors.inkMute.withValues(alpha: 0.5),
+          ),
+        ),
         const SizedBox(width: 14),
-        Builder(builder: (ctx) => Text(AppLocalizations.of(ctx)!.paywallCancelAnytime, style: GoogleFonts.dmSans(fontSize: 11, color: BotanlyColors.inkMute))),
+        Builder(
+          builder: (ctx) => Text(
+            AppLocalizations.of(ctx)!.paywallCancelAnytime,
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              color: BotanlyColors.inkMute,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -719,13 +863,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
           onTap: _restoring ? null : _restore,
           child: _restoring
               ? const SizedBox(
-                  width: 14, height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 1.5, color: BotanlyColors.sageDark),
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    color: BotanlyColors.sageDark,
+                  ),
                 )
               : Text(
                   l10n.paywallRestore,
                   style: GoogleFonts.dmSans(
-                    fontSize: 12, fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: BotanlyColors.sageDark,
                     decoration: TextDecoration.underline,
                     decorationStyle: TextDecorationStyle.dashed,
@@ -740,7 +889,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
         Text(
           l10n.paywallTerms.split(' ').first,
           style: GoogleFonts.dmSans(
-            fontSize: 12, fontWeight: FontWeight.w600,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
             color: BotanlyColors.sageDark,
             decoration: TextDecoration.underline,
             decorationStyle: TextDecorationStyle.dashed,
@@ -753,7 +903,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Widget _buildLegalLinksRow() {
     const privacyUrl = 'https://botanly.tech/privacy.html';
-    const eulaUrl = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+    const eulaUrl =
+        'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
     final linkStyle = GoogleFonts.dmSans(
       fontSize: 11,
       color: BotanlyColors.inkMute,
@@ -766,13 +917,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
       spacing: 6,
       children: [
         GestureDetector(
-          onTap: () => launchUrl(Uri.parse(privacyUrl), webOnlyWindowName: '_blank'),
+          onTap: () =>
+              launchUrl(Uri.parse(privacyUrl), webOnlyWindowName: '_blank'),
           child: Text('Privacy Policy', style: linkStyle),
         ),
         if (!kIsWeb) ...[
-          Text('·', style: GoogleFonts.dmSans(fontSize: 11, color: BotanlyColors.inkMute)),
+          Text(
+            '·',
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              color: BotanlyColors.inkMute,
+            ),
+          ),
           GestureDetector(
-            onTap: () => launchUrl(Uri.parse(eulaUrl), webOnlyWindowName: '_blank'),
+            onTap: () =>
+                launchUrl(Uri.parse(eulaUrl), webOnlyWindowName: '_blank'),
             child: Text('Terms of Use', style: linkStyle),
           ),
         ],
@@ -788,7 +947,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.red.shade200),
       ),
-      child: Text(error, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+      child: Text(
+        error,
+        style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+      ),
     );
   }
 }

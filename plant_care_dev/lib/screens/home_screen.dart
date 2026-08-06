@@ -568,11 +568,7 @@ class _Header extends StatelessWidget {
   /// Location and temperature, or nulls while they are unknown.
   final WeatherReading? weather;
 
-  const _Header({
-    required this.l10n,
-    required this.onProfile,
-    this.weather,
-  });
+  const _Header({required this.l10n, required this.onProfile, this.weather});
 
   @override
   Widget build(BuildContext context) {
@@ -1116,9 +1112,7 @@ class _LockBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      trial
-                          ? l10n.gateBarTitleTrial
-                          : l10n.gateBarTitleExpired,
+                      trial ? l10n.gateBarTitleTrial : l10n.gateBarTitleExpired,
                       style: glassFont(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
@@ -1190,9 +1184,7 @@ class _WeatherBit extends StatelessWidget {
 
     // Country decides the unit, not the interface language (SPEC 6.1): someone
     // in Germany reading the app in English still sees Celsius.
-    final degrees = weather.temperatureIn(
-      fahrenheit: location.usesFahrenheit,
-    );
+    final degrees = weather.temperatureIn(fahrenheit: location.usesFahrenheit);
 
     return Flexible(
       child: Row(

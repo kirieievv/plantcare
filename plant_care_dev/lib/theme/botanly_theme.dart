@@ -65,70 +65,70 @@ class BotanlyColors {
 
 class BotanlyText {
   static TextStyle plantName({Color? color}) => GoogleFonts.fraunces(
-        fontSize: 28,
-        fontWeight: FontWeight.w400,
-        letterSpacing: -.5,
-        height: 1.05,
-        color: color ?? BotanlyColors.moss,
-      );
+    fontSize: 28,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -.5,
+    height: 1.05,
+    color: color ?? BotanlyColors.moss,
+  );
 
   static TextStyle sectionTitle({Color? color}) => GoogleFonts.fraunces(
-        fontSize: 19,
-        fontWeight: FontWeight.w400,
-        letterSpacing: -.3,
-        height: 1.1,
-        color: color ?? BotanlyColors.sage,
-      );
+    fontSize: 19,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -.3,
+    height: 1.1,
+    color: color ?? BotanlyColors.sage,
+  );
 
   static TextStyle cardTitle({Color? color}) => GoogleFonts.fraunces(
-        fontSize: 17,
-        fontWeight: FontWeight.w400,
-        letterSpacing: -.2,
-        height: 1.2,
-        color: color ?? BotanlyColors.moss,
-      );
+    fontSize: 17,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -.2,
+    height: 1.2,
+    color: color ?? BotanlyColors.moss,
+  );
 
   static TextStyle smallHeading({Color? color}) => GoogleFonts.fraunces(
-        fontSize: 15.5,
-        fontWeight: FontWeight.w400,
-        letterSpacing: -.2,
-        color: color ?? BotanlyColors.sage,
-      );
+    fontSize: 15.5,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -.2,
+    color: color ?? BotanlyColors.sage,
+  );
 
   static TextStyle topbarTitle({Color? color}) => GoogleFonts.fraunces(
-        fontSize: 24,
-        fontWeight: FontWeight.w500,
-        letterSpacing: -.4,
-        color: color ?? BotanlyColors.moss,
-      );
+    fontSize: 24,
+    fontWeight: FontWeight.w500,
+    letterSpacing: -.4,
+    color: color ?? BotanlyColors.moss,
+  );
 
   static TextStyle body({Color? color}) => GoogleFonts.dmSans(
-        fontSize: 13.5,
-        fontWeight: FontWeight.w300,
-        height: 1.6,
-        color: color ?? const Color(0xFF6A6A6A),
-      );
+    fontSize: 13.5,
+    fontWeight: FontWeight.w300,
+    height: 1.6,
+    color: color ?? const Color(0xFF6A6A6A),
+  );
 
   static TextStyle bodySmall({Color? color}) => GoogleFonts.dmSans(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        height: 1.45,
-        color: color ?? BotanlyColors.inkSoft,
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.45,
+    color: color ?? BotanlyColors.inkSoft,
+  );
 
   static TextStyle statValue({Color? color}) => GoogleFonts.dmSans(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        height: 1.15,
-        color: color ?? BotanlyColors.sageDark,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    height: 1.15,
+    color: color ?? BotanlyColors.sageDark,
+  );
 
   static TextStyle microLabel({Color? color}) => GoogleFonts.dmSans(
-        fontSize: 11,
-        fontWeight: FontWeight.w400,
-        letterSpacing: .4,
-        color: color ?? BotanlyColors.inkMute,
-      );
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    letterSpacing: .4,
+    color: color ?? BotanlyColors.inkMute,
+  );
 
   static TextStyle button({Color? color, FontWeight? weight}) =>
       GoogleFonts.dmSans(
@@ -139,17 +139,17 @@ class BotanlyText {
       );
 
   static TextStyle caption({Color? color}) => GoogleFonts.dmSans(
-        fontSize: 11.5,
-        fontWeight: FontWeight.w300,
-        color: color ?? BotanlyColors.inkMute,
-      );
+    fontSize: 11.5,
+    fontWeight: FontWeight.w300,
+    color: color ?? BotanlyColors.inkMute,
+  );
 
   static TextStyle latin({Color? color}) => GoogleFonts.fraunces(
-        fontSize: 13,
-        fontStyle: FontStyle.italic,
-        fontWeight: FontWeight.w400,
-        color: color ?? BotanlyColors.inkMute,
-      );
+    fontSize: 13,
+    fontStyle: FontStyle.italic,
+    fontWeight: FontWeight.w400,
+    color: color ?? BotanlyColors.inkMute,
+  );
 }
 
 // ──────────────────────────── Shadows ────────────────────────────
@@ -165,11 +165,7 @@ class BotanlyShadows {
 
   /// splash_screen.html .btn-primary
   static const splashPrimaryBtn = [
-    BoxShadow(
-      color: Color(0x595FA346),
-      blurRadius: 18,
-      offset: Offset(0, 6),
-    ),
+    BoxShadow(color: Color(0x595FA346), blurRadius: 18, offset: Offset(0, 6)),
   ];
 
   static const primaryGlow = [
@@ -186,20 +182,12 @@ class BotanlyShadows {
 
   /// `dashboard_screen.html` `.nav-item.active .nav-icon`
   static const navActiveIconDrop = [
-    BoxShadow(
-      color: Color(0x594A9E3F),
-      blurRadius: 6,
-      offset: Offset(0, 2),
-    ),
+    BoxShadow(color: Color(0x594A9E3F), blurRadius: 6, offset: Offset(0, 2)),
   ];
 
   /// main_navigation_screen.html .nav-item.active .nav-pill
   static const navActivePill = [
-    BoxShadow(
-      color: Color(0x595AB85D),
-      blurRadius: 8,
-      offset: Offset(0, 3),
-    ),
+    BoxShadow(color: Color(0x595AB85D), blurRadius: 8, offset: Offset(0, 3)),
   ];
 }
 
@@ -262,18 +250,21 @@ ThemeData buildBotanlyTheme() {
       fillColor: Colors.white.withValues(alpha: 0.6),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(BotanlyRadii.md),
-        borderSide: BorderSide(color: BotanlyColors.moss.withValues(alpha: 0.2)),
+        borderSide: BorderSide(
+          color: BotanlyColors.moss.withValues(alpha: 0.2),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(BotanlyRadii.md),
-        borderSide: BorderSide(color: BotanlyColors.moss.withValues(alpha: 0.2)),
+        borderSide: BorderSide(
+          color: BotanlyColors.moss.withValues(alpha: 0.2),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(BotanlyRadii.md),
         borderSide: const BorderSide(color: BotanlyColors.sage, width: 1.5),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
   );
 }

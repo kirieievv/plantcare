@@ -94,12 +94,7 @@ class _SubscriptionLockedScreenState extends State<SubscriptionLockedScreen> {
           //
           // The clearance is left to SafeArea, which already knows how tall
           // the shell's menu is (see [_kFooterGap]).
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _footer(),
-          ),
+          Positioned(left: 0, right: 0, bottom: 0, child: _footer()),
         ],
       ),
     );

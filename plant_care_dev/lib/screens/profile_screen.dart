@@ -74,9 +74,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveProfile() async {
     final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.nameCannotBeEmpty)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.nameCannotBeEmpty)));
       return;
     }
 
@@ -147,56 +147,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SafeArea(
         bottom: false,
         child: StreamBuilder<SubscriptionInfo>(
-            stream: SubscriptionService().stream,
-            initialData: SubscriptionService().currentInfo,
-            builder: (context, subSnap) {
-              final subInfo = subSnap.data;
-              if (_isLoading) {
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 112),
-                  children: const [
-                    BotanlyShimmer(
-                      child: Column(
-                        children: [
-                          ShimmerProfileHeader(),
-                          SizedBox(height: 14),
-                          ShimmerInfoCard(rows: 3),
-                          SizedBox(height: 14),
-                          ShimmerInfoCard(rows: 2),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }
-              final name = _userProfile?.name ?? l10n.plantLover;
+          stream: SubscriptionService().stream,
+          initialData: SubscriptionService().currentInfo,
+          builder: (context, subSnap) {
+            final subInfo = subSnap.data;
+            if (_isLoading) {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 112),
-                children: [
-                  if (subInfo != null) ...[
-                    StaggeredFadeUp(index: 0, show: true,
-                        child: _SubscriptionCard(
-                          info: subInfo,
-                          userName: name,
-                          onUpgrade: () => showPaywall(context),
-                        )),
-                  ],
-                  const SizedBox(height: 14),
-                  StaggeredFadeUp(index: 1, show: true,
-                      child: _buildProfileInfoCard(l10n)),
-                  const SizedBox(height: 14),
-                  StaggeredFadeUp(index: 2, show: true,
-                      child: _buildAccountInfoCard(l10n)),
-                  const SizedBox(height: 14),
-                  StaggeredFadeUp(index: 3, show: true,
-                      child: _buildSignOutRow(l10n)),
-                  const SizedBox(height: 14),
-                  StaggeredFadeUp(index: 4, show: true,
-                      child: _buildDeleteAccountRow(l10n)),
+                children: const [
+                  BotanlyShimmer(
+                    child: Column(
+                      children: [
+                        ShimmerProfileHeader(),
+                        SizedBox(height: 14),
+                        ShimmerInfoCard(rows: 3),
+                        SizedBox(height: 14),
+                        ShimmerInfoCard(rows: 2),
+                      ],
+                    ),
+                  ),
                 ],
               );
-            },
-          ),
+            }
+            final name = _userProfile?.name ?? l10n.plantLover;
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 112),
+              children: [
+                if (subInfo != null) ...[
+                  StaggeredFadeUp(
+                    index: 0,
+                    show: true,
+                    child: _SubscriptionCard(
+                      info: subInfo,
+                      userName: name,
+                      onUpgrade: () => showPaywall(context),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                StaggeredFadeUp(
+                  index: 1,
+                  show: true,
+                  child: _buildProfileInfoCard(l10n),
+                ),
+                const SizedBox(height: 14),
+                StaggeredFadeUp(
+                  index: 2,
+                  show: true,
+                  child: _buildAccountInfoCard(l10n),
+                ),
+                const SizedBox(height: 14),
+                StaggeredFadeUp(
+                  index: 3,
+                  show: true,
+                  child: _buildSignOutRow(l10n),
+                ),
+                const SizedBox(height: 14),
+                StaggeredFadeUp(
+                  index: 4,
+                  show: true,
+                  child: _buildDeleteAccountRow(l10n),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -246,8 +261,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 11, color: BotanlyColors.inkMute),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 11,
+                        color: BotanlyColors.inkMute,
+                      ),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
@@ -272,7 +290,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
   // ─────────────────────── Profile info card ───────────────────────
 
   Widget _buildProfileInfoCard(AppLocalizations l10n) {
@@ -296,10 +313,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          if (_isEditing)
-            _buildEditForm(l10n)
-          else
-            _buildInfoView(l10n),
+          if (_isEditing) _buildEditForm(l10n) else _buildInfoView(l10n),
         ],
       ),
     );
@@ -399,16 +413,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   TextStyle _fieldStyle() => GoogleFonts.dmSans(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: const Color(0xFF1B2A18),
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: const Color(0xFF1B2A18),
+  );
 
   TextStyle _hintStyle() => GoogleFonts.dmSans(
-        fontSize: 14,
-        fontWeight: FontWeight.w300,
-        color: BotanlyColors.inkMute,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w300,
+    color: BotanlyColors.inkMute,
+  );
 
   // ─────────────────────── Account info card ───────────────────────
 
@@ -465,8 +479,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: BotanlyColors.redPale,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.logout_rounded,
-                      size: 14, color: BotanlyColors.red),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    size: 14,
+                    color: BotanlyColors.red,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -506,8 +523,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: BotanlyColors.red.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.delete_forever_rounded,
-                      size: 14, color: BotanlyColors.red),
+                  child: const Icon(
+                    Icons.delete_forever_rounded,
+                    size: 14,
+                    color: BotanlyColors.red,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -532,8 +552,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right,
-                    size: 18, color: BotanlyColors.inkMute),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: BotanlyColors.inkMute,
+                ),
               ],
             ),
           ),
@@ -553,7 +576,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           l10n.deleteAccountTitle,
-          style: GoogleFonts.fraunces(fontWeight: FontWeight.w600, fontSize: 18),
+          style: GoogleFonts.fraunces(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
         ),
         content: Text(
           l10n.deleteAccountConfirmBody,
@@ -567,8 +593,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: BotanlyColors.red),
-            child: Text(l10n.delete,
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+            child: Text(
+              l10n.delete,
+              style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -583,12 +611,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
           backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             l10n.deleteAccountAreYouSure,
-            style:
-                GoogleFonts.fraunces(fontWeight: FontWeight.w600, fontSize: 18),
+            style: GoogleFonts.fraunces(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -597,7 +628,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 l10n.deleteAccountTypeConfirm,
                 style: GoogleFonts.dmSans(
-                    fontSize: 14, color: BotanlyColors.inkMute),
+                  fontSize: 14,
+                  color: BotanlyColors.inkMute,
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -606,7 +639,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onChanged: (_) => setS(() {}),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   hintText: 'DELETE',
                 ),
               ),
@@ -622,8 +656,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ? () => Navigator.pop(ctx, true)
                   : null,
               style: TextButton.styleFrom(foregroundColor: BotanlyColors.red),
-              child: Text(l10n.deleteAccountConfirmBtn,
-                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+              child: Text(
+                l10n.deleteAccountConfirmBtn,
+                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -653,8 +689,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       await NotificationService().removeFCMToken();
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('deleteAccount');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'deleteAccount',
+      );
       await callable.call();
       await AuthService.signOut();
       if (mounted) context.go('/welcome');
@@ -663,8 +700,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(AppLocalizations.of(context)!
-                  .errorDeletingAccount(e.toString()))),
+            content: Text(
+              AppLocalizations.of(context)!.errorDeletingAccount(e.toString()),
+            ),
+          ),
         );
       }
     }
@@ -759,16 +798,40 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Color(0x0F2D3D2A), blurRadius: 14, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x0F2D3D2A),
+            blurRadius: 14,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildTop(l10n, info, isTrial, isActive, isExpired, isGrandfathered,
-              accentColor, pillBg, pillFg, leafC1, leafC2, topGradOpacity),
-          _buildFoot(l10n, info, isTrial, isActive, isExpired, isGrandfathered, accentColor),
+          _buildTop(
+            l10n,
+            info,
+            isTrial,
+            isActive,
+            isExpired,
+            isGrandfathered,
+            accentColor,
+            pillBg,
+            pillFg,
+            leafC1,
+            leafC2,
+            topGradOpacity,
+          ),
+          _buildFoot(
+            l10n,
+            info,
+            isTrial,
+            isActive,
+            isExpired,
+            isGrandfathered,
+            accentColor,
+          ),
         ],
       ),
     );
@@ -777,9 +840,16 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
   Widget _buildTop(
     AppLocalizations l10n,
     SubscriptionInfo info,
-    bool isTrial, bool isActive, bool isExpired, bool isGrandfathered,
-    Color accentColor, Color pillBg, Color pillFg,
-    Color leafC1, Color leafC2, double topGradOpacity,
+    bool isTrial,
+    bool isActive,
+    bool isExpired,
+    bool isGrandfathered,
+    Color accentColor,
+    Color pillBg,
+    Color pillFg,
+    Color leafC1,
+    Color leafC2,
+    double topGradOpacity,
   ) {
     final String pillLabel;
     final IconData pillIcon;
@@ -812,7 +882,10 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
               gradient: RadialGradient(
                 center: const Alignment(-1.4, -1.4),
                 radius: 2.2,
-                colors: [accentColor.withValues(alpha: topGradOpacity), Colors.transparent],
+                colors: [
+                  accentColor.withValues(alpha: topGradOpacity),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
@@ -824,13 +897,17 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
                 gradient: RadialGradient(
                   center: const Alignment(1.6, -1.4),
                   radius: 2.0,
-                  colors: [BotanlyColors.sageLight.withValues(alpha: 0.22), Colors.transparent],
+                  colors: [
+                    BotanlyColors.sageLight.withValues(alpha: 0.22),
+                    Colors.transparent,
+                  ],
                 ),
               ),
             ),
           ),
         Positioned(
-          top: -22, right: -18,
+          top: -22,
+          right: -18,
           child: Opacity(
             opacity: 0.35,
             child: CustomPaint(
@@ -840,8 +917,16 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
           ),
         ),
         if (isActive) ...[
-          Positioned(top: 14, right: 74, child: _buildSparkle(0, BotanlyColors.sage)),
-          Positioned(top: 46, right: 50, child: _buildSparkle(800, BotanlyColors.sageLight)),
+          Positioned(
+            top: 14,
+            right: 74,
+            child: _buildSparkle(0, BotanlyColors.sage),
+          ),
+          Positioned(
+            top: 46,
+            right: 50,
+            child: _buildSparkle(800, BotanlyColors.sageLight),
+          ),
         ],
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
@@ -855,8 +940,10 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
                   Text(
                     monoMeta,
                     style: GoogleFonts.dmMono(
-                      fontSize: 10.5, fontWeight: FontWeight.w500,
-                      color: BotanlyColors.inkMute, letterSpacing: 0.5,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
+                      color: BotanlyColors.inkMute,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
@@ -865,7 +952,13 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
               if (isTrial || isExpired)
                 _buildHeroBody(l10n, info, isTrial, accentColor)
               else
-                _buildTextBody(l10n, info, isActive, isGrandfathered, accentColor),
+                _buildTextBody(
+                  l10n,
+                  info,
+                  isActive,
+                  isGrandfathered,
+                  accentColor,
+                ),
             ],
           ),
         ),
@@ -876,7 +969,10 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
   Widget _buildStatusPill(String label, IconData icon, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -885,8 +981,10 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
           Text(
             label.toUpperCase(),
             style: GoogleFonts.dmSans(
-              fontSize: 10.5, fontWeight: FontWeight.w700,
-              letterSpacing: 0.8, color: fg,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: fg,
             ),
           ),
         ],
@@ -894,10 +992,17 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
     );
   }
 
-  Widget _buildHeroBody(AppLocalizations l10n, SubscriptionInfo info, bool isTrial, Color accentColor) {
+  Widget _buildHeroBody(
+    AppLocalizations l10n,
+    SubscriptionInfo info,
+    bool isTrial,
+    Color accentColor,
+  ) {
     final int days = isTrial ? (info.trialDaysRemaining ?? 0) : 0;
     final DateTime? date = isTrial ? info.trialExpiresAt : info.expiresAt;
-    final Color numColor = isTrial ? BotanlyColors.moss : const Color(0xFFA47626);
+    final Color numColor = isTrial
+        ? BotanlyColors.moss
+        : const Color(0xFFA47626);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -909,18 +1014,22 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
             Text(
               '$days',
               style: GoogleFonts.fraunces(
-                fontSize: 68, fontWeight: FontWeight.w500,
-                letterSpacing: -2.5, height: 0.85,
-                color: numColor, fontStyle: FontStyle.italic,
+                fontSize: 68,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -2.5,
+                height: 0.85,
+                color: numColor,
+                fontStyle: FontStyle.italic,
               ),
             ),
             const SizedBox(width: 6),
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child:               Text(
+              child: Text(
                 l10n.subDaysLeft,
                 style: GoogleFonts.dmSans(
-                  fontSize: 13, fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                   color: BotanlyColors.inkMute,
                 ),
               ),
@@ -936,8 +1045,10 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
               isTrial ? l10n.subUntilPreviewEnds : l10n.subTrialEnded,
               textAlign: TextAlign.right,
               style: GoogleFonts.fraunces(
-                fontSize: 14, fontWeight: FontWeight.w500,
-                color: BotanlyColors.moss, letterSpacing: -0.2,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: BotanlyColors.moss,
+                letterSpacing: -0.2,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -946,11 +1057,18 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.calendar_today_outlined, size: 11, color: BotanlyColors.inkMute),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 11,
+                    color: BotanlyColors.inkMute,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     DateFormat('MMM d, yyyy').format(date),
-                    style: GoogleFonts.dmSans(fontSize: 11.5, color: BotanlyColors.inkMute),
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11.5,
+                      color: BotanlyColors.inkMute,
+                    ),
                   ),
                 ],
               ),
@@ -963,14 +1081,19 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
 
   Widget _buildTextBody(
     AppLocalizations l10n,
-    SubscriptionInfo info, bool isActive, bool isGrandfathered, Color accentColor,
+    SubscriptionInfo info,
+    bool isActive,
+    bool isGrandfathered,
+    Color accentColor,
   ) {
     final String line2;
     final IconData line2Icon;
 
     if (isActive) {
       final daysLeft = info.expiresAt?.difference(DateTime.now()).inDays;
-      final renewDate = info.expiresAt != null ? DateFormat('MMM d').format(info.expiresAt!) : null;
+      final renewDate = info.expiresAt != null
+          ? DateFormat('MMM d').format(info.expiresAt!)
+          : null;
       if (daysLeft != null && renewDate != null) {
         line2 = info.autoRenewEnabled
             ? l10n.subRenewsInDays(daysLeft, renewDate)
@@ -994,15 +1117,23 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
                 TextSpan(
                   text: l10n.subHeroYourePrefix,
                   style: GoogleFonts.fraunces(
-                    fontSize: 22, fontWeight: FontWeight.w500,
-                    color: BotanlyColors.moss, letterSpacing: -0.3, height: 1.2,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
+                    color: BotanlyColors.moss,
+                    letterSpacing: -0.3,
+                    height: 1.2,
                   ),
                 ),
               TextSpan(
-                text: isActive ? l10n.subHeroGrowingWord : l10n.subHeroForeverWord,
+                text: isActive
+                    ? l10n.subHeroGrowingWord
+                    : l10n.subHeroForeverWord,
                 style: GoogleFonts.fraunces(
-                  fontSize: 22, fontWeight: FontWeight.w500,
-                  color: accentColor, letterSpacing: -0.3, height: 1.2,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500,
+                  color: accentColor,
+                  letterSpacing: -0.3,
+                  height: 1.2,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -1010,8 +1141,11 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
                 TextSpan(
                   text: l10n.subHeroPremiumSuffix,
                   style: GoogleFonts.fraunces(
-                    fontSize: 22, fontWeight: FontWeight.w500,
-                    color: BotanlyColors.moss, letterSpacing: -0.3, height: 1.2,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
+                    color: BotanlyColors.moss,
+                    letterSpacing: -0.3,
+                    height: 1.2,
                   ),
                 ),
             ],
@@ -1025,7 +1159,10 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
             Expanded(
               child: Text(
                 line2,
-                style: GoogleFonts.dmSans(fontSize: 11.5, color: BotanlyColors.inkMute),
+                style: GoogleFonts.dmSans(
+                  fontSize: 11.5,
+                  color: BotanlyColors.inkMute,
+                ),
               ),
             ),
           ],
@@ -1037,7 +1174,10 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
   Widget _buildFoot(
     AppLocalizations l10n,
     SubscriptionInfo info,
-    bool isTrial, bool isActive, bool isExpired, bool isGrandfathered,
+    bool isTrial,
+    bool isActive,
+    bool isExpired,
+    bool isGrandfathered,
     Color accentColor,
   ) {
     final String perks;
@@ -1091,7 +1231,9 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
             child: Text(
               perks,
               style: GoogleFonts.dmSans(
-                fontSize: 11, fontWeight: FontWeight.w500, color: BotanlyColors.inkMute,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: BotanlyColors.inkMute,
               ),
             ),
           ),
@@ -1102,7 +1244,14 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(ctaLabel, style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700, color: ctaFg)),
+                      Text(
+                        ctaLabel,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: ctaFg,
+                        ),
+                      ),
                       const SizedBox(width: 2),
                       Icon(Icons.chevron_right_rounded, size: 14, color: ctaFg),
                     ],
@@ -1113,14 +1262,31 @@ class _SubscriptionCardState extends State<_SubscriptionCard>
                     decoration: BoxDecoration(
                       color: ctaBg,
                       borderRadius: BorderRadius.circular(999),
-                      boxShadow: [BoxShadow(color: ctaBg.withValues(alpha: 0.32), blurRadius: 12, offset: const Offset(0, 4))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: ctaBg.withValues(alpha: 0.32),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(ctaLabel, style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700, color: ctaFg)),
+                        Text(
+                          ctaLabel,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: ctaFg,
+                          ),
+                        ),
                         const SizedBox(width: 4),
-                        Icon(Icons.chevron_right_rounded, size: 12, color: ctaFg),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 12,
+                          color: ctaFg,
+                        ),
                       ],
                     ),
                   ),
@@ -1182,8 +1348,9 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
   Future<void> _openStripeBillingPortal() async {
     setState(() => _portalLoading = true);
     try {
-      final callable = FirebaseFunctions.instance
-          .httpsCallable('createPortalSession');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'createPortalSession',
+      );
       final result = await callable.call({
         'returnUrl': 'https://botanly.tech/home',
       });
@@ -1201,11 +1368,17 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.errorOpeningBillingPortal(e.toString()),
-              style: GoogleFonts.dmSans(fontSize: 13)),
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.errorOpeningBillingPortal(e.toString()),
+            style: GoogleFonts.dmSans(fontSize: 13),
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -1223,16 +1396,18 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      await Clipboard.setData(
-          const ClipboardData(text: 'support@botanly.app'));
+      await Clipboard.setData(const ClipboardData(text: 'support@botanly.app'));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.emailCopied,
-              style: GoogleFonts.dmSans(fontSize: 13)),
+          content: Text(
+            AppLocalizations.of(context)!.emailCopied,
+            style: GoogleFonts.dmSans(fontSize: 13),
+          ),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -1243,8 +1418,7 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final info = widget.info;
-    final isGrandfathered =
-        info.status == SubscriptionStatus.grandfathered;
+    final isGrandfathered = info.status == SubscriptionStatus.grandfathered;
     final renewalDate = info.expiresAt != null
         ? DateFormat('MMM d, yyyy').format(info.expiresAt!)
         : null;
@@ -1255,7 +1429,8 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom +
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom +
             MediaQuery.of(context).padding.bottom +
             24,
       ),
@@ -1277,8 +1452,7 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
           ),
           // Header
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               children: [
                 Expanded(
@@ -1300,8 +1474,11 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
                       color: const Color(0xFFF2F5F1),
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: const Icon(Icons.close_rounded,
-                        size: 16, color: BotanlyColors.inkMute),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: BotanlyColors.inkMute,
+                    ),
                   ),
                 ),
               ],
@@ -1318,7 +1495,9 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
                     ? const Color(0xFFC08E3C)
                     : BotanlyColors.sage,
                 label: l10n.labelPlan,
-                value: isGrandfathered ? l10n.labelGrandfathered : l10n.labelPremium,
+                value: isGrandfathered
+                    ? l10n.labelGrandfathered
+                    : l10n.labelPremium,
               ),
               if (renewalDate != null) ...[
                 const _SheetDivider(),
@@ -1329,7 +1508,9 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
                   iconColor: isGrandfathered
                       ? const Color(0xFFC08E3C)
                       : BotanlyColors.sage,
-                  label: isGrandfathered ? l10n.labelExpires : l10n.labelNextRenewal,
+                  label: isGrandfathered
+                      ? l10n.labelExpires
+                      : l10n.labelNextRenewal,
                   value: renewalDate,
                 ),
               ],
@@ -1387,7 +1568,8 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              (kIsWeb || widget.info.stripeSubscriptionId != null)
+                              (kIsWeb ||
+                                      widget.info.stripeSubscriptionId != null)
                                   ? l10n.manageBillingWeb
                                   : l10n.manageInAppStore,
                               style: GoogleFonts.dmSans(
@@ -1397,8 +1579,11 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(Icons.open_in_new_rounded,
-                                size: 15, color: Colors.white),
+                            const Icon(
+                              Icons.open_in_new_rounded,
+                              size: 15,
+                              color: Colors.white,
+                            ),
                           ],
                         ),
                 ),
@@ -1410,8 +1595,8 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
                 kIsWeb
                     ? l10n.manageBillingSubtitleWeb
                     : (widget.info.stripeSubscriptionId != null
-                        ? l10n.manageBillingSubtitleWeb
-                        : l10n.manageBillingSubtitleAppStore),
+                          ? l10n.manageBillingSubtitleWeb
+                          : l10n.manageBillingSubtitleAppStore),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.dmSans(
                   fontSize: 11,
@@ -1421,7 +1606,6 @@ class _ManageSubscriptionSheetState extends State<_ManageSubscriptionSheet> {
               ),
             ),
           ],
-
         ],
       ),
     );

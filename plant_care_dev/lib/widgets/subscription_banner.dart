@@ -17,7 +17,9 @@ class PlantLimitBanner extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final text = info.isTrial
-        ? l10n.subscriptionPlantLimitBannerTrial(info.config.subscriptionPlantLimit)
+        ? l10n.subscriptionPlantLimitBannerTrial(
+            info.config.subscriptionPlantLimit,
+          )
         : l10n.subscriptionPlantLimitBannerExpired;
 
     return Material(
@@ -45,8 +47,11 @@ class PlantLimitBanner extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.lock_outline_rounded,
-                    color: Colors.white, size: 22),
+                const Icon(
+                  Icons.lock_outline_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -77,7 +82,9 @@ class PlantLimitBanner extends StatelessWidget {
                   onTap: () => showPaywall(context),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -116,8 +123,11 @@ class ExpiredReadOnlyBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            Icon(Icons.info_outline_rounded,
-                color: Colors.orange.shade700, size: 16),
+            Icon(
+              Icons.info_outline_rounded,
+              color: Colors.orange.shade700,
+              size: 16,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

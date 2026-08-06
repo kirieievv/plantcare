@@ -7,29 +7,33 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Utility class for testing web push notifications via Firebase HTTP v1 API
 class WebPushTester {
-  
   // Firebase FCM HTTP v1 API endpoint
-  static const String _fcmUrl = 'https://fcm.googleapis.com/v1/projects/plant-care-94574/messages:send';
-  
+  static const String _fcmUrl =
+      'https://fcm.googleapis.com/v1/projects/plant-care-94574/messages:send';
+
   /// Send a test notification to a specific FCM token using HTTP v1 API
   static Future<Map<String, dynamic>> sendTestNotification({
     required String fcmToken,
     String title = 'Plant Care Test',
-    String body = 'This is a test push notification from your Plant Care app! 🌱',
+    String body =
+        'This is a test push notification from your Plant Care app! 🌱',
   }) async {
     try {
-      print('📤 Sending test notification via HTTP v1 API to token: ${fcmToken.substring(0, 20)}...');
-      
+      print(
+        '📤 Sending test notification via HTTP v1 API to token: ${fcmToken.substring(0, 20)}...',
+      );
+
       // Validate FCM token format
       if (!_isValidFCMToken(fcmToken)) {
         return {
           'success': false,
-          'error': 'Invalid FCM token format. Please refresh the notification test to get a new token.',
+          'error':
+              'Invalid FCM token format. Please refresh the notification test to get a new token.',
           'tokenLength': fcmToken.length,
           'tokenStart': fcmToken.substring(0, 20),
         };
       }
-      
+
       // Get OAuth 2.0 access token
       final accessToken = await _getAccessToken();
       if (accessToken == null) {
@@ -38,18 +42,15 @@ class WebPushTester {
           'error': 'Failed to get OAuth 2.0 access token',
         };
       }
-      
+
       // Prepare HTTP v1 message format
       print('🔍 Preparing message for token: ${fcmToken.substring(0, 30)}...');
       print('🔍 Full token length: ${fcmToken.length}');
-      
+
       final message = {
         'message': {
           'token': fcmToken,
-          'notification': {
-            'title': title,
-            'body': body,
-          },
+          'notification': {'title': title, 'body': body},
           'data': {
             'type': 'test',
             'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
@@ -61,22 +62,16 @@ class WebPushTester {
               'badge': '/icons/Icon-192.png',
               'requireInteraction': true,
               'actions': [
-                {
-                  'action': 'open',
-                  'title': 'Open App',
-                },
-                {
-                  'action': 'dismiss',
-                  'title': 'Dismiss',
-                },
+                {'action': 'open', 'title': 'Open App'},
+                {'action': 'dismiss', 'title': 'Dismiss'},
               ],
             },
           },
         },
       };
-      
+
       print('📤 Message payload: ${jsonEncode(message)}');
-      
+
       // Send the notification using HTTP v1 API
       final response = await http.post(
         Uri.parse(_fcmUrl),
@@ -86,10 +81,10 @@ class WebPushTester {
         },
         body: jsonEncode(message),
       );
-      
+
       print('📡 HTTP v1 API Response Status: ${response.statusCode}');
       print('📡 HTTP v1 API Response Body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         return {
@@ -101,11 +96,11 @@ class WebPushTester {
       } else {
         return {
           'success': false,
-          'error': 'HTTP v1 API failed: ${response.statusCode} - ${response.body}',
+          'error':
+              'HTTP v1 API failed: ${response.statusCode} - ${response.body}',
           'statusCode': response.statusCode,
         };
       }
-      
     } catch (e) {
       print('❌ Error in HTTP v1 API test: $e');
       return {
@@ -114,7 +109,7 @@ class WebPushTester {
       };
     }
   }
-  
+
   /// Validate FCM token format
   static bool _isValidFCMToken(String token) {
     // Web FCM tokens should be:
@@ -122,37 +117,39 @@ class WebPushTester {
     // - Contain alphanumeric characters and some special chars
     // - Not contain spaces or invalid characters
     // - For web, they often contain colons and dashes
-    
+
     if (token.length < 100) {
       print('❌ Token too short: ${token.length} characters');
       return false;
     }
-    
+
     if (token.contains(' ')) {
       print('❌ Token contains spaces');
       return false;
     }
-    
+
     // Check for common invalid patterns
     if (token.startsWith('undefined') || token.startsWith('null')) {
       print('❌ Token starts with invalid value');
       return false;
     }
-    
+
     // Web tokens often have colons and dashes - this is normal
     print('✅ Token format looks valid: ${token.length} characters');
     print('🔍 Token preview: ${token.substring(0, 30)}...');
     return true;
   }
-  
+
   /// Get OAuth 2.0 access token using service account
   static Future<String?> _getAccessToken() async {
     // IMPORTANT: Do not embed service-account credentials in client code.
     // This utility should call a secured backend function that sends FCM.
-    print('⚠️ HTTP v1 direct send disabled: service account credentials must stay on backend.');
+    print(
+      '⚠️ HTTP v1 direct send disabled: service account credentials must stay on backend.',
+    );
     return null;
   }
-  
+
   /// Send a test notification using the current user's FCM token
   static Future<Map<String, dynamic>> sendTestToCurrentUser({
     String title = 'Plant Care Test',
@@ -161,40 +158,35 @@ class WebPushTester {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        return {
-          'success': false,
-          'error': 'No user logged in',
-        };
+        return {'success': false, 'error': 'No user logged in'};
       }
-      
+
       // Get FCM token from the notification test
       final token = await _getCurrentUserFCMToken();
       if (token == null) {
         return {
           'success': false,
-          'error': 'No FCM token available. Please run notification test first.',
+          'error':
+              'No FCM token available. Please run notification test first.',
         };
       }
-      
+
       return await sendTestNotification(
         fcmToken: token,
         title: title,
         body: body,
       );
     } catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
-  
+
   /// Get the current user's FCM token from Firestore
   static Future<String?> _getCurrentUserFCMToken() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return null;
-      
+
       // This would need to be implemented to get the token from Firestore
       // For now, return null and let the user provide the token manually
       return null;
@@ -203,41 +195,35 @@ class WebPushTester {
       return null;
     }
   }
-  
+
   /// Get all FCM tokens for current user from Firestore
   static Future<Map<String, dynamic>> getAllUserTokens() async {
     try {
       print('🔍 Getting all FCM tokens from Firestore...');
-      
+
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        return {
-          'success': false,
-          'error': 'No user logged in',
-        };
+        return {'success': false, 'error': 'No user logged in'};
       }
-      
+
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
-      
+
       if (!doc.exists) {
-        return {
-          'success': false,
-          'error': 'User document not found',
-        };
+        return {'success': false, 'error': 'User document not found'};
       }
-      
+
       final data = doc.data()!;
       final fcmTokens = data['fcmTokens'] as List<dynamic>? ?? [];
       final lastTokenUpdate = data['lastTokenUpdate'] as String?;
-      
+
       print('📱 Found ${fcmTokens.length} FCM tokens');
       for (int i = 0; i < fcmTokens.length; i++) {
         print('Token $i: ${fcmTokens[i].toString().substring(0, 20)}...');
       }
-      
+
       return {
         'success': true,
         'tokens': fcmTokens.map((t) => t.toString()).toList(),
@@ -245,13 +231,9 @@ class WebPushTester {
         'lastTokenUpdate': lastTokenUpdate,
         'message': 'Found ${fcmTokens.length} FCM tokens',
       };
-      
     } catch (e) {
       print('❌ Error getting user tokens: $e');
-      return {
-        'success': false,
-        'error': 'Error getting user tokens: $e',
-      };
+      return {'success': false, 'error': 'Error getting user tokens: $e'};
     }
   }
 
@@ -259,10 +241,10 @@ class WebPushTester {
   static Future<Map<String, dynamic>> refreshFCMToken() async {
     try {
       print('🔄 Refreshing FCM token...');
-      
+
       // Import Firebase Messaging
       final messaging = FirebaseMessaging.instance;
-      
+
       // Request permission
       final settings = await messaging.requestPermission(
         alert: true,
@@ -270,7 +252,7 @@ class WebPushTester {
         sound: true,
         provisional: false,
       );
-      
+
       if (settings.authorizationStatus != AuthorizationStatus.authorized) {
         return {
           'success': false,
@@ -278,66 +260,53 @@ class WebPushTester {
           'permissionStatus': settings.authorizationStatus.name,
         };
       }
-      
+
       // Get new token
       final token = await messaging.getToken(
-        vapidKey: 'BI0yI6i_be8uHYwHlGkuwK4w20TlouraY6LM5j0Y0_Gp2xrfMOKbC43GHx9y_fsILTrpEAmsbUE8UVVHZZpB9G4'
+        vapidKey:
+            'BI0yI6i_be8uHYwHlGkuwK4w20TlouraY6LM5j0Y0_Gp2xrfMOKbC43GHx9y_fsILTrpEAmsbUE8UVVHZZpB9G4',
       );
-      
+
       if (token == null) {
-        return {
-          'success': false,
-          'error': 'Failed to generate FCM token',
-        };
+        return {'success': false, 'error': 'Failed to generate FCM token'};
       }
-      
+
       print('✅ New FCM token generated: ${token.substring(0, 20)}...');
-      
+
       return {
         'success': true,
         'token': token,
         'tokenLength': token.length,
         'message': 'FCM token refreshed successfully',
       };
-      
     } catch (e) {
       print('❌ Error refreshing FCM token: $e');
-      return {
-        'success': false,
-        'error': 'Error refreshing FCM token: $e',
-      };
+      return {'success': false, 'error': 'Error refreshing FCM token: $e'};
     }
   }
-  
+
   /// Force generate a completely new FCM token
   static Future<Map<String, dynamic>> forceNewToken() async {
     try {
       print('🔄 Force generating new FCM token...');
-      
+
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        return {
-          'success': false,
-          'error': 'No user logged in',
-        };
+        return {'success': false, 'error': 'No user logged in'};
       }
-      
+
       // Import Firebase Messaging
       final messaging = FirebaseMessaging.instance;
-      
+
       // Clear old tokens from Firestore first
       print('🗑️ Clearing old tokens from Firestore...');
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({
-        'fcmTokens': [],
-        'lastTokenUpdate': FieldValue.delete(),
-      });
-      
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'fcmTokens': [], 'lastTokenUpdate': FieldValue.delete()},
+      );
+
       // Wait longer for Firestore to update
       await Future.delayed(const Duration(seconds: 2));
-      
+
       // Try to delete the current token from Firebase's cache
       try {
         final currentToken = await messaging.getToken();
@@ -349,7 +318,7 @@ class WebPushTester {
       } catch (e) {
         print('⚠️ Could not delete current token: $e');
       }
-      
+
       // Request permission again
       print('🔐 Requesting notification permission...');
       final settings = await messaging.requestPermission(
@@ -358,7 +327,7 @@ class WebPushTester {
         sound: true,
         provisional: false,
       );
-      
+
       if (settings.authorizationStatus != AuthorizationStatus.authorized) {
         return {
           'success': false,
@@ -366,44 +335,40 @@ class WebPushTester {
           'permissionStatus': settings.authorizationStatus.name,
         };
       }
-      
+
       // Wait longer before getting new token
       await Future.delayed(const Duration(seconds: 3));
-      
+
       // Get new token with VAPID key
       print('🎫 Generating new token with VAPID key...');
       final token = await messaging.getToken(
-        vapidKey: 'BI0yI6i_be8uHYwHlGkuwK4w20TlouraY6LM5j0Y0_Gp2xrfMOKbC43GHx9y_fsILTrpEAmsbUE8UVVHZZpB9G4'
+        vapidKey:
+            'BI0yI6i_be8uHYwHlGkuwK4w20TlouraY6LM5j0Y0_Gp2xrfMOKbC43GHx9y_fsILTrpEAmsbUE8UVVHZZpB9G4',
       );
-      
+
       if (token == null) {
-        return {
-          'success': false,
-          'error': 'Failed to generate new FCM token',
-        };
+        return {'success': false, 'error': 'Failed to generate new FCM token'};
       }
-      
+
       print('✅ New FCM token generated: ${token.substring(0, 20)}...');
       print('🔍 Full token: $token');
-      
+
       // Save new token to Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({
-        'fcmTokens': [token],
-        'lastTokenUpdate': DateTime.now().toIso8601String(),
-      });
-      
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {
+          'fcmTokens': [token],
+          'lastTokenUpdate': DateTime.now().toIso8601String(),
+        },
+      );
+
       print('💾 New token saved to Firestore');
-      
+
       return {
         'success': true,
         'token': token,
         'tokenLength': token.length,
         'message': 'New FCM token generated and saved',
       };
-      
     } catch (e) {
       print('❌ Error force generating new token: $e');
       return {
@@ -417,11 +382,12 @@ class WebPushTester {
   static Future<Map<String, dynamic>> testTokenByIndex({
     required int tokenIndex,
     String title = 'Plant Care Test',
-    String body = 'This is a test push notification from your Plant Care app! 🌱',
+    String body =
+        'This is a test push notification from your Plant Care app! 🌱',
   }) async {
     try {
       print('🔍 Testing token at index $tokenIndex...');
-      
+
       // Get all tokens first
       final tokensResult = await getAllUserTokens();
       if (!tokensResult['success']) {
@@ -430,31 +396,28 @@ class WebPushTester {
           'error': 'Failed to get tokens: ${tokensResult['error']}',
         };
       }
-      
+
       final tokens = tokensResult['tokens'] as List<String>;
       if (tokenIndex >= tokens.length) {
         return {
           'success': false,
-          'error': 'Token index $tokenIndex out of range. Available tokens: ${tokens.length}',
+          'error':
+              'Token index $tokenIndex out of range. Available tokens: ${tokens.length}',
         };
       }
-      
+
       final token = tokens[tokenIndex];
       print('🎯 Testing token $tokenIndex: ${token.substring(0, 20)}...');
-      
+
       // Test the token with HTTP v1 API
       return await sendTestNotification(
         fcmToken: token,
         title: title,
         body: body,
       );
-      
     } catch (e) {
       print('❌ Error testing token by index: $e');
-      return {
-        'success': false,
-        'error': 'Error testing token by index: $e',
-      };
+      return {'success': false, 'error': 'Error testing token by index: $e'};
     }
   }
 
@@ -462,11 +425,14 @@ class WebPushTester {
   static Future<Map<String, dynamic>> sendTestNotificationSimple({
     required String fcmToken,
     String title = 'Plant Care Test',
-    String body = 'This is a test push notification from your Plant Care app! 🌱',
+    String body =
+        'This is a test push notification from your Plant Care app! 🌱',
   }) async {
     try {
-      print('📤 Sending simple test notification to token: ${fcmToken.substring(0, 20)}...');
-      
+      print(
+        '📤 Sending simple test notification to token: ${fcmToken.substring(0, 20)}...',
+      );
+
       // For now, return a success message with debugging info
       return {
         'success': true,
@@ -476,16 +442,12 @@ class WebPushTester {
         'note': 'This is a simplified test. The token appears to be valid.',
         'nextStep': 'Try the full HTTP v1 API test',
       };
-      
     } catch (e) {
       print('❌ Error in simple test: $e');
-      return {
-        'success': false,
-        'error': 'Error in simple test: $e',
-      };
+      return {'success': false, 'error': 'Error in simple test: $e'};
     }
   }
-  
+
   /// Instructions for HTTP v1 API implementation
   static String getInstructions() {
     return '''

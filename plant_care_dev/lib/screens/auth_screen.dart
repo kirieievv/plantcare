@@ -72,20 +72,22 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         // Registration: send PIN and go to verification step
         await AuthService.sendEmailVerificationPin(
-            _emailController.text.trim());
+          _emailController.text.trim(),
+        );
         if (mounted) {
-          context.push('/register/verify',
-              extra: _emailController.text.trim());
+          context.push('/register/verify', extra: _emailController.text.trim());
         }
       }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        setState(() => _errorMessage = switch (e.toString()) {
-          'EMAIL_ALREADY_EXISTS' => l10n.errorEmailAlreadyExists,
-          'SEND_FAILED' => l10n.errorSendFailed,
-          _ => e.toString(),
-        });
+        setState(
+          () => _errorMessage = switch (e.toString()) {
+            'EMAIL_ALREADY_EXISTS' => l10n.errorEmailAlreadyExists,
+            'SEND_FAILED' => l10n.errorSendFailed,
+            _ => e.toString(),
+          },
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -117,8 +119,7 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               BotanlyWordmark(
                 title: 'Botanly',
-                subtitle:
-                    _isLogin ? l10n.welcomeBack : l10n.createYourAccount,
+                subtitle: _isLogin ? l10n.welcomeBack : l10n.createYourAccount,
               ),
               const SizedBox(height: 32),
               _ValidatorField(
@@ -127,17 +128,21 @@ class _AuthScreenState extends State<AuthScreen> {
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
                 autofillHints: AutofillHints.email,
-                textInputAction:
-                    _isLogin ? TextInputAction.next : TextInputAction.done,
+                textInputAction: _isLogin
+                    ? TextInputAction.next
+                    : TextInputAction.done,
                 onSubmitted: _isLogin
                     ? (_) => _passwordFocusNode.requestFocus()
-                    : (_) { if (!_isLoading) _submitForm(); },
+                    : (_) {
+                        if (!_isLoading) _submitForm();
+                      },
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return l10n.pleaseEnterYourEmail;
                   }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(v)) {
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(v)) {
                     return l10n.pleaseEnterValidEmail;
                   }
                   return null;
@@ -173,11 +178,12 @@ class _AuthScreenState extends State<AuthScreen> {
                   children: [
                     InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () =>
-                          setState(() => _rememberMe = !_rememberMe),
+                      onTap: () => setState(() => _rememberMe = !_rememberMe),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 6, horizontal: 4),
+                          vertical: 6,
+                          horizontal: 4,
+                        ),
                         child: Row(
                           children: [
                             _RememberCheckbox(checked: _rememberMe),
@@ -187,8 +193,9 @@ class _AuthScreenState extends State<AuthScreen> {
                               style: GoogleFonts.dmSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w300,
-                                color: BotanlyColors.moss
-                                    .withValues(alpha: 0.65),
+                                color: BotanlyColors.moss.withValues(
+                                  alpha: 0.65,
+                                ),
                               ),
                             ),
                           ],
@@ -196,22 +203,21 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed:
-                          _isLoading ? null : _openForgotPasswordFlow,
+                      onPressed: _isLoading ? null : _openForgotPasswordFlow,
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 6),
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
                         minimumSize: const Size(0, 32),
-                        tapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
                         l10n.forgotPassword,
                         style: GoogleFonts.dmSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w300,
-                          color: BotanlyColors.moss
-                              .withValues(alpha: 0.65),
+                          color: BotanlyColors.moss.withValues(alpha: 0.65),
                         ),
                       ),
                     ),
@@ -292,8 +298,9 @@ class _ValidatorFieldState extends State<_ValidatorField> {
       obscureText: widget.obscure && !_showPassword,
       keyboardType: widget.keyboardType,
       textInputAction: widget.textInputAction,
-      autofillHints:
-          widget.autofillHints != null ? [widget.autofillHints!] : null,
+      autofillHints: widget.autofillHints != null
+          ? [widget.autofillHints!]
+          : null,
       onFieldSubmitted: widget.onSubmitted,
       validator: widget.validator,
       style: GoogleFonts.dmSans(
@@ -310,15 +317,22 @@ class _ValidatorFieldState extends State<_ValidatorField> {
         ),
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.6),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(left: 14, right: 6),
-          child: Icon(widget.icon,
-              color: BotanlyColors.moss.withValues(alpha: 0.5), size: 20),
+          child: Icon(
+            widget.icon,
+            color: BotanlyColors.moss.withValues(alpha: 0.5),
+            size: 20,
+          ),
         ),
-        prefixIconConstraints:
-            const BoxConstraints(minWidth: 44, minHeight: 20),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 44,
+          minHeight: 20,
+        ),
         suffixIcon: widget.showToggleObscure
             ? IconButton(
                 icon: Icon(
@@ -328,8 +342,7 @@ class _ValidatorFieldState extends State<_ValidatorField> {
                   color: BotanlyColors.moss.withValues(alpha: 0.4),
                   size: 20,
                 ),
-                onPressed: () =>
-                    setState(() => _showPassword = !_showPassword),
+                onPressed: () => setState(() => _showPassword = !_showPassword),
               )
             : null,
         border: _border(),
@@ -348,8 +361,8 @@ class _ValidatorFieldState extends State<_ValidatorField> {
         color: error
             ? const Color(0xFFB91C1C)
             : focused
-                ? BotanlyColors.moss.withValues(alpha: 0.6)
-                : BotanlyColors.moss.withValues(alpha: 0.2),
+            ? BotanlyColors.moss.withValues(alpha: 0.6)
+            : BotanlyColors.moss.withValues(alpha: 0.2),
         width: focused ? 1.5 : 1,
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
@@ -104,7 +105,9 @@ class _HealthCheckModalState extends State<HealthCheckModal>
   // ─── helpers ──────────────────────────────────────────────────────────────
 
   String get _analysisModeKey =>
-      widget.analysisMode == HealthCheckAnalysisMode.aiCare ? 'ai_care' : 'ai_agent';
+      widget.analysisMode == HealthCheckAnalysisMode.aiCare
+      ? 'ai_care'
+      : 'ai_agent';
 
   bool get _isMobile =>
       !kIsWeb &&
@@ -204,7 +207,10 @@ class _HealthCheckModalState extends State<HealthCheckModal>
     });
 
     try {
-      final nonNullSlots = _slots.where((b) => b != null).cast<Uint8List>().toList();
+      final nonNullSlots = _slots
+          .where((b) => b != null)
+          .cast<Uint8List>()
+          .toList();
       final base64Images = nonNullSlots.map(base64Encode).toList();
 
       final response = await _callChatGPT(base64Images);
@@ -237,8 +243,10 @@ class _HealthCheckModalState extends State<HealthCheckModal>
           metadata: metadata,
           score: _asInt(response['health_score']),
           findings: _parseList(response['findings'], HealthFinding.fromMap),
-          recommendations:
-              _parseList(response['recommendations'], HealthRecommendation.fromMap),
+          recommendations: _parseList(
+            response['recommendations'],
+            HealthRecommendation.fromMap,
+          ),
         );
 
         if (!mounted) return;
@@ -276,7 +284,10 @@ class _HealthCheckModalState extends State<HealthCheckModal>
   static int? _asInt(dynamic v) =>
       v is int ? v : (v == null ? null : int.tryParse(v.toString()));
 
-  static List<T> _parseList<T>(dynamic raw, T Function(Map<String, dynamic>) build) {
+  static List<T> _parseList<T>(
+    dynamic raw,
+    T Function(Map<String, dynamic>) build,
+  ) {
     if (raw is! List) return const [];
     final out = <T>[];
     for (final item in raw) {
@@ -322,9 +333,11 @@ class _HealthCheckModalState extends State<HealthCheckModal>
 
   Future<Map<String, dynamic>?> _callChatGPT(List<String> base64Images) async {
     try {
-      final bool isAgentMode = widget.analysisMode == HealthCheckAnalysisMode.aiAgent;
-      final String endpointUrl =
-          isAgentMode ? analyzeHealthCheckAgentUrl : analyzePlantPhotoUrl;
+      final bool isAgentMode =
+          widget.analysisMode == HealthCheckAnalysisMode.aiAgent;
+      final String endpointUrl = isAgentMode
+          ? analyzeHealthCheckAgentUrl
+          : analyzePlantPhotoUrl;
 
       final response = await http.post(
         Uri.parse(endpointUrl),
@@ -353,8 +366,10 @@ class _HealthCheckModalState extends State<HealthCheckModal>
 
         final plantSize = recommendations['plant_size'] ?? result['plant_size'];
         final potSize = recommendations['pot_size'] ?? result['pot_size'];
-        final growthStage = recommendations['growth_stage'] ?? result['growth_stage'];
-        final moistureLevel = recommendations['moisture_level'] ?? result['moisture_level'];
+        final growthStage =
+            recommendations['growth_stage'] ?? result['growth_stage'];
+        final moistureLevel =
+            recommendations['moisture_level'] ?? result['moisture_level'];
         final light = recommendations['light'] ?? result['light'];
         final careTips = recommendations['care_tips'];
         final interestingFacts = recommendations['interesting_facts'];
@@ -371,9 +386,11 @@ class _HealthCheckModalState extends State<HealthCheckModal>
         final wateringIntervalDays = wateringPlan['next_watering_in_days'];
         final shouldWaterNow = wateringPlan['should_water_now'] as bool?;
         final reasonShort = wateringPlan['reason_short'] as String?;
-        final wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+        final wateringAmountMl =
+            wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
         final wateringRangeMl = recommendations['range_ml'];
-        final nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        final nextAfterWateringHours =
+            recommendations['next_after_watering_in_hours'];
         final nextCheckHours = recommendations['next_check_in_hours'];
         final wateringMode = recommendations['mode'];
         final wateringAmountText = recommendations['watering_amount'];
@@ -389,8 +406,10 @@ class _HealthCheckModalState extends State<HealthCheckModal>
 
         if (plantAssistant != null && plantAssistant['status'] != null) {
           final paStatus = plantAssistant['status'].toString().toLowerCase();
-          if (paStatus == 'issue_detected') status = 'issue';
-          else if (paStatus == 'healthy') status = 'ok';
+          if (paStatus == 'issue_detected')
+            status = 'issue';
+          else if (paStatus == 'healthy')
+            status = 'ok';
         } else {
           // Heuristic fallback
           if (lowerResponse.contains('appears healthy') ||
@@ -424,6 +443,13 @@ class _HealthCheckModalState extends State<HealthCheckModal>
           'care_tips': careTips,
           'care_recommendations': careRecommendations,
           'care_details': careDetails,
+          // The server decides whether the standing plan may be replaced: it
+          // holds the fingerprint of the inputs the plan was derived from, and
+          // says stale only when those actually changed. Passing it through
+          // rather than deciding here keeps that rule in one place.
+          'care_plan_stale': (result['carePlan'] as Map?)?['stale'] == true,
+          'care_plan_fingerprint': (result['carePlan'] as Map?)?['fingerprint']
+              ?.toString(),
           'interesting_facts': interestingFacts,
           'amount_ml': wateringAmountMl,
           'range_ml': wateringRangeMl,
@@ -446,7 +472,6 @@ class _HealthCheckModalState extends State<HealthCheckModal>
   }
 
   // ─── UI ───────────────────────────────────────────────────────────────────
-
 
   @override
   Widget build(BuildContext context) {
@@ -535,7 +560,8 @@ class _HealthCheckModalState extends State<HealthCheckModal>
               // so its buttons would otherwise sit flush against the sheet edge.
               // The safe-area inset is zero on web, which is where that showed.
               SizedBox(
-                height: (_step == _Step.result ? 22.0 : 0.0) + media.padding.bottom,
+                height:
+                    (_step == _Step.result ? 22.0 : 0.0) + media.padding.bottom,
               ),
             ],
           ),
@@ -649,7 +675,11 @@ class _HealthCheckModalState extends State<HealthCheckModal>
               color: kGlassLeafBg,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const BotanlyGlyph(BotanlySvg.scan, size: 21, color: kGlassAccent),
+            child: const BotanlyGlyph(
+              BotanlySvg.scan,
+              size: 21,
+              color: kGlassAccent,
+            ),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -667,7 +697,10 @@ class _HealthCheckModalState extends State<HealthCheckModal>
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: kGlassAccent.withAlpha(46), // .18
                     borderRadius: BorderRadius.circular(999),
@@ -701,7 +734,11 @@ class _HealthCheckModalState extends State<HealthCheckModal>
                   color: Color(0x12141E0F), // rgba(20,30,15,.07)
                   shape: BoxShape.circle,
                 ),
-                child: const BotanlyGlyph(BotanlySvg.close, size: 15, color: kGlassMut),
+                child: const BotanlyGlyph(
+                  BotanlySvg.close,
+                  size: 15,
+                  color: kGlassMut,
+                ),
               ),
             ),
           ),
@@ -745,16 +782,37 @@ class _HealthCheckModalState extends State<HealthCheckModal>
 
   Widget _buildSlots(AppLocalizations l10n) {
     final slotData = [
-      (l10n.healthCheckSlot1Title, l10n.healthCheckSlot1Desc, l10n.healthCheckSlot1Tag, true),
-      (l10n.healthCheckSlot2Title, l10n.healthCheckSlot2Desc, l10n.healthCheckSlot2Tag, false),
-      (l10n.healthCheckSlot3Title, l10n.healthCheckSlot3Desc, l10n.healthCheckSlot3Tag, false),
+      (
+        l10n.healthCheckSlot1Title,
+        l10n.healthCheckSlot1Desc,
+        l10n.healthCheckSlot1Tag,
+        true,
+      ),
+      (
+        l10n.healthCheckSlot2Title,
+        l10n.healthCheckSlot2Desc,
+        l10n.healthCheckSlot2Tag,
+        false,
+      ),
+      (
+        l10n.healthCheckSlot3Title,
+        l10n.healthCheckSlot3Desc,
+        l10n.healthCheckSlot3Tag,
+        false,
+      ),
     ];
 
     return Column(
       children: [
         for (var i = 0; i < slotData.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
-          _buildSlot(i, slotData[i].$1, slotData[i].$2, slotData[i].$3, slotData[i].$4),
+          _buildSlot(
+            i,
+            slotData[i].$1,
+            slotData[i].$2,
+            slotData[i].$3,
+            slotData[i].$4,
+          ),
         ],
       ],
     );
@@ -802,7 +860,11 @@ class _HealthCheckModalState extends State<HealthCheckModal>
                 const SizedBox(height: 6),
                 Text(
                   desc,
-                  style: glassFont(fontSize: 13, height: 1.45, color: kGlassMut),
+                  style: glassFont(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: kGlassMut,
+                  ),
                 ),
               ],
             ),
@@ -820,7 +882,10 @@ class _HealthCheckModalState extends State<HealthCheckModal>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kGlassAccent.withAlpha(97), width: 1.5),
+                border: Border.all(
+                  color: kGlassAccent.withAlpha(97),
+                  width: 1.5,
+                ),
               ),
               child: body,
             )
@@ -888,7 +953,11 @@ class _HealthCheckModalState extends State<HealthCheckModal>
       );
     }
 
-    const glyphs = [BotanlySvg.leaf, BotanlySvg.dropOutline, BotanlySvg.warningTriangle];
+    const glyphs = [
+      BotanlySvg.leaf,
+      BotanlySvg.dropOutline,
+      BotanlySvg.warningTriangle,
+    ];
 
     return SizedBox(
       width: 84,
@@ -967,7 +1036,9 @@ class _HealthCheckModalState extends State<HealthCheckModal>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: required ? kGlassAccent.withAlpha(46) : kGlassWater.withAlpha(41),
+        color: required
+            ? kGlassAccent.withAlpha(46)
+            : kGlassWater.withAlpha(41),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -1173,12 +1244,9 @@ class _AnalysisStepRowState extends State<_AnalysisStepRow> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer(
-      Duration(milliseconds: 750 * (widget.order + 1)),
-      () {
-        if (mounted) setState(() => _done = true);
-      },
-    );
+    _timer = Timer(Duration(milliseconds: 750 * (widget.order + 1)), () {
+      if (mounted) setState(() => _done = true);
+    });
   }
 
   @override
@@ -1212,7 +1280,9 @@ class _AnalysisStepRowState extends State<_AnalysisStepRow> {
               widget.label,
               style: TextStyle(
                 fontSize: 14,
-                color: _done ? const Color(0xFF1C3318) : const Color(0xFF6A7C5D),
+                color: _done
+                    ? const Color(0xFF1C3318)
+                    : const Color(0xFF6A7C5D),
                 fontWeight: _done ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
@@ -1267,5 +1337,7 @@ class _DashedRoundedBorder extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedRoundedBorder old) =>
-      old.color != color || old.radius != radius || old.strokeWidth != strokeWidth;
+      old.color != color ||
+      old.radius != radius ||
+      old.strokeWidth != strokeWidth;
 }

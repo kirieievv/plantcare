@@ -122,12 +122,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                     child: Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const _GardenTitle(),
-                      ],
+                      children: [const _GardenTitle()],
                     ),
                   ),
 
@@ -157,8 +154,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           .where((p) => p.nextWatering.isBefore(now))
                           .length;
                       final healthy = plants
-                          .where((p) => p.nextWatering.isAfter(
-                              now.add(const Duration(days: 1))))
+                          .where(
+                            (p) => p.nextWatering.isAfter(
+                              now.add(const Duration(days: 1)),
+                            ),
+                          )
                           .length;
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
@@ -234,8 +234,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         _AddPlantPillButton(
-                            onPressed: _onAddPlantPressed,
-                            label: l10n.addPlant),
+                          onPressed: _onAddPlantPressed,
+                          label: l10n.addPlant,
+                        ),
                       ],
                     ),
                   ),
@@ -244,8 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   StreamBuilder<List<Plant>>(
                     stream: PlantService().getPlants(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return const _PlantsListSkeleton();
                       }
                       if (snapshot.hasError) {
@@ -266,14 +266,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
                       }
                       return Padding(
-                        padding:
-                            const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                         child: Column(
                           children: [
                             for (int i = 0; i < plants.length; i++)
                               Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.only(bottom: 10),
                                 child: StaggeredFadeUp(
                                   index: i,
                                   show: true,
@@ -283,11 +281,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => PlantDetailsScreen(
-                                            plant: plants[i]),
+                                          plant: plants[i],
+                                        ),
                                       ),
                                     ),
-                                    onWater: () => PlantService()
-                                        .waterPlant(plants[i].id),
+                                    onWater: () =>
+                                        PlantService().waterPlant(plants[i].id),
                                   ),
                                 ),
                               ),
@@ -389,9 +388,7 @@ class _StatCard extends StatelessWidget {
             : null,
         color: highlighted ? null : BotanlyColors.paper,
         border: Border.all(
-          color: highlighted
-              ? BotanlyColors.sagePale
-              : BotanlyColors.sand,
+          color: highlighted ? BotanlyColors.sagePale : BotanlyColors.sand,
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
@@ -409,10 +406,7 @@ class _StatCard extends StatelessWidget {
             width: 40,
             height: 40,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: iconBg,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
             child: Text(
               icon,
               style: TextStyle(
@@ -488,18 +482,17 @@ class _BannerCarouselState extends State<_BannerCarousel> {
       if (doc.exists && mounted) {
         setState(() => _tipData = doc.data());
       }
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   String _getWeekKey() {
     final now = DateTime.now();
     final d = DateTime.utc(now.year, now.month, now.day);
-    final adjusted =
-        d.add(Duration(days: 4 - (d.weekday == 7 ? 7 : d.weekday)));
+    final adjusted = d.add(
+      Duration(days: 4 - (d.weekday == 7 ? 7 : d.weekday)),
+    );
     final yearStart = DateTime.utc(adjusted.year, 1, 1);
-    final week =
-        ((adjusted.difference(yearStart).inDays + 1) / 7).ceil();
+    final week = ((adjusted.difference(yearStart).inDays + 1) / 7).ceil();
     return '${now.year}-W${week.toString().padLeft(2, '0')}';
   }
 
@@ -523,27 +516,31 @@ class _BannerCarouselState extends State<_BannerCarousel> {
         .toList();
     if (thirsty.isNotEmpty) {
       final pick = thirsty[_index % thirsty.length];
-      banners.add(_BannerData(
-        gradient: const [Color(0xFF5A4A1A), Color(0xFF896C14)],
-        icon: '💧',
-        title: l10n.bannerWaterTitle(pick.name),
-        subtitle: l10n.bannerWaterSubtitle,
-        action: _BannerAction.water,
-        plant: pick,
-      ));
+      banners.add(
+        _BannerData(
+          gradient: const [Color(0xFF5A4A1A), Color(0xFF896C14)],
+          icon: '💧',
+          title: l10n.bannerWaterTitle(pick.name),
+          subtitle: l10n.bannerWaterSubtitle,
+          action: _BannerAction.water,
+          plant: pick,
+        ),
+      );
     }
 
     // Seasonal tip banner
     final tip = _todayTip();
     if (tip != null) {
       final text = (tip[locale] ?? tip['en'] ?? '') as String;
-      banners.add(_BannerData(
-        gradient: const [BotanlyColors.moss, Color(0xFF3A5436)],
-        icon: '🌿',
-        title: l10n.bannerTipTitle,
-        subtitle: text,
-        action: _BannerAction.tips,
-      ));
+      banners.add(
+        _BannerData(
+          gradient: const [BotanlyColors.moss, Color(0xFF3A5436)],
+          icon: '🌿',
+          title: l10n.bannerTipTitle,
+          subtitle: text,
+          action: _BannerAction.tips,
+        ),
+      );
     }
 
     return banners;
@@ -634,8 +631,9 @@ class _BannerCarouselState extends State<_BannerCarousel> {
                       color: i == _index
                           ? BotanlyColors.sage
                           : BotanlyColors.sand,
-                      borderRadius:
-                          BorderRadius.circular(i == _index ? 3 : 999),
+                      borderRadius: BorderRadius.circular(
+                        i == _index ? 3 : 999,
+                      ),
                     ),
                   ),
                 ),
@@ -809,10 +807,7 @@ class _EmptyPlantsState extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Text(
-                  '🌱',
-                  style: const TextStyle(fontSize: 44),
-                ),
+                child: Text('🌱', style: const TextStyle(fontSize: 44)),
               ),
             ),
             const SizedBox(height: 20),
@@ -895,9 +890,7 @@ class _DashboardLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.only(top: 16, bottom: 24),
-      children: const [
-        _PlantsListSkeleton(),
-      ],
+      children: const [_PlantsListSkeleton()],
     );
   }
 }

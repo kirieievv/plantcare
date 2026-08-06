@@ -38,8 +38,10 @@ class _BotanlyBackgroundState extends State<BotanlyBackground>
     super.initState();
     _drifts = [
       for (final seconds in [20, 24, 28])
-        AnimationController(vsync: this, duration: Duration(seconds: seconds))
-          ..repeat(reverse: true),
+        AnimationController(
+          vsync: this,
+          duration: Duration(seconds: seconds),
+        )..repeat(reverse: true),
     ];
   }
 
@@ -442,8 +444,9 @@ class BotanlySwitch extends StatelessWidget {
                 child: AnimatedAlign(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOut,
-                  alignment:
-                      value ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: value
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Padding(
                     padding: const EdgeInsets.all(3),
                     child: Container(
@@ -540,7 +543,9 @@ class _BotanlyFieldState extends State<BotanlyField> {
             border: Border.all(
               color: error != null
                   ? kGlassWarm.withAlpha(115)
-                  : (focused ? kGlassAccent.withAlpha(115) : const Color(0xF2FFFFFF)),
+                  : (focused
+                        ? kGlassAccent.withAlpha(115)
+                        : const Color(0xF2FFFFFF)),
               width: 0.5,
             ),
             boxShadow: focused && error == null
@@ -833,7 +838,9 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
             child: Row(
               children: [
                 BotanlyGlyph(
-                  widget.success ? BotanlySvg.check : BotanlySvg.warningTriangle,
+                  widget.success
+                      ? BotanlySvg.check
+                      : BotanlySvg.warningTriangle,
                   size: 17,
                   color: widget.success
                       ? const Color(0xFF8BE89F)

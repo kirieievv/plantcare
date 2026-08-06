@@ -21,11 +21,8 @@ class HealthGallery extends StatelessWidget {
   final List<HealthImage> images;
   final VoidCallback? onAddImage;
 
-  const HealthGallery({
-    Key? key,
-    required this.images,
-    this.onAddImage,
-  }) : super(key: key);
+  const HealthGallery({Key? key, required this.images, this.onAddImage})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +33,7 @@ class HealthGallery extends StatelessWidget {
         // Header
         Row(
           children: [
-            Icon(
-              Icons.photo_library,
-              color: AppTheme.accentGreen,
-              size: 24,
-            ),
+            Icon(Icons.photo_library, color: AppTheme.accentGreen, size: 24),
             const SizedBox(width: 12),
             Text(
               l10n.healthCheckHistoryTitle,
@@ -61,9 +54,9 @@ class HealthGallery extends StatelessWidget {
               ),
           ],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         if (images.isEmpty)
           Container(
             width: double.infinity,
@@ -93,10 +86,7 @@ class HealthGallery extends StatelessWidget {
                 Text(
                   l10n.uploadPhotosToTrackHealth,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -124,19 +114,19 @@ class HealthGallery extends StatelessWidget {
   Widget _buildHealthImageCard(BuildContext context, HealthImage image) {
     final l10n = AppLocalizations.of(context)!;
     final isHealthy = image.healthResult['status'] == 'ok';
-    
+
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Image
           Expanded(
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: Stack(
                 children: [
                   // Actual Image
@@ -176,7 +166,10 @@ class HealthGallery extends StatelessWidget {
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: isHealthy ? Colors.green : Colors.red,
                         borderRadius: BorderRadius.circular(12),
@@ -191,7 +184,9 @@ class HealthGallery extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isHealthy ? l10n.healthStatusOk : l10n.healthStatusIssue,
+                            isHealthy
+                                ? l10n.healthStatusOk
+                                : l10n.healthStatusIssue,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -206,7 +201,7 @@ class HealthGallery extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Details
           Padding(
             padding: const EdgeInsets.all(12),
@@ -244,7 +239,7 @@ class HealthGallery extends StatelessWidget {
   String _formatDate(DateTime date, AppLocalizations l10n) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       return l10n.today;
     } else if (difference.inDays == 1) {
@@ -255,4 +250,4 @@ class HealthGallery extends StatelessWidget {
       return '${date.day}/${date.month}/${date.year}';
     }
   }
-} 
+}

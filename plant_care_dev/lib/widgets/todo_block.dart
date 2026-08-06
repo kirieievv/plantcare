@@ -48,8 +48,11 @@ class TodoBlock extends StatelessWidget {
   static List<CareTask> visibleTasks(List<CareTask> tasks, DateTime now) =>
       sortTasks(
         tasks
-            .where((t) => !(t.source == TaskSource.schedule &&
-                t.category == TaskCategory.water))
+            .where(
+              (t) =>
+                  !(t.source == TaskSource.schedule &&
+                      t.category == TaskCategory.water),
+            )
             .where((t) => t.isActiveAt(now) || t.done)
             .toList(),
         now,
@@ -156,7 +159,11 @@ class _AllDone extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const BotanlyGlyph(BotanlySvg.check, size: 16, color: kGlassGreenText),
+          const BotanlyGlyph(
+            BotanlySvg.check,
+            size: 16,
+            color: kGlassGreenText,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -226,15 +233,18 @@ class _TaskRow extends StatelessWidget {
                   children: [
                     Text(
                       task.title,
-                      style: glassFont(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 14.5 * -0.015,
-                        color: kGlassInk,
-                      ).copyWith(
-                        decoration: done ? TextDecoration.lineThrough : null,
-                        decorationColor: const Color(0x59141E0F),
-                      ),
+                      style:
+                          glassFont(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 14.5 * -0.015,
+                            color: kGlassInk,
+                          ).copyWith(
+                            decoration: done
+                                ? TextDecoration.lineThrough
+                                : null,
+                            decorationColor: const Color(0x59141E0F),
+                          ),
                     ),
                     if (detail.isNotEmpty) ...[
                       const SizedBox(height: 2),

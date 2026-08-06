@@ -100,8 +100,7 @@ Future<bool> showSubscriptionGate(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (sheetContext) =>
-        _GateSheet(action: action, onResume: onResume),
+    builder: (sheetContext) => _GateSheet(action: action, onResume: onResume),
   );
   return result ?? false;
 }

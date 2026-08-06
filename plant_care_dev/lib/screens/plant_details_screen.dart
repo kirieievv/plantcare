@@ -27,6 +27,8 @@ import 'package:plant_care/services/subscription_service.dart';
 import 'package:plant_care/services/task_service.dart';
 import 'package:plant_care/widgets/subscription_gate.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
+import 'package:plant_care/services/language_service.dart';
+import 'package:plant_care/utils/care_sections.dart';
 import 'package:plant_care/utils/chat_topics.dart';
 import 'package:plant_care/widgets/botanly_sheet.dart';
 import 'package:plant_care/widgets/health_result_view.dart';
@@ -454,7 +456,22 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
         aiGrowthStage: str(result['growth_stage']) ?? _plant.aiGrowthStage,
         aiMoistureLevel: newMoisture ?? _plant.aiMoistureLevel,
         aiLight: newLight ?? _plant.aiLight,
-        aiCareTips: _plant.aiCareTips,
+        // Replaced only when the server says the inputs behind it changed.
+        // Rewriting the prose on every scan makes it drift — same conditions,
+        // different wording, eventually different numbers — and never rewriting
+        // leaves it describing a plant that has since been moved.
+        aiCareTips: result['care_plan_stale'] == true
+            ? (composeCareTipsFromCareMap(
+                    (result['care_recommendations'] as Map?)
+                        ?.cast<String, dynamic>(),
+                    LanguageService.localeNotifier.value.languageCode,
+                  ) ??
+                  _plant.aiCareTips)
+            : _plant.aiCareTips,
+        carePlanDerivedFrom: result['care_plan_stale'] == true
+            ? (result['care_plan_fingerprint']?.toString() ??
+                  _plant.carePlanDerivedFrom)
+            : _plant.carePlanDerivedFrom,
         careDetails:
             result['care_details'] as Map<String, String>? ??
             _plant.careDetails,

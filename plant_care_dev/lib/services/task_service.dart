@@ -27,9 +27,9 @@ class TaskService {
         // Not swallowed: an empty list and a failed query look identical on
         // screen, and that is exactly how the health-check history bug hid.
         .handleError((Object error, StackTrace stack) {
-      print('❌ TaskService: open-tasks query failed: $error');
-      Error.throwWithStackTrace(error, stack);
-    });
+          print('❌ TaskService: open-tasks query failed: $error');
+          Error.throwWithStackTrace(error, stack);
+        });
   }
 
   /// Open tasks of one plant, watering included — the scheduler does store it as
@@ -48,9 +48,9 @@ class TaskService {
         .snapshots()
         .map(_decode)
         .handleError((Object error, StackTrace stack) {
-      print('❌ TaskService: plant-tasks query failed: $error');
-      Error.throwWithStackTrace(error, stack);
-    });
+          print('❌ TaskService: plant-tasks query failed: $error');
+          Error.throwWithStackTrace(error, stack);
+        });
   }
 
   List<CareTask> _decode(QuerySnapshot<Map<String, dynamic>> snap) {

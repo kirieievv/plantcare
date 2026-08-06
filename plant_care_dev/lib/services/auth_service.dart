@@ -23,14 +23,16 @@ class AuthService {
   }) async {
     try {
       print('Starting signup process for: $email'); // Debug logging
-      
+
       // Create user with email and password
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      print('User created successfully: ${userCredential.user?.uid}'); // Debug logging
+      print(
+        'User created successfully: ${userCredential.user?.uid}',
+      ); // Debug logging
 
       // Update user display name
       try {
@@ -49,16 +51,15 @@ class AuthService {
           'name': name,
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
-          'wateringReminderChannels': {
-            'email': true,
-            'push': true,
-          },
+          'wateringReminderChannels': {'email': true, 'push': true},
           'emailVerified': true,
           'emailVerifiedAt': FieldValue.serverTimestamp(),
         });
         print('User document created in Firestore'); // Debug logging
       } catch (e) {
-        print('Warning: Could not create user document in Firestore: $e'); // Debug logging
+        print(
+          'Warning: Could not create user document in Firestore: $e',
+        ); // Debug logging
         // Continue with the process even if Firestore write fails
       }
 
@@ -83,9 +84,9 @@ class AuthService {
       );
 
       // Update last login time
-      await _firestore.collection('users').doc(userCredential.user!.uid).update({
-        'lastLogin': FieldValue.serverTimestamp(),
-      });
+      await _firestore.collection('users').doc(userCredential.user!.uid).update(
+        {'lastLogin': FieldValue.serverTimestamp()},
+      );
 
       // Save authentication cookie for 30 days only if rememberMe is true
       if (rememberMe) {
@@ -97,8 +98,6 @@ class AuthService {
       throw _handleAuthError(e);
     }
   }
-
-
 
   // Get user data from Firestore
   static Future<Map<String, dynamic>?> getUserData(String uid) async {
@@ -125,7 +124,7 @@ class AuthService {
       if (user != null) {
         // Delete user document from Firestore
         await _firestore.collection('users').doc(user.uid).delete();
-        
+
         // Delete user from Firebase Auth
         await user.delete();
       }
@@ -277,11 +276,11 @@ class AuthService {
   // Handle Firebase Auth errors
   static String _handleAuthError(dynamic error) {
     print('Auth Error: $error'); // Debug logging
-    
+
     if (error is FirebaseAuthException) {
       print('Firebase Auth Error Code: ${error.code}'); // Debug logging
       print('Firebase Auth Error Message: ${error.message}'); // Debug logging
-      
+
       switch (error.code) {
         case 'user-not-found':
           return 'No user found with this email address.';
@@ -309,12 +308,12 @@ class AuthService {
           return 'Authentication failed: ${error.message} (Code: ${error.code})';
       }
     }
-    
+
     // Handle other types of errors
     if (error.toString().contains('network')) {
       return 'Network error. Please check your internet connection.';
     }
-    
+
     return 'An unexpected error occurred: $error';
   }
 
@@ -322,25 +321,27 @@ class AuthService {
   static Future<void> _saveAuthCookie(User user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Create auth data to store
       final authData = {
         'uid': user.uid,
         'email': user.email,
         'displayName': user.displayName,
         'lastSignIn': DateTime.now().millisecondsSinceEpoch,
-        'expiresAt': DateTime.now().add(Duration(days: 30)).millisecondsSinceEpoch,
+        'expiresAt': DateTime.now()
+            .add(Duration(days: 30))
+            .millisecondsSinceEpoch,
       };
-      
+
       // Store as JSON string
       await prefs.setString('auth_cookie', jsonEncode(authData));
-      
+
       // Store individual values for easy access
       await prefs.setString('user_uid', user.uid);
       await prefs.setString('user_email', user.email ?? '');
       await prefs.setString('user_display_name', user.displayName ?? '');
       await prefs.setBool('is_authenticated', true);
-      
+
       print('Auth cookie saved successfully for user: ${user.email}');
     } catch (e) {
       print('Error saving auth cookie: $e');
@@ -352,18 +353,18 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final authCookieString = prefs.getString('auth_cookie');
-      
+
       if (authCookieString == null) return false;
-      
+
       final authData = jsonDecode(authCookieString) as Map<String, dynamic>;
       final expiresAt = authData['expiresAt'] as int;
-      
+
       // Check if cookie is expired
       if (DateTime.now().millisecondsSinceEpoch > expiresAt) {
         await _clearAuthCookie();
         return false;
       }
-      
+
       return true;
     } catch (e) {
       print('Error checking auth cookie: $e');
@@ -376,18 +377,18 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final authCookieString = prefs.getString('auth_cookie');
-      
+
       if (authCookieString == null) return null;
-      
+
       final authData = jsonDecode(authCookieString) as Map<String, dynamic>;
       final expiresAt = authData['expiresAt'] as int;
-      
+
       // Check if cookie is expired
       if (DateTime.now().millisecondsSinceEpoch > expiresAt) {
         await _clearAuthCookie();
         return null;
       }
-      
+
       return authData;
     } catch (e) {
       print('Error getting stored user data: $e');
@@ -404,7 +405,7 @@ class AuthService {
       await prefs.remove('user_email');
       await prefs.remove('user_display_name');
       await prefs.setBool('is_authenticated', false);
-      
+
       print('Auth cookie cleared successfully');
     } catch (e) {
       print('Error clearing auth cookie: $e');
@@ -423,22 +424,21 @@ class AuthService {
       if (!await hasValidAuthCookie()) {
         return null;
       }
-      
+
       final storedData = await getStoredUserData();
       if (storedData == null) return null;
-      
+
       // Check if Firebase user is still valid
       final currentUser = _auth.currentUser;
       if (currentUser != null && currentUser.uid == storedData['uid']) {
         return currentUser;
       }
-      
+
       // If no current user, try to restore from stored data
       // Note: Firebase doesn't support direct user restoration, so we'll need to
       // handle this differently - the user will need to sign in again
       print('User needs to sign in again - cookie expired or user changed');
       return null;
-      
     } catch (e) {
       print('Error during auto-login: $e');
       return null;
@@ -475,10 +475,12 @@ class AuthService {
   }
 
   // Save user preferences
-  static Future<void> saveUserPreferences(Map<String, dynamic> preferences) async {
+  static Future<void> saveUserPreferences(
+    Map<String, dynamic> preferences,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       for (final entry in preferences.entries) {
         if (entry.value is String) {
           await prefs.setString(entry.key, entry.value);
@@ -488,10 +490,10 @@ class AuthService {
           await prefs.setInt(entry.key, entry.value);
         }
       }
-      
+
       print('User preferences saved successfully');
     } catch (e) {
       print('Error saving user preferences: $e');
     }
   }
-} 
+}

@@ -12,7 +12,7 @@ const {
   weatherForCity,
   weatherSnapshot,
 } = require('./weather');
-const { careBriefForTopic, isKnownTopic } = require('./care-sections');
+const { careBriefForTopic, isKnownTopic, wholeCarePlan } = require('./care-sections');
 const {
   FACT_KIND_NAMES,
   buildMemoryBlock,
@@ -25,6 +25,8 @@ const {
   invalidatesSchedule,
   proposalUpdate,
   sanitizeProposal,
+  carePlanFingerprint,
+  carePlanIsCurrent,
 } = require('./proposals');
 
 // ── AI Model Configuration ──────────────────────────────────────────
@@ -1208,6 +1210,13 @@ function buildHealthCheckAgentPrompt(context, plantNameHint, language) {
   const conditions = describeGrowingConditions(plantSummary);
   const weather = describeWeather(context.weather, context.location);
 
+  // The plan the owner is actually following, and what they have told us since.
+  // A check that cannot see either judges the plant against the textbook and
+  // then rewrites the plan from that judgement — which is how the sheet came to
+  // disagree with the paragraph printed underneath it.
+  const carePlan = wholeCarePlan(context.carePlan);
+  const memoryBlock = buildMemoryBlock(context.memory, null);
+
   return `You are Plant Care Health Check Agent.
 Analyze the CURRENT image first. Then use historical context and previous images as secondary signals.
 Plant name hint: ${plantNameHint || plantSummary.name || 'unknown'}.
@@ -1221,6 +1230,19 @@ Weather where the plant lives:
 ${weather}
 Weigh it yourself against the species, the pot and the placement above — decide
 whether it matters for this plant rather than assuming it always does.
+` : ''}${carePlan ? `
+The care plan this plant is currently being kept on:
+"""
+${carePlan}
+"""
+This is what the owner is following. Judge the plant against it, not against the
+textbook: leaves drooping on a plan that says water every three days is a
+different finding from the same leaves on a plan that says fourteen.
+` : ''}${memoryBlock ? `
+What the owner has told us about this plant:
+${memoryBlock}
+Established unless the image contradicts it. A repotting last month or a move to
+a darker window explains what the photo alone would read as decline.
 ` : ''}
 Historical context (JSON):
 ${JSON.stringify({
@@ -1800,6 +1822,10 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
       }
 
       const context = await loadHealthCheckAgentContext(plantId, userId);
+      // The check builds the next diagnosis on the last one, so it needs
+      // everything the owner has said since — a repotting a fortnight ago
+      // explains what the photo alone reads as decline.
+      context.memory = await loadMemory(admin.firestore(), plantId);
       const promptText = buildHealthCheckAgentPrompt(context, plantName, language);
       const currentImageUrl = imageList.map(b64 => `data:image/jpeg;base64,${b64}`);
 
@@ -1868,10 +1894,34 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
         await saveAiUsage(db, { userId, plantId, type: 'health_check', model: ANALYSIS_MODEL, usage: accUsage });
       }
 
+      // Whether the standing plan may be replaced by what this check produced.
+      //
+      // The app used to keep `aiCareTips` frozen from the day the plant was
+      // added, because rewriting prose on every scan makes it drift: the same
+      // conditions come back worded differently, and eventually numbered
+      // differently, which is the contradiction between the sheet and the
+      // paragraph below it. Freezing avoided the drift and bought staleness
+      // instead — the plan still described a plant that had since been moved.
+      //
+      // The fingerprint settles it: rewrite exactly when the inputs the plan is
+      // derived from have changed, and never otherwise.
+      const currentFingerprint = carePlanFingerprint(
+        context.plant || {},
+        (context.memory?.current) || [],
+      );
+      const planStale = !carePlanIsCurrent(
+        context.plant || {},
+        (context.memory?.current) || [],
+      );
+
       return res.json({
         success: true,
         recommendations,
         rawResponse: content,
+        carePlan: {
+          stale: planStale,
+          fingerprint: currentFingerprint,
+        },
         // Handed back so the client can store it on the check document
         // (SPEC 5.2). A month later the weather has moved on but the advice
         // has not, and without this there is no way to see why the agent said

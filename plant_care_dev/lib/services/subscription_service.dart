@@ -198,8 +198,7 @@ class SubscriptionService {
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
-  static const String _revenueCatApiKey =
-      'test_PmSXLdLZsTNwVdwXrspziEIrGGU';
+  static const String _revenueCatApiKey = 'test_PmSXLdLZsTNwVdwXrspziEIrGGU';
 
   static const String _monthlyProductId = 'com.botanly.app.monthly';
   static const String _annualProductId = 'com.botanly.app.annual';
@@ -232,10 +231,9 @@ class SubscriptionService {
     try {
       await Purchases.logIn(uid);
       // Persist RC app user ID to Firestore for webhook matching
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set({'revenueCatAppUserId': uid}, SetOptions(merge: true));
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'revenueCatAppUserId': uid,
+      }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('⚠️ RevenueCat logIn failed: $e');
     }
@@ -274,11 +272,9 @@ class SubscriptionService {
         _config = SubscriptionConfig.fromMap(snap.data()!);
       }
       // Only start the user stream after config is ready.
-      _userSub = _firestore
-          .collection('users')
-          .doc(uid)
-          .snapshots()
-          .listen((userSnap) {
+      _userSub = _firestore.collection('users').doc(uid).snapshots().listen((
+        userSnap,
+      ) {
         if (!userSnap.exists) return;
         final info = _buildInfo(userSnap.data()!);
         _cachedInfo = info;
@@ -375,16 +371,20 @@ class SubscriptionService {
       );
     }
 
-    final configSnap =
-        await _firestore.collection('app_config').doc('subscription').get();
+    final configSnap = await _firestore
+        .collection('app_config')
+        .doc('subscription')
+        .get();
     if (configSnap.exists) {
       _config = SubscriptionConfig.fromMap(configSnap.data()!);
     }
 
-    final userSnap =
-        await _firestore.collection('users').doc(uid).get();
+    final userSnap = await _firestore.collection('users').doc(uid).get();
     if (!userSnap.exists) {
-      return SubscriptionInfo(status: SubscriptionStatus.trial, config: _config);
+      return SubscriptionInfo(
+        status: SubscriptionStatus.trial,
+        config: _config,
+      );
     }
 
     final info = _buildInfo(userSnap.data()!);
@@ -421,8 +421,7 @@ class SubscriptionService {
     if (kIsWeb) return false;
     try {
       final info = await Purchases.purchasePackage(package);
-      final hasPremium =
-          info.entitlements.active.containsKey('premium');
+      final hasPremium = info.entitlements.active.containsKey('premium');
       _invalidateCache();
       if (hasPremium) {
         await _writeActiveToFirestore(info);
@@ -446,7 +445,9 @@ class SubscriptionService {
       final expiresRaw = entitlement?.expirationDate;
       DateTime? expiresDate;
       if (expiresRaw != null) {
-        try { expiresDate = DateTime.parse(expiresRaw); } catch (_) {}
+        try {
+          expiresDate = DateTime.parse(expiresRaw);
+        } catch (_) {}
       }
       final data = <String, dynamic>{
         'subscriptionStatus': 'active',
@@ -464,8 +465,7 @@ class SubscriptionService {
     if (kIsWeb) return false;
     try {
       final info = await Purchases.restorePurchases();
-      final hasPremium =
-          info.entitlements.active.containsKey('premium');
+      final hasPremium = info.entitlements.active.containsKey('premium');
       if (hasPremium) _invalidateCache();
       return hasPremium;
     } catch (e) {

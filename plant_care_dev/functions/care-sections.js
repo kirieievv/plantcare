@@ -263,8 +263,44 @@ function careBriefForTopic(topic, careTips, careDetails) {
   return parts.join('\n');
 }
 
+/**
+ * The whole standing plan as prose, or null when the plant has none.
+ *
+ * The chat gets one section because the owner is reading one section. A health
+ * check gets all of them: it is judging the plant as a whole, and it is the
+ * thing allowed to rewrite the plan, so it has to see what it would be
+ * replacing.
+ *
+ * Identity and personality are left out — they say nothing about how the plant
+ * is doing, and every line here is paid for on every scan.
+ */
+const PLAN_OMITTED = [
+  CARE_SECTION.cultivar,
+  CARE_SECTION.generalDescription,
+  CARE_SECTION.personality,
+  CARE_SECTION.toxicity,
+];
+
+function wholeCarePlan(carePlan) {
+  if (!carePlan) return null;
+  const sections = parseCareSections(carePlan.tips);
+  const lines = Object.entries(sections)
+    .filter(([key, body]) => !PLAN_OMITTED.includes(key) && body && body.trim())
+    .map(([key, body]) => `${key}: ${body.trim()}`);
+
+  const details = carePlan.details || {};
+  const detailLine = Object.entries(details)
+    .filter(([, value]) => value && String(value).trim())
+    .map(([key, value]) => `${key}=${value}`)
+    .join(', ');
+  if (detailLine) lines.push(`details: ${detailLine}`);
+
+  return lines.length ? lines.join('\n') : null;
+}
+
 module.exports = {
   CARE_SECTION,
+  wholeCarePlan,
   TOPICS,
   TOPIC_SECTIONS,
   TOPIC_DETAILS,

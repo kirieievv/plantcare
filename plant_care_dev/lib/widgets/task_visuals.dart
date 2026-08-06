@@ -16,37 +16,33 @@ typedef TaskStyle = ({String glyph, Color fg, Color bg});
 typedef TaskBadge = ({String text, Color fg, Color bg});
 
 TaskStyle taskStyle(TaskCategory category) => switch (category) {
-      TaskCategory.water => (
-          glyph: BotanlySvg.drop,
-          fg: kGlassWater,
-          bg: kGlassWaterBg
-        ),
-      TaskCategory.light => (
-          glyph: BotanlySvg.sun,
-          fg: kGlassSun,
-          bg: kGlassSunBg
-        ),
-      TaskCategory.soil => (
-          glyph: BotanlySvg.soil,
-          fg: kGlassAccent,
-          bg: kGlassLeafBg
-        ),
-      TaskCategory.fertilizer => (
-          glyph: BotanlySvg.fertilizer,
-          fg: kGlassAccent,
-          bg: kGlassLeafBg
-        ),
-      TaskCategory.scan => (
-          glyph: BotanlySvg.scan,
-          fg: kGlassWater,
-          bg: kGlassWaterBg
-        ),
-      TaskCategory.other => (
-          glyph: BotanlySvg.leaf,
-          fg: kGlassAccent,
-          bg: kGlassLeafBg
-        ),
-    };
+  TaskCategory.water => (
+    glyph: BotanlySvg.drop,
+    fg: kGlassWater,
+    bg: kGlassWaterBg,
+  ),
+  TaskCategory.light => (glyph: BotanlySvg.sun, fg: kGlassSun, bg: kGlassSunBg),
+  TaskCategory.soil => (
+    glyph: BotanlySvg.soil,
+    fg: kGlassAccent,
+    bg: kGlassLeafBg,
+  ),
+  TaskCategory.fertilizer => (
+    glyph: BotanlySvg.fertilizer,
+    fg: kGlassAccent,
+    bg: kGlassLeafBg,
+  ),
+  TaskCategory.scan => (
+    glyph: BotanlySvg.scan,
+    fg: kGlassWater,
+    bg: kGlassWaterBg,
+  ),
+  TaskCategory.other => (
+    glyph: BotanlySvg.leaf,
+    fg: kGlassAccent,
+    bg: kGlassLeafBg,
+  ),
+};
 
 /// The single badge a task row is allowed to show (SPEC 1.3.1).
 ///
@@ -68,11 +64,7 @@ TaskBadge taskBadge(CareTask task, DateTime now, AppLocalizations l10n) {
       bg: kGlassWaterBg,
     );
   }
-  return (
-    text: l10n.taskBadgeScheduled,
-    fg: kGlassGreenText,
-    bg: kGlassLeafBg,
-  );
+  return (text: l10n.taskBadgeScheduled, fg: kGlassGreenText, bg: kGlassLeafBg);
 }
 
 /// Uppercase pill used for the badge in rows, sheets and cards.

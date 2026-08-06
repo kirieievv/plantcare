@@ -43,12 +43,7 @@ class BotanlyAvatar extends StatelessWidget {
   final String? letter;
   final double size;
   final IconData? icon;
-  const BotanlyAvatar({
-    super.key,
-    this.letter,
-    this.size = 60,
-    this.icon,
-  });
+  const BotanlyAvatar({super.key, this.letter, this.size = 60, this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +59,11 @@ class BotanlyAvatar extends StatelessWidget {
           colors: [Color(0xFFE3F1D6), BotanlyColors.sagePale],
         ),
         boxShadow: const [
-          BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 2)),
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
         ],
         border: Border.all(color: Colors.white, width: 2),
       ),
@@ -77,8 +76,11 @@ class BotanlyAvatar extends StatelessWidget {
                 color: BotanlyColors.sage,
               ),
             )
-          : Icon(icon ?? Icons.person_outline,
-              size: size * 0.45, color: BotanlyColors.sage),
+          : Icon(
+              icon ?? Icons.person_outline,
+              size: size * 0.45,
+              color: BotanlyColors.sage,
+            ),
     );
   }
 }
@@ -185,7 +187,8 @@ class BotanlyInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasValue = (value != null && value!.isNotEmpty) || valueWidget != null;
+    final hasValue =
+        (value != null && value!.isNotEmpty) || valueWidget != null;
     return Padding(
       padding: EdgeInsets.only(top: 8, bottom: isLast ? 0 : 8),
       child: Container(
@@ -233,9 +236,12 @@ class BotanlyInfoRow extends StatelessWidget {
                       hasValue ? value! : '—',
                       style: GoogleFonts.dmSans(
                         fontSize: 14.5,
-                        fontWeight: hasValue ? FontWeight.w400 : FontWeight.w300,
-                        fontStyle:
-                            hasValue ? FontStyle.normal : FontStyle.italic,
+                        fontWeight: hasValue
+                            ? FontWeight.w400
+                            : FontWeight.w300,
+                        fontStyle: hasValue
+                            ? FontStyle.normal
+                            : FontStyle.italic,
                         height: 1.45,
                         color: hasValue
                             ? const Color(0xFF1B2A18)
@@ -274,8 +280,9 @@ class BotanlyInputShell extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        crossAxisAlignment:
-            area ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: area
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
           Padding(
             padding: EdgeInsets.only(top: area ? 3 : 0, right: 9),
@@ -438,8 +445,7 @@ class BotanlySecondaryButton extends StatelessWidget {
 InputDecoration botanlyShellInputDecoration({
   String? hint,
   TextStyle? hintStyle,
-  EdgeInsetsGeometry contentPadding =
-      const EdgeInsets.symmetric(vertical: 8),
+  EdgeInsetsGeometry contentPadding = const EdgeInsets.symmetric(vertical: 8),
 }) {
   return InputDecoration(
     isCollapsed: true,
@@ -453,7 +459,8 @@ InputDecoration botanlyShellInputDecoration({
     errorBorder: InputBorder.none,
     focusedErrorBorder: InputBorder.none,
     hintText: hint,
-    hintStyle: hintStyle ??
+    hintStyle:
+        hintStyle ??
         GoogleFonts.dmSans(
           fontSize: 14,
           fontWeight: FontWeight.w300,
@@ -479,8 +486,11 @@ class BotanlyLoggedChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_rounded,
-              size: 13, color: BotanlyColors.sageDark),
+          const Icon(
+            Icons.check_rounded,
+            size: 13,
+            color: BotanlyColors.sageDark,
+          ),
           const SizedBox(width: 5),
           Text(
             label,
@@ -603,10 +613,7 @@ class BotanlySettingsRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 8),
-                trailing!,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
             ],
           ),
         ),

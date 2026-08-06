@@ -68,13 +68,13 @@ class SmartPlant {
   // Helper method to parse Firestore timestamps
   static DateTime _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return DateTime.now();
-    
+
     if (timestamp is String) {
       return DateTime.parse(timestamp);
     } else if (timestamp is Timestamp) {
       return timestamp.toDate();
     }
-    
+
     return DateTime.now();
   }
 
@@ -111,22 +111,22 @@ class SmartPlant {
 
   // Get current soil moisture
   double get currentMoisture => sensorData['soilMoisture'] ?? 0.0;
-  
+
   // Get current temperature
   double get currentTemperature => sensorData['temperature'] ?? 0.0;
-  
+
   // Get current humidity
   double get currentHumidity => sensorData['humidity'] ?? 0.0;
-  
+
   // Get current light level
   double get currentLightLevel => sensorData['lightLevel'] ?? 0.0;
-  
+
   // Check if device is connected
   bool get isDeviceConnected => deviceStatus['connected'] ?? false;
-  
+
   // Check if plant needs watering
   bool get needsWatering => currentMoisture < moistureThreshold;
-  
+
   // Get sensor data timestamp
   DateTime? get sensorDataTimestamp {
     final timestamp = sensorData['timestamp'];
@@ -135,4 +135,4 @@ class SmartPlant {
     }
     return null;
   }
-} 
+}

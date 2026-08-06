@@ -138,6 +138,41 @@ function invalidatesPlan(field) {
   return PLAN_INPUTS.includes(field);
 }
 
+/**
+ * A fingerprint of everything the standing care plan is derived from.
+ *
+ * The plan is prose, and prose regenerated from the same facts comes back
+ * different every time — different wording, different emphasis, and eventually
+ * different numbers, which is exactly the contradiction between the sheet and
+ * the paragraph under it that this whole effort exists to remove. Freezing it
+ * instead, which is what the app did, trades that for a plan that quietly goes
+ * stale the day the plant is moved.
+ *
+ * The fingerprint is the way out of the dilemma: rewrite when the inputs
+ * actually changed, and never otherwise. Weather is deliberately not an input —
+ * it changes daily, so including it would mean regenerating daily, which is the
+ * drift this is meant to prevent. Weather adjusts the schedule, not the plan.
+ */
+function carePlanFingerprint(plant = {}, facts = []) {
+  const inputs = PLAN_INPUTS.map((field) => `${field}=${plant[field] ?? ''}`);
+
+  // Facts that describe the plant's standing conditions count too: "moved to
+  // the east window" changes the plan as surely as editing `placement` does.
+  const durable = facts
+    .filter((f) => ['placement', 'container', 'environment'].includes(f.kind))
+    .map((f) => `${f.kind}:${String(f.text || '').slice(0, 60)}`)
+    .sort();
+
+  return [...inputs, ...durable].join('|');
+}
+
+/** Whether the plan on file was derived from the inputs the plant has now. */
+function carePlanIsCurrent(plant = {}, facts = []) {
+  const stored = plant.carePlanDerivedFrom;
+  if (!stored) return false; // never fingerprinted: treat as stale once
+  return stored === carePlanFingerprint(plant, facts);
+}
+
 /** Whether a confirmed change means the scheduled chores have to be rebuilt. */
 function invalidatesSchedule(field) {
   return ['wateringIntervalDays', 'wateringAmountMl', 'tasksPausedUntil'].includes(field);
@@ -145,6 +180,8 @@ function invalidatesSchedule(field) {
 
 module.exports = {
   PROPOSABLE_FIELDS,
+  carePlanFingerprint,
+  carePlanIsCurrent,
   PROPOSABLE_FIELDS_HINT,
   PLAN_INPUTS,
   MAX_PAUSE_DAYS,

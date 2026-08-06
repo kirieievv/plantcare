@@ -11,11 +11,11 @@ class TipsScreen extends StatelessWidget {
   String _weekKey() {
     final now = DateTime.now();
     final d = DateTime.utc(now.year, now.month, now.day);
-    final adjusted =
-        d.add(Duration(days: 4 - (d.weekday == 7 ? 7 : d.weekday)));
+    final adjusted = d.add(
+      Duration(days: 4 - (d.weekday == 7 ? 7 : d.weekday)),
+    );
     final yearStart = DateTime.utc(adjusted.year, 1, 1);
-    final week =
-        ((adjusted.difference(yearStart).inDays + 1) / 7).ceil();
+    final week = ((adjusted.difference(yearStart).inDays + 1) / 7).ceil();
     return '${now.year}-W${week.toString().padLeft(2, '0')}';
   }
 
@@ -253,7 +253,9 @@ class _TipCard extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: bg.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(6),

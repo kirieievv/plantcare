@@ -9,7 +9,7 @@ class UserModel {
   final DateTime? createdAt;
   final DateTime? lastLogin;
   final DateTime? updatedAt;
-  
+
   // Notification settings
   final String? timezone; // IANA timezone (e.g., "America/New_York")
   final Map<String, String>? quietHours; // {start: "22:00", end: "08:00"}
@@ -29,8 +29,8 @@ class UserModel {
     this.quietHours,
     List<String>? fcmTokens,
     int? maxPushesPerDay,
-  })  : fcmTokens = fcmTokens ?? [],
-        maxPushesPerDay = maxPushesPerDay ?? 3;
+  }) : fcmTokens = fcmTokens ?? [],
+       maxPushesPerDay = maxPushesPerDay ?? 3;
 
   // Convert to Map for Firestore
   Map<String, dynamic> toMap() {
@@ -62,7 +62,7 @@ class UserModel {
       lastLogin: _parseTimestamp(map['lastLogin']),
       updatedAt: _parseTimestamp(map['updatedAt']),
       timezone: map['timezone'],
-      quietHours: map['quietHours'] != null 
+      quietHours: map['quietHours'] != null
           ? Map<String, String>.from(map['quietHours'])
           : null,
       fcmTokens: map['fcmTokens'] != null
@@ -75,13 +75,13 @@ class UserModel {
   // Helper method to parse Firestore timestamps
   static DateTime? _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return null;
-    
+
     if (timestamp is String) {
       return DateTime.parse(timestamp);
     } else if (timestamp is Timestamp) {
       return timestamp.toDate();
     }
-    
+
     return null;
   }
 
@@ -115,4 +115,4 @@ class UserModel {
       maxPushesPerDay: maxPushesPerDay ?? this.maxPushesPerDay,
     );
   }
-} 
+}

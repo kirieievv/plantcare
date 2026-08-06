@@ -615,10 +615,7 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
                   if (_slots[0] != null)
                     Positioned.fill(child: _PhotoBackdrop(bytes: _slots[0]!)),
                   Positioned.fill(
-                    child: SafeArea(
-                      bottom: false,
-                      child: _body(),
-                    ),
+                    child: SafeArea(bottom: false, child: _body()),
                   ),
                   // The quiz CTA is pinned above the tab bar in its own layer
                   // (SPEC 3.1). Inside the scroll it slides under the tab bar

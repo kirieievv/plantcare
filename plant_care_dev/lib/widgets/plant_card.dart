@@ -13,12 +13,8 @@ class PlantCard extends StatefulWidget {
   final VoidCallback? onWater;
   final VoidCallback? onTap;
 
-  const PlantCard({
-    Key? key,
-    required this.plant,
-    this.onWater,
-    this.onTap,
-  }) : super(key: key);
+  const PlantCard({Key? key, required this.plant, this.onWater, this.onTap})
+    : super(key: key);
 
   @override
   State<PlantCard> createState() => _PlantCardState();
@@ -44,7 +40,7 @@ class _PlantCardState extends State<PlantCard> {
     try {
       // Call the onWater callback
       widget.onWater!();
-      
+
       // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
       // if (mounted) {
       //   ScaffoldMessenger.of(context).showSnackBar(
@@ -83,11 +79,7 @@ class _PlantCardState extends State<PlantCard> {
           SnackBar(
             content: Row(
               children: [
-                Icon(
-                  Icons.error,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                Icon(Icons.error, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Text(
                   AppLocalizations.of(context)!.errorWateringPlant(e),
@@ -120,16 +112,25 @@ class _PlantCardState extends State<PlantCard> {
   @override
   Widget build(BuildContext context) {
     final wateringDate = widget.plant.nextDueAt ?? widget.plant.nextWatering;
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    final target = DateTime(wateringDate.year, wateringDate.month, wateringDate.day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final target = DateTime(
+      wateringDate.year,
+      wateringDate.month,
+      wateringDate.day,
+    );
     final daysUntilWatering = target.difference(today).inDays;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : AppTheme.textPrimary;
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < ResponsiveLayout.breakpointCompact;
-        
+        final isCompact =
+            constraints.maxWidth < ResponsiveLayout.breakpointCompact;
+
         return GlassmorphicContainer(
           width: double.infinity,
           height: isCompact ? 120 : 100,
@@ -178,9 +179,9 @@ class _PlantCardState extends State<PlantCard> {
                       duration: 300.ms,
                       curve: Curves.easeOutBack,
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Plant Info - Expanded to prevent overflow
                     Expanded(
                       flex: 1,
@@ -197,13 +198,10 @@ class _PlantCardState extends State<PlantCard> {
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                          ).animate().fadeIn(
-                            duration: 400.ms,
-                            delay: 100.ms,
-                          ),
-                          
+                          ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+
                           const SizedBox(height: 8),
-                          
+
                           // Watering Status with enhanced indicator
                           if (isCompact) ...[
                             // Compact layout: status on next line
@@ -212,7 +210,8 @@ class _PlantCardState extends State<PlantCard> {
                                 Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
-                                    color: _getWateringStatusColor().withOpacity(0.1),
+                                    color: _getWateringStatusColor()
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
@@ -243,7 +242,8 @@ class _PlantCardState extends State<PlantCard> {
                                 Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
-                                    color: _getWateringStatusColor().withOpacity(0.1),
+                                    color: _getWateringStatusColor()
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
@@ -270,7 +270,7 @@ class _PlantCardState extends State<PlantCard> {
                         ],
                       ),
                     ),
-                    
+
                     // Fixed-size Water Button - pill shape with perfectly centered icon
                     if (widget.onWater != null) ...[
                       Container(
@@ -278,7 +278,7 @@ class _PlantCardState extends State<PlantCard> {
                         height: 48,
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
-                          color: _canWaterPlant() 
+                          color: _canWaterPlant()
                               ? AppTheme.accentGreen.withOpacity(0.1)
                               : Colors.grey.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(24),
@@ -292,12 +292,20 @@ class _PlantCardState extends State<PlantCard> {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: (_isWatering || !_canWaterPlant()) ? null : _handleWater,
+                            onTap: (_isWatering || !_canWaterPlant())
+                                ? null
+                                : _handleWater,
                             borderRadius: BorderRadius.circular(24),
                             // Disable hover effects when button is not clickable
-                            hoverColor: (_isWatering || !_canWaterPlant()) ? Colors.transparent : null,
-                            splashColor: (_isWatering || !_canWaterPlant()) ? Colors.transparent : null,
-                            highlightColor: (_isWatering || !_canWaterPlant()) ? Colors.transparent : null,
+                            hoverColor: (_isWatering || !_canWaterPlant())
+                                ? Colors.transparent
+                                : null,
+                            splashColor: (_isWatering || !_canWaterPlant())
+                                ? Colors.transparent
+                                : null,
+                            highlightColor: (_isWatering || !_canWaterPlant())
+                                ? Colors.transparent
+                                : null,
                             child: Center(
                               child: _isWatering
                                   ? SizedBox(
@@ -305,12 +313,15 @@ class _PlantCardState extends State<PlantCard> {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentGreen),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              AppTheme.accentGreen,
+                                            ),
                                       ),
                                     )
                                   : Icon(
                                       Icons.water_drop,
-                                      color: _canWaterPlant() 
+                                      color: _canWaterPlant()
                                           ? AppTheme.accentGreen
                                           : Colors.grey,
                                       size: 24,
@@ -355,13 +366,14 @@ class _PlantCardState extends State<PlantCard> {
         );
       }
     }
-    
+
     // Priority 2: Fallback to plant's main image
     return _getFallbackImage();
   }
-  
+
   Widget _getFallbackImage() {
-    if (widget.plant.imageUrl != null && widget.plant.imageUrl!.startsWith('data:image')) {
+    if (widget.plant.imageUrl != null &&
+        widget.plant.imageUrl!.startsWith('data:image')) {
       return Image.memory(
         base64Decode(widget.plant.imageUrl!.split(',')[1]),
         fit: BoxFit.cover,
@@ -369,7 +381,8 @@ class _PlantCardState extends State<PlantCard> {
           return _buildPlaceholderImage();
         },
       );
-    } else if (widget.plant.imageUrl != null && widget.plant.imageUrl!.startsWith('http')) {
+    } else if (widget.plant.imageUrl != null &&
+        widget.plant.imageUrl!.startsWith('http')) {
       return Image.network(
         widget.plant.imageUrl!,
         fit: BoxFit.cover,
@@ -388,18 +401,22 @@ class _PlantCardState extends State<PlantCard> {
         color: AppTheme.lightGrey,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Icon(
-        Icons.local_florist,
-        size: 40,
-        color: AppTheme.mediumGrey,
-      ),
+      child: Icon(Icons.local_florist, size: 40, color: AppTheme.mediumGrey),
     );
   }
 
   Color _getWateringStatusColor() {
     final wateringDate = widget.plant.nextDueAt ?? widget.plant.nextWatering;
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    final target = DateTime(wateringDate.year, wateringDate.month, wateringDate.day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final target = DateTime(
+      wateringDate.year,
+      wateringDate.month,
+      wateringDate.day,
+    );
     final days = target.difference(today).inDays;
     if (days < 0) {
       return Colors.red;
@@ -422,4 +439,4 @@ class _PlantCardState extends State<PlantCard> {
       return l10n.wateringInNDays(days);
     }
   }
-} 
+}

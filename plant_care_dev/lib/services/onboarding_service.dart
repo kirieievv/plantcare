@@ -59,9 +59,15 @@ class OnboardingService {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  static Future<void> _syncFromFirestore(SharedPreferences prefs, String uid) async {
+  static Future<void> _syncFromFirestore(
+    SharedPreferences prefs,
+    String uid,
+  ) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
       final data = doc.data();
       // Absent field → treat as false (show onboarding once)
       final firestoreValue = data?['onboardingComplete'] as bool? ?? false;
@@ -74,10 +80,9 @@ class OnboardingService {
 
   static Future<void> _writeFirestore(String uid, bool value) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set({'onboardingComplete': value}, SetOptions(merge: true));
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'onboardingComplete': value,
+      }, SetOptions(merge: true));
     } catch (_) {
       // Best-effort; will be retried on next login via _syncFromFirestore
     }

@@ -14,11 +14,11 @@ class NotificationTest {
   static Future<Map<String, dynamic>> testNotificationSetup() async {
     try {
       print('🔔 Testing notification setup...');
-      
+
       // Check if notifications are supported
       final isSupported = await _messaging.isSupported();
       print('📱 Notifications supported: $isSupported');
-      
+
       if (!isSupported) {
         return {
           'success': false,
@@ -37,12 +37,12 @@ class NotificationTest {
         sound: true,
         provisional: false,
       );
-      
+
       print('🔐 Permission status: ${settings.authorizationStatus}');
       print('🔐 Alert permission: ${settings.alert}');
       print('🔐 Badge permission: ${settings.badge}');
       print('🔐 Sound permission: ${settings.sound}');
-      
+
       // Get FCM token
       String? token;
       String? tokenError;
@@ -57,18 +57,21 @@ class NotificationTest {
               sound: true,
               provisional: false,
             );
-            print('🔐 Web permission after request: ${newSettings.authorizationStatus}');
+            print(
+              '🔐 Web permission after request: ${newSettings.authorizationStatus}',
+            );
           }
-          
+
           // Wait a bit for web token generation
           await Future.delayed(const Duration(seconds: 3));
-          
+
           // Try to get token with VAPID key for web
           try {
             // Note: You need to replace this with your actual VAPID key from Firebase Console
             // Go to Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
             token = await _messaging.getToken(
-              vapidKey: 'BI0yI6i_be8uHYwHlGkuwK4w20TlouraY6LM5j0Y0_Gp2xrfMOKbC43GHx9y_fsILTrpEAmsbUE8UVVHZZpB9G4'
+              vapidKey:
+                  'BI0yI6i_be8uHYwHlGkuwK4w20TlouraY6LM5j0Y0_Gp2xrfMOKbC43GHx9y_fsILTrpEAmsbUE8UVVHZZpB9G4',
             );
           } catch (e) {
             print('❌ Error getting token with VAPID key: $e');
@@ -77,13 +80,14 @@ class NotificationTest {
               token = await _messaging.getToken();
             } catch (e2) {
               print('❌ Error getting token without VAPID key: $e2');
-              tokenError = 'VAPID key required for web push notifications. Please configure in Firebase Console.';
+              tokenError =
+                  'VAPID key required for web push notifications. Please configure in Firebase Console.';
             }
           }
         } else {
           token = await _messaging.getToken();
         }
-        
+
         print('🎫 FCM Token: ${token?.substring(0, 50)}...');
       } catch (e) {
         print('❌ Error getting token: $e');
@@ -103,11 +107,12 @@ class NotificationTest {
 
       // Get web-specific information
       final browserInfo = WebNotificationHelper.getBrowserInfo();
-      final notificationSupport = WebNotificationHelper.getNotificationSupport();
+      final notificationSupport =
+          WebNotificationHelper.getNotificationSupport();
       final webPermission = WebNotificationHelper.getNotificationPermission();
       final isMobileSafari = WebNotificationHelper.isMobileSafari;
       final isMacOSSafari = WebNotificationHelper.isMacOSSafari;
-      
+
       return {
         'success': token != null,
         'platform': defaultTargetPlatform.name,
@@ -142,7 +147,6 @@ class NotificationTest {
     }
   }
 
-
   /// Get platform-specific recommendations
   static String _getPlatformRecommendation() {
     if (defaultTargetPlatform.name == 'macOS') {
@@ -158,10 +162,10 @@ class NotificationTest {
   static Future<void> _saveTokenToFirestore(String userId, String token) async {
     try {
       final userDoc = _firestore.collection('users').doc(userId);
-      
+
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(userDoc);
-        
+
         List<String> tokens = [];
         if (snapshot.exists && snapshot.data()?['fcmTokens'] != null) {
           tokens = List<String>.from(snapshot.data()!['fcmTokens']);
@@ -170,15 +174,11 @@ class NotificationTest {
         // Only add if not already present
         if (!tokens.contains(token)) {
           tokens.add(token);
-          transaction.set(
-            userDoc,
-            {
-              'fcmTokens': tokens,
-              'updatedAt': FieldValue.serverTimestamp(),
-              'lastTokenUpdate': DateTime.now().toIso8601String(),
-            },
-            SetOptions(merge: true),
-          );
+          transaction.set(userDoc, {
+            'fcmTokens': tokens,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'lastTokenUpdate': DateTime.now().toIso8601String(),
+          }, SetOptions(merge: true));
           print('✅ FCM token saved to Firestore');
         } else {
           print('ℹ️ FCM token already registered');
@@ -197,24 +197,21 @@ class NotificationTest {
         'error': 'Web test notification only works on web platform',
       };
     }
-    
+
     try {
       final success = await WebNotificationHelper.showTestNotification(
         title: 'Plant Care Test',
         body: 'This is a test notification from Plant Care! 🌱',
       );
-      
+
       return {
         'success': success,
-        'message': success 
-            ? 'Test notification shown successfully!' 
+        'message': success
+            ? 'Test notification shown successfully!'
             : 'Failed to show notification - check permissions',
       };
     } catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
 
@@ -225,17 +222,22 @@ class NotificationTest {
   }) async {
     try {
       print('🧪 Sending test notification...');
-      
+
       String? token = customToken;
-      
+
       // If no custom token provided, get the current user's token
       if (token == null) {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           // Get token from Firestore
-          final userDoc = await _firestore.collection('users').doc(user.uid).get();
+          final userDoc = await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .get();
           if (userDoc.exists) {
-            final tokens = List<String>.from(userDoc.data()?['fcmTokens'] ?? []);
+            final tokens = List<String>.from(
+              userDoc.data()?['fcmTokens'] ?? [],
+            );
             if (tokens.isNotEmpty) {
               token = tokens.first;
             }
@@ -246,14 +248,17 @@ class NotificationTest {
       if (token == null) {
         return {
           'success': false,
-          'error': 'No FCM token available. Please ensure notifications are set up first.',
+          'error':
+              'No FCM token available. Please ensure notifications are set up first.',
         };
       }
 
       // For testing, you would typically send this via your backend
       // For now, we'll just log the token and return success
-      print('🎯 Test notification would be sent to token: ${token.substring(0, 50)}...');
-      
+      print(
+        '🎯 Test notification would be sent to token: ${token.substring(0, 50)}...',
+      );
+
       return {
         'success': true,
         'message': 'Test notification prepared (backend integration needed)',
@@ -262,10 +267,7 @@ class NotificationTest {
       };
     } catch (e) {
       print('❌ Error sending test notification: $e');
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
 
@@ -275,7 +277,7 @@ class NotificationTest {
       final setupResult = await testNotificationSetup();
       final prefs = await SharedPreferences.getInstance();
       final user = FirebaseAuth.instance.currentUser;
-      
+
       return {
         ...setupResult,
         'timestamp': DateTime.now().toIso8601String(),

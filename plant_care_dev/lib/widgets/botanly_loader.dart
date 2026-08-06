@@ -10,11 +10,7 @@ class BotanlyLoader extends StatefulWidget {
   final double size;
   final bool showCaption;
 
-  const BotanlyLoader({
-    super.key,
-    this.size = 120,
-    this.showCaption = false,
-  });
+  const BotanlyLoader({super.key, this.size = 120, this.showCaption = false});
 
   @override
   State<BotanlyLoader> createState() => _BotanlyLoaderState();
@@ -131,8 +127,10 @@ class _SproutPainter extends CustomPainter {
       ..cubicTo(48, 70, 52, 60, 50, 40);
 
     final metric = path.computeMetrics().first;
-    final visiblePath =
-        metric.extractPath(0, metric.length * Curves.easeOut.transform(stemT));
+    final visiblePath = metric.extractPath(
+      0,
+      metric.length * Curves.easeOut.transform(stemT),
+    );
 
     final sPaint = Paint()
       ..color = const Color(0xFF4A8C33)
@@ -170,7 +168,10 @@ class _SproutPainter extends CustomPainter {
     // Vein: fades in after t=0.55
     final veinT = ((t - 0.55) / 0.15).clamp(0.0, 1.0);
     if (veinT > 0) {
-      final vOpacity = 0.55 * veinT * (t < 0.85 ? 1.0 : (0.7 + 0.3 * ((1.0 - t) / 0.15).clamp(0.0, 1.0)));
+      final vOpacity =
+          0.55 *
+          veinT *
+          (t < 0.85 ? 1.0 : (0.7 + 0.3 * ((1.0 - t) / 0.15).clamp(0.0, 1.0)));
       final vPaint = Paint()
         ..color = Colors.white.withValues(alpha: vOpacity)
         ..strokeWidth = 1.2
@@ -209,7 +210,10 @@ class _SproutPainter extends CustomPainter {
     // Vein
     final veinT = ((t - 0.55) / 0.15).clamp(0.0, 1.0);
     if (veinT > 0) {
-      final vOpacity = 0.55 * veinT * (t < 0.85 ? 1.0 : (0.7 + 0.3 * ((1.0 - t) / 0.15).clamp(0.0, 1.0)));
+      final vOpacity =
+          0.55 *
+          veinT *
+          (t < 0.85 ? 1.0 : (0.7 + 0.3 * ((1.0 - t) / 0.15).clamp(0.0, 1.0)));
       final vPaint = Paint()
         ..color = Colors.white.withValues(alpha: vOpacity)
         ..strokeWidth = 1.2

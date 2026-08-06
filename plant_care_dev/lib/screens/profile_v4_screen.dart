@@ -84,8 +84,7 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
       await UserService.updateUserProfile(
         name: name,
         bio: _bio.text.trim().isEmpty ? null : _bio.text.trim(),
-        location:
-            _location.text.trim().isEmpty ? null : _location.text.trim(),
+        location: _location.text.trim().isEmpty ? null : _location.text.trim(),
       );
       await _load();
       if (!mounted) return;
@@ -109,9 +108,9 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
     if (info.isActive) {
       _openManageSheet(info);
     } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
     }
   }
 

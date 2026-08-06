@@ -60,7 +60,10 @@ class ChatProposal {
     outcome: next,
   );
 
-  static ChatProposal? fromJson(Map<String, dynamic>? json, {DateTime? offeredAt}) {
+  static ChatProposal? fromJson(
+    Map<String, dynamic>? json, {
+    DateTime? offeredAt,
+  }) {
     if (json == null) return null;
     final field = json['field']?.toString();
     final reason = json['reason']?.toString();

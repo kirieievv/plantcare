@@ -51,8 +51,11 @@ class _PlantListScreenState extends State<PlantListScreen> {
   _PlantFilter _statusOf(Plant p) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final due = DateTime(p.nextWatering.year, p.nextWatering.month,
-        p.nextWatering.day);
+    final due = DateTime(
+      p.nextWatering.year,
+      p.nextWatering.month,
+      p.nextWatering.day,
+    );
     final days = due.difference(today).inDays;
     if (days < 0) return _PlantFilter.overdue;
     if (days <= 1) return _PlantFilter.warn;
@@ -62,7 +65,8 @@ class _PlantListScreenState extends State<PlantListScreen> {
   List<Plant> _applyFilters(List<Plant> plants) {
     final q = _query.toLowerCase().trim();
     return plants.where((p) {
-      final matchText = q.isEmpty ||
+      final matchText =
+          q.isEmpty ||
           p.name.toLowerCase().contains(q) ||
           p.species.toLowerCase().contains(q);
       final matchFilter =
@@ -90,7 +94,8 @@ class _PlantListScreenState extends State<PlantListScreen> {
                 final plants = snapshot.data ?? const <Plant>[];
                 final filtered = _applyFilters(plants);
 
-                final limitReached = subInfo != null &&
+                final limitReached =
+                    subInfo != null &&
                     plants.length >= subInfo.plantLimit &&
                     !subInfo.isActive;
 
@@ -127,9 +132,13 @@ class _PlantListScreenState extends State<PlantListScreen> {
                         ),
                         Expanded(
                           child: _buildBody(
-                              snapshot, filtered, plants.length, l10n,
-                              bottomPadding: limitReached ? 100.0 : 0.0,
-                              onAddPlant: widget.onAddPlant),
+                            snapshot,
+                            filtered,
+                            plants.length,
+                            l10n,
+                            bottomPadding: limitReached ? 100.0 : 0.0,
+                            onAddPlant: widget.onAddPlant,
+                          ),
                         ),
                       ],
                     ),
@@ -151,9 +160,14 @@ class _PlantListScreenState extends State<PlantListScreen> {
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<List<Plant>> snapshot,
-      List<Plant> filtered, int totalCount, AppLocalizations l10n,
-      {double bottomPadding = 0.0, VoidCallback? onAddPlant}) {
+  Widget _buildBody(
+    AsyncSnapshot<List<Plant>> snapshot,
+    List<Plant> filtered,
+    int totalCount,
+    AppLocalizations l10n, {
+    double bottomPadding = 0.0,
+    VoidCallback? onAddPlant,
+  }) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return BotanlyShimmer(
         child: ListView.separated(
@@ -248,10 +262,7 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          _SearchButton(
-            active: searchOpen,
-            onPressed: onToggleSearch,
-          ),
+          _SearchButton(active: searchOpen, onPressed: onToggleSearch),
         ],
       ),
     );
@@ -281,7 +292,8 @@ class _SearchButton extends StatelessWidget {
                 : Colors.white.withValues(alpha: 0.55),
             shape: BoxShape.circle,
             border: Border.all(
-                color: BotanlyColors.moss.withValues(alpha: 0.1)),
+              color: BotanlyColors.moss.withValues(alpha: 0.1),
+            ),
           ),
           child: Icon(
             active ? Icons.close : Icons.search,
@@ -316,14 +328,16 @@ class _SearchBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.55),
-          border: Border.all(
-              color: BotanlyColors.moss.withValues(alpha: 0.12)),
+          border: Border.all(color: BotanlyColors.moss.withValues(alpha: 0.12)),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            Icon(Icons.search,
-                size: 16, color: BotanlyColors.moss.withValues(alpha: 0.5)),
+            Icon(
+              Icons.search,
+              size: 16,
+              color: BotanlyColors.moss.withValues(alpha: 0.5),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
@@ -337,8 +351,7 @@ class _SearchBar extends StatelessWidget {
                 cursorColor: BotanlyColors.sage,
                 decoration: InputDecoration(
                   isCollapsed: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -418,8 +431,7 @@ class _FilterChip extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: active
                 ? BotanlyColors.moss
@@ -478,8 +490,11 @@ class _EmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_off_rounded,
-                  size: 48, color: BotanlyColors.inkMute),
+              Icon(
+                Icons.search_off_rounded,
+                size: 48,
+                color: BotanlyColors.inkMute,
+              ),
               const SizedBox(height: 12),
               Text(
                 l10n.noResultsTitle,
@@ -540,10 +555,7 @@ class _EmptyState extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    BotanlyColors.sagePale,
-                    BotanlyColors.sageSoft,
-                  ],
+                  colors: [BotanlyColors.sagePale, BotanlyColors.sageSoft],
                 ),
                 shape: BoxShape.circle,
               ),

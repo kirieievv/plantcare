@@ -51,9 +51,11 @@ class _MyPlantsScreenState extends State<MyPlantsScreen> {
   /// Whole days until watering: negative is overdue, 0 is today.
   static int _daysUntilWatering(Plant plant, DateTime now) {
     final due = plant.nextDueAt ?? plant.nextWatering;
-    return DateTime(due.year, due.month, due.day)
-        .difference(DateTime(now.year, now.month, now.day))
-        .inDays;
+    return DateTime(
+      due.year,
+      due.month,
+      due.day,
+    ).difference(DateTime(now.year, now.month, now.day)).inDays;
   }
 
   bool _matches(Plant plant, int score, PlantFilter filter, DateTime now) {
@@ -74,17 +76,17 @@ class _MyPlantsScreenState extends State<MyPlantsScreen> {
   }
 
   String _filterLabel(PlantFilter filter) => switch (filter) {
-        PlantFilter.all => l10n.filterAll,
-        PlantFilter.overdue => l10n.filterOverdue,
-        PlantFilter.today => l10n.needWater,
-        PlantFilter.tomorrow => l10n.filterTomorrow,
-        PlantFilter.needsCare => l10n.filterNeedsCare,
-      };
+    PlantFilter.all => l10n.filterAll,
+    PlantFilter.overdue => l10n.filterOverdue,
+    PlantFilter.today => l10n.needWater,
+    PlantFilter.tomorrow => l10n.filterTomorrow,
+    PlantFilter.needsCare => l10n.filterNeedsCare,
+  };
 
   void _open(Plant plant) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PlantDetailsScreen(plant: plant)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => PlantDetailsScreen(plant: plant)));
   }
 
   @override
@@ -101,8 +103,8 @@ class _MyPlantsScreenState extends State<MyPlantsScreen> {
                 stream: PlantService().getPlants(),
                 builder: (context, plantSnap) {
                   final plants = plantSnap.data ?? const <Plant>[];
-                  final loading = plantSnap.connectionState ==
-                          ConnectionState.waiting &&
+                  final loading =
+                      plantSnap.connectionState == ConnectionState.waiting &&
                       !plantSnap.hasData;
 
                   return StreamBuilder<List<CareTask>>(
@@ -261,11 +263,7 @@ class _MyPlantsScreenState extends State<MyPlantsScreen> {
     );
   }
 
-  Widget _chips(
-    List<Plant> plants,
-    Map<String, int> scores,
-    DateTime now,
-  ) {
+  Widget _chips(List<Plant> plants, Map<String, int> scores, DateTime now) {
     return SizedBox(
       height: 44,
       child: ListView(
@@ -282,8 +280,8 @@ class _MyPlantsScreenState extends State<MyPlantsScreen> {
               count: filter == PlantFilter.all
                   ? null
                   : plants
-                      .where((p) => _matches(p, scores[p.id]!, filter, now))
-                      .length,
+                        .where((p) => _matches(p, scores[p.id]!, filter, now))
+                        .length,
               selected: _filter == filter,
               onTap: () => setState(() => _filter = filter),
             ),
@@ -318,10 +316,10 @@ class _PlantCard extends StatelessWidget {
     final (String water, Color tone) = days < 0
         ? (l10n.wateringOverdueNDays(days.abs()), kGlassAlert)
         : days == 0
-            ? (l10n.wateringToday, kGlassAttnText)
-            : days == 1
-                ? (l10n.wateringTomorrow, kGlassAttnText)
-                : (l10n.wateringInNDays(days), kGlassGreenText);
+        ? (l10n.wateringToday, kGlassAttnText)
+        : days == 1
+        ? (l10n.wateringTomorrow, kGlassAttnText)
+        : (l10n.wateringInNDays(days), kGlassGreenText);
 
     final latin = (plant.aiName ?? plant.species).trim();
 

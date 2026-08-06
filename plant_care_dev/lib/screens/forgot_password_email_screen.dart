@@ -16,8 +16,7 @@ class ForgotPasswordEmailScreen extends StatefulWidget {
       _ForgotPasswordEmailScreenState();
 }
 
-class _ForgotPasswordEmailScreenState
-    extends State<ForgotPasswordEmailScreen> {
+class _ForgotPasswordEmailScreenState extends State<ForgotPasswordEmailScreen> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
   String _error = '';
@@ -47,12 +46,14 @@ class _ForgotPasswordEmailScreenState
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      setState(() => _error = switch (e.toString()) {
-        'USER_NOT_FOUND' => l10n.errorUserNotFound,
-        'INVALID_INPUT' => l10n.pleaseEnterValidEmail,
-        'SEND_FAILED' => l10n.errorSendFailed,
-        _ => l10n.errorGeneric,
-      });
+      setState(
+        () => _error = switch (e.toString()) {
+          'USER_NOT_FOUND' => l10n.errorUserNotFound,
+          'INVALID_INPUT' => l10n.pleaseEnterValidEmail,
+          'SEND_FAILED' => l10n.errorSendFailed,
+          _ => l10n.errorGeneric,
+        },
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -66,10 +67,7 @@ class _ForgotPasswordEmailScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BotanlyWordmark(
-            title: 'Botanly',
-            subtitle: l10n.resetYourPassword,
-          ),
+          BotanlyWordmark(title: 'Botanly', subtitle: l10n.resetYourPassword),
           const SizedBox(height: 40),
           Text(
             l10n.enterEmailForCode,

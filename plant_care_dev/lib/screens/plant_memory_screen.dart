@@ -60,7 +60,9 @@ class PlantMemoryScreen extends StatelessWidget {
             return _Message(text: l10n.memoryLoadFailed);
           }
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
           }
 
           final facts = snapshot.data!.docs
@@ -171,7 +173,10 @@ class _FactTile extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, AppLocalizations l10n) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) async {
     HapticFeedback.lightImpact();
     final confirmed = await showDialog<bool>(
       context: context,

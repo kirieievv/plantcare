@@ -78,8 +78,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _screens = [
       HomeScreen(user: widget.user, onTabChange: changeTab),
       MyPlantsScreen(
-        onAddPlant: () =>
-            setState(() => _currentIndex = kAddPlantTabIndex),
+        onAddPlant: () => setState(() => _currentIndex = kAddPlantTabIndex),
       ),
       // v4 redesign; the pre-v4 screen stays in the tree as
       // add_plant_screen.dart until the new flow has been through QA.

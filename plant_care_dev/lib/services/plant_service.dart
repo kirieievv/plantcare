@@ -6,7 +6,7 @@ import '../services/subscription_service.dart';
 class PlantService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'plants';
-  
+
   /// Calculate next watering date with preferred time applied
   /// This is the single source of truth for calculating nextWateringAt
   static DateTime calculateNextWateringAt({
@@ -18,10 +18,10 @@ class PlantService {
     final timeParts = preferredTime.split(':');
     final hour = int.parse(timeParts[0]);
     final minute = int.parse(timeParts[1]);
-    
+
     // Add interval days to base date
     var nextDue = from.add(Duration(days: intervalDays));
-    
+
     // Apply preferred time (same day, just change hour/minute)
     return DateTime(
       nextDue.year,
@@ -39,7 +39,7 @@ class PlantService {
   Stream<List<Plant>> getPlants() {
     final user = AuthService.currentUser;
     if (user == null) return Stream.value([]);
-    
+
     try {
       return _firestore
           .collection(_collection)
@@ -52,16 +52,22 @@ class PlantService {
               final docs = snapshot.docs.where((doc) {
                 final data = doc.data();
                 if (data['name'] == null || data['name'].toString().isEmpty) {
-                  print('⚠️ PlantService: Skipping plant ${doc.id} - missing name');
+                  print(
+                    '⚠️ PlantService: Skipping plant ${doc.id} - missing name',
+                  );
                   return false;
                 }
                 if (data['species'] == null ||
                     data['species'].toString().isEmpty) {
-                  print('⚠️ PlantService: Skipping plant ${doc.id} - missing species');
+                  print(
+                    '⚠️ PlantService: Skipping plant ${doc.id} - missing species',
+                  );
                   return false;
                 }
                 if (data['wateringFrequency'] == null) {
-                  print('⚠️ PlantService: Skipping plant ${doc.id} - missing wateringFrequency');
+                  print(
+                    '⚠️ PlantService: Skipping plant ${doc.id} - missing wateringFrequency',
+                  );
                   return false;
                 }
                 return true;
@@ -86,7 +92,9 @@ class PlantService {
                         .data()['imageUrl']
                         ?.toString();
                   } catch (e) {
-                    print('⚠️ PlantService: Error fetching health check for ${doc.id}: $e');
+                    print(
+                      '⚠️ PlantService: Error fetching health check for ${doc.id}: $e',
+                    );
                     return null;
                   }
                 }),
@@ -106,12 +114,16 @@ class PlantService {
                   if (plant.isDeleted) continue;
                   validPlants.add(plant);
                 } catch (e) {
-                  print('❌ PlantService: Error parsing plant ${docs[i].id}: $e');
+                  print(
+                    '❌ PlantService: Error parsing plant ${docs[i].id}: $e',
+                  );
                   continue;
                 }
               }
 
-              print('✅ PlantService: Successfully loaded ${validPlants.length} valid plants');
+              print(
+                '✅ PlantService: Successfully loaded ${validPlants.length} valid plants',
+              );
               return validPlants;
             } catch (e) {
               print('❌ PlantService: Error processing plants snapshot: $e');
@@ -132,7 +144,7 @@ class PlantService {
   // ⚠️ IMPORTANT: This method is part of the automatic navigation feature ⚠️
   // After calling this method, the AddPlantScreen automatically navigates to the new plant's details
   // DO NOT modify this method's return value (plant ID) without updating the navigation logic
-  // 
+  //
   // Expected behavior: Returns the new plant's ID for automatic navigation to PlantDetailsScreen
   // Related feature: Automatic redirect after plant creation for better user experience
   Future<String> addPlant(Plant plant) async {
@@ -157,17 +169,20 @@ class PlantService {
 
     final plantData = plant.toMap();
     plantData['userId'] = user.uid;
-    
+
     // Initialize notification fields if not already set
     final now = DateTime.now();
     final preferredTime = plantData['preferredTime'] ?? '18:00';
-    
+
     // Get watering interval from AI (preferred) or fallback to frequency
-    int wateringIntervalDays = plantData['wateringIntervalDays'] ?? plantData['wateringFrequency'] ?? 7;
-    
+    int wateringIntervalDays =
+        plantData['wateringIntervalDays'] ??
+        plantData['wateringFrequency'] ??
+        7;
+
     // Get shouldWaterNow from plant (from AI analysis)
     final shouldWaterNow = plantData['shouldWaterNow'] ?? false;
-    
+
     // IMPORTANT: Use shared helper to calculate nextWateringAt with preferred time
     // This ensures consistent calculation in AddPlant, HealthCheck, and WaterPlant flows
     //
@@ -182,13 +197,16 @@ class PlantService {
             intervalDays: wateringIntervalDays,
             preferredTime: preferredTime,
           );
-    
-    print('🌱 PlantService.addPlant: intervalDays=$wateringIntervalDays, shouldWaterNow=$shouldWaterNow, preferredTime=$preferredTime, nextDue=$nextDue');
-    
+
+    print(
+      '🌱 PlantService.addPlant: intervalDays=$wateringIntervalDays, shouldWaterNow=$shouldWaterNow, preferredTime=$preferredTime, nextDue=$nextDue',
+    );
+
     // Set next notification to 1 hour before due time
     final nextNotification = nextDue.subtract(const Duration(hours: 1));
-    
-    plantData['lastWateredAt'] = plantData['lastWateredAt'] ?? now.toIso8601String();
+
+    plantData['lastWateredAt'] =
+        plantData['lastWateredAt'] ?? now.toIso8601String();
     plantData['wateringIntervalDays'] = wateringIntervalDays;
     plantData['preferredTime'] = preferredTime;
     plantData['shouldWaterNow'] = shouldWaterNow;
@@ -197,7 +215,7 @@ class PlantService {
     plantData['notificationState'] = 'ok';
     plantData['muted'] = false;
     plantData['overdueStreak'] = 0;
-    
+
     final docRef = await _firestore.collection(_collection).add(plantData);
     print('✅ PlantService: Added plant with notification scheduling');
     return docRef.id;
@@ -243,11 +261,13 @@ class PlantService {
           .where('name', isEqualTo: plantName)
           .limit(1)
           .get();
-      
+
       if (querySnapshot.docs.isNotEmpty) {
         final plantId = querySnapshot.docs.first.id;
         await _firestore.collection(_collection).doc(plantId).delete();
-        print('✅ PlantService: Successfully deleted plant "$plantName" with ID: $plantId');
+        print(
+          '✅ PlantService: Successfully deleted plant "$plantName" with ID: $plantId',
+        );
         return true;
       } else {
         print('⚠️ PlantService: Plant "$plantName" not found');
@@ -267,7 +287,7 @@ class PlantService {
           .where('name', isEqualTo: plantName)
           .limit(1)
           .get();
-      
+
       if (querySnapshot.docs.isNotEmpty) {
         return querySnapshot.docs.first.id;
       }
@@ -278,14 +298,12 @@ class PlantService {
     }
   }
 
-
-
   // Get a single plant by ID
   Future<Plant?> getPlantById(String plantId) async {
     try {
       final doc = await _firestore.collection(_collection).doc(plantId).get();
       if (!doc.exists) return null;
-      
+
       final data = doc.data()!;
       data['id'] = doc.id;
       return Plant.fromMap(data);
@@ -302,10 +320,9 @@ class PlantService {
   /// Nothing wrote it before, so the condition `!lastFertilised` was permanently
   /// true — harmless only because a global rule used to suppress the repeat.
   Future<void> markFertilised(String plantId) async {
-    await _firestore.collection(_collection).doc(plantId).set(
-      {'lastFertilisedAt': DateTime.now().toIso8601String()},
-      SetOptions(merge: true),
-    );
+    await _firestore.collection(_collection).doc(plantId).set({
+      'lastFertilisedAt': DateTime.now().toIso8601String(),
+    }, SetOptions(merge: true));
   }
 
   Future<void> waterPlant(String plantId) async {
@@ -327,13 +344,16 @@ class PlantService {
 
             // Validate required fields before parsing
             if (data['wateringFrequency'] == null) {
-              print('⚠️ PlantService: Cannot water plant ${plantId} - missing wateringFrequency');
+              print(
+                '⚠️ PlantService: Cannot water plant ${plantId} - missing wateringFrequency',
+              );
               return;
             }
 
             final plant = Plant.fromMap(data);
             // Use per-plant days interval (AI-derived where available)
-            final wateringIntervalDays = plant.wateringIntervalDays ?? plant.wateringFrequency;
+            final wateringIntervalDays =
+                plant.wateringIntervalDays ?? plant.wateringFrequency;
             final preferredTime = plant.preferredTime ?? '18:00';
 
             // Calculate next due date using shared helper with preferred time
@@ -360,7 +380,8 @@ class PlantService {
               'notificationState': 'ok',
               'overdueStreak': 0,
               'snoozedUntil': null,
-              'shouldWaterNow': false, // Reset after watering - next interval starts
+              'shouldWaterNow':
+                  false, // Reset after watering - next interval starts
             });
 
             // Record watering event for history (plantId, userId, timestamp, amountMl)
@@ -393,7 +414,7 @@ class PlantService {
   Stream<List<Plant>> getPlantsNeedingWater() {
     final user = AuthService.currentUser;
     if (user == null) return Stream.value([]);
-    
+
     try {
       final now = DateTime.now();
       return _firestore
@@ -404,26 +425,33 @@ class PlantService {
           .map((snapshot) {
             try {
               final validPlants = <Plant>[];
-              
+
               for (final doc in snapshot.docs) {
                 try {
                   final data = doc.data();
                   data['id'] = doc.id;
-                  
+
                   // Validate required fields before parsing
                   if (data['name'] == null || data['name'].toString().isEmpty) {
-                    print('⚠️ PlantService: Skipping plant ${doc.id} - missing name');
+                    print(
+                      '⚠️ PlantService: Skipping plant ${doc.id} - missing name',
+                    );
                     continue;
                   }
-                  if (data['species'] == null || data['species'].toString().isEmpty) {
-                    print('⚠️ PlantService: Skipping plant ${doc.id} - missing species');
+                  if (data['species'] == null ||
+                      data['species'].toString().isEmpty) {
+                    print(
+                      '⚠️ PlantService: Skipping plant ${doc.id} - missing species',
+                    );
                     continue;
                   }
                   if (data['wateringFrequency'] == null) {
-                    print('⚠️ PlantService: Skipping plant ${doc.id} - missing wateringFrequency');
+                    print(
+                      '⚠️ PlantService: Skipping plant ${doc.id} - missing wateringFrequency',
+                    );
                     continue;
                   }
-                  
+
                   final plant = Plant.fromMap(data);
                   if (plant.isDeleted) continue;
                   validPlants.add(plant);
@@ -433,11 +461,15 @@ class PlantService {
                   continue;
                 }
               }
-              
-              print('✅ PlantService: Successfully loaded ${validPlants.length} plants needing water');
+
+              print(
+                '✅ PlantService: Successfully loaded ${validPlants.length} plants needing water',
+              );
               return validPlants;
             } catch (e) {
-              print('❌ PlantService: Error processing plants needing water snapshot: $e');
+              print(
+                '❌ PlantService: Error processing plants needing water snapshot: $e',
+              );
               return <Plant>[];
             }
           })
@@ -455,19 +487,19 @@ class PlantService {
   Future<List<Map<String, dynamic>>> getCorruptedPlants() async {
     final user = AuthService.currentUser;
     if (user == null) return [];
-    
+
     try {
       final snapshot = await _firestore
           .collection(_collection)
           .where('userId', isEqualTo: user.uid)
           .get();
-      
+
       final corruptedPlants = <Map<String, dynamic>>[];
-      
+
       for (final doc in snapshot.docs) {
         final data = doc.data();
         final issues = <String>[];
-        
+
         if (data['name'] == null || data['name'].toString().isEmpty) {
           issues.add('Missing name');
         }
@@ -477,17 +509,15 @@ class PlantService {
         if (data['wateringFrequency'] == null) {
           issues.add('Missing wateringFrequency');
         }
-        
+
         if (issues.isNotEmpty) {
-          corruptedPlants.add({
-            'id': doc.id,
-            'data': data,
-            'issues': issues,
-          });
+          corruptedPlants.add({'id': doc.id, 'data': data, 'issues': issues});
         }
       }
-      
-      print('⚠️ PlantService: Found ${corruptedPlants.length} corrupted plants');
+
+      print(
+        '⚠️ PlantService: Found ${corruptedPlants.length} corrupted plants',
+      );
       return corruptedPlants;
     } catch (e) {
       print('❌ PlantService: Error getting corrupted plants: $e');
@@ -496,13 +526,13 @@ class PlantService {
   }
 
   // Utility method to fix corrupted plant data
-  Future<void> fixCorruptedPlant(String plantId, Map<String, dynamic> fixes) async {
+  Future<void> fixCorruptedPlant(
+    String plantId,
+    Map<String, dynamic> fixes,
+  ) async {
     try {
-      await _firestore
-          .collection(_collection)
-          .doc(plantId)
-          .update(fixes);
-      
+      await _firestore.collection(_collection).doc(plantId).update(fixes);
+
       print('✅ PlantService: Successfully fixed plant $plantId');
     } catch (e) {
       print('❌ PlantService: Error fixing plant $plantId: $e');
@@ -513,11 +543,8 @@ class PlantService {
   // Utility method to remove completely corrupted plants
   Future<void> removeCorruptedPlant(String plantId) async {
     try {
-      await _firestore
-          .collection(_collection)
-          .doc(plantId)
-          .delete();
-      
+      await _firestore.collection(_collection).doc(plantId).delete();
+
       print('✅ PlantService: Successfully removed corrupted plant $plantId');
     } catch (e) {
       print('❌ PlantService: Error removing corrupted plant $plantId: $e');
@@ -529,46 +556,52 @@ class PlantService {
   Future<void> cleanupCorruptedPlants() async {
     try {
       final corruptedPlants = await getCorruptedPlants();
-      
+
       if (corruptedPlants.isEmpty) {
         print('✅ PlantService: No corrupted plants found');
         return;
       }
-      
-      print('🧹 PlantService: Starting cleanup of ${corruptedPlants.length} corrupted plants');
-      
+
+      print(
+        '🧹 PlantService: Starting cleanup of ${corruptedPlants.length} corrupted plants',
+      );
+
       for (final corruptedPlant in corruptedPlants) {
         final plantId = corruptedPlant['id'] as String;
         final issues = corruptedPlant['issues'] as List<String>;
         final data = corruptedPlant['data'] as Map<String, dynamic>;
-        
+
         // Try to fix plants with missing species or wateringFrequency
-        if (issues.contains('Missing species') || issues.contains('Missing wateringFrequency')) {
+        if (issues.contains('Missing species') ||
+            issues.contains('Missing wateringFrequency')) {
           final fixes = <String, dynamic>{};
-          
+
           if (issues.contains('Missing species')) {
             fixes['species'] = data['aiName'] ?? 'Unknown Species';
             print('🔧 PlantService: Fixing missing species for plant $plantId');
           }
-          
+
           if (issues.contains('Missing wateringFrequency')) {
             fixes['wateringFrequency'] = 7; // Default to 7 days
-            print('🔧 PlantService: Fixing missing wateringFrequency for plant $plantId');
+            print(
+              '🔧 PlantService: Fixing missing wateringFrequency for plant $plantId',
+            );
           }
-          
+
           await fixCorruptedPlant(plantId, fixes);
         } else {
           // Remove plants that are completely corrupted (missing name)
-          print('🗑️ PlantService: Removing completely corrupted plant $plantId');
+          print(
+            '🗑️ PlantService: Removing completely corrupted plant $plantId',
+          );
           await removeCorruptedPlant(plantId);
         }
       }
-      
+
       print('✅ PlantService: Cleanup completed');
     } catch (e) {
       print('❌ PlantService: Error during cleanup: $e');
       rethrow;
     }
   }
-
-} 
+}

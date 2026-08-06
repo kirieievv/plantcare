@@ -47,10 +47,10 @@ class TaskSheet extends StatelessWidget {
     final paragraphs = task.body.isEmpty
         ? (task.detail.isEmpty ? const <String>[] : [task.detail])
         : task.body
-            .split('|')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
+              .split('|')
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
 
     return BotanlySheet(
       header: BotanlySheetHeader(
@@ -71,11 +71,11 @@ class TaskSheet extends StatelessWidget {
               onTap: () => Navigator.of(context).pop(TaskSheetResult.later),
             )
           : _Footer(
-        doneLabel: task.done ? l10n.taskDoneAlready : l10n.taskDone,
-        laterLabel: l10n.taskLater,
-        onDone: () => Navigator.of(context).pop(TaskSheetResult.done),
-        onLater: () => Navigator.of(context).pop(TaskSheetResult.later),
-      ),
+              doneLabel: task.done ? l10n.taskDoneAlready : l10n.taskDone,
+              laterLabel: l10n.taskLater,
+              onDone: () => Navigator.of(context).pop(TaskSheetResult.done),
+              onLater: () => Navigator.of(context).pop(TaskSheetResult.later),
+            ),
       children: [
         if (task.kv.isNotEmpty)
           BotanlySheetKeyValues([
@@ -83,8 +83,9 @@ class TaskSheet extends StatelessWidget {
           ]),
         for (var i = 0; i < paragraphs.length; i++)
           Padding(
-            padding:
-                EdgeInsets.only(bottom: i == paragraphs.length - 1 ? 0 : 12),
+            padding: EdgeInsets.only(
+              bottom: i == paragraphs.length - 1 ? 0 : 12,
+            ),
             child: Text(
               paragraphs[i],
               style: glassFont(fontSize: 15, height: 1.6, color: kGlassInk2),

@@ -145,7 +145,11 @@ class HealthResultView extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     f.text,
-                    style: glassFont(fontSize: 12.5, height: 1.45, color: kGlassMut),
+                    style: glassFont(
+                      fontSize: 12.5,
+                      height: 1.45,
+                      color: kGlassMut,
+                    ),
                   ),
                 ],
               ],
@@ -237,58 +241,62 @@ class HealthResultView extends StatelessWidget {
     return Opacity(
       opacity: muted ? 0.72 : 1,
       child: Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              // Filled, not tinted: the number is the ranking, and a solid chip
-              // is what separates step 1 from the rest at a glance.
-              color: muted ? kGlassLeafBg : kGlassAccent,
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '${rec.priority}',
-              style: glassFont(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: muted ? kGlassGreenText : Colors.white,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                // Filled, not tinted: the number is the ranking, and a solid chip
+                // is what separates step 1 from the rest at a glance.
+                color: muted ? kGlassLeafBg : kGlassAccent,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '${rec.priority}',
+                style: glassFont(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: muted ? kGlassGreenText : Colors.white,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  rec.title,
-                  style: glassFont(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: kGlassInk,
-                  ),
-                ),
-                if (rec.explanation.isNotEmpty) ...[
-                  const SizedBox(height: 3),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    rec.explanation,
-                    style: glassFont(fontSize: 12.5, height: 1.45, color: kGlassMut),
+                    rec.title,
+                    style: glassFont(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: kGlassInk,
+                    ),
                   ),
+                  if (rec.explanation.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      rec.explanation,
+                      style: glassFont(
+                        fontSize: 12.5,
+                        height: 1.45,
+                        color: kGlassMut,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -381,8 +389,9 @@ class HealthResultView extends StatelessWidget {
   AppLocalizations l10n,
 ) {
   final isIssue = record.status == 'issue';
-  final fallbackTitle =
-      isIssue ? l10n.healthNeedsAttention : l10n.healthStatusHealthy;
+  final fallbackTitle = isIssue
+      ? l10n.healthNeedsAttention
+      : l10n.healthStatusHealthy;
 
   final raw = record.message.trim();
   if (!raw.startsWith('{')) {
@@ -396,14 +405,12 @@ class HealthResultView extends StatelessWidget {
     final title = isIssue ? pick('problem_name') : pick('praise_phrase');
     final sub = isIssue
         ? pick('problem_description')
-        : [pick('health_summary'), pick('maintenance_footer')]
-            .where((s) => s.isNotEmpty)
-            .join(' ');
+        : [
+            pick('health_summary'),
+            pick('maintenance_footer'),
+          ].where((s) => s.isNotEmpty).join(' ');
 
-    return (
-      title: title.isNotEmpty ? title : fallbackTitle,
-      sub: sub,
-    );
+    return (title: title.isNotEmpty ? title : fallbackTitle, sub: sub);
   } catch (_) {
     // Not an assistant payload — show the message as written.
     return (title: fallbackTitle, sub: raw);

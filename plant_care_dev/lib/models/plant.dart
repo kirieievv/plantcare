@@ -21,10 +21,10 @@ class HealthFinding {
   });
 
   Map<String, dynamic> toMap() => {
-        'category': category,
-        'title': title,
-        'text': text,
-      };
+    'category': category,
+    'title': title,
+    'text': text,
+  };
 
   factory HealthFinding.fromMap(Map<String, dynamic> map) {
     final raw = map['category']?.toString().toLowerCase() ?? '';
@@ -57,12 +57,12 @@ class HealthRecommendation {
   });
 
   Map<String, dynamic> toMap() => {
-        'priority': priority,
-        'title': title,
-        'explanation': explanation,
-        'action_label': actionLabel,
-        'done': done,
-      };
+    'priority': priority,
+    'title': title,
+    'explanation': explanation,
+    'action_label': actionLabel,
+    'done': done,
+  };
 
   factory HealthRecommendation.fromMap(Map<String, dynamic> map) {
     final raw = map['priority'];
@@ -77,12 +77,12 @@ class HealthRecommendation {
   }
 
   HealthRecommendation copyWith({bool? done}) => HealthRecommendation(
-        priority: priority,
-        title: title,
-        explanation: explanation,
-        actionLabel: actionLabel,
-        done: done ?? this.done,
-      );
+    priority: priority,
+    title: title,
+    explanation: explanation,
+    actionLabel: actionLabel,
+    done: done ?? this.done,
+  );
 }
 
 /// Represents a single health check record
@@ -91,11 +91,14 @@ class HealthCheckRecord {
   final DateTime timestamp;
   final String status; // 'ok' or 'issue'
   final String message;
-  final String? imageUrl; // Firebase Storage URL for the primary image (legacy / compat)
-  final Uint8List? imageBytes; // Local bytes for primary image (immediate display)
+  final String?
+  imageUrl; // Firebase Storage URL for the primary image (legacy / compat)
+  final Uint8List?
+  imageBytes; // Local bytes for primary image (immediate display)
   final List<String?> imageUrls; // Up to 3 Firebase Storage URLs
   final List<Uint8List?> imageBytesList; // Up to 3 local byte arrays
-  final Map<String, dynamic>? metadata; // Additional data like AI analysis details
+  final Map<String, dynamic>?
+  metadata; // Additional data like AI analysis details
 
   /// 0–100 overall condition. Null for checks recorded before scoring existed —
   /// the UI hides the ring rather than inventing a number.
@@ -116,10 +119,11 @@ class HealthCheckRecord {
     this.score,
     List<HealthFinding>? findings,
     List<HealthRecommendation>? recommendations,
-  })  : imageUrls = imageUrls ?? (imageUrl != null ? [imageUrl] : []),
-        imageBytesList = imageBytesList ?? (imageBytes != null ? [imageBytes] : []),
-        findings = findings ?? const [],
-        recommendations = recommendations ?? const [];
+  }) : imageUrls = imageUrls ?? (imageUrl != null ? [imageUrl] : []),
+       imageBytesList =
+           imageBytesList ?? (imageBytes != null ? [imageBytes] : []),
+       findings = findings ?? const [],
+       recommendations = recommendations ?? const [];
 
   Map<String, dynamic> toMap() {
     return {
@@ -158,7 +162,9 @@ class HealthCheckRecord {
       // Support both legacy single imageUrl and new imageUrls list
       List<String?> imageUrls;
       if (map['imageUrls'] is List) {
-        imageUrls = (map['imageUrls'] as List).map((e) => e?.toString()).toList();
+        imageUrls = (map['imageUrls'] as List)
+            .map((e) => e?.toString())
+            .toList();
       } else if (map['imageUrl'] != null) {
         imageUrls = [map['imageUrl'].toString()];
       } else {
@@ -176,12 +182,19 @@ class HealthCheckRecord {
         message: map['message']?.toString() ?? '',
         imageUrl: imageUrls.isNotEmpty ? imageUrls.first : null,
         imageUrls: imageUrls,
-        metadata: map['metadata'] is Map ? Map<String, dynamic>.from(map['metadata']) : null,
+        metadata: map['metadata'] is Map
+            ? Map<String, dynamic>.from(map['metadata'])
+            : null,
         score: map['score'] is int
             ? map['score']
-            : (map['score'] != null ? int.tryParse(map['score'].toString()) : null),
+            : (map['score'] != null
+                  ? int.tryParse(map['score'].toString())
+                  : null),
         findings: _mapList(map['findings'], HealthFinding.fromMap),
-        recommendations: _mapList(map['recommendations'], HealthRecommendation.fromMap),
+        recommendations: _mapList(
+          map['recommendations'],
+          HealthRecommendation.fromMap,
+        ),
       );
     } catch (e) {
       print('❌ HealthCheckRecord.fromMap error: $e');
@@ -251,7 +264,7 @@ class Plant {
   final String? notes;
   final DateTime createdAt;
   final String? userId;
-  
+
   // AI-generated care recommendations
   final String? aiGeneralDescription;
   final String? aiName;
@@ -260,35 +273,50 @@ class Plant {
   final String? aiWateringAmount; // AI-provided watering amount in ml
   final String? aiSpecificIssues;
   final String? aiCareTips;
+
+  /// Fingerprint of the inputs [aiCareTips] was written from.
+  ///
+  /// The plan is prose: regenerated from unchanged conditions it comes back
+  /// worded differently and eventually numbered differently, which is how the
+  /// sheet ends up disagreeing with the paragraph under it. Kept frozen instead,
+  /// it goes stale the day the plant is moved. This is what lets it be rewritten
+  /// exactly when the conditions behind it actually changed. Computed server-side
+  /// so one definition governs it.
+  final String? carePlanDerivedFrom;
+
   /// Compact labels from `care_recommendations.details` — the key-value cells
   /// in the care sheets. Keyed by `CareDetail`; null for plants analysed
   /// before the analyzer started returning them.
   final Map<String, String>? careDetails;
   final List<String>? interestingFacts;
-  
+
   // Plant size assessment from AI analysis
   final String? aiPlantSize;
   final String? aiPotSize;
   final String? aiGrowthStage;
-  
+
   // Scientific watering calculation fields
   final int? wateringAmountMl; // Calculated amount in milliliters
   final List<int>? wateringRangeMl; // [min, max] range in ml
-  final int? nextAfterWateringHours; // Hours until next watering after today's watering
+  final int?
+  nextAfterWateringHours; // Hours until next watering after today's watering
   final int? nextCheckHours; // Hours until next check (if soil is wet)
   final String? wateringMode; // 'after_watering' or 'recheck_only'
-  
+
   // Health check data
   final String? healthStatus; // 'ok', 'issue', or null
-  final String? healthMessage; // Friendly conversational message from Plant Care Assistant
+  final String?
+  healthMessage; // Friendly conversational message from Plant Care Assistant
   final DateTime? lastHealthCheck;
-  final String? lastHealthCheckImageUrl; // URL of the most recent health check image
-  
+  final String?
+  lastHealthCheckImageUrl; // URL of the most recent health check image
+
   // Watering notification fields
   final DateTime? lastWateredAt; // Replaces lastWatered for clarity
   final int? wateringIntervalDays; // Replaces wateringFrequency for clarity
   final String? preferredTime; // HH:mm format (e.g., "18:00")
-  final DateTime? nextDueAt; // When the next watering is actually due (with preferred time applied)
+  final DateTime?
+  nextDueAt; // When the next watering is actually due (with preferred time applied)
   final DateTime? nextNotificationAt; // When to send the next notification
   final String notificationState; // 'ok', 'due', or 'overdue'
   final DateTime? snoozedUntil; // Nullable - when snooze expires
@@ -308,7 +336,8 @@ class Plant {
   final int? potDiameterCm; // 8..40
   final String? potMaterial; // 'plastic' | 'ceramic' | 'terracotta' | 'unknown'
   final bool? hasDrainage;
-  final String? placement; // 'south' | 'east' | 'north' | 'room' | 'balcony' | 'bath'
+  final String?
+  placement; // 'south' | 'east' | 'north' | 'room' | 'balcony' | 'bath'
   final bool? nearHeatSource; // radiator or air conditioner
   final DateTime? conditionsUpdatedAt; // last time the user refined the answers
 
@@ -353,6 +382,7 @@ class Plant {
     this.aiWateringAmount,
     this.aiSpecificIssues,
     this.aiCareTips,
+    this.carePlanDerivedFrom,
     this.careDetails,
     this.interestingFacts,
     this.aiPlantSize,
@@ -387,10 +417,10 @@ class Plant {
     this.scanScore,
     this.idealSoilMoistureMin,
     this.idealSoilMoistureMax,
-  })  : notificationState = notificationState ?? 'ok',
-        muted = muted ?? false,
-        overdueStreak = overdueStreak ?? 0,
-        shouldWaterNow = shouldWaterNow ?? false;
+  }) : notificationState = notificationState ?? 'ok',
+       muted = muted ?? false,
+       overdueStreak = overdueStreak ?? 0,
+       shouldWaterNow = shouldWaterNow ?? false;
 
   // Convert to Map for Firestore
   Map<String, dynamic> toMap() {
@@ -412,6 +442,7 @@ class Plant {
       'aiWateringAmount': aiWateringAmount,
       'aiSpecificIssues': aiSpecificIssues,
       'aiCareTips': aiCareTips,
+      'carePlanDerivedFrom': carePlanDerivedFrom,
       'careDetails': careDetails,
       'interestingFacts': interestingFacts,
       'aiPlantSize': aiPlantSize,
@@ -465,7 +496,7 @@ class Plant {
       if (map['wateringFrequency'] == null) {
         throw Exception('Plant: wateringFrequency is required');
       }
-      
+
       return Plant(
         id: map['id'].toString(),
         name: map['name'].toString(),
@@ -473,8 +504,8 @@ class Plant {
         imageUrl: map['imageUrl']?.toString(),
         lastWatered: _parseTimestamp(map['lastWatered']) ?? DateTime.now(),
         nextWatering: _parseTimestamp(map['nextWatering']) ?? DateTime.now(),
-        wateringFrequency: map['wateringFrequency'] is int 
-            ? map['wateringFrequency'] 
+        wateringFrequency: map['wateringFrequency'] is int
+            ? map['wateringFrequency']
             : int.tryParse(map['wateringFrequency'].toString()) ?? 7,
         notes: map['notes']?.toString(),
         createdAt: _parseTimestamp(map['createdAt']) ?? DateTime.now(),
@@ -486,26 +517,42 @@ class Plant {
         aiWateringAmount: map['aiWateringAmount']?.toString(),
         aiSpecificIssues: map['aiSpecificIssues']?.toString(),
         aiCareTips: map['aiCareTips']?.toString(),
+        carePlanDerivedFrom: map['carePlanDerivedFrom']?.toString(),
         careDetails: map['careDetails'] is Map
-            ? Map<String, String>.from((map['careDetails'] as Map)
-                .map((k, v) => MapEntry(k.toString(), v.toString())))
+            ? Map<String, String>.from(
+                (map['careDetails'] as Map).map(
+                  (k, v) => MapEntry(k.toString(), v.toString()),
+                ),
+              )
             : null,
-        interestingFacts: map['interestingFacts'] is List ? List<String>.from(map['interestingFacts']) : null,
+        interestingFacts: map['interestingFacts'] is List
+            ? List<String>.from(map['interestingFacts'])
+            : null,
         aiPlantSize: map['aiPlantSize']?.toString(),
         aiPotSize: map['aiPotSize']?.toString(),
         aiGrowthStage: map['aiGrowthStage']?.toString(),
-        wateringAmountMl: map['wateringAmountMl'] is int 
-            ? map['wateringAmountMl'] 
-            : (map['wateringAmountMl'] != null ? int.tryParse(map['wateringAmountMl'].toString()) : null),
-        wateringRangeMl: map['wateringRangeMl'] is List 
-            ? List<int>.from(map['wateringRangeMl'].map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0))
+        wateringAmountMl: map['wateringAmountMl'] is int
+            ? map['wateringAmountMl']
+            : (map['wateringAmountMl'] != null
+                  ? int.tryParse(map['wateringAmountMl'].toString())
+                  : null),
+        wateringRangeMl: map['wateringRangeMl'] is List
+            ? List<int>.from(
+                map['wateringRangeMl'].map(
+                  (e) => e is int ? e : int.tryParse(e.toString()) ?? 0,
+                ),
+              )
             : null,
         nextAfterWateringHours: map['nextAfterWateringHours'] is int
             ? map['nextAfterWateringHours']
-            : (map['nextAfterWateringHours'] != null ? int.tryParse(map['nextAfterWateringHours'].toString()) : null),
+            : (map['nextAfterWateringHours'] != null
+                  ? int.tryParse(map['nextAfterWateringHours'].toString())
+                  : null),
         nextCheckHours: map['nextCheckHours'] is int
             ? map['nextCheckHours']
-            : (map['nextCheckHours'] != null ? int.tryParse(map['nextCheckHours'].toString()) : null),
+            : (map['nextCheckHours'] != null
+                  ? int.tryParse(map['nextCheckHours'].toString())
+                  : null),
         wateringMode: map['wateringMode']?.toString(),
         healthStatus: map['healthStatus']?.toString(),
         healthMessage: map['healthMessage']?.toString(),
@@ -514,7 +561,9 @@ class Plant {
         lastWateredAt: _parseTimestamp(map['lastWateredAt']),
         wateringIntervalDays: map['wateringIntervalDays'] is int
             ? map['wateringIntervalDays']
-            : (map['wateringIntervalDays'] != null ? int.tryParse(map['wateringIntervalDays'].toString()) : null),
+            : (map['wateringIntervalDays'] != null
+                  ? int.tryParse(map['wateringIntervalDays'].toString())
+                  : null),
         preferredTime: map['preferredTime']?.toString(),
         nextDueAt: _parseTimestamp(map['nextDueAt']),
         nextNotificationAt: _parseTimestamp(map['nextNotificationAt']),
@@ -523,8 +572,10 @@ class Plant {
         muted: map['muted'] == true,
         overdueStreak: map['overdueStreak'] is int
             ? map['overdueStreak']
-            : (map['overdueStreak'] != null ? int.tryParse(map['overdueStreak'].toString()) ?? 0 : 0),
-        shouldWaterNow: map['shouldWaterNow'] is bool 
+            : (map['overdueStreak'] != null
+                  ? int.tryParse(map['overdueStreak'].toString()) ?? 0
+                  : 0),
+        shouldWaterNow: map['shouldWaterNow'] is bool
             ? (map['shouldWaterNow'] as bool)
             : false,
         deletedAt: _parseTimestamp(map['deletedAt']),
@@ -546,14 +597,20 @@ class Plant {
             : null,
         conditionsUpdatedAt: _parseTimestamp(map['conditionsUpdatedAt']),
         scanScore: map['scanScore'] is int
-          ? map['scanScore']
-          : (map['scanScore'] != null ? int.tryParse(map['scanScore'].toString()) : null),
-      idealSoilMoistureMin: map['idealSoilMoistureMin'] is int
+            ? map['scanScore']
+            : (map['scanScore'] != null
+                  ? int.tryParse(map['scanScore'].toString())
+                  : null),
+        idealSoilMoistureMin: map['idealSoilMoistureMin'] is int
             ? map['idealSoilMoistureMin']
-            : (map['idealSoilMoistureMin'] != null ? int.tryParse(map['idealSoilMoistureMin'].toString()) : null),
+            : (map['idealSoilMoistureMin'] != null
+                  ? int.tryParse(map['idealSoilMoistureMin'].toString())
+                  : null),
         idealSoilMoistureMax: map['idealSoilMoistureMax'] is int
             ? map['idealSoilMoistureMax']
-            : (map['idealSoilMoistureMax'] != null ? int.tryParse(map['idealSoilMoistureMax'].toString()) : null),
+            : (map['idealSoilMoistureMax'] != null
+                  ? int.tryParse(map['idealSoilMoistureMax'].toString())
+                  : null),
       );
     } catch (e) {
       print('❌ Plant.fromMap error: $e');
@@ -565,7 +622,7 @@ class Plant {
   // Helper method to parse Firestore timestamps
   static DateTime? _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return null;
-    
+
     try {
       if (timestamp is String) {
         if (timestamp.isEmpty) return null;
@@ -580,7 +637,7 @@ class Plant {
       print('❌ Timestamp value: $timestamp');
       return null;
     }
-    
+
     return null;
   }
 
@@ -603,6 +660,7 @@ class Plant {
     String? aiWateringAmount,
     String? aiSpecificIssues,
     String? aiCareTips,
+    String? carePlanDerivedFrom,
     Map<String, String>? careDetails,
     List<String>? interestingFacts,
     String? aiPlantSize,
@@ -656,6 +714,7 @@ class Plant {
       aiWateringAmount: aiWateringAmount ?? this.aiWateringAmount,
       aiSpecificIssues: aiSpecificIssues ?? this.aiSpecificIssues,
       aiCareTips: aiCareTips ?? this.aiCareTips,
+      carePlanDerivedFrom: carePlanDerivedFrom ?? this.carePlanDerivedFrom,
       careDetails: careDetails ?? this.careDetails,
       interestingFacts: interestingFacts ?? this.interestingFacts,
       aiPlantSize: aiPlantSize ?? this.aiPlantSize,
@@ -663,13 +722,15 @@ class Plant {
       aiGrowthStage: aiGrowthStage ?? this.aiGrowthStage,
       wateringAmountMl: wateringAmountMl ?? this.wateringAmountMl,
       wateringRangeMl: wateringRangeMl ?? this.wateringRangeMl,
-      nextAfterWateringHours: nextAfterWateringHours ?? this.nextAfterWateringHours,
+      nextAfterWateringHours:
+          nextAfterWateringHours ?? this.nextAfterWateringHours,
       nextCheckHours: nextCheckHours ?? this.nextCheckHours,
       wateringMode: wateringMode ?? this.wateringMode,
       healthStatus: healthStatus ?? this.healthStatus,
       healthMessage: healthMessage ?? this.healthMessage,
       lastHealthCheck: lastHealthCheck ?? this.lastHealthCheck,
-      lastHealthCheckImageUrl: lastHealthCheckImageUrl ?? this.lastHealthCheckImageUrl,
+      lastHealthCheckImageUrl:
+          lastHealthCheckImageUrl ?? this.lastHealthCheckImageUrl,
       lastWateredAt: lastWateredAt ?? this.lastWateredAt,
       wateringIntervalDays: wateringIntervalDays ?? this.wateringIntervalDays,
       preferredTime: preferredTime ?? this.preferredTime,
@@ -692,4 +753,4 @@ class Plant {
       idealSoilMoistureMax: idealSoilMoistureMax ?? this.idealSoilMoistureMax,
     );
   }
-} 
+}

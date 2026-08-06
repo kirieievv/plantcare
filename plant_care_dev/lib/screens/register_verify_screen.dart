@@ -82,12 +82,18 @@ class _RegisterVerifyScreenState extends State<RegisterVerifyScreen> {
 
   String _localizeError(String code, AppLocalizations l10n) {
     switch (code) {
-      case 'INVALID_PIN': return l10n.errorInvalidPin;
-      case 'PIN_EXPIRED': return l10n.errorPinExpired;
-      case 'PIN_NOT_FOUND': return l10n.errorPinNotFound;
-      case 'TOO_MANY_ATTEMPTS': return l10n.errorTooManyAttempts;
-      case 'SEND_FAILED': return l10n.errorSendFailed;
-      default: return l10n.errorGeneric;
+      case 'INVALID_PIN':
+        return l10n.errorInvalidPin;
+      case 'PIN_EXPIRED':
+        return l10n.errorPinExpired;
+      case 'PIN_NOT_FOUND':
+        return l10n.errorPinNotFound;
+      case 'TOO_MANY_ATTEMPTS':
+        return l10n.errorTooManyAttempts;
+      case 'SEND_FAILED':
+        return l10n.errorSendFailed;
+      default:
+        return l10n.errorGeneric;
     }
   }
 
@@ -183,7 +189,8 @@ class _RegisterVerifyScreenState extends State<RegisterVerifyScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(6, (i) {
               final hasChar = i < pin.length;
-              final isActive = focused && (hasChar ? i == pin.length - 1 : i == pin.length);
+              final isActive =
+                  focused && (hasChar ? i == pin.length - 1 : i == pin.length);
 
               return Expanded(
                 child: Padding(
@@ -244,8 +251,9 @@ class _RegisterVerifyScreenState extends State<RegisterVerifyScreen> {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(BotanlyColors.moss),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      BotanlyColors.moss,
+                    ),
                   ),
                 ),
               ),
@@ -257,8 +265,9 @@ class _RegisterVerifyScreenState extends State<RegisterVerifyScreen> {
           const SizedBox(height: 24),
           Center(
             child: TextButton(
-              onPressed:
-                  (_resendSeconds > 0 || _isSubmitting) ? null : _resendCode,
+              onPressed: (_resendSeconds > 0 || _isSubmitting)
+                  ? null
+                  : _resendCode,
               style: TextButton.styleFrom(foregroundColor: BotanlyColors.moss),
               child: Text(
                 _resendSeconds > 0
@@ -307,8 +316,8 @@ class _PinCell extends StatelessWidget {
           color: active
               ? BotanlyColors.moss.withValues(alpha: 0.7)
               : filled
-                  ? BotanlyColors.authSageLight
-                  : BotanlyColors.moss.withValues(alpha: 0.2),
+              ? BotanlyColors.authSageLight
+              : BotanlyColors.moss.withValues(alpha: 0.2),
           width: active ? 1.5 : 1,
         ),
       ),
@@ -323,8 +332,8 @@ class _PinCell extends StatelessWidget {
               ),
             )
           : active
-              ? _Cursor()
-              : const SizedBox.shrink(),
+          ? _Cursor()
+          : const SizedBox.shrink(),
     );
   }
 }

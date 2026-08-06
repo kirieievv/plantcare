@@ -66,7 +66,9 @@ class _StripeSuccessScreenState extends State<StripeSuccessScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _activated ? Icons.check_rounded : Icons.hourglass_top_rounded,
+                    _activated
+                        ? Icons.check_rounded
+                        : Icons.hourglass_top_rounded,
                     color: _activated ? Colors.white : const Color(0xFF4CAF50),
                     size: 52,
                   ),
@@ -75,7 +77,8 @@ class _StripeSuccessScreenState extends State<StripeSuccessScreen> {
                 Text(
                   _activated
                       ? (l10n?.stripeSuccessTitle ?? 'Subscription activated!')
-                      : (l10n?.stripeSuccessWaiting ?? 'Activating your subscription${_waitingDots(_dots)}'),
+                      : (l10n?.stripeSuccessWaiting ??
+                            'Activating your subscription${_waitingDots(_dots)}'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 24,

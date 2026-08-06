@@ -39,12 +39,14 @@ class PlantFact {
   static PlantFact? fromDoc(String id, Map<String, dynamic> data) {
     final text = data['text']?.toString();
     final kind = data['kind']?.toString();
-    if (text == null || text.isEmpty || kind == null || kind.isEmpty) return null;
+    if (text == null || text.isEmpty || kind == null || kind.isEmpty)
+      return null;
     return PlantFact(
       id: id,
       kind: kind,
       text: text,
-      statedAt: DateTime.tryParse(data['statedAt']?.toString() ?? '') ??
+      statedAt:
+          DateTime.tryParse(data['statedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       source: data['source']?.toString(),
       supersededAt: DateTime.tryParse(data['supersededAt']?.toString() ?? ''),
