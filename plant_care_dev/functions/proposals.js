@@ -209,6 +209,38 @@ function carePlanIsCurrent(plant = {}, facts = []) {
   return stored === carePlanFingerprint(plant, facts);
 }
 
+/**
+ * The dates that follow from a new watering interval.
+ *
+ * The interval is a rule; `nextDueAt` is a stored date, and nothing recomputed
+ * it. So agreeing to water a day later moved the number on the card and left
+ * the date underneath it exactly where it was — the plant still said "now" and
+ * the deck still asked for water today. The rule changed and the only thing the
+ * owner actually looks at did not.
+ *
+ * Counted from the last watering rather than from today: the cycle the plant is
+ * in has already started, and restarting it from the moment of a conversation
+ * would silently grant it extra days it has not earned.
+ */
+function scheduleFromInterval(plant = {}, intervalDays) {
+  const interval = Number(intervalDays);
+  if (!Number.isFinite(interval) || interval <= 0) return null;
+
+  const lastWatered = Date.parse(plant.lastWateredAt || plant.lastWatered || '');
+  // Never watered: the cycle starts now, which is the only honest guess.
+  const from = Number.isNaN(lastWatered) ? Date.now() : lastWatered;
+  const due = new Date(from + interval * 86400000).toISOString();
+
+  return {
+    nextDueAt: due,
+    nextWatering: due,
+    // The analyser sets this sticky flag and the screen trusts it over the
+    // date. Leaving it true would keep the card saying "now" under a date that
+    // is days away.
+    shouldWaterNow: Date.parse(due) <= Date.now(),
+  };
+}
+
 /** Whether a confirmed change means the scheduled chores have to be rebuilt. */
 function invalidatesSchedule(field) {
   return ['wateringIntervalDays', 'wateringAmountMl', 'tasksPausedUntil'].includes(field);
@@ -216,6 +248,7 @@ function invalidatesSchedule(field) {
 
 module.exports = {
   PROPOSABLE_FIELDS,
+  scheduleFromInterval,
   OBSERVATION_OWNERS,
   isOwnerObservation,
   carePlanFingerprint,

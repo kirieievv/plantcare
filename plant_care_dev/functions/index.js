@@ -33,6 +33,7 @@ const {
   carePlanFingerprint,
   carePlanIsCurrent,
   isOwnerObservation,
+  scheduleFromInterval,
 } = require('./proposals');
 
 // ── AI Model Configuration ──────────────────────────────────────────
@@ -2375,6 +2376,12 @@ exports.applyChatProposal = functions.https.onRequest((req, res) => {
       // buys nothing they can see.
       if (invalidatesPlan(clean.field)) {
         update.carePlanStaleAt = new Date().toISOString();
+      }
+      // The interval is a rule; the date on the card is a stored field. Changing
+      // one without the other is why agreeing to water a day later moved the
+      // number and left the plant still saying "now".
+      if (clean.field === 'wateringIntervalDays') {
+        Object.assign(update, scheduleFromInterval(plant, clean.to) || {});
       }
       await plantRef.update(update);
 

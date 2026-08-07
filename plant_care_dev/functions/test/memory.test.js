@@ -163,3 +163,56 @@ test('only plan inputs make the care text stale, and only schedule inputs rebuil
   assert.strictEqual(invalidatesSchedule('tasksPausedUntil'), true);
   assert.strictEqual(invalidatesSchedule('species'), false);
 });
+
+// ── Confirming a change has to move what the owner looks at ─────────
+
+const { scheduleFromInterval } = require('../proposals.js');
+
+test('a new interval moves the date on the card, not just the number', () => {
+  // The bug this pins: agreeing to water a day later changed
+  // wateringIntervalDays and left nextDueAt untouched, so the card kept the old
+  // date and the plant kept saying "now". The rule moved and the only thing
+  // anyone actually reads did not.
+  const plant = { lastWateredAt: '2026-07-28T10:00:00.000Z' };
+
+  const nine = scheduleFromInterval(plant, 9);
+  const ten = scheduleFromInterval(plant, 10);
+
+  assert.strictEqual(nine.nextDueAt, '2026-08-06T10:00:00.000Z');
+  assert.strictEqual(ten.nextDueAt, '2026-08-07T10:00:00.000Z');
+  assert.strictEqual(ten.nextWatering, ten.nextDueAt, 'both fields must agree');
+});
+
+test('the sticky "water now" flag is cleared when the date moves ahead', () => {
+  // The screen trusts shouldWaterNow over the date. Left true, the card goes on
+  // demanding water under a date that is days away.
+  const overdue = scheduleFromInterval(
+    { lastWateredAt: '2020-01-01T00:00:00.000Z' }, 9);
+  const future = scheduleFromInterval(
+    { lastWateredAt: new Date().toISOString() }, 9);
+
+  assert.strictEqual(overdue.shouldWaterNow, true);
+  assert.strictEqual(future.shouldWaterNow, false);
+});
+
+test('the cycle is counted from the last watering, not from the conversation', () => {
+  // Counting from now would silently grant the plant a fresh cycle every time
+  // the schedule is discussed.
+  const from = Date.parse('2026-07-28T10:00:00.000Z');
+  const due = Date.parse(scheduleFromInterval(
+    { lastWateredAt: '2026-07-28T10:00:00.000Z' }, 9).nextDueAt);
+
+  assert.strictEqual(due - from, 9 * 86400000);
+});
+
+test('a plant that was never watered starts its cycle now', () => {
+  const due = Date.parse(scheduleFromInterval({}, 5).nextDueAt);
+  const expected = Date.now() + 5 * 86400000;
+  assert.ok(Math.abs(due - expected) < 5000, 'should be five days from now');
+});
+
+test('a nonsense interval changes nothing', () => {
+  assert.strictEqual(scheduleFromInterval({}, 0), null);
+  assert.strictEqual(scheduleFromInterval({}, -3), null);
+  assert.strictEqual(scheduleFromInterval({}, 'soon'), null);
+});
