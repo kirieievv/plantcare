@@ -14,6 +14,7 @@ import 'package:plant_care/services/notification_service.dart';
 import 'package:plant_care/services/subscription_service.dart';
 import 'package:plant_care/services/user_service.dart';
 import 'package:plant_care/services/weather_service.dart';
+import 'package:plant_care/widgets/city_picker_sheet.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
 import 'package:plant_care/widgets/botanly_kit.dart';
 import 'package:plant_care/widgets/botanly_sheet.dart';
@@ -29,7 +30,6 @@ class ProfileV4Screen extends StatefulWidget {
 class _ProfileV4ScreenState extends State<ProfileV4Screen> {
   final _name = TextEditingController();
   final _bio = TextEditingController();
-  final _location = TextEditingController();
 
   UserModel? _profile;
   bool _loading = true;
@@ -49,7 +49,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
   void dispose() {
     _name.dispose();
     _bio.dispose();
-    _location.dispose();
     super.dispose();
   }
 
@@ -62,7 +61,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
         _loading = false;
         _name.text = profile?.name ?? '';
         _bio.text = profile?.bio ?? '';
-        _location.text = profile?.location ?? '';
       });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -84,7 +82,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
       await UserService.updateUserProfile(
         name: name,
         bio: _bio.text.trim().isEmpty ? null : _bio.text.trim(),
-        location: _location.text.trim().isEmpty ? null : _location.text.trim(),
       );
       await _load();
       if (!mounted) return;
@@ -392,52 +389,15 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
   }
 
   Future<void> _editCity() async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(
-      text: WeatherService().current?.location?.city ?? '',
-    );
+    final chosen = await showCityPicker(context);
+    if (chosen == null || !mounted) return;
 
-    final entered = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.profileCityLabel),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: l10n.profileCityHint),
-          onSubmitted: (v) => Navigator.pop(dialogContext, v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
-    );
-
-    final name = entered?.trim();
-    if (name == null || name.isEmpty || !mounted) return;
-
-    final known = WeatherService().current?.location;
-    // Coordinates are kept from the detected location: this stage does not
-    // geocode a typed name, and a city without coordinates has no weather.
-    if (known == null) return;
-
-    await WeatherService().setManualCity(
-      UserLocation(
-        city: name,
-        countryCode: known.countryCode,
-        lat: known.lat,
-        lon: known.lon,
-        timezone: known.timezone,
-      ),
-    );
-    if (mounted) setState(() {});
+    // The suggestion brought its own coordinates, so this is a real move: the
+    // weather is re-read for the new place rather than relabelled.
+    await WeatherService().setManualCity(chosen.toLocation());
+    if (!mounted) return;
+    setState(() {});
+    showBotanlyToast(context, AppLocalizations.of(context)!.cityUpdated);
   }
 
   Widget _header(String? email) {
@@ -555,12 +515,10 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
         ),
         const SizedBox(height: 14),
         _Field(label: l10n.name, value: _profile?.name ?? '—'),
-        _Field(label: l10n.bio, value: _emptyDash(_profile?.bio)),
-        _Field(
-          label: l10n.location,
-          value: _emptyDash(_profile?.location),
-          last: true,
-        ),
+        // No location row: the city has its own card right below, where it can
+        // carry coordinates and drive the weather. Two fields for one fact left
+        // the user editing the one that changed nothing.
+        _Field(label: l10n.bio, value: _emptyDash(_profile?.bio), last: true),
       ],
     );
   }
@@ -598,12 +556,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
           glyph: BotanlySvg.edit,
           maxLines: 3,
         ),
-        const SizedBox(height: 10),
-        BotanlyField(
-          controller: _location,
-          hint: l10n.location,
-          glyph: BotanlySvg.pin,
-        ),
         const SizedBox(height: 14),
         Row(
           children: [
@@ -619,7 +571,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
                           _nameError = null;
                           _name.text = _profile?.name ?? '';
                           _bio.text = _profile?.bio ?? '';
-                          _location.text = _profile?.location ?? '';
                         });
                       },
               ),
@@ -640,7 +591,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
 
   Widget _accountCard(String? email) {
     final created = _profile?.createdAt;
-    final lastLogin = _profile?.lastLogin;
 
     return GlassSurface(
       padding: const EdgeInsets.all(16),
@@ -651,10 +601,8 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
             label: l10n.memberSince,
             value: created == null ? '—' : botanlyDate(context, created),
           ),
-          _Field(
-            label: l10n.lastLogin,
-            value: lastLogin == null ? '—' : botanlyDate(context, lastLogin),
-          ),
+          // No "last login": it is always the moment you opened the screen, so
+          // it never says anything you did not already know.
           _Field(label: l10n.email, value: email ?? '—', last: true),
         ],
       ),
