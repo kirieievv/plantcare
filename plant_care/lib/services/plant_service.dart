@@ -48,29 +48,31 @@ class PlantService {
           .snapshots()
           .asyncMap((snapshot) async {
             try {
-              final validPlants = <Plant>[];
-              
-              for (final doc in snapshot.docs) {
-                try {
-                  final data = doc.data();
-                  data['id'] = doc.id;
-                  
-                  // Validate required fields before parsing
-                  if (data['name'] == null || data['name'].toString().isEmpty) {
-                    print('⚠️ PlantService: Skipping plant ${doc.id} - missing name');
-                    continue;
-                  }
-                  if (data['species'] == null || data['species'].toString().isEmpty) {
-                    print('⚠️ PlantService: Skipping plant ${doc.id} - missing species');
-                    continue;
-                  }
-                  if (data['wateringFrequency'] == null) {
-                    print('⚠️ PlantService: Skipping plant ${doc.id} - missing wateringFrequency');
-                    continue;
-                  }
-                  
-                  // Fetch the latest health check image URL for this plant
-                  String? lastHealthCheckImageUrl;
+              // Soft-deleted and malformed documents never reach the UI.
+              final docs = snapshot.docs.where((doc) {
+                final data = doc.data();
+                if (data['name'] == null || data['name'].toString().isEmpty) {
+                  print('⚠️ PlantService: Skipping plant ${doc.id} - missing name');
+                  return false;
+                }
+                if (data['species'] == null ||
+                    data['species'].toString().isEmpty) {
+                  print('⚠️ PlantService: Skipping plant ${doc.id} - missing species');
+                  return false;
+                }
+                if (data['wateringFrequency'] == null) {
+                  print('⚠️ PlantService: Skipping plant ${doc.id} - missing wateringFrequency');
+                  return false;
+                }
+                return true;
+              }).toList();
+
+              // The thumbnails are fetched together, not one after another.
+              // Sequentially this was one round-trip per plant: a garden of
+              // seventeen took ~25 s to appear, and every screen that listened
+              // paid it again.
+              final images = await Future.wait(
+                docs.map((doc) async {
                   try {
                     final healthCheckQuery = await _firestore
                         .collection('health_checks')
@@ -79,32 +81,36 @@ class PlantService {
                         .orderBy('timestamp', descending: true)
                         .limit(1)
                         .get();
-                    
-                    if (healthCheckQuery.docs.isNotEmpty) {
-                      final latestHealthCheck = healthCheckQuery.docs.first.data();
-                      lastHealthCheckImageUrl = latestHealthCheck['imageUrl']?.toString();
-                      print('🌱 PlantService: Found latest health check image for ${data['name']}: ${lastHealthCheckImageUrl != null ? "Present" : "None"}');
-                    }
+                    if (healthCheckQuery.docs.isEmpty) return null;
+                    return healthCheckQuery.docs.first
+                        .data()['imageUrl']
+                        ?.toString();
                   } catch (e) {
-                    print('⚠️ PlantService: Error fetching health check for ${data['name']}: $e');
-                    // Continue without health check image
+                    print('⚠️ PlantService: Error fetching health check for ${doc.id}: $e');
+                    return null;
                   }
-                  
-                  // Add the health check image URL to the plant data
-                  if (lastHealthCheckImageUrl != null) {
-                    data['lastHealthCheckImageUrl'] = lastHealthCheckImageUrl;
+                }),
+              );
+
+              final validPlants = <Plant>[];
+              for (var i = 0; i < docs.length; i++) {
+                try {
+                  final data = docs[i].data();
+                  data['id'] = docs[i].id;
+                  final imageUrl = images[i];
+                  if (imageUrl != null) {
+                    data['lastHealthCheckImageUrl'] = imageUrl;
                   }
-                  
+
                   final plant = Plant.fromMap(data);
                   if (plant.isDeleted) continue;
                   validPlants.add(plant);
                 } catch (e) {
-                  print('❌ PlantService: Error parsing plant ${doc.id}: $e');
-                  print('❌ Plant data: ${doc.data()}');
+                  print('❌ PlantService: Error parsing plant ${docs[i].id}: $e');
                   continue;
                 }
               }
-              
+
               print('✅ PlantService: Successfully loaded ${validPlants.length} valid plants');
               return validPlants;
             } catch (e) {
@@ -164,11 +170,18 @@ class PlantService {
     
     // IMPORTANT: Use shared helper to calculate nextWateringAt with preferred time
     // This ensures consistent calculation in AddPlant, HealthCheck, and WaterPlant flows
-    final nextDue = calculateNextWateringAt(
-      from: now,
-      intervalDays: wateringIntervalDays,
-      preferredTime: preferredTime,
-    );
+    //
+    // Unless the analyzer already said the plant is thirsty. It looked at the
+    // soil in the photo, and the care plan the user just accepted says "first
+    // watering: today" — pushing the due date a full interval out would make
+    // the plant screen contradict that plan the moment it opens.
+    final nextDue = shouldWaterNow == true
+        ? now
+        : calculateNextWateringAt(
+            from: now,
+            intervalDays: wateringIntervalDays,
+            preferredTime: preferredTime,
+          );
     
     print('🌱 PlantService.addPlant: intervalDays=$wateringIntervalDays, shouldWaterNow=$shouldWaterNow, preferredTime=$preferredTime, nextDue=$nextDue');
     
@@ -196,6 +209,23 @@ class PlantService {
         .collection(_collection)
         .doc(plant.id)
         .update(plant.toMap());
+  }
+
+  /// Patch only what the edit screen owns: the name and, optionally, a new photo.
+  ///
+  /// [updatePlant] rewrites the whole document from a snapshot taken when the
+  /// screen opened, which would roll back anything the backend touched in the
+  /// meantime — watering state, tasks, health. Editing changes two fields, so
+  /// only those two are sent.
+  Future<void> updatePlantNameAndImage(
+    String plantId, {
+    required String name,
+    String? imageUrl,
+  }) async {
+    await _firestore.collection(_collection).doc(plantId).update({
+      'name': name,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+    });
   }
 
   // Soft-delete a plant (marks as deleted, keeps data for analytics)
@@ -266,6 +296,18 @@ class PlantService {
   }
 
   // Water a plant (update last watered date and record watering event)
+  /// Records that the plant was fed.
+  ///
+  /// The scheduler reads `lastFertilisedAt` to decide when feeding is due again.
+  /// Nothing wrote it before, so the condition `!lastFertilised` was permanently
+  /// true — harmless only because a global rule used to suppress the repeat.
+  Future<void> markFertilised(String plantId) async {
+    await _firestore.collection(_collection).doc(plantId).set(
+      {'lastFertilisedAt': DateTime.now().toIso8601String()},
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> waterPlant(String plantId) async {
     try {
       final user = AuthService.currentUser;

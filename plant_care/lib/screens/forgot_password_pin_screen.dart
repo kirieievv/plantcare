@@ -160,14 +160,15 @@ class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
       if (!mounted) return;
       _clearPinInputs();
       _startCooldown();
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.verificationCodeSentAgain,
-              style: GoogleFonts.dmSans(fontSize: 13)),
-          backgroundColor: BotanlyColors.moss,
-        ),
-      );
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // final l10n = AppLocalizations.of(context)!;
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(l10n.verificationCodeSentAgain,
+      //         style: GoogleFonts.dmSans(fontSize: 13)),
+      //     backgroundColor: BotanlyColors.moss,
+      //   ),
+      // );
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;

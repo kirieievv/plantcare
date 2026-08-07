@@ -157,7 +157,7 @@ class _PlantListScreenState extends State<PlantListScreen> {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return BotanlyShimmer(
         child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
           itemCount: 5,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (_, __) => const ShimmerPlantTile(),

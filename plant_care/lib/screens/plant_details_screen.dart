@@ -1,4250 +1,3027 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:ui';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'package:plant_care/models/plant.dart';
-import 'package:plant_care/models/smart_plant.dart';
-import 'package:plant_care/models/user_model.dart';
-import 'package:plant_care/screens/plant_chat_screen.dart';
-import 'package:plant_care/services/plant_service.dart';
-import 'package:plant_care/services/health_check_service.dart';
-import 'package:plant_care/services/navigation_service.dart';
-import 'package:plant_care/services/cors_proxy_service.dart';
-import 'package:plant_care/widgets/health_check_modal.dart';
-import 'package:plant_care/widgets/plant_card.dart';
-import 'package:plant_care/widgets/health_alert.dart';
-import 'package:plant_care/widgets/health_gallery.dart';
-import 'package:plant_care/utils/app_theme.dart';
-import 'package:plant_care/theme/botanly_theme.dart';
-import 'package:plant_care/widgets/botanly_loader.dart';
-import 'package:plant_care/widgets/botanly_shimmer.dart';
-import 'package:plant_care/utils/responsive_layout.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
 import 'package:plant_care/l10n/app_localizations.dart';
-import 'package:plant_care/utils/cloud_functions.dart';
-import 'dart:convert';
-import 'dart:async';
+import 'package:plant_care/models/plant.dart';
+import 'package:plant_care/models/plant_health.dart';
+import 'package:plant_care/screens/edit_plant_screen.dart';
+import 'package:plant_care/screens/plant_chat_screen.dart';
+import 'package:plant_care/services/health_check_service.dart';
+import 'package:plant_care/services/navigation_service.dart';
+import 'package:plant_care/services/plant_service.dart';
+import 'package:plant_care/widgets/health_check_modal.dart';
+import 'package:plant_care/utils/care_sections.dart';
+import 'package:plant_care/models/task.dart';
+import 'package:plant_care/screens/main_navigation_screen.dart';
+import 'package:plant_care/services/task_service.dart';
+import 'package:plant_care/theme/botanly_glass.dart';
+import 'package:plant_care/widgets/botanly_sheet.dart';
+import 'package:plant_care/widgets/health_result_view.dart';
+import 'package:plant_care/widgets/task_sheet.dart';
+import 'package:plant_care/widgets/todo_block.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Design tokens — Botanly Plant Screen v8 (Liquid Glass)
+//  Defined in theme/botanly_glass.dart and aliased here so the rest of this file
+//  keeps its short local names. The health check sheet reads the same tokens.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _kInk = kGlassInk;
+const _kInk2 = kGlassInk2;
+const _kMut = kGlassMut;
+const _kMut2 = kGlassMut2;
+const _kChev = kGlassChevron;
+
+const _kAccent = kGlassAccent;
+const _kWater = kGlassWater;
+const _kSun = kGlassSun;
+const _kWarm = kGlassWarm;
+
+const _kBase = kGlassBase;
+const _kGlassFill = kGlassFill;
+const _kGlassBorder = kGlassBorder;
+const _kGlassSpecular = kGlassSpecular;
+const _kKnob = kGlassKnob;
+
+const _kIssuesFill = kGlassIssuesFill;
+const _kHistoryFill = kGlassHistoryFill;
+const _kIssuesText = kGlassIssuesText;
+
+// Category tints — background / foreground
+const _kLeafBg = kGlassLeafBg;
+const _kWaterBg = kGlassWaterBg;
+const _kSunBg = kGlassSunBg;
+const _kWarmBg = kGlassWarmBg;
+
+// Elevation — shadow tint is rgba(20,30,15,α) = #141E0F
+const _kCardShadow = <BoxShadow>[
+  BoxShadow(color: Color(0x2E141E0F), blurRadius: 30, spreadRadius: -8, offset: Offset(0, 8)),
+  BoxShadow(color: Color(0x19141E0F), blurRadius: 8, spreadRadius: -2, offset: Offset(0, 2)),
+];
+
+// Motion
+const _kKnobCurve = Cubic(0.32, 0.72, 0.25, 1.0); //  340 ms knob slide
+const _kProgressCurve = Cubic(0.3, 0.7, 0.3, 1.0); //  800 ms progress fill
+const _kSheetCurve = Cubic(0.22, 1.0, 0.36, 1.0); //  420 ms sheet rise
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Typography
+//
+//  The prototype uses `-apple-system, BlinkMacSystemFont, "SF Pro Text", …`,
+//  i.e. the platform font, with a global `letter-spacing: -.01em` on <body>.
+//  Set [kUseSystemFont] to false to fall back to the Botanly brand face used
+//  by the rest of the app (DM Sans via botanly_theme.dart) — the screen then
+//  matches the app instead of the prototype.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Typography helper, shared with the health check sheet.
+const _font = glassFont;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Backdrop filters
+//
+//  Every glass surface in the prototype is `blur(Npx) saturate(180%)`; the recipe
+//  itself lives in `glassFrost` so this screen and the home screen cannot drift
+//  apart. Called directly rather than through a local alias: aliasing a function
+//  as a top-level field turns a procedure into a getter, and hot reload refuses
+//  to swap one for the other.
+// ─────────────────────────────────────────────────────────────────────────────
+
+final _kGlassFilter = glassFrost(26); //  .g
+final _kNavFilter = glassFrost(18); //  .gbtn
+final _kSheetFilter = glassFrost(40); //  .bs
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Glyphs — verbatim SVG from the prototype, so stroke weights and silhouettes
+//  match rather than approximating with Material icons.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// The shared glass icon set and its renderer, aliased to the short local
+/// names this file already uses.
+typedef _Svg = BotanlySvg;
+typedef _Glyph = BotanlyGlyph;
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class PlantDetailsScreen extends StatefulWidget {
   final Plant plant;
-
   const PlantDetailsScreen({super.key, required this.plant});
 
   @override
   State<PlantDetailsScreen> createState() => _PlantDetailsScreenState();
 }
 
-class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
+class _PlantDetailsScreenState extends State<PlantDetailsScreen>
+    with TickerProviderStateMixin {
   late Plant _plant;
   late Stream<List<HealthCheckRecord>> _healthCheckStream;
+
+  /// This plant's open tasks. One subscription feeds both the health score and
+  /// the "what to do" block — they are two readings of the same list, and a
+  /// second stream would let them disagree.
+  StreamSubscription<List<CareTask>>? _tasksSub;
+  List<CareTask> _tasks = const [];
+
+  /// Tasks ticked off in this session, kept by value.
+  ///
+  /// The stream carries open tasks only, so a completed one disappears the
+  /// instant it is written. Holding it here is what lets the row cross itself
+  /// out instead of vanishing, and what lets the block reach "all done" —
+  /// otherwise closing the last task would just hide the block (SPEC 3.3).
+  Map<String, CareTask> _justCompletedTasks = const {};
   bool _isLoading = false;
-  bool _isDetailsExpanded = true; // Add state for details expansion
-  int _currentCarouselPage = 0;
+  int _activeTab = 0; // 0 = Care, 1 = About, 2 = History
+  bool _wateredJustNow = false;
+  int _dropletBurst = 0;
+
   Timer? _wateringCountdownTimer;
   int? _wateringCountdownDays;
-  HealthCheckAnalysisMode _selectedHealthCheckMode = HealthCheckAnalysisMode.aiAgent;
-  bool _isSendingTestWateringEmail = false;
+  final HealthCheckAnalysisMode _healthCheckMode = HealthCheckAnalysisMode.aiAgent;
   int _checksInCurrentCycle = 0;
   static const _maxChecksPerCycle = 2;
+
+  late final AnimationController _pulseCtrl;
+
+  ScaffoldMessengerState? _messenger;
+
   AppLocalizations get l10n => AppLocalizations.of(context)!;
-  
+
+  /// Every `DateFormat` on this screen needs this — without it `intl` falls
+  /// back to en_US and prints "Aug 3" no matter what language the app is in.
+  String get _localeTag => Localizations.localeOf(context).toLanguageTag();
+
   @override
   void initState() {
     super.initState();
     _plant = widget.plant;
     _healthCheckStream = HealthCheckService().getHealthCheckHistory(_plant.id);
-    
-    // Save navigation state so user returns to this page after reload
+    _tasksSub = TaskService().watchPlantTasks(_plant.id).listen((tasks) {
+      if (mounted) setState(() => _tasks = tasks);
+    });
     _saveNavigationState();
     _startWateringCountdownTimer();
     _loadHealthCheckCount();
+
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
   }
-  
-  Future<void> _saveNavigationState() async {
-    await NavigationService.savePlantDetailsState(_plant.id);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.maybeOf(context);
   }
+
+  @override
+  void dispose() {
+    _wateringCountdownTimer?.cancel();
+    _tasksSub?.cancel();
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── data ──────────────────────────────────────────────────────────────────
+
+  Future<void> _saveNavigationState() =>
+      NavigationService.savePlantDetailsState(_plant.id);
 
   Future<void> _loadHealthCheckCount() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
       final since = _plant.lastWateredAt ?? _plant.lastWatered;
-      final snapshot = await FirebaseFirestore.instance
+      final snap = await FirebaseFirestore.instance
           .collection('health_checks')
           .where('plantId', isEqualTo: _plant.id)
           .where('userId', isEqualTo: user.uid)
           .where('timestamp', isGreaterThan: since.toIso8601String())
           .get();
       if (!mounted) return;
-      setState(() {
-        _checksInCurrentCycle = snapshot.docs.length;
-      });
-    } catch (e) {
-      print('❌ Error loading health check count: $e');
+      setState(() => _checksInCurrentCycle = snap.docs.length);
+    } catch (_) {
+      // A failed count only gates the "add check" button; keep the last value.
     }
   }
 
-  bool _canDoHealthCheck() {
-    if (_canWaterPlant()) return false;
-    if (_checksInCurrentCycle >= _maxChecksPerCycle) return false;
-    return true;
-  }
+  bool _canDoHealthCheck() =>
+      !_canWaterPlant() && _checksInCurrentCycle < _maxChecksPerCycle;
 
-  String _healthCheckButtonLabel() {
-    if (_canWaterPlant()) return l10n.waterFirstLabel;
-    if (_checksInCurrentCycle >= _maxChecksPerCycle) {
-      final wateringDate = _getNextWateringDate();
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final target = DateTime(wateringDate.year, wateringDate.month, wateringDate.day);
-      int days = target.difference(today).inDays;
-      if (days <= 0) days = 1;
-      return l10n.nextCheckAfterWatering(days);
+  Future<void> _refreshPlantData() async {
+    final p = await PlantService().getPlantById(_plant.id);
+    if (p != null && mounted) {
+      setState(() => _plant = p);
+      _updateWateringCountdown();
     }
-    return l10n.analyzeHealth;
   }
 
-  void _openHealthCheckModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => HealthCheckModal(
-        plantId: _plant.id,
-        plantName: _plant.name,
-        analysisMode: _selectedHealthCheckMode,
-        onHealthCheckComplete: _handleHealthCheckComplete,
-      ),
-    );
-  }
+  // ── actions ───────────────────────────────────────────────────────────────
 
-  void _openPlantChat() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => PlantChatScreen(plant: _plant),
-      ),
-    );
-  }
-
-  Future<void> _sendTestWateringEmailNow() async {
-    if (_isSendingTestWateringEmail) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.pleaseLoginAgain)),
-      );
+  Future<void> _openHealthCheckModal() async {
+    // The gate lives here as well as on the buttons: the analysis is now also
+    // reachable from a task row, and a check run while the plant is still
+    // thirsty is exactly what the watering-first sequence exists to prevent.
+    final blocked = _analyzeBlockedReason();
+    if (blocked != null) {
+      _toast(blocked, _kSun);
       return;
     }
 
-    setState(() {
-      _isSendingTestWateringEmail = true;
-    });
+    HapticFeedback.lightImpact();
+    final asked = await showModalBottomSheet<HealthCheckRecord>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => HealthCheckModal(
+        plantId: _plant.id,
+        plantName: _plant.name,
+        analysisMode: _healthCheckMode,
+        onHealthCheckComplete: _handleHealthCheckComplete,
+      ),
+    );
+    if (!mounted || asked == null) return;
 
+    // The check is already saved, so coming back means reopening it from
+    // history — the same result, now a stored record.
+    await _askInChat(
+      _analysisQuestion(asked),
+      () async => _openStoredResultSheet(asked),
+    );
+  }
+
+  String _analysisQuestion(HealthCheckRecord record) => record.status == 'issue'
+      ? l10n.healthAskQuestionIssue
+      : l10n.healthAskQuestionOk;
+
+  void _openPlantChat({String? question}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlantChatScreen(plant: _plant, initialQuestion: question),
+      ),
+    );
+  }
+
+  /// SPEC 1.4: leaving the chat puts the user back on the sheet they left from.
+  ///
+  /// Every entry point — care card, task, analysis result — goes through here,
+  /// so none of them can quietly forget to come back. The 120 ms is the
+  /// handoff's: reopening on the same frame reads as if the chat never closed.
+  Future<void> _askInChat(String question, Future<void> Function() reopen) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlantChatScreen(plant: _plant, initialQuestion: question),
+      ),
+    );
+    if (!mounted) return;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
+    await reopen();
+  }
+
+  void _handleHealthCheckComplete(Map<String, dynamic> result) async {
     try {
-      final idToken = await user.getIdToken();
-      final response = await http.post(
-        Uri.parse(sendTestWateringReminderEmailUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-        body: jsonEncode({
-          'plantId': _plant.id,
-          'userId': user.uid,
-          'stage': 'first_reminder',
-          'locale': Localizations.localeOf(context).languageCode,
-        }),
-      );
+      final now = DateTime.now();
+      int? newDays;
+      bool newShouldWater = false;
 
-      Map<String, dynamic> payload = {};
-      try {
-        payload = jsonDecode(response.body) as Map<String, dynamic>;
-      } catch (_) {}
+      final dFromAI = result['watering_interval_days'];
+      if (dFromAI != null) {
+        newDays = dFromAI is int ? dFromAI : int.tryParse(dFromAI.toString());
+        newShouldWater = result['should_water_now'] == true;
+      }
+      if (newDays == null || newDays <= 0) {
+        final mode = result['mode'] as String?;
+        final hrsKey = mode == 'recheck_only'
+            ? 'next_check_in_hours'
+            : 'next_after_watering_in_hours';
+        final hrs = result[hrsKey];
+        if (hrs != null) {
+          final h = hrs is int ? hrs : int.tryParse(hrs.toString());
+          if (h != null && h > 0) {
+            newDays = (h / 24).round().clamp(1, 60);
+            newShouldWater = mode != 'recheck_only';
+          }
+        }
+      }
 
-      if (response.statusCode >= 200 &&
-          response.statusCode < 300 &&
-          payload['success'] == true) {
-        messenger.showSnackBar(
-          SnackBar(content: Text(l10n.testWateringEmailQueued)),
+      DateTime? newNext;
+      if (newDays != null && newDays > 0) {
+        newNext = PlantService.calculateNextWateringAt(
+          from: now,
+          intervalDays: newDays,
+          preferredTime: _plant.preferredTime ?? '18:00',
         );
-      } else {
-        final err = payload['error']?.toString() ?? 'Failed to send test email.';
-        messenger.showSnackBar(SnackBar(content: Text(err)));
       }
-    } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.errorSendingTestEmail(e.toString()))),
+
+      // The analyzer types these as strings but is not bound by that, and a
+      // stray number here would blow up the whole check on an implicit cast.
+      String? str(dynamic v) {
+        if (v == null || v is Map || v is List) return null;
+        final s = v.toString().trim();
+        return s.isEmpty ? null : s;
+      }
+
+      final care = result['care_recommendations'] as Map?;
+      final newMoisture = str(result['moisture_level']) ?? str(care?['moisture']);
+      final newLight = str(result['light']) ?? str(care?['light']);
+      final newAmountMl = result['amount_ml'];
+      final newRangeMl = result['range_ml'];
+
+      // The scan is the only thing allowed to raise the score (SPEC 1.1). Every
+      // other change can subtract penalties; none of them lifts the ceiling.
+      final scanned = result['health_score'];
+      final newScanScore = (scanned is num
+              ? scanned.toInt()
+              : int.tryParse(scanned?.toString() ?? ''))
+          ?.clamp(0, 100);
+
+      final updated = _plant.copyWith(
+        scanScore: newScanScore ?? _plant.scanScore,
+        healthStatus: result['status'],
+        healthMessage: result['message'],
+        lastHealthCheck: now,
+        aiPlantSize: str(result['plant_size']) ?? _plant.aiPlantSize,
+        aiPotSize: str(result['pot_size']) ?? _plant.aiPotSize,
+        aiGrowthStage: str(result['growth_stage']) ?? _plant.aiGrowthStage,
+        aiMoistureLevel: newMoisture ?? _plant.aiMoistureLevel,
+        aiLight: newLight ?? _plant.aiLight,
+        aiCareTips: _plant.aiCareTips,
+        careDetails: result['care_details'] as Map<String, String>? ??
+            _plant.careDetails,
+        interestingFacts: _plant.interestingFacts,
+        wateringAmountMl: newAmountMl != null
+            ? (newAmountMl is int
+                ? newAmountMl
+                : newAmountMl is double
+                    ? newAmountMl.toInt()
+                    : int.tryParse(newAmountMl.toString()))
+            : _plant.wateringAmountMl,
+        wateringRangeMl: newRangeMl is List
+            ? List<int>.from(
+                newRangeMl.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0))
+            : _plant.wateringRangeMl,
+        nextAfterWateringHours:
+            result['next_after_watering_in_hours'] ?? _plant.nextAfterWateringHours,
+        nextCheckHours: result['next_check_in_hours'] ?? _plant.nextCheckHours,
+        wateringMode: str(result['mode']) ?? _plant.wateringMode,
+        nextDueAt: newNext ?? _plant.nextDueAt,
+        nextWatering: newNext ?? _plant.nextWatering,
+        wateringIntervalDays: newDays ?? _plant.wateringIntervalDays,
+        shouldWaterNow: newShouldWater,
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSendingTestWateringEmail = false;
-        });
-      }
+
+      await PlantService().updatePlant(updated);
+      await _syncPlanWithAnalysis(result);
+      if (!mounted) return;
+      setState(() => _plant = updated);
+      _updateWateringCountdown();
+      await _loadHealthCheckCount();
+      // No toast: this now runs while the result sheet is still open, and the
+      // verdict it would announce is already the headline the user is reading.
+    } catch (e) {
+      if (mounted) _toast(l10n.errorUpdatingPlant(e.toString()), _kWarm);
     }
   }
 
-  void _handleHealthCheckComplete(Map<String, dynamic> healthResult) async {
+  /// Folds a finished analysis into the plant's plan.
+  ///
+  /// The recommendations shown in the result and the tasks in "what to do" are
+  /// the same objects — SPEC 3.4 requires their titles to match word for word,
+  /// which only holds if the plan is built from the result rather than typed
+  /// again. There is no "add to plan" button: arriving is the whole point.
+  Future<void> _syncPlanWithAnalysis(Map<String, dynamic> result) async {
+    final service = TaskService();
     try {
-      print('🌱 ========== RECALCULATING FROM NEW PHOTO ==========');
-      print('🌱 Health check result keys: ${healthResult.keys.toList()}');
-      
+      // The check itself satisfies the "rescan" trigger, so that task retires
+      // (SPEC 1.3.5) rather than lingering next to its own result.
+      await service.completeCategory(_plant.id, TaskCategory.scan);
+
+      final raw = result['recommendations'];
+      if (raw is! List || raw.isEmpty) return;
+
+      // dueAt = now keeps ageDays at 0: a recommendation the user received
+      // seconds ago must never be presented as overdue (SPEC 1.3.6).
       final now = DateTime.now();
-
-      // ========== RECALCULATE WATERING SCHEDULE FROM NEW PHOTO ==========
-      // PRIORITY 1: Extract from new species-specific watering_plan structure
-      int? newIntervalDays;
-      bool newShouldWaterNow = false;
-      
-      final dynamic daysFromAI = healthResult['watering_interval_days'];
-      if (daysFromAI != null) {
-        newIntervalDays = daysFromAI is int ? daysFromAI : int.tryParse(daysFromAI.toString());
-        newShouldWaterNow = healthResult['should_water_now'] == true;
-        print('🌱 New photo: watering_interval_days = $newIntervalDays, should_water_now = $newShouldWaterNow');
+      final tasks = <CareTask>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        final rec = HealthRecommendation.fromMap(Map<String, dynamic>.from(item));
+        if (rec.title.isEmpty) continue;
+        tasks.add(CareTask(
+          id: '',
+          plantId: _plant.id,
+          userId: '',
+          title: rec.title,
+          detail: rec.explanation,
+          source: TaskSource.analysis,
+          category: _taskCategoryFor(rec),
+          dueAt: now,
+          body: rec.explanation,
+        ));
       }
+      if (tasks.isEmpty) return;
 
-      // PRIORITY 2: Fallback to legacy hours-based calculation if new structure not available
-      if (newIntervalDays == null || newIntervalDays <= 0) {
-        final String? mode = healthResult['mode'] as String?;
-        print('🌱 New photo: mode = $mode (legacy calculation)');
-
-        if (mode == 'recheck_only') {
-          final dynamic hrs = healthResult['next_check_in_hours'];
-          if (hrs != null) {
-            final intHours = hrs is int ? hrs : int.tryParse(hrs.toString());
-            if (intHours != null && intHours > 0) {
-              newIntervalDays = (intHours / 24).round().clamp(1, 60);
-              newShouldWaterNow = false; // Recheck mode means don't water now
-              print('🌱 New photo: Calculated interval from next_check_in_hours: $newIntervalDays days');
-            }
-          }
-        } else {
-          final dynamic hrs = healthResult['next_after_watering_in_hours'];
-          if (hrs != null) {
-            final intHours = hrs is int ? hrs : int.tryParse(hrs.toString());
-            if (intHours != null && intHours > 0) {
-              newIntervalDays = (intHours / 24).round().clamp(1, 60);
-              newShouldWaterNow = true; // After watering mode means should water now
-              print('🌱 New photo: Calculated interval from next_after_watering_in_hours: $newIntervalDays days');
-            }
-          }
-        }
-      }
-
-      // Calculate next watering date using shared helper with preferred time
-      DateTime? newNextDueAt;
-      DateTime? newNextWatering;
-      if (newIntervalDays != null && newIntervalDays > 0) {
-        // Use the same helper function as AddPlant and WaterPlant for consistency
-        final preferredTime = _plant.preferredTime ?? '18:00';
-        newNextDueAt = PlantService.calculateNextWateringAt(
-          from: now,
-          intervalDays: newIntervalDays,
-          preferredTime: preferredTime,
-        );
-        newNextWatering = newNextDueAt;
-        print('🌱 New photo: Calculated next watering date with preferred time: $newNextDueAt (in $newIntervalDays days, should_water_now: $newShouldWaterNow)');
-      }
-
-      // ========== EXTRACT VALUES FROM NEW PHOTO ANALYSIS ==========
-      // Extract moisture level from new photo - check both direct and nested paths
-      dynamic newMoistureLevel = healthResult['moisture_level'];
-      if (newMoistureLevel == null) {
-        // Try nested path if direct access fails
-        final careRecs = healthResult['care_recommendations'];
-        if (careRecs != null && careRecs is Map) {
-          newMoistureLevel = careRecs['moisture'];
-        }
-      }
-      print('🌱 New photo: moisture_level = $newMoistureLevel (type: ${newMoistureLevel.runtimeType})');
-      
-      // Extract light requirement from new photo - check both direct and nested paths
-      dynamic newLight = healthResult['light'];
-      if (newLight == null) {
-        final careRecs = healthResult['care_recommendations'];
-        if (careRecs != null && careRecs is Map) {
-          newLight = careRecs['light'];
-        }
-      }
-      print('🌱 New photo: light = $newLight (type: ${newLight.runtimeType})');
-      
-      // Extract watering amount from new photo
-      dynamic newWateringAmountMl = healthResult['amount_ml'];
-      dynamic newWateringRangeMl = healthResult['range_ml'];
-      print('🌱 New photo: wateringAmountMl = $newWateringAmountMl (type: ${newWateringAmountMl?.runtimeType}), rangeMl = $newWateringRangeMl');
-      
-      // Extract watering mode and intervals
-      final newWateringMode = healthResult['mode'];
-      dynamic newNextAfterWateringHours = healthResult['next_after_watering_in_hours'];
-      dynamic newNextCheckHours = healthResult['next_check_in_hours'];
-      print('🌱 New photo: mode = $newWateringMode, nextAfterWateringHours = $newNextAfterWateringHours, nextCheckHours = $newNextCheckHours');
-
-      // ========== UPDATE PLANT WITH NEW PHOTO ANALYSIS VALUES ==========
-      // Force update with new photo values - always use new values when provided
-      print('🌱 ========== BEFORE UPDATE ==========');
-      print('🌱 Current moisture: ${_plant.aiMoistureLevel}');
-      print('🌱 Current light: ${_plant.aiLight}');
-      print('🌱 Current watering amount: ${_plant.wateringAmountMl}ml');
-      
-      // Helper to check if value should be updated (not null or empty)
-      bool shouldUpdate(String? newValue) => newValue != null && newValue.toString().trim().isNotEmpty;
-      
-      final updatedPlant = _plant.copyWith(
-        healthStatus: healthResult['status'],
-        healthMessage: healthResult['message'],
-        lastHealthCheck: DateTime.now(),
-        // Update AI analysis data from new photo - FORCE update when available
-        aiPlantSize: shouldUpdate(healthResult['plant_size']) ? healthResult['plant_size'] : _plant.aiPlantSize,
-        aiPotSize: shouldUpdate(healthResult['pot_size']) ? healthResult['pot_size'] : _plant.aiPotSize,
-        aiGrowthStage: shouldUpdate(healthResult['growth_stage']) ? healthResult['growth_stage'] : _plant.aiGrowthStage,
-        // RECALCULATE moisture level from new photo - FORCE update
-        aiMoistureLevel: shouldUpdate(newMoistureLevel) ? newMoistureLevel : _plant.aiMoistureLevel,
-        // RECALCULATE light requirement from new photo - FORCE update
-        aiLight: shouldUpdate(newLight) ? newLight : _plant.aiLight,
-        // RECALCULATE watering amount from new photo - FORCE update
-        aiWateringAmount: shouldUpdate(healthResult['watering_amount']) ? healthResult['watering_amount'] : _plant.aiWateringAmount,
-        // Care tips and interesting facts are set at plant creation — Health Check does not overwrite them
-        aiCareTips: _plant.aiCareTips,
-        interestingFacts: _plant.interestingFacts,
-        // RECALCULATE scientific watering calculation fields from new photo - FORCE update
-        wateringAmountMl: newWateringAmountMl != null 
-            ? (newWateringAmountMl is int 
-                ? newWateringAmountMl 
-                : (newWateringAmountMl is double 
-                    ? newWateringAmountMl.toInt() 
-                    : int.tryParse(newWateringAmountMl.toString())))
-            : _plant.wateringAmountMl,
-        wateringRangeMl: newWateringRangeMl != null 
-            ? (newWateringRangeMl is List 
-                ? List<int>.from(newWateringRangeMl.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0))
-                : _plant.wateringRangeMl)
-            : _plant.wateringRangeMl,
-        nextAfterWateringHours: newNextAfterWateringHours != null ? newNextAfterWateringHours : _plant.nextAfterWateringHours,
-        nextCheckHours: newNextCheckHours != null ? newNextCheckHours : _plant.nextCheckHours,
-        wateringMode: shouldUpdate(newWateringMode) ? newWateringMode : _plant.wateringMode,
-        // RECALCULATE next watering dates from new photo analysis - FORCE update
-        nextDueAt: newNextDueAt ?? _plant.nextDueAt,
-        nextWatering: newNextWatering ?? _plant.nextWatering,
-        wateringIntervalDays: newIntervalDays ?? _plant.wateringIntervalDays,
-        // Update shouldWaterNow from new photo analysis
-        shouldWaterNow: newShouldWaterNow,
-      );
-      
-      print('🌱 ========== AFTER UPDATE ==========');
-      print('🌱 Updated moisture: ${updatedPlant.aiMoistureLevel}');
-      print('🌱 Updated light: ${updatedPlant.aiLight}');
-      print('🌱 Updated watering amount: ${updatedPlant.wateringAmountMl}ml');
-      print('🌱 Updated next watering: ${updatedPlant.nextWatering}');
-      print('🌱 Updated interval: ${updatedPlant.wateringIntervalDays} days');
-      print('🌱 ==================================');
-
-      // Save to database
-      print('🌱 Saving updated plant to database...');
-      await PlantService().updatePlant(updatedPlant);
-      print('✅ Plant saved successfully');
-      
-      // Update local state immediately for snappy UI (DO NOT reload from DB - we have the latest)
-      setState(() {
-        _plant = updatedPlant;
-      });
-      print('✅ Local state updated - UI should refresh now');
-      
-      // Update the watering countdown timer with new schedule
-      _updateWateringCountdown();
-      print('✅ Watering countdown timer updated');
-
-        // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  healthResult['status'] == 'ok' ? Icons.check_circle : Icons.warning,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                  healthResult['status'] == 'ok' 
-                      ? 'Plant Care Assistant has analyzed your plant! 🌱'
-                      : 'Plant Care Assistant has some advice for you! 🌿',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    ),
-                    // Allow text to wrap to multiple lines if needed
-                    maxLines: null,
-                    overflow: TextOverflow.visible,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: healthResult['status'] == 'ok' ? Colors.green : Colors.orange,
-            duration: const Duration(seconds: 4),
-            // Ensure SnackBar doesn't overflow on mobile
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-      await _loadHealthCheckCount();
+      await service.createFromAnalysis(plantId: _plant.id, tasks: tasks);
     } catch (e) {
-      print('❌ Error updating plant with health check: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.errorUpdatingPlant(e.toString())),
-            backgroundColor: Colors.red,
-          ),
+      // The check is already saved; a failed plan sync must not undo it.
+      debugPrint('⚠️ Could not sync analysis recommendations into the plan: $e');
+    }
+  }
+
+  /// Best-effort category for a recommendation so the row gets a sensible icon.
+  /// The analyzer categorises findings but not actions, so this reads the title.
+  TaskCategory _taskCategoryFor(HealthRecommendation rec) {
+    final text = '${rec.title} ${rec.explanation}'.toLowerCase();
+    bool has(List<String> words) => words.any(text.contains);
+
+    if (has(['полив', 'вод', 'water', 'moist', 'влаж'])) return TaskCategory.water;
+    if (has(['свет', 'солнц', 'light', 'sun'])) return TaskCategory.light;
+    if (has(['почв', 'грунт', 'горшок', 'пересад', 'soil', 'repot'])) {
+      return TaskCategory.soil;
+    }
+    if (has(['подкорм', 'удобр', 'fertil'])) return TaskCategory.fertilizer;
+    if (has(['скан', 'провер', 'фото', 'scan', 'check'])) return TaskCategory.scan;
+    return TaskCategory.other;
+  }
+
+  Future<void> _waterPlant() async {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _wateredJustNow = true;
+      _dropletBurst++;
+    });
+    try {
+      await PlantService().waterPlant(_plant.id);
+      // The trigger is satisfied, so the watering task retires with it — the
+      // home deck must not still be asking for water the user just gave
+      // (SPEC 1.3.5).
+      try {
+        await TaskService().completeCategory(
+          _plant.id,
+          TaskCategory.water,
+          source: TaskSource.schedule,
         );
+      } catch (e) {
+        debugPrint('⚠️ Could not close the watering task: $e');
       }
+      await _refreshPlantData();
+      await _loadHealthCheckCount();
+      if (!mounted) return;
+      _updateWateringCountdown();
+      HapticFeedback.heavyImpact();
+      // LEGACY SNACKBAR (disabled 2026-08-03) — the green "… has been watered!"
+      // badge from the screenshot. Haptic + the updated card already confirm it.
+      // _toast(l10n.plantWateredSuccess(_plant.name), _kAccent);
+    } catch (e) {
+      if (!mounted) return;
+      // Optimistic update failed — roll the widget back and surface the error.
+      setState(() => _wateredJustNow = false);
+      _toast(l10n.errorWateringPlant(e), _kWarm);
     }
   }
 
   void _showDeleteConfirmation() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(
-                Icons.delete_forever,
-                color: Colors.red.shade600,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.deletePlant,
-                style: TextStyle(
-                  color: Colors.red.shade700,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+      // The dialog's own context, not the screen's: both buttons mean "close
+      // this dialog", and popping via the screen's context only happened to
+      // work because the dialog was the topmost route.
+      builder: (dialogContext) => AlertDialog(
+        title: Row(children: [
+          const Icon(Icons.delete_forever_rounded, color: _kWarm),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(l10n.deletePlant,
+                style: const TextStyle(color: _kWarm, fontWeight: FontWeight.bold)),
           ),
-          content: Text(
-            l10n.deletePlantConfirm,
-            style: TextStyle(fontSize: 16),
+        ]),
+        content: Text(l10n.deletePlantConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                l10n.cancel,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _deletePlant();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                l10n.delete,
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ],
-        );
-      },
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _deletePlant();
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: _kWarm, foregroundColor: Colors.white),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> _deletePlant() async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
+      // Resolved before the await chain: the toast and the unwind both need a
+      // live navigator, and `mounted` alone has proven unreliable here.
+      final navigator = Navigator.of(context, rootNavigator: true);
 
-      // Delete the plant
       await PlantService().deletePlant(_plant.id);
-      
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  l10n.plantDeletedMessage(_plant.name),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        
-        if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      // Without this the plant's tasks outlive it: the deck hides them because
+      // it drops tasks whose plant is gone, but they keep loading, keep
+      // counting on the all-tasks screen and never expire on their own.
+      try {
+        await TaskService().deleteForPlant(_plant.id);
+      } catch (e) {
+        debugPrint('⚠️ Could not clear tasks of the deleted plant: $e');
       }
+      if (mounted) _toast(l10n.plantDeletedMessage(_plant.name), _kAccent);
+
+      // Two steps, because either one alone has failed in practice. popUntil
+      // clears this screen and anything still stacked over it — the "⋯" sheet
+      // or the confirm dialog; the notifier then puts the shell on Home, which
+      // route-level navigation cannot do because go_router reuses the existing
+      // MainNavigationScreen and never re-runs its initState.
+      debugPrint('🗑️ Plant ${_plant.id} deleted — returning to Home');
+      navigator.popUntil((route) => route.isFirst);
+      MainNavigationScreen.requestTab(0);
     } catch (e) {
-      print('❌ Error deleting plant: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.errorDeletingPlant(e.toString())),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _toast(l10n.errorDeletingPlant(e.toString()), _kWarm);
     }
   }
 
-  @override
-  void dispose() {
-    _stopWateringCountdownTimer();
-    super.dispose();
+  void _toast(String message, Color background) {
+    // Resolved in didChangeDependencies rather than here: toasts fire after
+    // awaits, by which point this element can already be deactivated — and an
+    // ancestor lookup on a deactivated element throws even while mounted is
+    // still true.
+    _messenger?.showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: background,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ));
   }
 
-  /// Refreshes the plant data from the database
-  Future<void> _refreshPlantData() async {
-    try {
-      // Get the updated plant data from the database
-      final updatedPlant = await PlantService().getPlantById(_plant.id);
-      if (updatedPlant != null) {
-        // Update the local plant state
-        setState(() {
-          _plant = updatedPlant;
-        });
-        // Ensure the countdown reflects the latest schedule
-        _updateWateringCountdown();
-      }
-    } catch (e) {
-      print('❌ Error refreshing plant data: $e');
-    }
+  // ── watering schedule ─────────────────────────────────────────────────────
+
+  DateTime _nextWateringDate() => _plant.nextDueAt ?? _plant.nextWatering;
+
+  void _startWateringCountdownTimer() {
+    _wateringCountdownTimer?.cancel();
+    _updateWateringCountdown();
+    _wateringCountdownTimer =
+        Timer.periodic(const Duration(minutes: 1), (_) => _updateWateringCountdown());
   }
 
-  Future<void> _waterPlant() async {
-    if (!_canWaterPlant()) {
-      // Show message that plant cannot be watered yet
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.plantNotDueForWateringYet),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+  void _updateWateringCountdown() {
+    if (!mounted) return;
+    if (_plant.shouldWaterNow) {
+      setState(() => _wateringCountdownDays = null);
       return;
     }
+    final target = _nextWateringDate();
+    final now = DateTime.now().toLocal();
+    final days = DateTime(target.year, target.month, target.day)
+        .difference(DateTime(now.year, now.month, now.day))
+        .inDays;
+    setState(() => _wateringCountdownDays = days <= 0 ? null : days);
+  }
 
-    setState(() {
-      _isLoading = true;
-    });
+  bool _canWaterPlant() {
+    if (_wateredJustNow) return false;
+    if (_plant.shouldWaterNow) return true;
+    return !_nextWateringDate().isAfter(DateTime.now());
+  }
 
+  /// True until the first watering is actually logged.
+  ///
+  /// Adding a plant stamps `lastWatered` with the creation time so the cycle
+  /// has an anchor, but the user never poured anything — printing "last watered
+  /// today" under a card that says the plant is thirsty is the app arguing with
+  /// itself. [_wateringSubtitle] drops the claim until it is true.
+  bool get _neverWatered =>
+      _plant.lastWatered.isAtSameMomentAs(_plant.createdAt);
+
+  String _wateringSubtitle(int interval) {
+    if (_neverWatered && !_wateredJustNow) return _everyN(interval);
+    final last = _plant.lastWateredAt ?? _plant.lastWatered;
+    final day = DateFormat.MMMd(_localeTag).format(last);
+    return '${l10n.lastWatered} $day · ${_everyN(interval)}';
+  }
+
+  double _cycleProgress() {
+    final last = _plant.lastWateredAt ?? _plant.lastWatered;
+    final total = _nextWateringDate().difference(last).inSeconds;
+    if (total <= 0) return 1.0;
+    return (DateTime.now().difference(last).inSeconds / total).clamp(0.0, 1.0);
+  }
+
+  String _nextWateringValue() {
+    if (_wateredJustNow) {
+      final interval = _wateringInterval();
+      return interval == 1 ? l10n.nextIn1Day : l10n.nextInNDays(interval);
+    }
+    if (_canWaterPlant()) return l10n.nowLabel;
+    if (_wateringCountdownDays == 1) return l10n.wateringTomorrow;
+    if (_wateringCountdownDays != null) {
+      return l10n.nextInNDays(_wateringCountdownDays!);
+    }
+    return l10n.nowLabel;
+  }
+
+  String _waitingButtonLabel() {
+    if (_wateringCountdownDays == 1) return l10n.nextIn1Day;
+    if (_wateringCountdownDays != null) {
+      return l10n.nextInNDays(_wateringCountdownDays!);
+    }
+    return l10n.iHaveWatered;
+  }
+
+  int _wateringInterval() =>
+      _plant.wateringIntervalDays ?? _plant.wateringFrequency;
+
+  // ── health status ─────────────────────────────────────────────────────────
+
+  /// Live score of this plant, 0-100 (SPEC 1.1).
+  ///
+  /// Replaces the old keyword sniffing of `healthMessage`: every plant has a
+  /// score at all times, and it is derived, never guessed from prose.
+  int get _score => livePlantScore(_plant, _tasks);
+
+  bool get _needsAttention => plantNeedsAttention(_score);
+
+  Map<String, dynamic>? _tryParsePlantAssistant(String? msg) {
+    if (msg == null || !msg.trim().startsWith('{')) return null;
     try {
-      // Use the new notification-aware watering method
-      await PlantService().waterPlant(_plant.id);
-      
-      // Refresh plant data to get updated notification schedule
-      await _refreshPlantData();
-      await _loadHealthCheckCount();
-      
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  l10n.plantWateredSuccess(_plant.name),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-
-        // After watering, update the countdown so the disabled state shows a fresh timer
-        _updateWateringCountdown();
+      final m = jsonDecode(msg.trim()) as Map<String, dynamic>;
+      if (m['status'] != null || m['praise_phrase'] != null || m['problem_name'] != null) {
+        return m;
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.error,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  l10n.errorWateringPlant(e),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
-    }
-  }
-
-  Widget _buildPlaceholderImage() {
-    final height = (MediaQuery.of(context).size.height * 0.45).clamp(200.0, 400.0);
-    return Container(
-      width: double.infinity,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.grey.shade100,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.local_florist,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.noImageAvailable,
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.addPhotoToSeeYourPlant,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds hero image with improved error handling
-  Widget _buildHeroImage(String imageUrl) {
-    // Validate image URL
-    if (imageUrl.isEmpty) {
-      return _buildPlaceholderImage();
-    }
-    
-    // Try to get a CORS-free URL for web
-    final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
-    
-    return imageUrl.startsWith('data:image')
-        ? Image.memory(
-            base64Decode(imageUrl.split(',')[1]),
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            isAntiAlias: true,
-            errorBuilder: (context, error, stackTrace) {
-              print('❌ Hero image memory error: $error');
-              return _buildPlaceholderImage();
-            },
-          )
-        : imageUrl.startsWith('http')
-            ? Image.network(
-                processedUrl,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                isAntiAlias: true,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                            : null,
-                        color: Colors.green,
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  print('❌ Hero image network error: $error');
-                  // Try alternative URL if CORS fails
-                  if (CorsProxyService.hasCorsIssues) {
-                    return _buildPlaceholderImage();
-                  }
-                  return _buildPlaceholderImage();
-                },
-                // Add timeout to prevent hanging
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded) return child;
-                  return AnimatedOpacity(
-                    opacity: frame == null ? 0 : 1,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    child: child,
-                  );
-                },
-              )
-            : _buildPlaceholderImage();
-  }
-
-  /// Formats health check date for display
-  String _formatHealthCheckDate(DateTime date) {
-    return DateFormat('dd MMM yyyy').format(date);
-  }
-
-  // Legacy watering calculation functions removed - now using scientific watering calculation from AI
-  
-  /// Get watering amount from AI data only
-  int? _getWateringAmount() {
-    if (_plant.wateringAmountMl != null && _plant.wateringAmountMl! > 0) {
-      return _plant.wateringAmountMl;
+    } catch (_) {
+      // Not an assistant payload — fall back to the raw message.
     }
     return null;
   }
 
-  /// Format watering amount as "200 ml (3/4 🥛)" — 1 cup = 250 ml
-  Widget _buildWateringAmountWithCups(int? amountMl, {double iconSize = 12, double fontSize = 10}) {
-    if (amountMl == null || amountMl <= 0) return const SizedBox.shrink();
-    const int mlPerCup = 250;
-    final cups = amountMl / mlPerCup;
-    // Дробь чашки: округление до четвертей, отображение символами ¼ ½ ¾
-    String cupFractionStr;
-    final quarters = (cups * 4).round();
-    if (quarters == 0) {
-      cupFractionStr = '0';
-    } else if (quarters % 4 == 0) {
-      cupFractionStr = '${quarters ~/ 4}';
-    } else if (quarters < 4) {
-      const fracs = ['', '¼', '½', '¾'];
-      cupFractionStr = fracs[quarters % 4];
-    } else {
-      const fracs = ['', '¼', '½', '¾'];
-      cupFractionStr = '${quarters ~/ 4}${fracs[quarters % 4]}';
+  // ── AI text extraction ────────────────────────────────────────────────────
+
+  Map<String, String> _careSections = const {};
+  String? _parsedFrom;
+
+  /// Section bodies keyed by [CareSection], reparsed only when the blob changes.
+  Map<String, String> get _care {
+    final tips = _plant.aiCareTips;
+    if (tips != _parsedFrom) {
+      _parsedFrom = tips;
+      _careSections = parseCareSections(tips);
     }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '$amountMl ml',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue.shade700,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          '($cupFractionStr ',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue.shade700,
-          ),
-        ),
-        Icon(Icons.local_drink, color: Colors.blue.shade600, size: iconSize),
-        Text(
-          ')',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue.shade700,
-          ),
-        ),
-      ],
-    );
+    return _careSections;
   }
 
-  /// Get light type description
-  String _getLightType() {
-    if (_plant.aiLight == null || _plant.aiLight!.isEmpty) {
-      return 'Bright indirect';
+  String _section(String key) => _care[key] ?? '';
+
+  /// A compact label straight from the analyzer, or null when this plant was
+  /// analysed before those fields existed — every caller has a fallback.
+  String? _detail(String key) {
+    final v = _plant.careDetails?[key]?.trim();
+    return (v == null || v.isEmpty) ? null : v;
+  }
+
+  /// Prefers the analyzer's own short label, falling back to trimming the
+  /// section prose.
+  String _rowValue(String detailKey, String body) =>
+      _detail(detailKey) ?? _summarize(body);
+
+  /// "Every 1 day" reads wrong in every language, so the daily case has its own
+  /// phrasing rather than a plural branch.
+  String _everyN(int days) =>
+      days == 1 ? l10n.everyDay : l10n.everyNDays(days);
+
+  /// A care row shows a value at a glance, so give it the opening sentence
+  /// rather than an arbitrary slice of the paragraph. Anything still too long
+  /// is cut on a word boundary.
+  String _summarize(String text, [int max = 44]) {
+    var s = text
+        .split('\n')
+        .map((l) => l.replaceAll(RegExp(r'^[-•*\s]+'), '').trim())
+        .firstWhere((l) => l.isNotEmpty, orElse: () => '');
+    if (s.isEmpty) return '';
+    // Decimals such as "pH 6.0" are not sentence ends: require a space after.
+    final stop = RegExp(r'[.;!?](\s|$)').firstMatch(s);
+    if (stop != null) s = s.substring(0, stop.start).trim();
+    if (s.length <= max) return s;
+    final space = s.lastIndexOf(' ', max);
+    return '${s.substring(0, space > max ~/ 2 ? space : max).trimRight()}…';
+  }
+
+  String _moistureLabel() {
+    final v = _plant.aiMoistureLevel;
+    if (v == null || v.isEmpty) return '';
+    final l = v.toLowerCase();
+    if (l.contains('very dry') || l.contains('arid')) return l10n.moistureLevelVeryDry;
+    if (l.contains('slightly moist') || l.contains('slightly damp')) {
+      return l10n.moistureLevelSlightlyMoist;
     }
-    
-    final lightRequirement = _plant.aiLight!.toLowerCase();
-    
-    if (lightRequirement.contains('full sun') || lightRequirement.contains('direct sun')) {
-      return 'Direct sunlight';
-    } else if (lightRequirement.contains('partial sun') || lightRequirement.contains('morning sun')) {
-      return 'Partial sun';
-    } else if (lightRequirement.contains('partial shade') || lightRequirement.contains('filtered light')) {
-      return 'Partial shade';
-    } else if (lightRequirement.contains('bright indirect') || lightRequirement.contains('bright light')) {
-      return 'Bright indirect';
-    } else if (lightRequirement.contains('low light') || lightRequirement.contains('shade')) {
-      return 'Low light';
-    } else if (lightRequirement.contains('medium light') || lightRequirement.contains('moderate light')) {
-      return 'Medium light';
-    } else if (lightRequirement.contains('very bright') || lightRequirement.contains('high light')) {
-      return 'Very bright';
+    if (l.contains('very moist')) return l10n.moistureLevelVeryMoist;
+    if (l.contains('dry')) return l10n.moistureLevelDry;
+    if (l.contains('moist') || l.contains('damp')) return l10n.moistureLevelMoist;
+    if (l.contains('wet') || l.contains('saturated')) return l10n.moistureWet;
+    // The analyser is told to keep this field an English enum, and "moderate"
+    // is the value it returns most often — without this branch it fell through
+    // to the raw value and the card read "Moderate" in every language.
+    if (l.contains('moderate') || l.contains('medium') || l.contains('average')) {
+      return l10n.medium;
     }
-    
-    return 'Bright indirect'; // Default
+    return v;
   }
 
-  // Key Metrics Cards
-  Widget _buildNextWateringCard() {
-    // Use scientific watering data if available
-    final wateringAmount = _plant.wateringAmountMl;
-    
-    // Determine if we should show recheck or watering
-    final isRecheckMode = _plant.wateringMode == 'recheck_only' || 
-                         (_plant.wateringAmountMl != null && _plant.wateringAmountMl == 0);
-    
-    // When shouldWaterNow (e.g. issue + water now), show "Now" instead of future date
-    final nextWateringDate = isRecheckMode && _plant.nextCheckHours != null
-        ? DateTime.now().add(Duration(hours: _plant.nextCheckHours!))
-        : _plant.nextWatering;
-    final showNow = _plant.shouldWaterNow && !isRecheckMode;
-    final daysUntilWatering = nextWateringDate.difference(DateTime.now()).inDays;
-    final statusColor = showNow
-        ? Colors.green
-        : (daysUntilWatering < 0 ? Colors.red : daysUntilWatering <= 1 ? Colors.orange : Colors.green);
+  // The keyword matching below only ever worked on English prose, and the
+  // analyzer writes `aiLight` in the user's language — so for everyone else it
+  // silently returned the default. It survives purely for plants analysed
+  // before `careDetails` existed.
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            isRecheckMode ? Icons.check_circle_outline : Icons.water_drop,
-            color: statusColor,
-            size: 24,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isRecheckMode ? l10n.checkPlantButton : l10n.wateringLabel,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            showNow ? l10n.nowLabel : DateFormat('MMM dd').format(nextWateringDate),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: statusColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          const SizedBox(height: 8),
-          // Water amount section — FittedBox prevents overflow on narrow cards
-          Builder(
-            builder: (context) {
-              final calculatedAmount = _getWateringAmount();
-              if (calculatedAmount != null && calculatedAmount > 0) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.center,
-                    child: _buildWateringAmountWithCups(calculatedAmount, iconSize: 16, fontSize: 12),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ),
-    );
+  String _lightHours() {
+    final structured = _detail(CareDetail.lightHours);
+    if (structured != null) return structured;
+    final l = _plant.aiLight?.toLowerCase();
+    if (l == null) return '4–6';
+    final m = RegExp(r'(\d+)\s*(?:hours?|hrs?|ч)').firstMatch(l);
+    if (m != null) return m.group(1)!;
+    if (l.contains('full sun') || l.contains('direct sun')) return '6–8';
+    if (l.contains('bright indirect')) return '8–12';
+    if (l.contains('low light')) return '2–3';
+    return '4–6';
   }
 
-  /// Calculate light hours per day based on AI light requirements
-  String _calculateLightHours() {
-    if (_plant.aiLight == null || _plant.aiLight!.isEmpty) {
-      return 'Not specified';
+  String _lightType() {
+    final structured = _detail(CareDetail.lightType);
+    if (structured != null) return structured;
+    final l = _plant.aiLight?.toLowerCase();
+    if (l == null) return l10n.lightTypeBrightIndirect;
+    if (l.contains('full sun') || l.contains('direct sun')) {
+      return l10n.lightTypeDirect;
     }
-    
-    final lightRequirement = _plant.aiLight!.toLowerCase();
-    
-    // Extract hours if already specified as numbers
-    final hourPattern = RegExp(r'(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)');
-    final hourMatch = hourPattern.firstMatch(lightRequirement);
-    if (hourMatch != null) {
-      final hours = double.tryParse(hourMatch.group(1)!) ?? 0;
-      return '${hours.toInt()}';
+    if (l.contains('partial sun')) return l10n.lightTypePartialSun;
+    if (l.contains('bright indirect')) return l10n.lightTypeBrightIndirect;
+    if (l.contains('low light') || l.contains('shade')) {
+      return l10n.lightTypeLowLight;
     }
-    
-    // Calculate based on light intensity descriptions
-    if (lightRequirement.contains('full sun') || lightRequirement.contains('direct sun')) {
-      return '6-8'; // Full sun plants need 6-8 hours of direct sunlight
-    } else if (lightRequirement.contains('partial sun') || lightRequirement.contains('morning sun')) {
-      return '4-6'; // Partial sun plants need 4-6 hours
-    } else if (lightRequirement.contains('partial shade') || lightRequirement.contains('filtered light')) {
-      return '2-4'; // Partial shade plants need 2-4 hours
-    } else if (lightRequirement.contains('bright indirect') || lightRequirement.contains('bright light')) {
-      return '8-12'; // Bright indirect light throughout the day
-    } else if (lightRequirement.contains('low light') || lightRequirement.contains('shade')) {
-      return '2-3'; // Low light plants need minimal direct light
-    } else if (lightRequirement.contains('medium light') || lightRequirement.contains('moderate light')) {
-      return '4-6'; // Medium light requirements
-    } else if (lightRequirement.contains('very bright') || lightRequirement.contains('high light')) {
-      return '10-12'; // Very bright light requirements
-    }
-    
-    // Default calculation based on plant species if available
-    final species = _plant.aiName?.toLowerCase() ?? _plant.species.toLowerCase();
-    
-    if (species.contains('succulent') || species.contains('cactus')) {
-      return '6-8'; // Most succulents need full sun
-    } else if (species.contains('pothos') || species.contains('philodendron')) {
-      return '4-6'; // Popular houseplants with moderate light needs
-    } else if (species.contains('snake plant') || species.contains('zz plant')) {
-      return '2-4'; // Low light tolerant plants
-    } else if (species.contains('fiddle leaf') || species.contains('monstera')) {
-      return '6-8'; // Bright light loving houseplants
-    } else if (species.contains('calathea') || species.contains('prayer plant')) {
-      return '4-6'; // Prefer bright indirect light
-    }
-    
-    // Default fallback
-    return '4-6';
+    return l10n.lightTypeBrightIndirect;
   }
 
-  Widget _buildLightCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.wb_sunny,
-            color: Colors.orange,
-            size: 24,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.lightLabel,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${_calculateLightHours()} ${l10n.hoursLabel}',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.orange,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.perDay,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          // Light type section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange.shade200),
-            ),
-            child: Text(
-              _getLightType(),
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.orange.shade700,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
+  /// Older plants only carry the free-text `aiWateringAmount` ("about 250 ml"),
+  /// so the dose badge falls back to the first millilitre figure in it.
+  int? _doseMl() {
+    final stored = _plant.wateringAmountMl;
+    if (stored != null && stored > 0) return stored;
+    final raw = _plant.aiWateringAmount;
+    if (raw == null) return null;
+    final m = RegExp(r'(\d+)\s*(?:ml|мл|ml\.)', caseSensitive: false)
+        .firstMatch(raw);
+    final parsed = m != null ? int.tryParse(m.group(1)!) : null;
+    return (parsed != null && parsed > 0) ? parsed : null;
   }
 
-  Widget _buildMoistureCard() {
-    final hasRange = _plant.idealSoilMoistureMin != null && _plant.idealSoilMoistureMax != null;
-    final moisturePercentage = hasRange
-        ? ((_plant.idealSoilMoistureMin! + _plant.idealSoilMoistureMax!) ~/ 2)
-        : null;
-    final moistureLevel = _formatMoistureLevel(_plant.aiMoistureLevel);
-    final moistureValueText = hasRange
-        ? '$moistureLevel · ${_plant.idealSoilMoistureMin}–${_plant.idealSoilMoistureMax}%'
-        : moistureLevel;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-      child: Column(
-                                children: [
-          Icon(
-            Icons.opacity,
-            color: Colors.green,
-            size: 24,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.soilMoisture,
-                                      style: TextStyle(
-              fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-                                Text(
-            moistureValueText,
-                                  style: TextStyle(
-                                    fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
-            textAlign: TextAlign.center,
-          ),
-                            const SizedBox(height: 8),
-                            Container(
-                              width: double.infinity,
-            height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-              widthFactor: ((moisturePercentage ?? 0) / 100).clamp(0.0, 1.0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 16),
-          
-          // Action Buttons
-                        Row(
-                          children: [
-                            Expanded(
-                child: ElevatedButton(
-                  onPressed: _canWaterPlant() ? _waterPlant : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _canWaterPlant() ? Colors.green.shade100 : Colors.grey.shade200,
-                    foregroundColor: _canWaterPlant() ? Colors.green.shade700 : Colors.grey.shade500,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    // Disable hover effects when button is not clickable
-                    overlayColor: _canWaterPlant() ? null : Colors.transparent,
-                  ),
-                  child: Text(
-                    l10n.iHaveWatered,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-                            Expanded(
-                child: ElevatedButton(
-                  onPressed: _canDoHealthCheck() ? _openHealthCheckModal : null,
-                              style: ElevatedButton.styleFrom(
-                    backgroundColor: _canDoHealthCheck() ? Colors.white : Colors.grey.shade200,
-                    foregroundColor: _canDoHealthCheck() ? Colors.grey.shade700 : Colors.grey.shade500,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  side: BorderSide(
-                                    color: Colors.grey.shade300,
-                                    width: 1,
-                                  ),
-                                ),
-                    overlayColor: _canDoHealthCheck() ? null : Colors.transparent,
-                              ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.health_and_safety,
-                        size: 14,
-                        color: _canDoHealthCheck() ? Colors.red.shade600 : Colors.grey.shade500,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          _healthCheckButtonLabel(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                            fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-    );
+  bool _hasNoIssues(String? t) {
+    if (t == null || t.trim().isEmpty) return true;
+    const empty = {'none detected', 'no specific issues detected', 'no issues'};
+    return empty.contains(t.trim().toLowerCase());
   }
 
-  // AI Care Card — structured Plant Assistant (healthy vs issue_detected)
-  Widget _buildAiCareCard() {
-    if (_plant.healthMessage == null || _plant.healthMessage!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    final pa = _tryParsePlantAssistant(_plant.healthMessage);
-    final bool isHealthy = pa != null
-        ? (pa['status']?.toString().toLowerCase() == 'healthy')
-        : (_plant.healthStatus == 'ok');
-    final bool hasStructured = pa != null &&
-        (pa['praise_phrase'] != null || pa['health_summary'] != null ||
-            pa['problem_name'] != null || pa['action_steps'] != null);
+  // ══════════════════════════════════════════════════════════════════════════
+  //  BUILD
+  // ══════════════════════════════════════════════════════════════════════════
 
-    if (isHealthy) {
-      return _buildPlantAssistantHealthyCard(pa, hasStructured);
-    } else {
-      return _buildPlantAssistantIssueCard(pa, hasStructured);
-    }
-  }
-
-  Widget _buildPlantAssistantHealthyCard(
-      Map<String, dynamic>? pa, bool hasStructured) {
-    final praise = hasStructured ? (pa!['praise_phrase']?.toString() ?? '') : '';
-    final summary =
-        hasStructured ? (pa!['health_summary']?.toString() ?? '') : '';
-    final footer =
-        hasStructured ? (pa!['maintenance_footer']?.toString() ?? '') : '';
-    final defaultPraise = l10n.healthCheckDefaultPraise;
-    final defaultFooter = l10n.healthCheckDefaultFooter;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F8EB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFCCE8B8)),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 8,
-              offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.local_florist_outlined,
-                  color: Color(0xFF5FA346), size: 17),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.plantCareAssistantTitle,
-                  style: GoogleFonts.fraunces(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: -0.2,
-                    color: const Color(0xFF4A8C33),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE3F1D6),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFCCE8B8)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  praise.isNotEmpty ? praise : defaultPraise,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1A1A1A),
-                  ),
-                ),
-                if (summary.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    summary,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF4A8C33),
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (footer.isNotEmpty || !hasStructured) ...[
-            const SizedBox(height: 10),
-            Text(
-              footer.isNotEmpty ? footer : defaultFooter,
-              style: GoogleFonts.dmSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w300,
-                color: const Color(0xFF888888),
-                height: 1.4,
-              ),
-            ),
-          ],
-          if (_plant.lastHealthCheck != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
-              style: GoogleFonts.dmSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w300,
-                color: const Color(0xFF9E9E9E),
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlantAssistantIssueCard(Map<String, dynamic>? pa, bool hasStructured) {
-    final problemName = hasStructured ? (pa!['problem_name']?.toString() ?? '') : '';
-    final problemDesc = hasStructured ? (pa!['problem_description']?.toString() ?? '') : '';
-    final severity = hasStructured ? (pa!['severity']?.toString() ?? '') : '';
-    final stepsRaw = hasStructured && pa!['action_steps'] != null ? pa['action_steps'] : null;
-    final List<String> actionSteps = stepsRaw is List
-        ? stepsRaw.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList()
-        : [];
-    final followUpDays = hasStructured ? (pa!['follow_up_days'] is int ? pa['follow_up_days'] as int? : int.tryParse(pa['follow_up_days']?.toString() ?? '')) : null;
-    final reassurance = hasStructured ? (pa!['reassurance']?.toString() ?? '') : '';
-
-    const Color cardBg = Color(0xFFFBE6E6);
-    const Color innerBg = Color(0xFFF7DCDC);
-    const Color borderC = Color(0xFFECC6C6);
-    const Color textC = Color(0xFF8A3535);
-    const Color titleC = Color(0xFFC54F4F);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderC),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 8,
-              offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.warning_amber_rounded,
-                  color: titleC, size: 17),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Plant Needs Help!',
-                  style: GoogleFonts.fraunces(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.2,
-                    color: titleC,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (problemName.isNotEmpty || problemDesc.isNotEmpty) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: innerBg,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: borderC),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (problemName.isNotEmpty)
-                    Text(
-                      problemName,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: textC,
-                      ),
-                    ),
-                  if (severity.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      severity == 'mild'
-                          ? 'Mild'
-                          : (severity == 'moderate'
-                              ? 'Moderate'
-                              : 'Serious'),
-                      style: GoogleFonts.dmSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: textC,
-                      ),
-                    ),
-                  ],
-                  if (problemDesc.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      problemDesc,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w400,
-                        color: textC,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (actionSteps.isNotEmpty) ...[
-            Text(
-              l10n.whatToDoNow,
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: textC,
-              ),
-            ),
-            const SizedBox(height: 6),
-            ...actionSteps.take(5).map((s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('• ',
-                          style: GoogleFonts.dmSans(
-                              fontSize: 11, color: textC)),
-                      Expanded(
-                        child: Text(
-                          s,
-                          style: GoogleFonts.dmSans(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w400,
-                            color: textC,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
-            const SizedBox(height: 12),
-          ],
-          if (followUpDays != null && followUpDays > 0) ...[
-            Text(
-              'Check the plant again in $followUpDays days.',
-              style: GoogleFonts.dmSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: textC,
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-          if (reassurance.isNotEmpty) ...[
-            Text(
-              reassurance,
-              style: GoogleFonts.dmSans(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w400,
-                color: textC,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-          if (!hasStructured &&
-              _plant.healthMessage != null &&
-              _plant.healthMessage!.trim().isNotEmpty) ...[
-            Text(
-              _plant.healthMessage!.trim().startsWith('{')
-                  ? 'See Care Recommendations below for care tips.'
-                  : _plant.healthMessage!.length > 200
-                      ? '${_plant.healthMessage!.substring(0, 200).trim()}…'
-                      : _plant.healthMessage!,
-              style: GoogleFonts.dmSans(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w400,
-                color: textC,
-                height: 1.4,
-              ),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 10),
-          ],
-          if (_plant.lastHealthCheck != null)
-            Text(
-              'Last checked: ${DateFormat('MMM dd, h:mm a').format(_plant.lastHealthCheck!)}',
-              style: GoogleFonts.dmSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w300,
-                color: const Color(0xFF9E9E9E),
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Care Section Cards
-  /// Returns true if [text] is null, empty, or a "no issues" phrase — block should be hidden.
-  static bool _isNoIssuesContent(String? text) {
-    if (text == null) return true;
-    final t = text.trim();
-    if (t.isEmpty) return true;
-    final lower = t.toLowerCase();
-    if (lower == 'none detected') return true;
-    if (lower == 'no specific issues detected') return true;
-    if (lower == 'no issues detected') return true;
-    if (lower == 'no issues') return true;
-    return false;
-  }
-
-  /// Species-specific care risks (2–3 items from add-plant AI). Not current health problems.
-  String? _getSpecificIssuesDisplayText() {
-    if (_isNoIssuesContent(_plant.aiSpecificIssues)) return null;
-    return _plant.aiSpecificIssues!.trim();
-  }
-
-  Widget _buildIssuesCard() {
-    final displayText = _getSpecificIssuesDisplayText();
-    if (displayText == null || displayText.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final lines = displayText.split('\n').map((s) => s.trim()).where((s) => s.isNotEmpty).take(3).toList();
-    if (lines.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFAEE),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF5EBCC)),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 8,
-              offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                color: Color(0xFFC9A052),
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.specificIssues,
-                style: GoogleFonts.fraunces(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: -0.2,
-                  color: const Color(0xFFC9A052),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...lines.map(
-            (line) => Padding(
-              padding: const EdgeInsets.only(bottom: 2, left: 2),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '•  ',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFC9A052),
-                      height: 1.5,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      line,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w300,
-                        color: const Color(0xFF9C8456),
-                        height: 1.5,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  
-  // Care Recommendations Accordion — pixel-aligned with .acc in plant_details_screen.html
-  Widget _buildDetailsAccordion() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFCCE8B8), width: 1),
-      ),
-      child: StreamBuilder<List<HealthCheckRecord>>(
-        stream: _healthCheckStream,
-        builder: (context, snapshot) {
-          return Column(
+  @override
+  Widget build(BuildContext context) {
+    // The scrim darkens the top of the photo specifically so white status-bar
+    // glyphs stay legible.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: _kBase,
+        body: Stack(
           children: [
-              // Header strip (sage-soft) with bulb circle + Fraunces title + chevron
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isDetailsExpanded = !_isDetailsExpanded;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF1F8EB),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFCCE8B8),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.lightbulb_outline,
-                          color: Color(0xFF5FA346),
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          l10n.careRecommendationsTitle,
-                          style: GoogleFonts.fraunces(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: -0.3,
-                            height: 1.1,
-                            color: const Color(0xFF5FA346),
-                          ),
-                        ),
-                      ),
-                      AnimatedRotation(
-                        turns: _isDetailsExpanded ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 220),
-                        child: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: Color(0xFF5FA346),
-                          size: 22,
-                        ),
-                      ),
-                    ],
-                  ),
+            Positioned.fill(child: _buildBackdrop()),
+            Positioned.fill(child: _buildScrim()),
+            _buildScrollContent(),
+            _buildTopNav(),
+            if (_isLoading)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0x44000000),
+                  child: Center(child: CircularProgressIndicator(color: Colors.white)),
                 ),
               ),
-              
-              // Content area
-              if (_isDetailsExpanded) ...[
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                      // Species and Description are now shown in Care Recommendations section
-                      
-                      // Unified Care Recommendations content without inner border
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Care recommendations from GPT with structured sections (includes Description content)
-                      if (_plant.aiCareTips != null && _plant.aiCareTips!.isNotEmpty && _plant.aiCareTips != 'No specific tips') ...[
-                            // Display structured care sections from GPT directly
-                            ..._buildStructuredCareSections(_plant.aiCareTips!),
-                            const SizedBox(height: 16),
-                          ] else ...[
-                            Text(
-                              l10n.noCareRecommendationsYet,
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          
-                          // Interesting Facts section (4 facts: 3 interesting + 1 funny)
-                          _buildInterestingFactsInDetails(),
-                        ],
-                      ),
-              ],
-            ),
-          ),
-        ],
-            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Layer 1: fixed full-bleed photo ──────────────────────────────────────
+  // background: url(photo) center 42% / cover; transform: scale(1.02)
+  // `center 42%` for a cover fit maps to Alignment(0, 2 * 0.42 - 1).
+
+  Widget _buildBackdrop() {
+    const fallback = ColoredBox(color: Color(0xFF2A3E24));
+    const alignment = Alignment(0, -0.16);
+    final url = _plant.imageUrl;
+
+    Widget image = fallback;
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('data:image')) {
+        try {
+          image = Image.memory(
+            base64Decode(url.split(',')[1]),
+            fit: BoxFit.cover,
+            alignment: alignment,
+            errorBuilder: (_, __, ___) => fallback,
           );
-        },
-      ),
-    );
-  }
-
-  /// Build interesting facts section with stored facts from Plant model
-  Widget _buildInterestingFacts() {
-    // Use stored interesting facts from the plant model
-    final facts = _plant.interestingFacts;
-    
-    if (facts == null || facts.isEmpty) {
-      // Show button to generate AI content if facts are not available
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppTheme.accentGreen.withOpacity(0.3),
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.lightbulb_outline,
-                  color: AppTheme.accentGreen,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-            Text(
-              l10n.interestingFactsTitle,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.accentGreen,
-              ),
-            ),
-            ],
-          ),
-            const SizedBox(height: 12),
-            Text(
-              l10n.noInterestingFactsYet,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    // Display the same information as Description block (as requested by user)
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.accentGreen.withOpacity(0.3),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.lightbulb_outline,
-                color: AppTheme.accentGreen,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.interestingFactsTitle,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.accentGreen,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          // Show the same content as Description block
-          if (_plant.aiGeneralDescription != null && _plant.aiGeneralDescription!.isNotEmpty) ...[
-                  Text(
-              _cleanMarkdownContent(_plant.aiGeneralDescription!),
-                    style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.4,
-              ),
-            ),
-          ] else ...[
-            Text(
-              'No description available yet.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
-                        height: 1.4,
-                    ),
-                  ),
-                ],
-        ],
-      ),
-    );
-  }
-  
-
-
-  Widget _buildDetailRow(String label, String value) {
-    // Clean markdown formatting for AI-generated content
-    String cleanedValue = value;
-    if (label == 'Description' || label == 'AI Identified') {
-      cleanedValue = _cleanMarkdownContent(value);
-    }
-    
-    return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700, // Made bold
-            color: AppTheme.accentGreen, // Changed to green for better hierarchy
-            letterSpacing: -0.2,
-          ),
-        ),
-        const SizedBox(height: 6), // Increased spacing
-        Text(
-          cleanedValue,
-            style: TextStyle(
-            fontSize: 14,
-              color: Colors.grey.shade800,
-            height: 1.5, // Increased line height for better readability
-          ),
-        ),
-        const SizedBox(height: 12), // Reduced spacing between sections from 20 to 12
-      ],
-  );
-}
-
-  /// Builds an info row for the Care Recommendations section
-  Widget _buildInfoRow(String label, String value) {
-    // Clean markdown formatting for AI-generated content
-    String cleanedValue = value;
-    if (label == 'Description') {
-      cleanedValue = _cleanMarkdownContent(value);
-    }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.lato(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.accentGreen,
-            letterSpacing: -0.2,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          cleanedValue,
-          style: GoogleFonts.lato(
-            fontSize: 14,
-            color: AppTheme.textSecondary,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Builds interesting facts section within the Details block
-  Widget _buildInterestingFactsInDetails() {
-    final facts = _plant.interestingFacts;
-    
-    if (facts == null || facts.isEmpty) {
-      // Show button to generate AI content if facts are not available
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.auto_awesome,
-                color: AppTheme.accentGreen,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.interestingFactsTitle,
-                style: GoogleFonts.lato(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.accentGreen,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'AI-generated interesting facts are not available for this plant yet.',
-            style: GoogleFonts.lato(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      );
-    }
-    
-    // Display 4 interesting facts (3 interesting + 1 funny)
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.auto_awesome,
-              color: AppTheme.accentGreen,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              l10n.interestingFactsTitle,
-              style: GoogleFonts.lato(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.accentGreen,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        
-        // Display facts with green borders
-        ...facts.take(4).map((fact) => 
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppTheme.accentGreen.withOpacity(0.4),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '• ',
-                  style: GoogleFonts.lato(
-                    fontSize: 16,
-                    color: AppTheme.accentGreen,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    _cleanMarkdownContent(fact),
-                    style: GoogleFonts.lato(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ).toList(),
-      ],
-  );
-}
-  
-  /// Clean markdown formatting from AI-generated content
-  String _cleanMarkdownContent(String content) {
-    if (content.isEmpty) return content;
-    
-    return content
-        // Remove markdown headers
-        .replaceAll(RegExp(r'^###\s*', multiLine: true), '')
-        .replaceAll(RegExp(r'^##\s*', multiLine: true), '')
-        .replaceAll(RegExp(r'^#\s*', multiLine: true), '')
-        // Remove bold formatting
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
-        // Remove italic formatting
-        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1')
-        // Remove underline formatting
-        .replaceAll(RegExp(r'__(.*?)__'), r'$1')
-        // Remove strikethrough
-        .replaceAll(RegExp(r'~~(.*?)~~'), r'$1')
-        // Remove code formatting
-        .replaceAll(RegExp(r'`(.*?)`'), r'$1')
-        // Remove blockquotes
-        .replaceAll(RegExp(r'^>\s*', multiLine: true), '')
-        // Remove horizontal rules
-        .replaceAll(RegExp(r'^---$', multiLine: true), '')
-        // Remove list markers
-        .replaceAll(RegExp(r'^[\s]*[-*+]\s+', multiLine: true), '')
-        .replaceAll(RegExp(r'^[\s]*\d+\.\s+', multiLine: true), '')
-        // Remove AI artifacts like "$1:" that commonly appear in AI responses
-        .replaceAll(RegExp(r'\$1:\s*'), '')
-        .replaceAll(RegExp(r'\$\d+:\s*'), '')
-        // Remove "$1" artifacts that appear at the beginning of lines
-        .replaceAll(RegExp(r'^\$1\s*', multiLine: true), '')
-        .replaceAll(RegExp(r'^\$\d+\s*', multiLine: true), '')
-        // Clean up extra whitespace
-        .replaceAll(RegExp(r'\n\s*\n'), '\n\n')
-        .trim();
-  }
-
-  // Health History Gallery — pixel-aligned with .hist in plant_details_screen.html
-  Widget _buildHealthHistoryGallery() {
-  return Container(
-      width: double.infinity,
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: const Color(0xFFE4EFF8),
-      borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBAD5E9)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-              const Icon(
-                Icons.photo_library_outlined,
-                color: Color(0xFF4A91C8),
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                l10n.healthCheckHistoryTitle,
-                style: GoogleFonts.fraunces(
-                    fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: -0.2,
-                  color: const Color(0xFF4A91C8),
-                ),
-              ),
-            ),
-            Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: _openHealthCheckModal,
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCFE0EF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: Color(0xFF4A91C8),
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        StreamBuilder<List<HealthCheckRecord>>(
-          stream: _healthCheckStream,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return BotanlyShimmer(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: const ShimmerHealthHistory(),
-                ),
-              );
-            }
-            
-            if (snapshot.hasError) {
-              print('❌ Error loading health check history: ${snapshot.error}');
-              return Container(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Error loading history: ${snapshot.error}',
-                  style: TextStyle(color: Colors.red.shade600),
-                ),
-              );
-            }
-            
-            final healthChecks = snapshot.data ?? [];
-            print('🌱 PlantDetailsScreen: Loaded ${healthChecks.length} health checks for plant: ${_plant.name}');
-            
-            if (healthChecks.isEmpty) {
-              return _buildEmptyHealthHistory();
-            }
-            
-            // Validate health check records before rendering
-            final validHealthChecks = healthChecks.where((record) => 
-              record != null && 
-              record.id.isNotEmpty && 
-              record.status.isNotEmpty
-            ).toList();
-            
-            print('🌱 PlantDetailsScreen: Valid health checks: ${validHealthChecks.length}');
-            
-            // Debug each health check record
-            for (int i = 0; i < validHealthChecks.length; i++) {
-              final record = validHealthChecks[i];
-              print('🌱 PlantDetailsScreen: Health check $i: ID=${record.id}, Status=${record.status}, ImageURL=${record.imageUrl?.isNotEmpty == true ? "Present" : "Missing"}, Timestamp=${record.timestamp}');
-            }
-            
-            if (validHealthChecks.isEmpty) {
-              return _buildEmptyHealthHistory();
-            }
-            
-            return Column(
-              children: [
-                _buildHealthHistoryList(validHealthChecks),
-                // Scroll indicator
-                if (validHealthChecks.length > 3) ...[
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.chevron_left_rounded,
-                        size: 14,
-                        color: Color(0xFF4A91C8),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        l10n.swipeToSeeMore,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w300,
-                          color: const Color(0xFF4A91C8),
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildEmptyHealthHistory() {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(40),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.photo_library_outlined,
-          size: 48,
-          color: Colors.grey.shade400,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          l10n.noHealthChecksYet,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-            l10n.uploadPhotosForHealthHistory,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade500,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildHealthHistoryList(List<HealthCheckRecord> healthChecks) {
-    // Validate health checks before processing
-    if (healthChecks.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    final validHealthChecks = healthChecks.where((record) => 
-      record != null && 
-      record.id.isNotEmpty && 
-      record.status.isNotEmpty
-    ).toList();
-    
-    if (validHealthChecks.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    // Sort by timestamp, most recent first
-    final sortedHistory = List<HealthCheckRecord>.from(validHealthChecks)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    
-    // Limit to prevent overwhelming the UI
-    final displayHistory = sortedHistory.take(10).toList();
-  
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: displayHistory.length,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemBuilder: (context, index) {
-          final record = displayHistory[index];
-          if (record == null) {
-            return const SizedBox.shrink();
-          }
-          
-          return Container(
-            width: 100,
-            margin: EdgeInsets.only(right: index < displayHistory.length - 1 ? 12 : 0),
-            child: _buildHealthHistoryThumbnail(record),
-          );
-        },
-      ),
-    );
-  }
-
-  String _getAnalysisModeKey(HealthCheckRecord record) {
-    final metadata = record.metadata ?? const <String, dynamic>{};
-    final String? rawMode = metadata['analysisMode']?.toString().trim().toLowerCase();
-    if (rawMode != null && (rawMode == 'ai_agent' || rawMode == 'ai_care')) {
-      return rawMode;
-    }
-
-    // Backward-compatibility for older agent records without explicit mode key.
-    if (metadata.containsKey('agentContext') ||
-        metadata.containsKey('tierUsed') ||
-        metadata.containsKey('decisionTraceV2')) {
-      return 'ai_agent';
-    }
-
-    return 'ai_care';
-  }
-
-  String _getAnalysisModeLabel(HealthCheckRecord record) {
-    return _getAnalysisModeKey(record) == 'ai_agent' ? 'AI Agent' : 'AI Care';
-  }
-
-  Color _getAnalysisModeColor(HealthCheckRecord record) {
-    return _getAnalysisModeKey(record) == 'ai_agent' ? Colors.deepPurple : Colors.teal;
-  }
-
-  Widget _buildHealthHistoryThumbnail(HealthCheckRecord record) {
-    // Add null safety check for record
-    if (record == null) {
-      return const SizedBox.shrink();
-    }
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: record.status == 'ok' ? Colors.green.shade200 : Colors.red.shade200,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Status chip
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: record.status == 'ok' ? Colors.green.shade100 : Colors.red.shade100,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  record.status == 'ok' ? Icons.check : Icons.warning,
-                  color: record.status == 'ok' ? Colors.green.shade600 : Colors.red.shade600,
-                  size: 12,
-                ),
-                const SizedBox(width: 2),
-                                  Text(
-                    record.status == 'ok' ? 'OK' : 'Issue',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: record.status == 'ok' ? Colors.green.shade600 : Colors.red.shade600,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Image - Improved error handling and fallback
-          Flexible(
-            child: Container(
-              constraints: const BoxConstraints(
-                minHeight: 60,
-                maxHeight: 80,
-              ),
-              child: record.imageUrl != null && record.imageUrl!.isNotEmpty
-                  ? _buildHealthCheckImage(record.imageUrl!)
-                  : _buildHealthCheckImagePlaceholder(),
-            ),
-          ),
-
-          // Date
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              children: [
-                Text(
-                  _formatHealthCheckDate(record.timestamp),
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _getAnalysisModeColor(record).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: _getAnalysisModeColor(record).withOpacity(0.35),
-                    ),
-                  ),
-                  child: Text(
-                    _getAnalysisModeLabel(record),
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: _getAnalysisModeColor(record),
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds health check image with improved error handling
-  Widget _buildHealthCheckImage(String imageUrl) {
-    // Validate image URL
-    if (imageUrl.isEmpty) {
-      return _buildHealthCheckImagePlaceholder();
-    }
-    
-    // Try to get a CORS-free URL for web
-    final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
-    
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(12),
-        topRight: Radius.circular(12),
-      ),
-      child: imageUrl.startsWith('data:image')
-          ? Image.memory(
-              base64Decode(imageUrl.split(',')[1]),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) {
-                print('❌ Health check image memory error: $error');
-                return _buildHealthCheckImagePlaceholder();
-              },
-            )
-          : Image.network(
-              processedUrl,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) {
-                print('❌ Health check image network error: $error');
-                // Try alternative URL if CORS fails
-                if (CorsProxyService.hasCorsIssues) {
-                  return _buildHealthCheckImagePlaceholderWithRetry(imageUrl);
-                }
-                return _buildHealthCheckImagePlaceholder();
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  color: Colors.grey.shade100,
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                            : null,
-                        color: Colors.blue.shade400,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              // Add timeout to prevent hanging
-              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                if (wasSynchronouslyLoaded) return child;
-                return AnimatedOpacity(
-                  opacity: frame == null ? 0 : 1,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                  child: child,
-                );
-              },
-            ),
-    );
-  }
-
-  /// Builds health check image placeholder
-  Widget _buildHealthCheckImagePlaceholder() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.image,
-          color: Colors.grey.shade400,
-          size: 24,
-        ),
-      ),
-    );
-  }
-
-  /// Builds health check image placeholder with retry button for web
-  Widget _buildHealthCheckImagePlaceholderWithRetry(String imageUrl) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.broken_image,
-            size: 16,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'CORS',
-            style: TextStyle(
-              fontSize: 8,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Convert moisture level text to percentage (0-100) - consistent with AI recommendations
-  int _getMoisturePercentage(String? moistureLevel) {
-    if (moistureLevel == null) return 50;
-    
-    // First, check if it's already a percentage number
-    final percentage = int.tryParse(moistureLevel);
-    if (percentage != null && percentage >= 0 && percentage <= 100) {
-      return percentage;
-    }
-    
-    // Check if it's a range like "40-60%"
-    final rangeMatch = RegExp(r'(\d+)\s*-\s*(\d+)').firstMatch(moistureLevel);
-    if (rangeMatch != null) {
-      final min = int.tryParse(rangeMatch.group(1) ?? '');
-      final max = int.tryParse(rangeMatch.group(2) ?? '');
-      if (min != null && max != null) {
-        return (min + max) ~/ 2; // Return midpoint
+        } catch (_) {
+          image = fallback;
+        }
+      } else if (url.startsWith('http')) {
+        image = Image.network(
+          url,
+          fit: BoxFit.cover,
+          alignment: alignment,
+          errorBuilder: (_, __, ___) => fallback,
+        );
       }
     }
-    
-    // Fallback to text-based conversion
-    final lowerLevel = moistureLevel.toLowerCase();
-    if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 10;
-    if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 25;
-    if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 50;
-    if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 75;
-    if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 90;
-    
-    return 50; // Default to moderate
+    return Transform.scale(scale: 1.02, child: image);
   }
-  
-  /// Dot-scale widget: Dry ○──○──○──●──○ Wet
-  Widget _buildMoistureDotScale(int activeDot) {
-    const dotCount = 5;
-    const activeColor = Color(0xFF2E7D32);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(dotCount, (i) {
-            final isActive = i == activeDot;
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (i > 0)
-                  Container(width: 6, height: 1.5, color: Colors.grey.shade600),
-                Container(
-                  width: isActive ? 10 : 6,
-                  height: isActive ? 10 : 6,
+  // ─── Layer 2: photo scrim ─────────────────────────────────────────────────
+  // rgba(0,0,0,.22) 0% → transparent 22% → transparent 40%
+  // → rgba(235,240,233,.5) 56% → #EDF0EC 70%
+  // The 40% stop carries the base RGB so the fade to the neutral base does not
+  // dip through grey on the way.
+
+  Widget _buildScrim() {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0.0, 0.22, 0.40, 0.56, 0.70, 1.0],
+          colors: [
+            Color(0x38000000),
+            Color(0x00000000),
+            Color(0x00EDF0EC),
+            Color(0x80EBF0E9),
+            Color(0xFFEDF0EC),
+            Color(0xFFEDF0EC),
+          ],
+        ),
+      ),
+      child: SizedBox.expand(),
+    );
+  }
+
+  // ─── Layer 4: top nav ─────────────────────────────────────────────────────
+  // top: 52px = safe area + 8. Glass circles are 38 px inside a 44 px target,
+  // so the wrapper sits 3 px higher than the visual edge.
+
+  Widget _buildTopNav() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 5,
+      left: 16,
+      right: 16,
+      child: Row(
+        children: [
+          _navButton(
+            glyph: _Svg.chevronLeft,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+          const Spacer(),
+          _navButton(glyph: _Svg.chat, onTap: _openPlantChat),
+          const SizedBox(width: 8),
+          _navButton(glyph: _Svg.more, onTap: _showMoreMenu),
+        ],
+      ),
+    );
+  }
+
+  Widget _navButton({required String glyph, required VoidCallback onTap}) {
+    return _PressScale(
+      scale: 0.94,
+      onTap: onTap,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: Color(0x24000000), blurRadius: 14, offset: Offset(0, 4)),
+              ],
+            ),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: _kNavFilter,
+                child: Container(
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isActive ? activeColor : Colors.grey.shade600,
+                    color: const Color(0x47FFFFFF), // rgba(255,255,255,.28)
+                    border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
+                  ),
+                  child: Center(
+                    child: _Glyph(glyph, size: 17, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMoreMenu() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _MoreMenuSheet(
+        editLabel: l10n.edit,
+        deleteLabel: l10n.deletePlant,
+        onEdit: () {
+          Navigator.pop(ctx);
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => EditPlantScreen(plant: _plant)))
+              .then((_) => _refreshPlantData());
+        },
+        onDelete: () {
+          Navigator.pop(ctx);
+          _showDeleteConfirmation();
+        },
+      ),
+    );
+  }
+
+  // ─── Layer 3: scroll content ──────────────────────────────────────────────
+  // 430 px spacer on the 812 pt reference canvas ≈ 53% of the viewport; the
+  // scrim stops are proportional, so the spacer tracks the viewport too.
+
+  Widget _buildScrollContent() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.53),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTitleCard(),
+                const SizedBox(height: 12),
+                _buildWateringCard(),
+                const SizedBox(height: 12),
+                _buildTodoBlock(),
+                _buildSegmentedControl(),
+                const SizedBox(height: 12),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, anim) =>
+                      FadeTransition(opacity: anim, child: child),
+                  child: KeyedSubtree(
+                    key: ValueKey(_activeTab),
+                    child: switch (_activeTab) {
+                      0 => _buildCareTab(),
+                      1 => _buildAboutTab(),
+                      _ => _buildHistoryTab(),
+                    },
                   ),
                 ),
               ],
-            );
-          }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Glass surface (.g) — the core primitive ──────────────────────────────
+  // radius 26 · rgba(255,255,255,.62) · blur(26px) → sigma 13
+  // · .5px rgba(255,255,255,.75) · two shadow layers
+  // · inset 0 1px 0 rgba(255,255,255,.85) specular top edge
+  //
+  // The shadow must live OUTSIDE the ClipRRect — a clip discards anything drawn
+  // beyond the child's bounds, which is where box shadows are painted.
+
+  Widget _glass({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    double radius = 26,
+    Color fill = _kGlassFill,
+  }) {
+    final shape = BorderRadius.circular(radius);
+    return DecoratedBox(
+      decoration: BoxDecoration(borderRadius: shape, boxShadow: _kCardShadow),
+      child: ClipRRect(
+        borderRadius: shape,
+        child: BackdropFilter(
+          filter: _kGlassFilter,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: shape,
+              border: Border.all(color: _kGlassBorder, width: 0.5),
+            ),
+            child: Stack(
+              children: [
+                Padding(padding: padding ?? EdgeInsets.zero, child: child),
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  child: IgnorePointer(child: ColoredBox(color: _kGlassSpecular)),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 3),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(l10n.moistureDry, style: TextStyle(fontSize: 8, color: Colors.grey.shade600)),
-            Text(l10n.moistureWet, style: TextStyle(fontSize: 8, color: Colors.grey.shade600)),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
-  /// Maps percentage to 5-level label
-  String _getMoistureLabel(int percentage) {
-    if (percentage <= 15) return l10n.moistureLevelVeryDry;
-    if (percentage <= 35) return l10n.moistureLevelDry;
-    if (percentage <= 54) return l10n.moistureLevelSlightlyMoist;
-    if (percentage <= 74) return l10n.moistureLevelMoist;
-    return l10n.moistureLevelVeryMoist;
-  }
+  // ─── Title card ───────────────────────────────────────────────────────────
+  // padding 16 18 · align center · name 27/600/-.03em/1.08
+  // · latin 13/400 · health chip with a pulsing dot
 
-  /// Returns active dot index (0–4) for the scale widget
-  int _getMoistureDotIndex(int percentage) {
-    if (percentage <= 15) return 0;
-    if (percentage <= 35) return 1;
-    if (percentage <= 54) return 2;
-    if (percentage <= 74) return 3;
-    return 4;
-  }
-
-  /// Format moisture level to match AI recommendations format
-  String _formatMoistureLevel(String? moistureLevel) {
-    if (moistureLevel == null) return 'Medium';
-    
-    final lowerLevel = moistureLevel.toLowerCase();
-    if (lowerLevel.contains('very low') || lowerLevel.contains('extremely low')) return 'Very Low';
-    if (lowerLevel.contains('low') || lowerLevel.contains('dry')) return 'Low';
-    if (lowerLevel.contains('medium') || lowerLevel.contains('moderate')) return 'Medium';
-    if (lowerLevel.contains('high') || lowerLevel.contains('moist')) return 'High';
-    if (lowerLevel.contains('very high') || lowerLevel.contains('extremely high')) return 'Very High';
-    
-    return 'Medium'; // Default
-  }
-
-  /// Helper method to check if text contains problem indicators
-  bool _hasProblemsInText(String text) {
-    print('🌱 _hasProblemsInText checking: "$text"');
-    
-    // First, check for clear positive health indicators
-    // If the AI explicitly says the plant is healthy, trust that assessment
-    if (text.contains('healthy') || 
-        text.contains('thriving') || 
-        text.contains('robust') ||
-        text.contains('good condition') ||
-        text.contains('no problems') ||
-        text.contains('no issues') ||
-        text.contains('appears healthy') ||
-        text.contains('looks good') ||
-        text.contains('doing well') ||
-        text.contains('in good shape') ||
-        text.contains('beautiful') ||
-        text.contains('stunning') ||
-        text.contains('great condition')) {
-      print('🌱 _hasProblemsInText: Found positive indicators - returning FALSE (no problems)');
-      return false;
-    }
-    
-    // Only check for problems if no positive indicators were found
-    // Check for specific problem indicators (these are more reliable)
-    final hasProblems = text.contains('critical') || 
-           text.contains('dying') || 
-           text.contains('urgent') || 
-           text.contains('emergency') || 
-           text.contains('severe') || 
-           text.contains('serious problem') ||
-           text.contains('immediate attention') ||
-           text.contains('declining') ||
-           text.contains('unhealthy') ||
-           text.contains('yellow') ||
-           text.contains('brown') ||
-           text.contains('wilting') ||
-           text.contains('drooping') ||
-           text.contains('overwatered') ||
-           text.contains('underwatered') ||
-           text.contains('root rot') ||
-           text.contains('pest') ||
-           text.contains('disease') ||
-           text.contains('stress') ||
-           text.contains('problem') ||
-           text.contains('issue') ||
-           _plant.healthStatus?.toLowerCase() == 'critical' ||
-           _plant.healthStatus?.toLowerCase() == 'needs attention';
-    
-    print('🌱 _hasProblemsInText result: $hasProblems');
-    return hasProblems;
-  }
-
-  /// Formats the next watering info as days only.
-  /// When shouldWaterNow (e.g. issue + need to water), returns "Now".
-  String _getNextWateringDisplay() {
-    if (_plant.shouldWaterNow) return l10n.nowLabel;
-    final wateringDate = _getNextWateringDate();
-    final now = DateTime.now().toLocal();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(
-      wateringDate.year,
-      wateringDate.month,
-      wateringDate.day,
-    );
-    int diffDays = target.difference(today).inDays;
-    if (diffDays <= 0) diffDays = 1;
-    return diffDays == 1 ? l10n.nextIn1Day : l10n.nextInNDays(diffDays);
-  }
-
-  /// Single source of truth for the next watering moment in the UI
-  DateTime _getNextWateringDate() {
-    return _plant.nextDueAt ?? _plant.nextWatering;
-  }
-
-  /// Starts a periodic timer to update the watering countdown once per minute
-  void _startWateringCountdownTimer() {
-    _wateringCountdownTimer?.cancel();
-    _updateWateringCountdown();
-    _wateringCountdownTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      _updateWateringCountdown();
-    });
-  }
-
-  /// Stops the watering countdown timer
-  void _stopWateringCountdownTimer() {
-    _wateringCountdownTimer?.cancel();
-    _wateringCountdownTimer = null;
-  }
-
-  /// Updates the countdown label based on the plant's next watering time
-  void _updateWateringCountdown() {
-    if (!mounted) return;
-
-    // If shouldWaterNow is true, clear countdown (button will show "Water now")
-    if (_plant.shouldWaterNow) {
-      setState(() {
-        _wateringCountdownDays = null;
-      });
-      return;
-    }
-
-    final wateringDate = _getNextWateringDate();
-    final now = DateTime.now().toLocal();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(
-      wateringDate.year,
-      wateringDate.month,
-      wateringDate.day,
-    );
-    
-    int diffDays = target.difference(today).inDays;
-
-    // If watering is due (or overdue), clear the countdown
-    if (diffDays <= 0) {
-      setState(() {
-        _wateringCountdownDays = null;
-      });
-      return;
-    }
-    
-    // Days-only countdown (minimum 1 day)
-    if (diffDays <= 0) {
-      diffDays = 1;
-    }
-
-    setState(() {
-      _wateringCountdownDays = diffDays;
-    });
-  }
-
-  /// Checks if the plant can be watered (it's the watering day)
-  /// Check if plant should be watered now
-  /// Uses shouldWaterNow flag from AI analysis, or falls back to date comparison
-  bool _canWaterPlant() {
-    // PRIORITY 1: Use shouldWaterNow flag from AI analysis
-    if (_plant.shouldWaterNow) {
-      return true;
-    }
-    
-    // PRIORITY 2: Fallback to date-based check if flag not available
-    final now = DateTime.now();
-    final wateringDate = _getNextWateringDate();
-    return wateringDate.isBefore(now) || wateringDate.isAtSameMomentAs(now);
-  }
-  
-  /// Get button label based on shouldWaterNow state
-  String _getWateringButtonLabel() {
-    if (_plant.shouldWaterNow) {
-      return l10n.wateringDone;
-    }
-    
-    // Show countdown or default label
-    if (_wateringCountdownDays != null) {
-      return _wateringCountdownDays == 1 ? l10n.nextIn1Day : l10n.nextInNDays(_wateringCountdownDays!);
-    }
-    
-    return l10n.iHaveWatered;
-  }
-
-  /// Gets the unified health status based on the plant's health data
-  /// This is the single source of truth for all health status displays
-  String _getUnifiedHealthStatus() {
-    print('🌱 Plant Details: Determining unified health status...');
-    print('🌱 Plant healthStatus: ${_plant.healthStatus}');
-    final healthMsg = _plant.healthMessage ?? '';
-    print('🌱 Plant healthMessage: ${healthMsg.length > 200 ? healthMsg.substring(0, 200) : healthMsg}...');
-    
-    // PRIORITY 1: Use the plant's stored health status (from health checks)
-    if (_plant.healthStatus != null && _plant.healthStatus!.isNotEmpty) {
-      print('🌱 Using plant healthStatus: ${_plant.healthStatus}');
-      
-      if (_plant.healthStatus == 'issue') {
-        print('🌱 Status: ISSUE (from healthStatus)');
-        return 'Issue';
-      } else if (_plant.healthStatus == 'ok') {
-        print('🌱 Status: HEALTHY (from healthStatus)');
-        return 'Healthy';
+  /// The name is whatever the owner typed; the line under it is the botanical
+  /// identification. When identification failed, `species` holds a placeholder
+  /// like "Unknown Species" — showing that is worse than showing nothing, so
+  /// fall back to the cultivar the analyzer wrote into the care blob.
+  String _botanicalName() {
+    const placeholders = {
+      'unknown',
+      'unknown species',
+      'unknown plant',
+      'n/a',
+      'none',
+    };
+    for (final candidate in [_plant.species, _section(CareSection.cultivar)]) {
+      final s = candidate.trim();
+      if (s.isEmpty ||
+          s == _plant.name ||
+          placeholders.contains(s.toLowerCase())) {
+        continue;
       }
-    }
-    
-    // PRIORITY 2: Analyze health message if available
-    if (_plant.healthMessage != null && _plant.healthMessage!.isNotEmpty) {
-      print('🌱 Analyzing healthMessage for status...');
-      
-    final message = _plant.healthMessage!.toLowerCase();
-      
-      // Check for problem indicators
-      final problemIndicators = [
-        'wilted', 'drooping', 'yellow', 'brown', 'dry', 'distress',
-        'unhealthy', 'dying', 'dead', 'critical', 'urgent', 'emergency',
-        'severe', 'serious', 'turning yellow', 'brown spots',
-        'not in the best health', 'needs help', 'poor health',
-        'struggling', 'stress', 'fallen petals', 'drooping quite a bit',
-        'not in the best health right now', 'problem', 'issue',
-        'concern', 'damaged', 'sick', 'declining', 'overwatered',
-        'underwatered', 'root rot', 'pest', 'disease'
-      ];
-      
-      // Check if ANY problem indicator is present
-      for (final indicator in problemIndicators) {
-        if (message.contains(indicator)) {
-          print('🌱 Found problem indicator: "$indicator"');
-          print('🌱 Status: ISSUE (from healthMessage analysis)');
-          return 'Issue';
-        }
-      }
-      
-      // Check for negative health statements
-      final negativeStatements = [
-        'not healthy', 'not thriving', 'not doing well',
-        'not in good condition', 'not in good shape',
-        'has problems', 'has issues', 'needs attention',
-        'requires care', 'needs help', 'struggling'
-      ];
-      
-      for (final statement in negativeStatements) {
-        if (message.contains(statement)) {
-          print('🌱 Found negative statement: "$statement"');
-          print('🌱 Status: ISSUE (from healthMessage analysis)');
-          return 'Issue';
-        }
-      }
-      
-      // Check for positive health indicators
-      final positiveIndicators = [
-        'healthy', 'thriving', 'robust', 'good condition',
-        'no problems', 'no issues', 'appears healthy',
-        'looks good', 'doing well', 'in good shape',
-        'beautiful', 'stunning', 'great condition',
-        'flourishing', 'lush', 'vibrant'
-      ];
-      
-      for (final indicator in positiveIndicators) {
-        if (message.contains(indicator)) {
-          print('🌱 Found positive indicator: "$indicator"');
-          print('🌱 Status: HEALTHY (from healthMessage analysis)');
-          return 'Healthy';
-        }
-      }
-    }
-    
-    // PRIORITY 3: Default for new plants or unclear status
-    print('🌱 Status: NO STATUS (no health data available)');
-    return 'No Status';
-  }
-
-  /// Parses healthMessage as Plant Assistant JSON; returns null if not valid structure.
-  Map<String, dynamic>? _tryParsePlantAssistant(String? message) {
-    if (message == null || message.isEmpty) return null;
-    final s = message.trim();
-    if (!s.startsWith('{')) return null;
-    try {
-      final map = jsonDecode(s) as Map<String, dynamic>;
-      if (map['status'] != null || map['praise_phrase'] != null || map['problem_name'] != null) {
-        return map;
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Removes Interesting Facts section from health message for Plant Care Assistant block
-  String _removeInterestingFactsFromMessage(String message) {
-    // Split by "Interesting Facts:" and take only the first part
-    final parts = message.split('Interesting Facts:');
-    if (parts.length > 1) {
-      // Also remove any trailing content after Interesting Facts
-      final beforeFacts = parts[0].trim();
-      return beforeFacts;
-    }
-    return message;
-  }
-
-  /// Extracts Health Assessment section from health message
-  String _extractHealthAssessment(String message) {
-    // Look for "HEALTH ASSESSMENT:" section
-    if (message.contains('HEALTH ASSESSMENT:')) {
-      final parts = message.split('HEALTH ASSESSMENT:');
-      if (parts.length > 1) {
-        // Take everything after "HEALTH ASSESSMENT:" until the end or next section
-        final assessment = parts[1].trim();
-        return assessment;
-      }
+      return s;
     }
     return '';
   }
 
-  /// Removes both Interesting Facts and Health Assessment from health message for Plant Needs Help block
-  String _removeFactsAndAssessmentFromMessage(String message) {
-    // First remove Interesting Facts section
-    String cleaned = message;
-    if (cleaned.contains('Interesting Facts:')) {
-      final parts = cleaned.split('Interesting Facts:');
-      cleaned = parts[0].trim();
-    }
-    
-    // Then remove Health Assessment section
-    if (cleaned.contains('HEALTH ASSESSMENT:')) {
-      final parts = cleaned.split('HEALTH ASSESSMENT:');
-      cleaned = parts[0].trim();
-    }
-    
-    return cleaned;
-  }
+  Widget _buildTitleCard() {
+    final latin = _botanicalName();
 
-  /// Gets the unified health status color based on the unified status
-  Color _getUnifiedHealthStatusColor() {
-    final status = _getUnifiedHealthStatus();
-    
-    switch (status) {
-      case 'Issue':
-        return Colors.red.shade600;
-      case 'Healthy':
-        return AppTheme.accentGreen;
-      case 'No Status':
-      default:
-        return Colors.transparent;
-    }
-  }
-
-  /// Gets the unified health status icon based on the unified status
-  IconData _getUnifiedHealthStatusIcon() {
-    final status = _getUnifiedHealthStatus();
-    
-    switch (status) {
-      case 'Issue':
-        return Icons.warning;
-      case 'Healthy':
-        return Icons.check_circle;
-      case 'No Status':
-      default:
-        return Icons.info;
-    }
-  }
-
-  /// Gets the unified health status text for health check history
-  String _getHealthCheckHistoryStatus() {
-    final status = _getUnifiedHealthStatus();
-    
-    switch (status) {
-      case 'Issue':
-        return 'Issue';
-      case 'Healthy':
-      return 'Healthy';
-      case 'No Status':
-      default:
-        return 'No Status';
-    }
-  }
-
-  Widget _buildHeroCarousel(List<HealthCheckRecord> healthChecks, {bool isLoading = false, bool hasError = false}) {
-    // Prepare photos list: Health Check photos first, then default plant photo
-    final List<Map<String, dynamic>> photos = [];
-    
-    // Add Health Check photos (most recent first)
-    final sortedHealthChecks = List<HealthCheckRecord>.from(healthChecks)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    
-    for (final record in sortedHealthChecks) {
-      if (record.imageUrl != null) {
-        photos.add({
-          'url': record.imageUrl!,
-          'type': 'health_check',
-          'record': record,
-        });
-      }
-    }
-    
-    // Add default plant photo if it exists and no health check photos
-    if (photos.isEmpty && _plant.imageUrl != null) {
-      photos.add({
-        'url': _plant.imageUrl!,
-        'type': 'default',
-        'record': null,
-      });
-    }
-    
-    // If no photos at all, show placeholder
-    if (photos.isEmpty) {
-      return _buildHeroPlaceholder();
-    }
-    
-    return _HeroCarouselWidget(
-      photos: photos,
-      plantName: _plant.name,
-      plantStatus: _plant.healthStatus!,
-      onPageChanged: (currentPage) {
-        setState(() {
-          // Update the current page state
-          _currentCarouselPage = currentPage;
-        });
-      },
-    );
-  }
-
-  Widget _buildHeroPlaceholder() {
-    return Stack(
-      children: [
-        Container(
-          width: double.infinity,
-          height: _getHeroImageHeight(context), // Use orientation-aware height
-          child: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-            child: _plant.imageUrl != null && _plant.imageUrl!.startsWith('data:image')
-              ? Image.memory(
-                  base64Decode(_plant.imageUrl!.split(',')[1]),
-                  fit: BoxFit.contain, // Better for vertical photos
-                  filterQuality: FilterQuality.high,
-                  isAntiAlias: true,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildPlaceholderImage();
-                  },
-                )
-              : _plant.imageUrl != null && _plant.imageUrl!.startsWith('http')
-                  ? Image.network(
-                      _plant.imageUrl!,
-                      fit: BoxFit.contain, // Better for vertical photos
-                      filterQuality: FilterQuality.high,
-                      isAntiAlias: true,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                        return Container(
-                          color: Colors.grey.shade200,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: Colors.green,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildPlaceholderImage();
-                      },
-                    )
-                  : _buildPlaceholderImage(),
-          ),
-        ),
-        
-        // Back Button
-        Positioned(
-          top: 48,
-          left: 16,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-                size: 24,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-        
-        // Bottom Gradient Overlay
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.4),
-                  Colors.black.withOpacity(0.7),
-                ],
-              ),
-            ),
-            padding: EdgeInsets.fromLTRB(
-              ResponsiveLayout.getContentPadding(context).left,
-              40,
-              ResponsiveLayout.getContentPadding(context).right,
-              24,
-            ),
-                child: Column(
+    return _glass(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _plant.name,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        offset: const Offset(0, 2),
-                        blurRadius: 8,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                    ],
+                  style: _font(
+                    fontSize: 27,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 27 * -0.03,
+                    height: 1.08,
+                    color: _kInk,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _getUnifiedHealthStatusColor().withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
-                    ),
+                if (latin.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    latin,
+                    // .sci resets the inherited tracking to 0
+                    style: _font(fontSize: 13, letterSpacing: 0, color: _kMut),
                   ),
-                  child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                        _getUnifiedHealthStatusIcon(),
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                    Text(
-                        _getUnifiedHealthStatus(),
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ],
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    try {
-      final screenSize = MediaQuery.of(context).size;
-      print('🌱 PlantDetailsScreen: Building screen for plant: ${_plant.name}');
-      print('🌱 PlantDetailsScreen: Plant ID: ${_plant.id}');
-      print('🌱 PlantDetailsScreen: Plant species: ${_plant.species}');
-      print('🌱 PlantDetailsScreen: Screen size: ${screenSize.width}x${screenSize.height}');
-      print('🌱 PlantDetailsScreen: Is portrait: ${screenSize.height > screenSize.width}');
-      
-    return Scaffold(
-      backgroundColor: Colors.white,
-      extendBodyBehindAppBar: true, // Allow content to extend behind system UI
-      floatingActionButton: Container(
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF5FA346), Color(0xFF4A8C33)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x525FA346),
-              blurRadius: 14,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: _openPlantChat,
-            child: const SizedBox(
-              width: 56,
-              height: 56,
-              child: Icon(Icons.chat_bubble_rounded,
-                  color: Colors.white, size: 22),
-            ),
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: CustomScrollView(
-        slivers: [
-          // Hero Photo Section - Full width and to the top in portrait orientation
-          SliverToBoxAdapter(
-            child: Stack(
-              children: [
-                // Hero Image Section - Full width and height
-                StreamBuilder<List<HealthCheckRecord>>(
-                  stream: _healthCheckStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      print('❌ Error loading hero photos: ${snapshot.error}');
-                      return _buildHeroPlaceholder();
-                    }
-                    
-                    // Prepare photos list: Health Check photos first, then default plant photo
-                    final List<Map<String, dynamic>> photos = [];
-                    
-                    if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
-                      // Add Health Check photos (most recent first)
-                      final sortedHealthChecks = List<HealthCheckRecord>.from(snapshot.data!)
-                        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-                      
-                      print('🌱 PlantDetailsScreen: Processing ${sortedHealthChecks.length} health check photos');
-                      
-                      for (int i = 0; i < sortedHealthChecks.length; i++) {
-                        final record = sortedHealthChecks[i];
-                        if (record.imageUrl != null && record.imageUrl!.isNotEmpty) {
-                          print('🌱 PlantDetailsScreen: Adding health check photo $i: URL=${record.imageUrl!.substring(0, record.imageUrl!.length > 50 ? 50 : record.imageUrl!.length)}...');
-                          photos.add({
-                            'url': record.imageUrl!,
-                            'type': 'health_check',
-                            'record': record,
-                            'timestamp': record.timestamp,
-                          });
-                        } else {
-                          print('🌱 PlantDetailsScreen: Skipping health check photo $i: No image URL');
-                        }
-                      }
-                    }
-                    
-                    // Add default plant photo if it exists (first created plant photo)
-                    if (_plant.imageUrl != null && _plant.imageUrl!.isNotEmpty) {
-                      print('🌱 PlantDetailsScreen: Adding default plant photo: URL=${_plant.imageUrl!.substring(0, _plant.imageUrl!.length > 50 ? 50 : _plant.imageUrl!.length)}...');
-                      photos.add({
-                        'url': _plant.imageUrl!,
-                        'type': 'default',
-                        'record': null,
-                        'timestamp': _plant.createdAt,
-                      });
-                    } else {
-                      print('🌱 PlantDetailsScreen: No default plant photo available');
-                    }
-                    
-                    print('🌱 PlantDetailsScreen: Total photos prepared: ${photos.length}');
-                    
-                    if (photos.isNotEmpty) {
-                      // Convert photos to list of URLs for the new carousel
-                      final List<String> imageUrls = photos.map((photo) => photo['url'] as String).toList();
-                      
-                      return PlantCarouselHeader(
-                        images: imageUrls,
-                        onBackPressed: () => Navigator.of(context).pop(),
-                      );
-                    }
-                    
-                    // Fallback to default plant photo
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 52), // Match the 52px total spacing from other scenarios
-                      child: _buildHeroPlaceholder(),
-                    );
-                  },
-                ),
-                
-
-              ],
-            ),
-          ),
-                  
-                  // Key Metrics - 3 cards in a row (responsive) - REMOVED: Now integrated into unified block above image
-                  // SliverToBoxAdapter(
-                  //   child: Padding(
-                  //     padding: const EdgeInsets.fromLTRB(24, 0, 24, 24), // Removed top padding since spacing is now consistent above
-                  //     child: LayoutBuilder(
-                  //       builder: (context, constraints) {
-                  //         // Responsive layout: stack on narrow screens
-                  //         if (constraints.maxWidth < 600) {
-                  //           return Column(
-                  //             children: [
-                  //               // First row: 2 cards
-                  //               Row(
-                  //                 children: [
-                  //                   Expanded(child: _buildNextWateringCard()),
-                  //               //     const SizedBox(width: 16),
-                  //               //     Expanded(child: _buildLightCard()),
-                  //               //   ],
-                  //               // ),
-                  //               // const SizedBox(height: 16),
-                  //               // Second row: 1 card
-                  //               _buildMoistureCard(),
-                  //             ],
-                  //           );
-                  //         } else {
-                  //           // Wide screen: 3 cards in a row
-                  //           return Row(
-                  //             children: [
-                  //               Expanded(child: _buildNextWateringCard()),
-                  //               const SizedBox(width: 16),
-                  //               Expanded(child: _buildLightCard()),
-                  //               const SizedBox(width: 16),
-                  //               Expanded(child: _buildMoistureCard()),
-                  //             ],
-                  //           );
-                  //         }
-                  //       },
-                  //     ),
-                  //   ),
-                  // ),
-          
-          // Unified Information Block - Plant name, health, and care info (NOW ABOVE THE IMAGE)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveLayout.getContentPadding(context).left,
-                24,
-                ResponsiveLayout.getContentPadding(context).right,
-                24,
-              ),
-              child: _buildUnifiedInformationBlock(),
-            ),
-          ),
-          
-          // AI Care Assistant (green card) - More compact for mobile
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveLayout.getContentPadding(context).left,
-                0,
-                ResponsiveLayout.getContentPadding(context).right,
-                16,
-              ),
-              child: _buildAiCareCard(),
-            ),
-          ),
-          
-          // Care Section (Issues and Tips)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveLayout.getContentPadding(context).left,
-                0,
-                ResponsiveLayout.getContentPadding(context).right,
-                16,
-              ),
-              child: _buildDetailsAccordion(),
-            ),
-          ),
-          
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveLayout.getContentPadding(context).left,
-                0,
-                ResponsiveLayout.getContentPadding(context).right,
-                16,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < ResponsiveLayout.breakpointStackNarrow) {
-                    // Stack vertically on narrow screens
-                    return Column(
-                      children: [
-                        _buildIssuesCard(),
-                      ],
-                    );
-                  } else {
-                    // Side by side on wider screens
-                    return Row(
-                      children: [
-                        Expanded(child: _buildIssuesCard()),
-                      ],
-                    );
-                  }
-                },
-              ),
-            ),
-          ),
-          
-          // Health Check History (horizontal gallery)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveLayout.getContentPadding(context).left,
-                0,
-                ResponsiveLayout.getContentPadding(context).right,
-                16,
-              ),
-              child: _buildHealthHistoryGallery(),
-            ),
-          ),
-          
-          // Delete Plant Button
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveLayout.getContentPadding(context).left,
-                0,
-                ResponsiveLayout.getContentPadding(context).right,
-                16,
-              ),
-              child: Center(
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(999),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(999),
-                    onTap: _showDeleteConfirmation,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                            color: const Color(0xFFC54F4F), width: 1),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.delete_outline_rounded,
-                              size: 12, color: Color(0xFFC54F4F)),
-                          const SizedBox(width: 6),
-                          Text(
-                            l10n.deletePlantAction,
-                            style: GoogleFonts.dmSans(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFFC54F4F),
-                              letterSpacing: 0.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-
-          // Bottom padding - Increased for better mobile experience
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 32), // Increased from 24 to 32
-          ),
+          // Always present: SPEC 1.1 has no "no data" state, so the chip is not
+          // conditional on a check having been run.
+          const SizedBox(width: 12),
+          _healthChip(),
         ],
       ),
     );
-    } catch (e) {
-      print('❌ Error building PlantDetailsScreen: $e');
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.errorLabel),
-        ),
-        body: Center(
-          child: Text(l10n.errorBuildingPlantDetailsScreen(e.toString())),
-        ),
-      );
-    }
   }
 
-  /// Check if device is in portrait orientation
-  bool _isPortrait(BuildContext context) {
-    return MediaQuery.of(context).orientation == Orientation.portrait;
-  }
-  
-  /// Hero image block height: ~70% of screen so other blocks (name, status, etc.) are visible below.
-  double _getHeroImageHeight(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return (size.height * 0.70).clamp(280.0, 700.0);
-  }
+  // pill: padding 6 11 · rgba(tint,.14) · .5px rgba(tint,.22) · 12.5/600
+  // dot: 7 px, pulse 2.4 s — ring grows 0 → 5 px while alpha fades .4 → 0
+  Widget _healthChip() {
+    final healthy = !_needsAttention;
+    // Amber, not the destructive red: a check that flagged something is a nudge,
+    // not an error. Text is darkened to stay legible on glass over a photo.
+    final tone = healthy ? _kAccent : kGlassAttnText;
+    final label = healthy ? l10n.healthStatusHealthy : l10n.healthNeedsAttention;
+    final blockedReason = _analyzeBlockedReason();
 
-  // Unified Information Block — pixel-aligned with plant_details_screen.html .info-card
-  Widget _buildUnifiedInformationBlock() {
-    final canWater = _canWaterPlant();
-    final waterDisabled = _isLoading || !canWater;
-    return Container(
-      padding: const EdgeInsets.all(20),
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE4EBE1), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header row: name + health-badge | AI Agent pill
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _plant.name,
-                      style: BotanlyText.plantName(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (_plant.healthMessage != null &&
-                        _plant.healthMessage!.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      _buildHealthBadge(),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              _buildAiAgentPill(),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // 3 care cards
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _buildHtmlWateringCard()),
-              const SizedBox(width: 10),
-              Expanded(child: _buildHtmlLightCard()),
-              const SizedBox(width: 10),
-              Expanded(child: _buildHtmlMoistureCard()),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Action buttons (Water + Analyze Health)
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _HtmlActionButton(
-                    label: _getWateringButtonLabel(),
-                    icon: Icons.water_drop_rounded,
-                    variant: waterDisabled
-                        ? _HtmlActionVariant.waterDisabled
-                        : _HtmlActionVariant.waterPrimary,
-                    onTap: waterDisabled ? null : _waterPlant,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _HtmlActionButton(
-                    label: _healthCheckButtonLabel(),
-                    icon: Icons.health_and_safety_outlined,
-                    variant: _canDoHealthCheck()
-                        ? _HtmlActionVariant.analyze
-                        : _HtmlActionVariant.analyzeDisabled,
-                    onTap: _canDoHealthCheck() ? _openHealthCheckModal : null,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Health badge chip (Healthy / Needs attention / Issue) for info-card header
-  Widget _buildHealthBadge() {
-    final status = _getUnifiedHealthStatus();
-    final isOk = _plant.healthStatus == 'ok' ||
-        status.toLowerCase().contains('healthy') ||
-        status.toLowerCase().contains('хорошо');
-    final isWarn = _plant.healthStatus == 'warning';
-
-    Color bg;
-    Color fg;
-    IconData icon;
-    if (isOk) {
-      bg = const Color(0xFFE3F1D6);
-      fg = const Color(0xFF4A8C33);
-      icon = Icons.check_rounded;
-    } else if (isWarn) {
-      bg = const Color(0xFFF7ECD8);
-      fg = const Color(0xFF8A6920);
-      icon = Icons.warning_amber_rounded;
-    } else {
-      bg = const Color(0xFFFBE6E6);
-      fg = const Color(0xFF8A3535);
-      icon = Icons.error_outline_rounded;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
+        color: healthy ? _kAccent.withAlpha(36) : kGlassAttnBg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tone.withAlpha(56), width: 0.5), // .22
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: fg, size: 12),
-          const SizedBox(width: 5),
-          Text(
-            status,
-            style: GoogleFonts.dmSans(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-              color: fg,
-            ),
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) {
+              final t = _pulseCtrl.value;
+              final phase = t <= 0.5 ? t * 2 : (1 - t) * 2;
+              return Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: tone,
+                  boxShadow: [
+                    BoxShadow(
+                      color: tone.withAlpha((102 * (1 - phase)).round()),
+                      blurRadius: 0,
+                      spreadRadius: 5 * phase,
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: _font(
+                fontSize: 12.5, fontWeight: FontWeight.w600, color: tone),
+          ),
+          if (blockedReason == null) ...[
+            const SizedBox(width: 5),
+            _Glyph(_Svg.scan, size: 13, color: tone.withAlpha(191)), // .75
+          ],
         ],
       ),
     );
-  }
 
-  // "AI Agent" segmented pill on the right of info-card header
-  Widget _buildAiAgentPill() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3F1D6),
-        border: Border.all(color: const Color(0xFFCCE8B8)),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        l10n.aiAgent,
-        style: GoogleFonts.dmSans(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF4A8C33),
-          letterSpacing: 0.2,
+    if (blockedReason != null) return chip;
+
+    // Visual size stays as designed; the tap target is padded out to 44 px.
+    return Semantics(
+      button: true,
+      label: l10n.healthAnalyzeCta,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openHealthCheckModal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: chip,
         ),
       ),
     );
   }
 
-  // Watering care-card (sage-soft background, ml pill at bottom)
-  Widget _buildHtmlWateringCard() {
-    final wateringAmount = _getWateringAmount();
+  // ─── Watering widget (primary) ────────────────────────────────────────────
+
+  Widget _buildWateringCard() {
+    final canWater = _canWaterPlant();
+    final amount = _doseMl();
+    final interval = _wateringInterval();
+    final progress = _wateredJustNow ? 0.04 : _cycleProgress();
+
+    return _glass(
+      child: Stack(
+        children: [
+          const Positioned.fill(child: _WateringSheen()),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 11.5/600 · letter-spacing .08em · uppercase
+                          Text(
+                            l10n.nextWatering.toUpperCase(),
+                            style: _font(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 11.5 * 0.08,
+                              color: _kMut,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          // 30/600 · letter-spacing -.035em · line-height 1
+                          Text(
+                            _nextWateringValue(),
+                            style: _font(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 30 * -0.035,
+                              height: 1.0,
+                              color: _kInk,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            _wateringSubtitle(interval),
+                            style: _font(fontSize: 13, color: _kMut),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (amount != null && amount > 0) ...[
+                      const SizedBox(width: 12),
+                      _doseBlock(amount),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 15),
+                _cycleBar(progress),
+                const SizedBox(height: 7),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _wateredJustNow
+                          ? l10n.cycleJustStarted
+                          : l10n.cyclePercentComplete((progress * 100).round()),
+                      style: _font(fontSize: 11.5, color: _kMut2),
+                    ),
+                    Text(
+                      l10n.nDays(interval),
+                      style: _font(fontSize: 11.5, color: _kMut2),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _wateringCta(canWater),
+                const SizedBox(height: 9),
+                _analyzeHealthButton(),
+              ],
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(child: _DropletBurst(trigger: _dropletBurst)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // rgba(46,134,200,.12) · .5px rgba(46,134,200,.2) · radius 16 · padding 9 12
+  // value 15/600 in --water over `ML` 10/600 uppercase .04em in --mut
+  Widget _doseBlock(int amount) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F8EB),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCCE8B8)),
+        color: _kWater.withAlpha(31), // .12
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kWater.withAlpha(51), width: 0.5), // .2
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.water_drop_rounded,
-              color: Color(0xFF5FA346), size: 22),
-          const SizedBox(height: 4),
           Text(
-            l10n.wateringLabel,
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF888888),
-            ),
-            textAlign: TextAlign.center,
+            '$amount',
+            style: _font(
+                fontSize: 15, fontWeight: FontWeight.w600, color: _kWater),
           ),
           const SizedBox(height: 2),
           Text(
-            _plant.shouldWaterNow
-                ? l10n.nowLabel
-                : DateFormat('MMM dd').format(_getNextWateringDate()),
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF4A8C33),
-              height: 1.15,
+            l10n.millilitersShort,
+            style: _font(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 10 * 0.04,
+              color: _kMut,
             ),
-            textAlign: TextAlign.center,
           ),
-          if (!_plant.shouldWaterNow) ...[
-            const SizedBox(height: 2),
-            Text(
-              _getNextWateringDisplay(),
-              style: GoogleFonts.dmSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w300,
-                color: const Color(0xFF888888),
-              ),
-              textAlign: TextAlign.center,
+          // Second unit under a hairline (SPEC 3.2): millilitres are exact but
+          // unimaginable, glasses are the thing the user actually pours with.
+          Container(
+            width: 34,
+            height: 0.5,
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            color: _kWater.withAlpha(46),
+          ),
+          Text(
+            _glassesLabel(amount),
+            style: _font(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: kGlassBlueText,
             ),
-          ],
-          if (wateringAmount != null && wateringAmount > 0) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Millilitres as glasses, rounded to a quarter. The base is a 200 ml glass;
+  /// change the constant, not the text, if production ever uses another one.
+  String _glassesLabel(int ml) {
+    const glassMl = 200;
+    final quarters = (ml * 4 / glassMl).round().clamp(1, 1 << 20);
+    if (quarters == 4) return l10n.glassesOne;
+
+    final whole = quarters ~/ 4;
+    const marks = ['', '¼', '½', '¾'];
+    final fraction = marks[quarters % 4];
+    final value = whole == 0
+        ? fraction
+        : (fraction.isEmpty ? '$whole' : '$whole $fraction');
+    return l10n.glassesAmount(value);
+  }
+
+  // track 6 px radius 4 rgba(20,30,15,.10) · fill gradient #7BC0EA → #2E86C8
+  Widget _cycleBar(double progress) {
+    return SizedBox(
+      height: 6,
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: const Color(0xFFE4EFF8),
-                border: Border.all(color: const Color(0xFFCADFEE)),
-                borderRadius: BorderRadius.circular(9),
+                color: Color(0x19141E0F),
+                borderRadius: BorderRadius.all(Radius.circular(4)),
               ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: _buildWateringAmountWithCups(
-                  wateringAmount,
-                  iconSize: 11,
-                  fontSize: 11,
+            ),
+          ),
+          Positioned.fill(
+            child: AnimatedFractionallySizedBox(
+              duration: const Duration(milliseconds: 800),
+              curve: _kProgressCurve,
+              alignment: Alignment.centerLeft,
+              widthFactor: progress.clamp(0.0, 1.0),
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: [Color(0xFF7BC0EA), Color(0xFF2E86C8)]),
+                  borderRadius: BorderRadius.all(Radius.circular(4)),
                 ),
               ),
             ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Light care-card (amber-pale background)
-  Widget _buildHtmlLightCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7ECD8),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEBD9B8)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.wb_sunny_outlined,
-              color: Color(0xFFB8893A), size: 22),
-          const SizedBox(height: 4),
-          Text(
-            l10n.lightLabel,
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF888888),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${_calculateLightHours()} ${l10n.hoursLabel}',
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFB8893A),
-              height: 1.15,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            l10n.perDay,
-            style: GoogleFonts.dmSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w300,
-              color: const Color(0xFF888888),
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  // Moisture care-card (sage-soft + dot scale)
-  Widget _buildHtmlMoistureCard() {
-    final hasRange = _plant.idealSoilMoistureMin != null && _plant.idealSoilMoistureMax != null;
-    final pct = hasRange
-        ? ((_plant.idealSoilMoistureMin! + _plant.idealSoilMoistureMax!) ~/ 2)
-        : null;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F8EB),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCCE8B8)),
+  // full width · radius 18 · padding 15 · #3E8E3B · white 16/600/-.01em
+  // shadow 0 8px 20px -8px rgba(62,142,59,.7) · press scale(.975) · ripple 700 ms
+  // Confirmed state: rgba(62,142,59,.16) fill, accent text, no shadow, disabled.
+  /// Shortcut back into the latest check's action list.
+  ///
+  /// Once the analysis sheet is closed the recommendations are easy to lose, so
+  /// the banner keeps them one tap away until every step is ticked off — at
+  /// which point it disappears on its own.
+  /// "What to do" — SPEC 3.3. Replaces the old recommendations banner.
+  ///
+  /// Watering never appears here: it is the hero widget right above, and the
+  /// spec forbids the duplicate. Everything else this plant owes is one list,
+  /// the same objects the home deck shows.
+  Widget _buildTodoBlock() {
+    final open = _tasks.map((t) => t.id).toSet();
+    final merged = [
+      ..._tasks,
+      ..._justCompletedTasks.values.where((t) => !open.contains(t.id)),
+    ];
+    final visible = TodoBlock.visibleTasks(merged, DateTime.now());
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _glass(
+        padding: EdgeInsets.zero,
+        child: TodoBlock(
+          tasks: visible,
+          justCompleted: _justCompletedTasks.keys.toSet(),
+          // The scan row says why it is locked instead of offering a tick that
+          // would be a lie.
+          lockedReason: (task) =>
+              isScheduledScan(task) ? _analyzeBlockedReason() : null,
+          onOpen: _openTaskSheet,
+          onToggle: (task, done) => done
+              ? _completeTask(task)
+              : _reopenTask(task),
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.opacity_rounded,
-              color: Color(0xFF5FA346), size: 22),
-          const SizedBox(height: 4),
-          Text(
-            l10n.soilMoisture,
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF888888),
-            ),
-            textAlign: TextAlign.center,
+    );
+  }
+
+  /// Marks a task done, keeping the row visible for a beat.
+  ///
+  /// The tick is optimistic on purpose: the write is a round-trip to Firestore
+  /// and a checkbox that waits for it feels broken. A failure puts the row back.
+  Future<void> _completeTask(CareTask task) async {
+    setState(() =>
+        _justCompletedTasks = {..._justCompletedTasks, task.id: task});
+    try {
+      // Feeding leaves its mark on the plant, the way watering does. Without it
+      // the scheduler has no idea the chore was done and hands it back.
+      if (task.category == TaskCategory.fertilizer) {
+        await PlantService().markFertilised(_plant.id);
+      }
+      await TaskService().complete(task.id);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() =>
+          _justCompletedTasks = {..._justCompletedTasks}..remove(task.id));
+      _toast(l10n.errorUpdatingPlant(e.toString()), _kWarm);
+    }
+  }
+
+  Future<void> _reopenTask(CareTask task) async {
+    setState(() =>
+        _justCompletedTasks = {..._justCompletedTasks}..remove(task.id));
+    try {
+      await TaskService().reopen(task.id);
+    } catch (_) {
+      // The stream is the source of truth; a failed reopen simply leaves the
+      // task as it was on the server and the next snapshot restores the tick.
+    }
+  }
+
+  /// Opens the task sheet and applies whatever the user chose there.
+  Future<void> _openTaskSheet(CareTask task) async {
+    // A scheduled scan is not a task you tick — it is the health check itself.
+    // Tapping it runs the analysis, and the gate decides whether it can.
+    if (isScheduledScan(task)) {
+      await _openHealthCheckModal();
+      return;
+    }
+
+    final choice = await showTaskSheet(context: context, task: task);
+    if (!mounted || choice == null) return;
+
+    switch (choice) {
+      case TaskSheetResult.done:
+        await _completeTask(task);
+      case TaskSheetResult.later:
+        // "Later" never removes the task or touches the counter (SPEC 1.3.4).
+        try {
+          await TaskService().postpone(task.id);
+        } catch (_) {
+          // Ordering only; a failed write leaves the task where it was.
+        }
+      case TaskSheetResult.ask:
+        await _askInChat(
+          l10n.taskAskQuestion(task.title),
+          () => _openTaskSheet(task),
+        );
+    }
+  }
+
+  /// Reopens a stored check in the result view.
+  ///
+  /// Reading history must not touch the plant: the verdict, score and steps all
+  /// come from the record, and ticking a step writes back to that check only.
+  Future<void> _openStoredResultSheet(HealthCheckRecord record) async {
+    var current = record;
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        // Same shape as the analysis sheet — reopening a check is the same view,
+        // so it must not arrive in a different kind of container.
+        builder: (sheetContext, setSheetState) => Container(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            10,
+            18,
+            18 + MediaQuery.of(sheetContext).padding.bottom,
           ),
-          const SizedBox(height: 2),
-          Text(
-            hasRange
-                ? _getMoistureLabel(pct!)
-                : _formatMoistureLevel(_plant.aiMoistureLevel),
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF4A8C33),
-              height: 1.15,
-            ),
-            textAlign: TextAlign.center,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.94,
           ),
-          if (hasRange) ...[
-            const SizedBox(height: 6),
-            _buildMoistureDotScale(_getMoistureDotIndex(pct!)),
-            const SizedBox(height: 4),
-            Text(
-              '${_plant.idealSoilMoistureMin}–${_plant.idealSoilMoistureMax}%',
-              style: GoogleFonts.dmSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w300,
-                color: const Color(0xFF888888),
+          decoration: const BoxDecoration(
+            color: Color(0xF5FCFDFB),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x66142010),
+                blurRadius: 50,
+                spreadRadius: -18,
+                offset: Offset(0, -20),
               ),
-            ),
-          ],
-        ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Grabber and date row stay outside the scroll view. The sheet's
+              // own drag-to-dismiss loses the gesture arena to a scrollable, so
+              // with everything inside one the grabber was drawn but dead.
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0x29141E0F),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      DateFormat.yMMMd(_localeTag).format(current.timestamp),
+                      style: _font(
+                          fontSize: 11.5, fontWeight: FontWeight.w600, color: _kMut),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // 32 px visual, 44 px hit area — same close button as the
+                  // analysis sheet.
+                  _PressScale(
+                    scale: 0.9,
+                    onTap: () => Navigator.of(sheetContext).pop(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          color: Color(0x12141E0F), // rgba(20,30,15,.07)
+                          shape: BoxShape.circle,
+                        ),
+                        child: const _Glyph(_Svg.close, size: 15, color: _kMut),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // `Flexible`, not `Expanded`: a short check hugs its content and
+              // only scrolls once it hits the 94% cap.
+              Flexible(
+                child: SingleChildScrollView(
+                  child: HealthResultView(
+                    record: current,
+                    onClose: () => Navigator.of(sheetContext).pop(),
+                    onAsk: () => Navigator.of(sheetContext).pop('ask'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
+
+    if (!mounted || choice != 'ask') return;
+    await _askInChat(
+      _analysisQuestion(current),
+      () async => _openStoredResultSheet(current),
+    );
   }
-  
-  /// Build structured care recommendations with bold titles
-  Widget _buildStructuredCareRecommendations(String aiCareTips) {
-    // Clean the markdown first
-    final cleanedTips = _cleanMarkdownContent(aiCareTips);
-    
-    // Parse the content into structured sections
-    final sections = _parseCareContent(cleanedTips);
-    
+
+  /// Why the analysis entry points are disabled, or null when they are live.
+  ///
+  /// The gate itself is deliberately unchanged: a check only counts once the
+  /// cycle has been closed with a watering, and two per cycle is the budget. The
+  /// design asks for the entry points to stay visible regardless, so instead of
+  /// hiding them we say what is blocking.
+  String? _analyzeBlockedReason() {
+    if (_canDoHealthCheck()) return null;
+    if (_canWaterPlant()) return l10n.healthLockedNeedsWatering;
+    return l10n.healthLockedLimitReached;
+  }
+
+  /// Secondary CTA under "I have watered" — the primary way into the analysis.
+  Widget _analyzeHealthButton() {
+    final blockedReason = _analyzeBlockedReason();
+    final enabled = blockedReason == null;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Display each section (removed the main title)
-        ...sections.map((section) {
-          final raw = section['title']!;
-          final localized = _localizeSectionTitle(raw, AppLocalizations.of(context)!);
-          return _buildCareSection(raw, localized, section['content']!);
-        }).toList(),
+        Opacity(
+          opacity: enabled ? 1 : 0.55,
+          child: _RippleButton(
+            enabled: enabled,
+            onTap: _openHealthCheckModal,
+            fill: const Color(0x242E86C8), // rgba(46,134,200,.14)
+            border: Border.all(color: const Color(0x422E86C8), width: 0.5),
+            shadow: const [],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const _Glyph(_Svg.scan, size: 17, color: Color(0xFF1F6BA5)),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.healthAnalyzeCta,
+                  style: _font(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w600,
+                    color: kGlassBlueText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (!enabled) ...[
+          const SizedBox(height: 7),
+          Text(
+            blockedReason,
+            textAlign: TextAlign.center,
+            style: _font(fontSize: 11.5, color: _kMut2),
+          ),
+        ],
       ],
     );
   }
-  
-  /// Parse care content into structured sections
-  List<Map<String, String>> _parseCareContent(String content) {
-    final lines = content.split('\n');
-    final sections = <Map<String, String>>[];
-    String currentTitle = '';
-    String currentContent = '';
-    
-    for (final line in lines) {
-      final trimmedLine = line.trim();
-      if (trimmedLine.isEmpty) continue;
-      
-      // Check if this line is a section header (ends with colon and is relatively short)
-      if (trimmedLine.endsWith(':') && trimmedLine.length < 50 && _isSectionHeader(trimmedLine)) {
-        // Save previous section if exists
-        if (currentTitle.isNotEmpty && currentContent.isNotEmpty) {
-          sections.add({
-            'title': currentTitle,
-            'content': currentContent.trim(),
-          });
-        }
-        
-        // Start new section
-        currentTitle = trimmedLine.substring(0, trimmedLine.length - 1); // Remove the colon
-        currentContent = '';
-      } else {
-        // Add to current content
-        if (currentContent.isNotEmpty) {
-          currentContent += '\n';
-        }
-        currentContent += trimmedLine;
-      }
+
+  Widget _wateringCta(bool canWater) {
+    final done = _wateredJustNow;
+
+    final Color fill;
+    final Color foreground;
+    final List<BoxShadow> shadow;
+    final String glyph;
+    final String label;
+
+    if (done) {
+      fill = _kAccent.withAlpha(41); // .16
+      foreground = _kAccent;
+      shadow = const [];
+      glyph = _Svg.check;
+      label = l10n.wateringDone;
+    } else if (canWater) {
+      fill = _kAccent;
+      foreground = Colors.white;
+      shadow = const [
+        BoxShadow(
+            color: Color(0xB33E8E3B), blurRadius: 20, spreadRadius: -8, offset: Offset(0, 8)),
+      ];
+      glyph = _Svg.drop;
+      label = l10n.iHaveWatered;
+    } else {
+      // Waiting out the cycle: a legible white glass rather than a dimmed CTA.
+      fill = const Color(0xCCFFFFFF);
+      foreground = _kInk2;
+      shadow = const [];
+      glyph = _Svg.clock;
+      label = _waitingButtonLabel();
     }
-    
-    // Add the last section
-    if (currentTitle.isNotEmpty && currentContent.isNotEmpty) {
-      sections.add({
-        'title': currentTitle,
-        'content': currentContent.trim(),
-      });
-    }
-    
-    return sections;
-  }
-  
-  /// Check if a line is likely a section header
-  bool _isSectionHeader(String line) {
-    // Should start with capital letter, not be too long, and end with colon
-    return line.isNotEmpty && 
-           line[0] == line[0].toUpperCase() && 
-           line.length < 50 && 
-           line.endsWith(':') &&
-           !line.contains('•') &&
-           !line.contains('-') &&
-           !line.contains('*');
-  }
-  
 
-
-  /// Maps any known care section label (any language) → canonical key.
-  static const _labelToCanonical = <String, String>{
-    // English
-    'cultivar': 'cultivar',
-    'general description': 'generalDescription',
-    'soil': 'soil',
-    'soil moisture': 'soilMoisture',
-    'moisture': 'soilMoisture',
-    'moisture check': 'moistureCheck',
-    'water': 'water',
-    'light': 'light',
-    'temperature': 'temperature',
-    'fertilizer': 'fertilizer',
-    'growth rate': 'growthRate',
-    'toxicity': 'toxicity',
-    'placement': 'placement',
-    'personality': 'personality',
-    'name': 'cultivar',
-    // Russian
-    'культивар': 'cultivar',
-    'общее описание': 'generalDescription',
-    'почва': 'soil',
-    'влажность почвы': 'soilMoisture',
-    'проверка влажности': 'moistureCheck',
-    'полив': 'water',
-    'освещение': 'light',
-    'температура': 'temperature',
-    'удобрения': 'fertilizer',
-    'скорость роста': 'growthRate',
-    'токсичность': 'toxicity',
-    'размещение': 'placement',
-    'характер': 'personality',
-    // Ukrainian
-    'загальний опис': 'generalDescription',
-    'ґрунт': 'soil',
-    'вологість ґрунту': 'soilMoisture',
-    'перевірка вологості': 'moistureCheck',
-    'освітлення': 'light',
-    'добрива': 'fertilizer',
-    'швидкість росту': 'growthRate',
-    'токсичність': 'toxicity',
-    'розміщення': 'placement',
-    // German
-    'kultivar': 'cultivar',
-    'allgemeine beschreibung': 'generalDescription',
-    'erde': 'soil',
-    'bodenfeuchtigkeit': 'soilMoisture',
-    'feuchtigkeitsprüfung': 'moistureCheck',
-    'wasser': 'water',
-    'licht': 'light',
-    'temperatur': 'temperature',
-    'dünger': 'fertilizer',
-    'wachstumsrate': 'growthRate',
-    'toxizität': 'toxicity',
-    'standort': 'placement',
-    'charakter': 'personality',
-    // Spanish
-    'descripción general': 'generalDescription',
-    'suelo': 'soil',
-    'humedad del suelo': 'soilMoisture',
-    'verificación de humedad': 'moistureCheck',
-    'agua': 'water',
-    'luz': 'light',
-    'fertilizante': 'fertilizer',
-    'tasa de crecimiento': 'growthRate',
-    'toxicidad': 'toxicity',
-    'ubicación': 'placement',
-    'personalidad': 'personality',
-    // French
-    'description générale': 'generalDescription',
-    'sol': 'soil',
-    'humidité du sol': 'soilMoisture',
-    "vérification de l'humidité": 'moistureCheck',
-    'eau': 'water',
-    'lumière': 'light',
-    'engrais': 'fertilizer',
-    'taux de croissance': 'growthRate',
-    'toxicité': 'toxicity',
-    'emplacement': 'placement',
-    'personnalité': 'personality',
-  };
-
-  /// Translates a raw section title (any language) to the user's current language via l10n.
-  String _localizeSectionTitle(String rawTitle, AppLocalizations l10n) {
-    final canonical = _labelToCanonical[rawTitle.toLowerCase().trim()];
-    if (canonical == null) return rawTitle;
-    switch (canonical) {
-      case 'cultivar': return l10n.careSectionCultivar;
-      case 'generalDescription': return l10n.careSectionGeneralDescription;
-      case 'soil': return l10n.careSectionSoil;
-      case 'soilMoisture': return l10n.careSectionSoilMoisture;
-      case 'moistureCheck': return l10n.careSectionMoistureCheck;
-      case 'water': return l10n.careSectionWater;
-      case 'light': return l10n.careSectionLight;
-      case 'temperature': return l10n.careSectionTemperature;
-      case 'fertilizer': return l10n.careSectionFertilizer;
-      case 'growthRate': return l10n.careSectionGrowthRate;
-      case 'toxicity': return l10n.careSectionToxicity;
-      case 'placement': return l10n.careSectionPlacement;
-      case 'personality': return l10n.careSectionPersonality;
-      default: return rawTitle;
-    }
-  }
-
-  /// Returns the canonical key for icon lookup, independent of display language.
-  String? _canonicalKey(String rawTitle) =>
-      _labelToCanonical[rawTitle.toLowerCase().trim()];
-
-  List<Widget> _buildStructuredCareSections(String content) {
-    final l10n = AppLocalizations.of(context)!;
-    final sections = <Widget>[];
-    final lines = content.split('\n');
-    
-    for (final line in lines) {
-      final trimmedLine = line.trim();
-      if (trimmedLine.isEmpty) continue;
-      
-      if (trimmedLine.contains(':')) {
-        final parts = trimmedLine.split(':');
-        if (parts.length >= 2) {
-          final rawTitle = parts[0].trim();
-          final localizedTitle = _localizeSectionTitle(rawTitle, l10n);
-          final value = parts.sublist(1).join(':').trim();
-          
-          if (localizedTitle.isNotEmpty && value.isNotEmpty) {
-            final isFirstSection = sections.isEmpty;
-            sections.add(
-              Padding(
-                padding: EdgeInsets.only(
-                  bottom: 16.0,
-                  top: isFirstSection ? 16.0 : 0.0,
-                ),
-                child: _buildCareSection(rawTitle, localizedTitle, value),
-              ),
-            );
-          }
-        }
-      }
-    }
-    
-    return sections;
-  }
-
-  /// Builds a single care section with title and content.
-  /// [rawTitle] is used for canonical-key icon lookup; [localizedTitle] is displayed.
-  Widget _buildCareSection(String rawTitle, String localizedTitle, String content) {
-    return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return _RippleButton(
+      enabled: canWater && !done,
+      onTap: _waterPlant,
+      fill: fill,
+      border: (!done && !canWater)
+          ? Border.all(color: const Color(0x22141E0F), width: 0.5)
+          : null,
+      shadow: shadow,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-        // Section title with icon
-        Row(
+          _Glyph(glyph, size: 17, color: foreground),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: _font(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 16 * -0.01,
+              color: foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Segmented control ────────────────────────────────────────────────────
+
+  Widget _buildSegmentedControl() {
+    return _glass(
+      radius: 22,
+      padding: const EdgeInsets.all(4),
+      child: _LiquidSegmentedControl(
+        selected: _activeTab,
+        onChanged: (i) {
+          HapticFeedback.selectionClick();
+          setState(() => _activeTab = i);
+        },
+        tabs: [
+          _SegTab(_Svg.drop, l10n.tabCare),
+          _SegTab(_Svg.leaf, l10n.tabAbout),
+          _SegTab(_Svg.gallery, l10n.tabHistory),
+        ],
+      ),
+    );
+  }
+
+  // ─── Tab: Care ────────────────────────────────────────────────────────────
+  // Column of glass rows, gap 9. Each row opens the detail sheet.
+
+  Widget _buildCareTab() {
+    final interval = _wateringInterval();
+    final amount = _doseMl();
+    final range = _plant.wateringRangeMl;
+
+    final waterBody = _section(CareSection.water);
+    final soilBody = _section(CareSection.soil);
+    final moistureBody = _section(CareSection.soilMoisture);
+    final moistureCheck = _section(CareSection.moistureCheck);
+    final lightBody = _section(CareSection.light);
+    final tempBody = _section(CareSection.temperature);
+    final fertBody = _section(CareSection.fertilizer);
+    final placementBody = _section(CareSection.placement);
+
+    // The watering sheet is where the finger test belongs: it is the check you
+    // run right before you decide to water.
+    final waterSheetBody =
+        [waterBody, moistureCheck].where((s) => s.isNotEmpty).join('\n\n');
+
+    final rows = <Widget>[
+      _careRow(
+        tone: _CareTone.water,
+        glyph: _Svg.drop,
+        title: l10n.careSectionWater,
+        value: amount != null
+            ? '${_everyN(interval)} · ${l10n.milliliters(amount)}'
+            : _everyN(interval),
+        body: waterSheetBody,
+        keyValues: [
+          (l10n.careKvFrequency, l10n.nDays(interval)),
+          if (amount != null)
+            (
+              l10n.wateringAmount,
+              range != null && range.length == 2
+                  ? '${range[0]}–${l10n.milliliters(range[1])}'
+                  : l10n.milliliters(amount)
+            ),
+          if (_detail(CareDetail.wateringSeason) case final season?)
+            (l10n.careKvSeason, season),
+        ],
+      ),
+      if (soilBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.soil,
+          title: l10n.careSectionSoil,
+          value: _rowValue(CareDetail.soilShort, soilBody),
+          body: soilBody,
+        ),
+      if (_plant.aiMoistureLevel != null)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.dropOutline,
+          title: l10n.careSectionSoilMoisture,
+          value: [
+            _moistureLabel(),
+            if (_plant.idealSoilMoistureMin != null && _plant.idealSoilMoistureMax != null)
+              '${_plant.idealSoilMoistureMin}–${_plant.idealSoilMoistureMax}%',
+          ].where((s) => s.isNotEmpty).join(' · '),
+          body: moistureBody.isNotEmpty ? moistureBody : (_plant.aiMoistureLevel ?? ''),
+          showMoistureScale: true,
+        ),
+      if (_plant.aiLight != null)
+        _careRow(
+          tone: _CareTone.sun,
+          glyph: _Svg.sun,
+          title: l10n.careSectionLight,
+          value: '${l10n.nHours(_lightHours())} · ${_lightType()}',
+          body: lightBody.isNotEmpty ? lightBody : _plant.aiLight!,
+          keyValues: [
+            (l10n.lightDaily, l10n.nHours(_lightHours())),
+            (l10n.lightType, _lightType()),
+          ],
+        ),
+      if (tempBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.warm,
+          glyph: _Svg.thermometer,
+          title: l10n.careSectionTemperature,
+          value: _rowValue(CareDetail.temperatureShort, tempBody),
+          body: tempBody,
+          keyValues: [
+            if (_detail(CareDetail.temperatureOptimal) case final v?)
+              (l10n.careKvOptimal, v),
+            if (_detail(CareDetail.temperatureMinimum) case final v?)
+              (l10n.careKvMinimum, v),
+          ],
+        ),
+      if (fertBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.fertilizer,
+          title: l10n.careSectionFertilizer,
+          value: _rowValue(CareDetail.fertilizerShort, fertBody),
+          body: fertBody,
+          keyValues: [
+            if (_detail(CareDetail.fertilizerFrequency) case final v?)
+              (l10n.careKvFrequency, v),
+            if (_detail(CareDetail.fertilizerDose) case final v?)
+              (l10n.careKvDose, v),
+          ],
+        ),
+      if (placementBody.isNotEmpty)
+        _careRow(
+          tone: _CareTone.leaf,
+          glyph: _Svg.pin,
+          title: l10n.careSectionPlacement,
+          value: _rowValue(CareDetail.placementShort, placementBody),
+          body: placementBody,
+        ),
+      if (!_hasNoIssues(_plant.aiSpecificIssues))
+        _buildIssuesCard(_plant.aiSpecificIssues!),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: 9),
+          rows[i],
+        ],
+      ],
+    );
+  }
+
+  // padding 13 15 · radius 22 · tile 40×40 radius 14 · icon 19
+  // title 15.5/600/-.015em · value 12.5/500 ellipsized · chevron 15 #8B9285
+  Widget _careRow({
+    required _CareTone tone,
+    required String glyph,
+    required String title,
+    required String value,
+    required String body,
+    List<(String, String)> keyValues = const [],
+    bool showMoistureScale = false,
+  }) {
+    final (tint, foreground) = _toneColors(tone);
+    final tappable = body.isNotEmpty || keyValues.isNotEmpty || showMoistureScale;
+
+    return _PressScale(
+      scale: 0.985,
+      onTap: tappable
+          ? () => _openCareSheet(
+                tone: tone,
+                glyph: glyph,
+                title: title,
+                value: value,
+                body: body,
+                keyValues: keyValues,
+                showMoistureScale: showMoistureScale,
+              )
+          : null,
+      child: _glass(
+        radius: 22,
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: AppTheme.accentGreen.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
+                color: tint,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
               ),
-              child: Icon(
-                _getIconForSection(_canonicalKey(rawTitle) ?? rawTitle),
-                color: AppTheme.accentGreen,
-                size: 16,
+              child: Center(
+                child: _Glyph(glyph, size: 19, color: foreground),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: _font(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 15.5 * -0.015,
+                      color: _kInk,
+                    ),
+                  ),
+                  if (value.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _font(
+                          fontSize: 12.5, fontWeight: FontWeight.w500, color: _kMut),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (tappable) ...[
+              const SizedBox(width: 8),
+              const _Glyph(_Svg.chevronRight, size: 15, color: _kChev),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  (Color, Color) _toneColors(_CareTone t) => switch (t) {
+        _CareTone.water => (_kWaterBg, _kWater),
+        _CareTone.leaf => (_kLeafBg, _kAccent),
+        _CareTone.sun => (_kSunBg, _kSun),
+        _CareTone.warm => (_kWarmBg, _kWarm),
+      };
+
+  Future<void> _openCareSheet({
+    required _CareTone tone,
+    required String glyph,
+    required String title,
+    required String value,
+    required String body,
+    required List<(String, String)> keyValues,
+    required bool showMoistureScale,
+  }) async {
+    HapticFeedback.lightImpact();
+    final (tint, foreground) = _toneColors(tone);
+
+    // A custom route rather than showModalBottomSheet: the scrim must fade in
+    // place while only the sheet rises, and barrierColor cannot carry a blur.
+    final choice = await Navigator.of(context).push<String>(_CareSheetRoute(
+      builder: (_) => _CareDetailSheet(
+        glyph: glyph,
+        tint: tint,
+        foreground: foreground,
+        title: title,
+        value: value,
+        body: body,
+        keyValues: keyValues,
+        showMoistureScale: showMoistureScale,
+        moistureMin: _plant.idealSoilMoistureMin,
+        moistureMax: _plant.idealSoilMoistureMax,
+        dryLabel: l10n.moistureDry,
+        wetLabel: l10n.moistureWet,
+        askLabel: l10n.careAskAbout(title.toLowerCase()),
+      ),
+    ));
+    if (!mounted || choice != 'ask') return;
+
+    await _askInChat(
+      l10n.careAskQuestion(title),
+      () => _openCareSheet(
+        tone: tone,
+        glyph: glyph,
+        title: title,
+        value: value,
+        body: body,
+        keyValues: keyValues,
+        showMoistureScale: showMoistureScale,
+      ),
+    );
+  }
+
+  // Specific issues — padding 16 18 on rgba(255,251,240,.62)
+  Widget _buildIssuesCard(String text) {
+    final bullets = text
+        .split('\n')
+        .map((s) => s.replaceAll(RegExp(r'^[-•*]\s*'), '').trim())
+        .where((s) => s.isNotEmpty)
+        .take(3)
+        .toList();
+    if (bullets.isEmpty) return const SizedBox.shrink();
+
+    return _glass(
+      fill: _kIssuesFill,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const _Glyph(_Svg.infoCircle, size: 17, color: _kSun),
+            const SizedBox(width: 9),
             Expanded(
               child: Text(
-            localizedTitle,
-            style: GoogleFonts.lato(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  fontSize: 16,
+                l10n.specificIssues,
+                style: _font(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 15.5 * -0.015,
+                  color: _kSun,
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          for (final b in bullets)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 5,
+                    height: 5,
+                    margin: const EdgeInsets.only(top: 7),
+                    decoration: BoxDecoration(
+                        color: _kSun.withAlpha(166), shape: BoxShape.circle), // .65
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      b,
+                      style: _font(
+                          fontSize: 13, height: 1.5, color: _kIssuesText),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Tab: About ───────────────────────────────────────────────────────────
+  // Glass cards, gap 9, padding 17 18. Header: 34×34 tile radius 12, icon 16,
+  // title 16.5/600/-.02em. Body 14/1.55.
+
+  Widget _buildAboutTab() {
+    // Growth Rate / Personality / Toxicity live as sections inside aiCareTips —
+    // the model has no dedicated fields for them.
+    final growth = _section(CareSection.growthRate);
+    final personality = _section(CareSection.personality);
+    final toxicity = _section(CareSection.toxicity);
+    final growthBody =
+        [growth, personality].where((s) => s.isNotEmpty).join('\n\n');
+    final description = _plant.aiGeneralDescription?.trim().isNotEmpty ?? false
+        ? _plant.aiGeneralDescription!
+        : _section(CareSection.generalDescription);
+
+    // Short trait chips. interestingFacts are full sentences and already have
+    // their own card, so they must not be reused here.
+    final traits = <String>[
+      ?_plant.aiGrowthStage,
+      ?_plant.aiPlantSize,
+      ?_plant.aiPotSize,
+      _lightType(),
+    ].map((s) => s.trim()).where((s) => s.isNotEmpty && s.length <= 28).toList();
+
+    final cards = <Widget>[
+      if (description.isNotEmpty)
+        _aboutCard(
+          glyph: _Svg.leaf,
+          tint: _kLeafBg,
+          foreground: _kAccent,
+          title: l10n.aboutPlantTitle,
+          body: description,
+          tags: traits,
+        ),
+      if (growthBody.isNotEmpty)
+        _aboutCard(
+          glyph: _Svg.trendingUp,
+          tint: _kLeafBg,
+          foreground: _kAccent,
+          title: '${l10n.careSectionGrowthRate} & '
+              '${l10n.careSectionPersonality.toLowerCase()}',
+          body: growthBody,
+        ),
+      if (toxicity.isNotEmpty)
+        _aboutCard(
+          glyph: _Svg.warningTriangle,
+          tint: _kWarmBg,
+          foreground: _kWarm,
+          title: l10n.careSectionToxicity,
+          body: toxicity,
+        ),
+      if (_plant.interestingFacts?.isNotEmpty ?? false)
+        _factsCard(_plant.interestingFacts!),
+    ];
+
+    if (cards.isEmpty) {
+      return _glass(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        child: Text(
+          l10n.noDataAvailable,
+          textAlign: TextAlign.center,
+          style: _font(fontSize: 14, color: _kMut),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < cards.length; i++) ...[
+          if (i > 0) const SizedBox(height: 9),
+          cards[i],
+        ],
+      ],
+    );
+  }
+
+  Widget _aboutCard({
+    required String glyph,
+    required Color tint,
+    required Color foreground,
+    required String title,
+    required String body,
+    List<String> tags = const [],
+  }) {
+    return _glass(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            _iconTile(glyph: glyph, tint: tint, foreground: foreground),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                title,
+                style: _font(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 16.5 * -0.02,
+                  color: _kInk,
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 11),
+          Text(
+            body,
+            style: _font(fontSize: 14, height: 1.55, color: _kInk2),
+          ),
+          if (tags.isNotEmpty) ...[
+            const SizedBox(height: 13),
+            Wrap(
+              spacing: 7,
+              runSpacing: 7,
+              children: [
+                for (final t in tags)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xB8FFFFFF), // rgba(255,255,255,.72)
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xD9FFFFFF), width: 0.5),
+                    ),
+                    child: Text(
+                      t,
+                      style: _font(
+                          fontSize: 12, fontWeight: FontWeight.w500, color: _kInk2),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 34×34 tile, radius 12, .5px rgba(255,255,255,.6), icon 16
+  Widget _iconTile({
+    required String glyph,
+    required Color tint,
+    required Color foreground,
+  }) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x99FFFFFF), width: 0.5),
+      ),
+      child: Center(child: _Glyph(glyph, size: 16, color: foreground)),
+    );
+  }
+
+  // Fact boxes: rgba(255,255,255,.6), .5px rgba(255,255,255,.8), radius 16,
+  // padding 12 14, 6 px accent dot.
+  Widget _factsCard(List<String> facts) {
+    final items = facts.where((f) => f.trim().isNotEmpty).take(3).toList();
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return _glass(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            _iconTile(glyph: _Svg.sparkle, tint: _kSunBg, foreground: _kSun),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                l10n.interestingFactsTitle,
+                style: _font(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 16.5 * -0.02,
+                  color: _kInk,
+                ),
+              ),
+            ),
+          ]),
+          for (var i = 0; i < items.length; i++)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 13 : 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0x99FFFFFF), // rgba(255,255,255,.6)
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xCCFFFFFF), width: 0.5),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(top: 7),
+                      decoration:
+                          const BoxDecoration(color: _kAccent, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        items[i],
+                        style: _font(
+                            fontSize: 13, height: 1.5, color: _kInk2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Tab: History ─────────────────────────────────────────────────────────
+
+  Widget _buildHistoryTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        StreamBuilder<List<HealthCheckRecord>>(
+          stream: _healthCheckStream,
+          builder: (context, snap) {
+            final checks = [...?snap.data]
+              ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+            return _glass(
+              fill: _kHistoryFill,
+              padding: const EdgeInsets.symmetric(vertical: 17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: Row(children: [
+                      const _Glyph(_Svg.gallery, size: 17, color: _kWater),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          l10n.healthCheckHistoryTitle,
+                          style: _font(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 16 * -0.02,
+                            color: _kWater,
+                          ),
+                        ),
+                      ),
+                      // No "+" here: SPEC 3.4 leaves exactly two entry points to
+                      // the analysis — the widget button and the health chip.
+                      // History is for reading, so a third one only made the
+                      // check-per-cycle budget harder to reason about.
+                    ]),
+                  ),
+                  // An failed query and a genuinely empty history used to render
+                  // the same "no checks yet" state, which is how a broken read
+                  // stayed invisible.
+                  if (snap.hasError)
+                    _buildHistoryError(snap.error!)
+                  else if (checks.isEmpty)
+                    _buildEmptyHistory()
+                  else
+                    for (final c in checks.take(5)) _buildHistoryRow(c),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 11), // .rows gap 9 + .del margin-top 2
+        Center(child: _deleteButton()),
+      ],
+    );
+  }
+
+  // padding 26 10 8 · 56 px circle · title 15.5/600 · copy 13, max-width 210
+  /// Shown when the history query itself fails. The message is intentionally the
+  /// raw error: this is a state the user should report, not one they can fix.
+  Widget _buildHistoryError(Object error) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 6),
+      child: Column(
+        children: [
+          const _Glyph(_Svg.warningTriangle, size: 24, color: _kWarm),
+          const SizedBox(height: 10),
+          Text(
+            l10n.healthHistoryLoadFailed,
+            textAlign: TextAlign.center,
+            style: _font(fontSize: 15.5, fontWeight: FontWeight.w600, color: _kInk),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$error',
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: _font(fontSize: 12, color: _kMut),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyHistory() {
+    return Padding(
+      // .hempty padding 26 10 8, inside the card's own 18 px horizontal inset.
+      padding: const EdgeInsets.fromLTRB(28, 26, 28, 8),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration:
+                BoxDecoration(color: _kWater.withAlpha(26), shape: BoxShape.circle),
+            child: const Center(
+              child: _Glyph(_Svg.gallery, size: 24, color: _kWater),
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            l10n.noHealthChecksYet,
+            style: _font(
+                fontSize: 15.5, fontWeight: FontWeight.w600, color: _kInk),
+          ),
+          const SizedBox(height: 7),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 210),
+            child: Text(
+              l10n.healthCheckHistoryEmptyHint,
+              textAlign: TextAlign.center,
+              style: _font(fontSize: 13, height: 1.45, color: _kMut),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _verdictOf(HealthCheckRecord record, Map<String, dynamic>? assistant) {
+    final praise = assistant?['praise_phrase']?.toString().trim();
+    if (praise != null && praise.isNotEmpty) return praise;
+    final problem = assistant?['problem_name']?.toString().trim();
+    if (problem != null && problem.isNotEmpty) return problem;
+    return record.status == 'ok' ? l10n.healthy : l10n.healthIssueDetected;
+  }
+
+  static String? _checkImageUrl(HealthCheckRecord record) =>
+      record.imageUrls.isNotEmpty ? record.imageUrls.first : record.imageUrl;
+
+  Widget _buildHistoryRow(HealthCheckRecord record) {
+    final ok = record.status == 'ok';
+    final imgUrl = _checkImageUrl(record);
+    final assistant = _tryParsePlantAssistant(record.message);
+    final verdict = _verdictOf(record, assistant);
+
+    return _PressScale(
+      scale: 0.985,
+      onTap: () => _openHealthCheckSheet(record, assistant),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imgUrl != null && imgUrl.isNotEmpty
+                  ? Image.network(imgUrl,
+                      width: 46,
+                      height: 46,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _historyThumbFallback())
+                  : _historyThumbFallback(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DateFormat.yMMMd(_localeTag).format(record.timestamp),
+                    style: _font(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: _kInk),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    verdict,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _font(fontSize: 12, color: ok ? _kAccent : _kWarm),
+                  ),
+                ],
+              ),
+            ),
+            if (record.score != null) ...[
+              _scorePill(record.score!),
+              const SizedBox(width: 8),
+            ],
+            const _Glyph(_Svg.chevronRight, size: 15, color: _kChev),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Score badge on a timeline row. Green above the healthy floor, amber below —
+  /// the same threshold the backend ties `health_score` to `status`, so the pill
+  /// never disagrees with the verdict next to it.
+  Widget _scorePill(int score) {
+    final good = score >= kHealthyScoreFloor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: good ? _kLeafBg : kGlassAttnBg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$score',
+        style: _font(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: good ? _kAccent : const Color(0xFFA5701A),
+        ),
+      ),
+    );
+  }
+
+  String _severityLabel(String raw) => switch (raw.toLowerCase().trim()) {
+        'low' || 'mild' || 'minor' => l10n.severityLow,
+        'medium' || 'moderate' => l10n.severityMedium,
+        'high' || 'severe' || 'critical' => l10n.severityHigh,
+        _ => raw,
+      };
+
+  /// Expands a stored check into the same glass sheet the care rows use. The
+  /// analyzer writes one of two shapes — a praise/summary pair when the plant
+  /// is fine, or a problem with action steps when it is not.
+  void _openHealthCheckSheet(
+    HealthCheckRecord record,
+    Map<String, dynamic>? assistant,
+  ) {
+    HapticFeedback.selectionClick();
+
+    // Checks recorded since scoring landed get the full result view — the same
+    // one a fresh analysis shows. Older records have none of those fields and
+    // fall through to the prose sheet below.
+    if (record.score != null ||
+        record.findings.isNotEmpty ||
+        record.recommendations.isNotEmpty) {
+      _openStoredResultSheet(record);
+      return;
+    }
+
+    final ok = record.status == 'ok';
+
+    String? text(String key) {
+      final v = assistant?[key]?.toString().trim();
+      return (v == null || v.isEmpty) ? null : v;
+    }
+
+    final steps = (assistant?['action_steps'] as List?)
+            ?.map((s) => s.toString().trim())
+            .where((s) => s.isNotEmpty)
+            .map((s) => '• $s') ??
+        const <String>[];
+
+    final paragraphs = <String>[
+      ?text('health_summary'),
+      ?text('problem_description'),
+      ...steps,
+      ?text('reassurance'),
+      ?text('maintenance_footer'),
+    ];
+    // Older checks stored the raw model reply instead of a JSON payload.
+    final body = paragraphs.isNotEmpty
+        ? paragraphs.join('\n')
+        : record.message.trim();
+
+    final severity = text('severity');
+    final followUp = assistant?['follow_up_days'];
+    final followUpDays =
+        followUp is int ? followUp : int.tryParse('${followUp ?? ''}');
+
+    Navigator.of(context).push(_CareSheetRoute(
+      builder: (_) => _CareDetailSheet(
+        glyph: ok ? _Svg.check : _Svg.warningTriangle,
+        tint: ok ? _kLeafBg : _kWarmBg,
+        foreground: ok ? _kAccent : _kWarm,
+        title: _verdictOf(record, assistant),
+        value: DateFormat.yMMMMd(_localeTag).add_jm().format(record.timestamp),
+        body: body.isNotEmpty ? body : l10n.noDataAvailable,
+        keyValues: [
+          if (severity != null)
+            (l10n.healthCheckSeverity, _severityLabel(severity)),
+          if (followUpDays != null && followUpDays > 0)
+            (l10n.healthCheckFollowUp, l10n.nDays(followUpDays)),
+        ],
+        imageUrl: _checkImageUrl(record),
+        dryLabel: l10n.moistureDry,
+        wetLabel: l10n.moistureWet,
+      ),
+    ));
+  }
+
+  Widget _historyThumbFallback() => Container(
+        width: 46,
+        height: 46,
+        color: _kLeafBg,
+        child: Center(
+          child: _Glyph(_Svg.flower, size: 20, color: _kAccent.withAlpha(153)),
+        ),
+      );
+
+  // rgba(255,255,255,.55) + blur(20px) · .5px rgba(198,86,68,.28) · 14/600
+  Widget _deleteButton() {
+    return _PressScale(
+      scale: 0.97,
+      onTap: _showDeleteConfirmation,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+            decoration: BoxDecoration(
+              color: const Color(0x8CFFFFFF),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: _kWarm.withAlpha(71), width: 0.5), // .28
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _Glyph(_Svg.trash, size: 15, color: _kWarm),
+                const SizedBox(width: 7),
+                Text(
+                  l10n.deletePlant,
+                  style: _font(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: _kWarm),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _CareTone { water, leaf, sun, warm }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Watering widget decoration
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Diagonal specular streak: an 80% × 200% band offset to top −60% / left −20%
+/// and rotated 12°, so the highlight lands in the upper-left corner rather than
+/// washing across the middle of the card.
+class _WateringSheen extends StatelessWidget {
+  const _WateringSheen();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, c) => Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: -0.20 * c.maxWidth,
+              top: -0.60 * c.maxHeight,
+              width: 0.80 * c.maxWidth,
+              height: 2.0 * c.maxHeight,
+              child: Transform.rotate(
+                angle: 12 * math.pi / 180,
+                child: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    // linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent)
+                    gradient: LinearGradient(
+                      begin: Alignment(-0.985, -0.174),
+                      end: Alignment(0.985, 0.174),
+                      colors: [
+                        Color(0x00FFFFFF),
+                        Color(0x8CFFFFFF),
+                        Color(0x00FFFFFF),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-          // Section content
-          Text(
-            content,
-            style: GoogleFonts.lato(
-            color: AppTheme.textSecondary,
-              height: 1.4,
-            fontSize: 14,
-            ),
-          ),
-        ],
+      ),
     );
   }
-
-  /// Gets appropriate icon for a care section using its canonical key.
-  IconData _getIconForSection(String canonicalOrRaw) {
-    switch (canonicalOrRaw) {
-      case 'water': return Icons.water_drop;
-      case 'light': return Icons.wb_sunny;
-      case 'temperature': return Icons.thermostat;
-      case 'soil':
-      case 'soilMoisture':
-      case 'moistureCheck': return Icons.eco;
-      case 'fertilizer': return Icons.grass;
-      case 'growthRate': return Icons.trending_up;
-      case 'cultivar':
-      case 'generalDescription': return Icons.local_florist;
-      case 'toxicity': return Icons.warning_amber_outlined;
-      case 'placement': return Icons.place_outlined;
-      case 'personality': return Icons.psychology_outlined;
-      default: return Icons.info_outline;
-    }
-  }
 }
 
-class _HeroCarouselWidget extends StatefulWidget {
-  final List<Map<String, dynamic>> photos;
-  final String plantName;
-  final String plantStatus;
-  final Function(int) onPageChanged;
-
-  const _HeroCarouselWidget({
-    required this.photos,
-    required this.plantName,
-    required this.plantStatus,
-    required this.onPageChanged,
-  });
+/// ~10 droplets spawned across the top of the widget with random 0–550 ms
+/// delays; each falls 95 px over 1.1 s ease-in, scaling .5 → 1.05, fading in at
+/// 18% and out at the end.
+class _DropletBurst extends StatefulWidget {
+  final int trigger;
+  const _DropletBurst({required this.trigger});
 
   @override
-  State<_HeroCarouselWidget> createState() => _HeroCarouselWidgetState();
+  State<_DropletBurst> createState() => _DropletBurstState();
 }
 
-class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
-  late PageController _pageController;
-  int _currentPage = 0;
+class _DropletBurstState extends State<_DropletBurst>
+    with SingleTickerProviderStateMixin {
+  static const _count = 10;
+  static const _fall = Duration(milliseconds: 1100);
+  static const _maxDelay = Duration(milliseconds: 550);
+
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: _fall + _maxDelay,
+  );
+  final _rng = math.Random();
+  late List<(double left, double top, double delay)> _drops;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(
-      viewportFraction: 0.85, // Cards peek behind each other
-      initialPage: 0,
-    );
+    _drops = const [];
+  }
+
+  @override
+  void didUpdateWidget(_DropletBurst old) {
+    super.didUpdateWidget(old);
+    if (widget.trigger != old.trigger && widget.trigger > 0) {
+      _drops = List.generate(_count, (_) {
+        final delayFraction = _rng.nextDouble() *
+            (_maxDelay.inMilliseconds / _ctrl.duration!.inMilliseconds);
+        return (
+          0.10 + _rng.nextDouble() * 0.78, // left 10–88%
+          10 + _rng.nextDouble() * 22, // top 10–32 px
+          delayFraction,
+        );
+      });
+      _ctrl.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return PageView.builder(
-      controller: _pageController,
-      onPageChanged: (index) {
-        setState(() {
-          _currentPage = index;
-        });
-        widget.onPageChanged(index);
+    if (_drops.isEmpty) return const SizedBox.shrink();
+
+    // Reduced motion: skip the particles entirely.
+    if (MediaQuery.disableAnimationsOf(context)) return const SizedBox.shrink();
+
+    final span = _fall.inMilliseconds / _ctrl.duration!.inMilliseconds;
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        if (!_ctrl.isAnimating && _ctrl.value == 0) {
+          return const SizedBox.shrink();
+        }
+        return LayoutBuilder(
+          builder: (context, c) => Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final (left, top, delay) in _drops)
+                _droplet(c.maxWidth * left, top,
+                    ((_ctrl.value - delay) / span).clamp(0.0, 1.0)),
+            ],
+          ),
+        );
       },
-      itemCount: widget.photos.length,
-      physics: const BouncingScrollPhysics(),
-      scrollDirection: Axis.horizontal,
-      pageSnapping: true,
-      itemBuilder: (context, index) {
-        final photo = widget.photos[index];
-        
+    );
+  }
+
+  Widget _droplet(double left, double top, double t) {
+    if (t <= 0 || t >= 1) return const SizedBox.shrink();
+    final eased = Curves.easeIn.transform(t);
+    final opacity = t < 0.18 ? t / 0.18 : (1 - (t - 0.18) / 0.82);
+    return Positioned(
+      left: left,
+      top: top - 8 + eased * 103,
+      child: Opacity(
+        opacity: (opacity * 0.95).clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: 0.5 + eased * 0.55,
+          child: const Text('💧', style: TextStyle(fontSize: 14)),
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Interaction primitives
+// ════════════════════════════════════════════════════════════════════════════
+
+/// `transform: scale(n)` on press over 140 ms. A null [onTap] renders the child
+/// inert while keeping its layout identical.
+class _PressScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scale;
+
+  const _PressScale({required this.child, this.onTap, this.scale = 0.985});
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+      onTapUp: enabled ? (_) => setState(() => _down = false) : null,
+      onTapCancel: enabled ? () => setState(() => _down = false) : null,
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? widget.scale : 1.0,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Watering CTA: press scale(.975) plus a white 50% ripple that grows from the
+/// touch point to scale(9) over 700 ms ease-out while fading.
+class _RippleButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final bool enabled;
+  final Color fill;
+  final BoxBorder? border;
+  final List<BoxShadow> shadow;
+
+  const _RippleButton({
+    required this.child,
+    required this.onTap,
+    required this.enabled,
+    required this.fill,
+    required this.shadow,
+    this.border,
+  });
+
+  @override
+  State<_RippleButton> createState() => _RippleButtonState();
+}
+
+class _RippleButtonState extends State<_RippleButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ripple = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+  Offset? _origin;
+  bool _down = false;
+
+  @override
+  void dispose() {
+    _ripple.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails d) {
+    setState(() {
+      _down = true;
+      _origin = d.localPosition;
+    });
+    if (!MediaQuery.disableAnimationsOf(context)) _ripple.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const radius = BorderRadius.all(Radius.circular(18));
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: widget.enabled ? _handleTapDown : null,
+      onTapUp: widget.enabled ? (_) => setState(() => _down = false) : null,
+      onTapCancel: widget.enabled ? () => setState(() => _down = false) : null,
+      onTap: widget.enabled ? widget.onTap : null,
+      child: AnimatedScale(
+        scale: _down ? 0.975 : 1.0,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: widget.fill,
+            borderRadius: radius,
+            border: widget.border,
+            boxShadow: widget.shadow,
+          ),
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  child: widget.child,
+                ),
+                if (_origin != null)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: AnimatedBuilder(
+                        animation: _ripple,
+                        builder: (context, _) {
+                          if (_ripple.value == 0 || _ripple.isCompleted) {
+                            return const SizedBox.shrink();
+                          }
+                          final t = Curves.easeOut.transform(_ripple.value);
+                          return CustomPaint(
+                            painter: _RipplePainter(
+                              origin: _origin!,
+                              radius: t * 9 * 24,
+                              opacity: (1 - t) * 0.5,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RipplePainter extends CustomPainter {
+  final Offset origin;
+  final double radius;
+  final double opacity;
+
+  const _RipplePainter({
+    required this.origin,
+    required this.radius,
+    required this.opacity,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawCircle(
+      origin,
+      radius,
+      Paint()..color = Colors.white.withAlpha((255 * opacity).round()),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RipplePainter old) =>
+      old.radius != radius || old.opacity != opacity || old.origin != origin;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Segmented control
+// ════════════════════════════════════════════════════════════════════════════
+
+class _SegTab {
+  final String glyph;
+  final String label;
+  const _SegTab(this.glyph, this.label);
+}
+
+/// Liquid-slide segmented control. The knob animates left/width over 340 ms
+/// cubic-bezier(.32,.72,.25,1) behind the labels; label colour crossfades over
+/// 200 ms. This motion is the signature of the screen.
+class _LiquidSegmentedControl extends StatelessWidget {
+  final List<_SegTab> tabs;
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  const _LiquidSegmentedControl({
+    required this.tabs,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        // `.seg` is padding 4 + gap 4, and the knob is pinned to each button's
+        // own offsetLeft/offsetWidth, so it spans the full inner height.
+        const gap = 4.0;
+        final button = (c.maxWidth - gap * (tabs.length - 1)) / tabs.length;
         return Stack(
           children: [
-            // Photo - Full width and height
-            Positioned.fill(
-              child: _buildHeroImage(photo['url']),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 340),
+              curve: _kKnobCurve,
+              left: selected * (button + gap),
+              top: 0,
+              bottom: 0,
+              width: button,
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: _kKnob,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x47141E0F),
+                        blurRadius: 12,
+                        spreadRadius: -4,
+                        offset: Offset(0, 4)),
+                  ],
+                ),
+                // inset 0 1px 0 #fff
+                child: const Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    height: 1,
+                    width: double.infinity,
+                    child: ColoredBox(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+            // The Row is the only unpositioned child, so it sets the height the
+            // knob stretches to — matching `.seg button`'s 11 px padding.
+            Row(
+              children: [
+                for (var i = 0; i < tabs.length; i++) ...[
+                  if (i > 0) const SizedBox(width: gap),
+                  Expanded(child: _tab(i)),
+                ],
+              ],
             ),
           ],
         );
@@ -4252,343 +3029,594 @@ class _HeroCarouselWidgetState extends State<_HeroCarouselWidget> {
     );
   }
 
-
-
-  Widget _buildPlaceholderImage() {
-    final height = (MediaQuery.of(context).size.height * 0.45).clamp(200.0, 400.0);
-    final l10n = AppLocalizations.of(context)!;
-    return Container(
-      width: double.infinity,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.grey.shade100,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.local_florist,
-            size: 64,
-            color: Colors.grey.shade400,
+  Widget _tab(int i) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onChanged(i),
+      child: TweenAnimationBuilder<Color?>(
+        tween: ColorTween(end: i == selected ? _kInk : _kMut),
+        duration: const Duration(milliseconds: 200),
+        builder: (context, color, _) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _Glyph(tabs[i].glyph, size: 15, color: color ?? _kMut),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  tabs[i].label,
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  style: _font(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.noImageAvailable,
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.addPhotoToSeeYourPlant,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  /// Builds hero image with improved error handling
-  Widget _buildHeroImage(String imageUrl) {
-    // Validate image URL
-    if (imageUrl.isEmpty) {
-      return _buildPlaceholderImage();
-    }
-    
-    // Try to get a CORS-free URL for web
-    final processedUrl = CorsProxyService.getCorsFreeUrl(imageUrl);
-    
-    return imageUrl.startsWith('data:image')
-        ? Image.memory(
-            base64Decode(imageUrl.split(',')[1]),
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            isAntiAlias: true,
-            errorBuilder: (context, error, stackTrace) {
-              print('❌ Hero image memory error: $error');
-              return _buildPlaceholderImage();
-            },
-          )
-        : imageUrl.startsWith('http')
-            ? Image.network(
-                processedUrl,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                isAntiAlias: true,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                            : null,
-                        color: Colors.green,
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  print('❌ Hero image network error: $error');
-                  // Try alternative URL if CORS fails
-                  if (CorsProxyService.hasCorsIssues) {
-                    return _buildPlaceholderImage();
-                  }
-                  return _buildPlaceholderImage();
-                },
-                // Add timeout to prevent hanging
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded) return child;
-                  return AnimatedOpacity(
-                    opacity: frame == null ? 0 : 1,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    child: child,
-                  );
-                },
-              )
-            : _buildPlaceholderImage();
-  }
-} 
+// ════════════════════════════════════════════════════════════════════════════
+//  Care detail sheet
+// ════════════════════════════════════════════════════════════════════════════
 
-// Reusable header widget for edge-to-edge carousel
-class PlantCarouselHeader extends StatefulWidget {
-  final List<String> images;
-  final VoidCallback? onBackPressed;
-  
-  const PlantCarouselHeader({
-    super.key, 
-    required this.images,
-    this.onBackPressed,
+/// Route for the care detail sheet. Enter is 420 ms; the child owns both the
+/// scrim fade and the sheet rise so they can animate independently.
+class _CareSheetRoute<T> extends PopupRoute<T> {
+  final WidgetBuilder builder;
+  _CareSheetRoute({required this.builder});
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 420);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 260);
+
+  @override
+  bool get barrierDismissible => false; // the scrim handles its own taps
+
+  @override
+  Color? get barrierColor => null;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  bool get maintainState => false;
+
+  // The page goes straight into the Overlay, so it needs a Material of its own
+  // to supply a DefaultTextStyle — without one, text inherits WidgetsApp's debug
+  // error style and picks up its yellow double underline.
+  @override
+  Widget buildPage(BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation) =>
+      Material(type: MaterialType.transparency, child: builder(context));
+}
+
+/// Inset floating sheet: 8 px insets, radius 34, max-height 76%,
+/// rgba(252,253,251,.82) over blur(40px), with its own blurred scrim.
+///
+/// Enter: translateY(70px) + opacity 0 → 0 over 420 ms `_kSheetCurve`, scrim
+/// fading in over 300 ms. Dismiss on scrim tap, close button, or a downward
+/// drag on the grabber past 90 px.
+class _CareDetailSheet extends StatefulWidget {
+  final String glyph;
+  final Color tint;
+  final Color foreground;
+  final String title;
+  final String value;
+  final String body;
+  final List<(String, String)> keyValues;
+  final bool showMoistureScale;
+  final int? moistureMin;
+  final int? moistureMax;
+  final String dryLabel;
+  final String wetLabel;
+  final String? imageUrl;
+
+  /// Label of the "ask assistant" row. Empty hides it — the sheet is also used
+  /// for cards that have nothing to ask about.
+  final String askLabel;
+
+  const _CareDetailSheet({
+    required this.glyph,
+    required this.tint,
+    required this.foreground,
+    required this.title,
+    required this.value,
+    required this.body,
+    required this.keyValues,
+    required this.dryLabel,
+    required this.wetLabel,
+    this.askLabel = '',
+    this.imageUrl,
+    this.showMoistureScale = false,
+    this.moistureMin,
+    this.moistureMax,
   });
 
   @override
-  State<PlantCarouselHeader> createState() => _PlantCarouselHeaderState();
+  State<_CareDetailSheet> createState() => _CareDetailSheetState();
 }
 
-class _PlantCarouselHeaderState extends State<PlantCarouselHeader> {
-  late final PageController _controller;
-  int _index = 0;
+class _CareDetailSheetState extends State<_CareDetailSheet>
+    with SingleTickerProviderStateMixin {
+  static const _dismissThreshold = 90.0;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = PageController(viewportFraction: 1.0);
-  }
+  late final AnimationController _snapBack = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+  )..addListener(() => setState(() {}));
+
+  double _drag = 0;
+  double _dragAtRelease = 0;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _snapBack.dispose();
     super.dispose();
+  }
+
+  double get _dragOffset => _snapBack.isAnimating
+      ? _dragAtRelease * (1 - Curves.easeOut.transform(_snapBack.value))
+      : _drag;
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    _snapBack.stop();
+    setState(() => _drag = math.max(0, _drag + d.delta.dy));
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    if (_drag > _dismissThreshold || d.velocity.pixelsPerSecond.dy > 700) {
+      Navigator.of(context).pop();
+      return;
+    }
+    _dragAtRelease = _drag;
+    _drag = 0;
+    _snapBack.forward(from: 0);
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    // ~70% of screen so name/status and other blocks are visible below
-    final clampedH = (size.height * 0.70).clamp(280.0, 700.0);
+    final media = MediaQuery.of(context);
+    final animation = ModalRoute.of(context)?.animation;
 
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: clampedH,
-      margin: EdgeInsets.zero,
-      padding: EdgeInsets.zero,
-      color: Colors.grey.shade200,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          PageView.builder(
-            controller: _controller,
-            onPageChanged: (i) => setState(() => _index = i),
-            padEnds: false,
-            itemCount: widget.images.length,
-            itemBuilder: (_, i) {
-              return Container(
-                width: MediaQuery.of(context).size.width,
-                height: clampedH,
-                decoration: BoxDecoration(color: Colors.grey.shade200),
-                clipBehavior: Clip.hardEdge,
-                child: Transform.scale(
-                  scale: 1.25,
-                  alignment: Alignment.center,
-                  child: Image.network(
-                    widget.images[i],
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    width: MediaQuery.of(context).size.width,
-                    height: clampedH,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: MediaQuery.of(context).size.width,
-                        height: clampedH,
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      );
-                    },
+    return AnimatedBuilder(
+      animation: animation ?? const AlwaysStoppedAnimation(1.0),
+      builder: (context, _) {
+        final raw = animation?.value ?? 1.0;
+        final rise = _kSheetCurve.transform(raw.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+        // Scrim fades over 300 ms of the 420 ms enter.
+        final scrimT = Curves.easeOut.transform((raw / 0.71).clamp(0.0, 1.0));
+
+        return Stack(
+          children: [
+            // Scrim: rgba(18,24,14,.28) + blur(6px) → sigma 3. Tap to dismiss.
+            Positioned.fill(
+              child: Opacity(
+                opacity: scrimT,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                    child: const ColoredBox(color: Color(0x4712180E)),
                   ),
                 ),
-              );
-            },
-          ),
-
-          // Back button overlay (SafeArea)
-          Positioned(
-            left: 8,
-            top: 8,
-            child: SafeArea(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  onPressed: widget.onBackPressed ?? () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-                ),
               ),
             ),
-          ),
-
-          // Green dots indicators (padding above white card)
-          if (widget.images.length > 1)
             Positioned(
-              bottom: 24, // keep 16–24px above the card overlap
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.images.length, (i) {
-                  final active = i == _index;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: active ? 22 : 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: Colors.white
-                          .withOpacity(active ? 1.0 : 0.5),
-                      borderRadius:
-                          BorderRadius.circular(active ? 4 : 3.5),
-                    ),
-                  );
-                }),
+              left: 8,
+              right: 8,
+              bottom: 8 + media.padding.bottom,
+              child: Transform.translate(
+                offset: Offset(0, 70 * (1 - rise) + _dragOffset),
+                child: Opacity(opacity: rise, child: _sheet(context, media)),
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _sheet(BuildContext context, MediaQueryData media) {
+    final paragraphs = widget.body
+        .split('\n')
+        .map((s) => s.replaceAll(RegExp(r'^[-•*]\s*'), '').trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: media.size.height * 0.76),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(34)),
+          boxShadow: [
+            BoxShadow(
+                color: Color(0x6614200F),
+                blurRadius: 50,
+                spreadRadius: -18,
+                offset: Offset(0, -20)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(34)),
+          child: BackdropFilter(
+            filter: _kSheetFilter,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xD1FCFDFB), // rgba(252,253,251,.82)
+                borderRadius: const BorderRadius.all(Radius.circular(34)),
+                border: Border.all(color: const Color(0xE6FFFFFF), width: 0.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Grabber + header are the drag handle; the body keeps its
+                  // own scrolling.
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragUpdate: _onDragUpdate,
+                    onVerticalDragEnd: _onDragEnd,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 5,
+                          margin: const EdgeInsets.only(top: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0x29141E0F), // rgba(20,30,15,.16)
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                        _header(context),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.imageUrl?.isNotEmpty ?? false) _photo(),
+                          if (widget.keyValues.isNotEmpty) _keyValueStrip(),
+                          if (widget.showMoistureScale) _moistureScale(),
+                          for (var i = 0; i < paragraphs.length; i++)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                  bottom: i == paragraphs.length - 1 ? 0 : 12),
+                              child: Text(
+                                paragraphs[i],
+                                style: _font(
+                                    fontSize: 15, height: 1.6, color: _kInk2),
+                              ),
+                            ),
+                          if (widget.askLabel.isNotEmpty)
+                            BotanlyAskRow(
+                              label: widget.askLabel,
+                              // Popped with a result rather than pushing the
+                              // chat from here: the host owns the return trip
+                              // back to this sheet (SPEC 1.4).
+                              onTap: () => Navigator.of(context).pop('ask'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _photo() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: AspectRatio(
+          aspectRatio: 4 / 3,
+          child: Image.network(
+            widget.imageUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const ColoredBox(color: _kLeafBg),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // gap 13 · 44×44 tile radius 16 icon 21 · title 21/600/-.03em
+  // · value pill 12/600 · 32 px close button rgba(20,30,15,.07)
+  Widget _header(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 15, 20, 4),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: widget.tint,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xB3FFFFFF), width: 0.5),
+            ),
+            child: Center(
+              child: _Glyph(widget.glyph, size: 21, color: widget.foreground),
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.title,
+                  style: _font(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 21 * -0.03,
+                    color: _kInk,
+                  ),
+                ),
+                if (widget.value.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.tint,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      widget.value,
+                      style: _font(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: widget.foreground),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _PressScale(
+            scale: 0.9,
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0x12141E0F), // rgba(20,30,15,.07)
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: _Glyph(_Svg.close, size: 14, color: _kMut),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Equal cells · rgba(255,255,255,.7) · .5px rgba(255,255,255,.9) · radius 16
+  // · padding 11 8 · caption 10/600 uppercase .06em over value 14.5/600
+  Widget _keyValueStrip() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          for (var i = 0; i < widget.keyValues.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+                decoration: BoxDecoration(
+                  color: const Color(0xB3FFFFFF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xE6FFFFFF), width: 0.5),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      widget.keyValues[i].$1.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _font(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 10 * 0.06,
+                        color: _kMut,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.keyValues[i].$2,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _font(
+                          fontSize: 14.5, fontWeight: FontWeight.w600, color: _kInk),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 8 px bar · gradient #E8D3A6 → #A9CE8C → #3E8E3B → #2E86C8
+  // · 20 px white knob with a 3 px accent ring
+  Widget _moistureScale() {
+    final min = widget.moistureMin;
+    final max = widget.moistureMax;
+    final midpoint = (min != null && max != null)
+        ? ((min + max) / 2 / 100).clamp(0.0, 1.0)
+        : 0.38;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 16),
+      child: Column(
+        children: [
+          LayoutBuilder(
+            builder: (context, c) => SizedBox(
+              height: 8,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                        gradient: LinearGradient(colors: [
+                          Color(0xFFE8D3A6),
+                          Color(0xFFA9CE8C),
+                          Color(0xFF3E8E3B),
+                          Color(0xFF2E86C8),
+                        ]),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: (c.maxWidth - 20) * midpoint,
+                    top: -6,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(color: _kAccent, width: 3),
+                        boxShadow: const [
+                          BoxShadow(
+                              color: Color(0x38000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(widget.dryLabel,
+                  style: _font(fontSize: 11, color: _kMut2)),
+              if (min != null && max != null)
+                Text('$min–$max%',
+                    style: _font(fontSize: 11, color: _kMut2)),
+              Text(widget.wetLabel,
+                  style: _font(fontSize: 11, color: _kMut2)),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-enum _HtmlActionVariant { waterPrimary, waterDisabled, analyze, analyzeDisabled }
+// ════════════════════════════════════════════════════════════════════════════
+//  More menu
+// ════════════════════════════════════════════════════════════════════════════
 
-class _HtmlActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final _HtmlActionVariant variant;
-  final VoidCallback? onTap;
-  const _HtmlActionButton({
-    required this.label,
-    required this.icon,
-    required this.variant,
-    required this.onTap,
+class _MoreMenuSheet extends StatelessWidget {
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final String editLabel;
+  final String deleteLabel;
+
+  const _MoreMenuSheet({
+    required this.onEdit,
+    required this.onDelete,
+    required this.editLabel,
+    required this.deleteLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    Color bg;
-    Color fg;
-    Color borderColor;
-    List<BoxShadow> shadow;
-    switch (variant) {
-      case _HtmlActionVariant.waterPrimary:
-        bg = const Color(0xFF5FA346);
-        fg = Colors.white;
-        borderColor = const Color(0x4D4A6741);
-        shadow = const [
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.all(Radius.circular(28)),
+        boxShadow: [
           BoxShadow(
-              color: Color(0x474A6741),
-              blurRadius: 6,
-              offset: Offset(0, 2)),
-        ];
-        break;
-      case _HtmlActionVariant.waterDisabled:
-        bg = Colors.white;
-        fg = const Color(0xFF888888);
-        borderColor = const Color(0xFFE4EBE1);
-        shadow = const [];
-        break;
-      case _HtmlActionVariant.analyze:
-        bg = Colors.white;
-        fg = const Color(0xFFC54F4F);
-        borderColor = const Color(0xFFECC6C6);
-        shadow = const [
-          BoxShadow(
-              color: Color(0x52B8893A),
-              blurRadius: 12,
-              offset: Offset(0, 3)),
-        ];
-        break;
-      case _HtmlActionVariant.analyzeDisabled:
-        bg = const Color(0xFFF5F5F5);
-        fg = const Color(0xFF888888);
-        borderColor = const Color(0xFFE4EBE1);
-        shadow = const [];
-        break;
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 44),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1),
-          boxShadow: shadow,
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              color: Color(0x6614200F),
+              blurRadius: 50,
+              spreadRadius: -18,
+              offset: Offset(0, -20)),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.all(Radius.circular(28)),
+        child: BackdropFilter(
+          filter: _kSheetFilter,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xD1FCFDFB),
+              borderRadius: const BorderRadius.all(Radius.circular(28)),
+              border: Border.all(color: const Color(0xE6FFFFFF), width: 0.5),
+            ),
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: fg, size: 16),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: fg,
-                      letterSpacing: 0.2,
-                    ),
+                Container(
+                  width: 38,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0x29141E0F),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
+                _item(_Svg.edit, _kAccent, editLabel, _kInk, onEdit),
+                const Divider(
+                    height: 1, indent: 20, endIndent: 20, color: Color(0x12141E0F)),
+                _item(_Svg.trash, _kWarm, deleteLabel, _kWarm, onDelete),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _item(String glyph, Color iconColor, String label, Color textColor,
+      VoidCallback onTap) {
+    return _PressScale(
+      scale: 0.99,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(children: [
+          _Glyph(glyph, size: 20, color: iconColor),
+          const SizedBox(width: 14),
+          Text(
+            label,
+            style: _font(
+                fontSize: 16, fontWeight: FontWeight.w500, color: textColor),
+          ),
+        ]),
       ),
     );
   }

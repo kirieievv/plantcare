@@ -8,6 +8,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Care tasks: a user only ever sees and edits their own
+    match /tasks/{taskId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
     // Allow read/write access to all documents for testing
     // WARNING: This is for development only - don't use in production!
     match /{document=**} {

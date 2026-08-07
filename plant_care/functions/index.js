@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const OpenAI = require('openai');
 const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
+const { taskStrings, normaliseLocale } = require('./task_strings');
 
 // ── AI Model Configuration ──────────────────────────────────────────
 // Model for watering reminder emails — cheap, template-style text.
@@ -371,14 +372,18 @@ exports.confirmPasswordResetPin = functions.https.onRequest((req, res) => {
   });
 });
 
-// Initialize OpenAI with API key from Firebase config
+// Initialize OpenAI with the key from the environment.
+//
+// This used to read `functions.config().openai.api_key`. The Runtime Config API
+// behind that call is being shut down and deploys fail once it goes, so the key
+// now travels the same way every other secret here does — through `.env`, which
+// is git-ignored and set per project.
 let openai;
 async function initializeOpenAI() {
   if (!openai) {
-    // Try to get API key from Firebase config
-    const apiKey = functions.config().openai?.api_key;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not configured in Firebase Functions');
+      throw new Error('OPENAI_API_KEY is not set in the functions environment');
     }
     openai = new OpenAI({
       apiKey: apiKey,
@@ -757,6 +762,32 @@ function evaluateHealthCheckAgentResult(recommendations, context) {
     return { ok: false, reason: 'weak_reason_short' };
   }
 
+  // The result screen renders a score ring, finding cards and an action checklist —
+  // all three have to arrive or the user gets an empty layout.
+  const score = Number(recommendations.health_score);
+  if (!Number.isFinite(score) || score < 0 || score > 100) {
+    return { ok: false, reason: 'missing_health_score' };
+  }
+
+  const hasTitled = (arr) =>
+    Array.isArray(arr) && arr.some((x) => x && String(x.title || '').trim().length > 0);
+  if (!hasTitled(recommendations.findings)) {
+    return { ok: false, reason: 'missing_findings' };
+  }
+  if (!hasTitled(recommendations.recommendations)) {
+    return { ok: false, reason: 'missing_recommendations_list' };
+  }
+
+  // A "healthy" verdict paired with a failing score (or vice versa) reads as broken
+  // to the user: green chip over a red ring.
+  const status = String(plantAssistant.status || '').toLowerCase();
+  if (status === 'healthy' && score < 75) {
+    return { ok: false, reason: 'score_contradicts_healthy' };
+  }
+  if (status === 'issue_detected' && score >= 75) {
+    return { ok: false, reason: 'score_contradicts_issue' };
+  }
+
   // Contradiction heuristic: if watered recently and soil is moist/wet, "water now" is likely unstable.
   try {
     const latestWatering = (context.recentWateringEvents || [])[0];
@@ -980,9 +1011,71 @@ function normalizeRecommendations(recommendations, reqBody = {}) {
     };
 
     recommendations = enforceWateringConsistencyGuard(recommendations);
+    recommendations = normalizeHealthReport(recommendations);
   } catch (e) {
     console.error('❌ Error normalizing recommendations:', e);
   }
+  return recommendations;
+}
+
+/** Categories the client can render an icon for; anything else falls back to 'leaves'. */
+const FINDING_CATEGORIES = ['light', 'water', 'soil', 'leaves', 'pests'];
+
+const MAX_FINDINGS = 3;
+const MAX_HEALTH_RECOMMENDATIONS = 3;
+
+/**
+ * Clamps and trims the health-report fields (score / findings / recommendations)
+ * so the client can render them without defensive checks. Drops entries with no
+ * title rather than showing an empty card.
+ */
+function normalizeHealthReport(recommendations) {
+  if (!recommendations || typeof recommendations !== 'object') return recommendations;
+
+  const str = (v) => (typeof v === 'string' ? v.trim() : '');
+
+  // Score: keep AI value when usable, otherwise derive from status so the ring
+  // always has something to draw.
+  let score = Number(recommendations.health_score);
+  if (!Number.isFinite(score)) {
+    const status = str(recommendations.plant_assistant?.status).toLowerCase();
+    score = status === 'issue_detected' ? 60 : status === 'healthy' ? 90 : NaN;
+  }
+  recommendations.health_score = Number.isFinite(score)
+    ? Math.max(0, Math.min(100, Math.round(score)))
+    : null;
+
+  const rawFindings = Array.isArray(recommendations.findings) ? recommendations.findings : [];
+  recommendations.findings = rawFindings
+    .map((f) => {
+      const category = str(f?.category).toLowerCase();
+      return {
+        category: FINDING_CATEGORIES.includes(category) ? category : 'leaves',
+        title: str(f?.title),
+        text: str(f?.text),
+      };
+    })
+    .filter((f) => f.title)
+    .slice(0, MAX_FINDINGS);
+
+  const rawRecs = Array.isArray(recommendations.recommendations)
+    ? recommendations.recommendations
+    : [];
+  recommendations.recommendations = rawRecs
+    .map((r, idx) => {
+      const priority = Number(r?.priority);
+      return {
+        priority: Number.isFinite(priority) ? Math.max(1, Math.min(3, Math.round(priority))) : idx + 1,
+        title: str(r?.title),
+        explanation: str(r?.explanation),
+        action_label: str(r?.action_label),
+        done: false,
+      };
+    })
+    .filter((r) => r.title)
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, MAX_HEALTH_RECOMMENDATIONS);
+
   return recommendations;
 }
 
@@ -1032,12 +1125,28 @@ Return ONLY valid JSON (no markdown) using this schema:
     "name": "exact plant name from image", "general_description": "detailed description", "moisture": "40-60%",
     "moisture_check_tip": "practical tip for THIS plant on how to check soil moisture (e.g. finger test depth, expected feel, plant-specific cues)",
     "water": "specific water recommendations", "light": "4-6 hours", "temperature": "range", "fertilizer": "schedule",
-    "soil": "soil type", "growth_rate": "growth info", "toxicity": "safety", "placement": "placement", "personality": "traits"
+    "soil": "soil type", "growth_rate": "growth info", "toxicity": "safety", "placement": "placement", "personality": "traits",
+    "details": {
+      "watering_season": "active growth season, e.g. spring-summer",
+      "light_hours": "daily hours as digits, e.g. 4-6",
+      "light_type": "e.g. bright indirect",
+      "temperature_optimal": "e.g. 18-26 °C",
+      "temperature_minimum": "lowest tolerated, e.g. 10-12 °C",
+      "fertilizer_frequency": "e.g. every 2 weeks",
+      "fertilizer_dose": "e.g. half strength",
+      "soil_short": "soil in 3-4 words",
+      "temperature_short": "temperature in 3-4 words",
+      "fertilizer_short": "feeding in 3-4 words",
+      "placement_short": "placement in 3-4 words"
+    }
   },
   "other_care": { "growth_stage": "Seedling/Young/Mature/Established" },
   "interesting_facts": ["fact 1", "fact 2", "fact 3", "fact 4"],
   "specific_issues": ["risk 1", "risk 2", "risk 3 max"],
   "health_assessment": "current health assessment text",
+  "health_score": 0,
+  "findings": [ { "category": "light|water|soil|leaves|pests", "title": "string", "text": "string" } ],
+  "recommendations": [ { "priority": 1, "title": "string", "explanation": "string", "action_label": "string" } ],
   "plant_assistant": {
     "status": "healthy or issue_detected", "praise_phrase": "string", "health_summary": "string",
     "maintenance_footer": "string", "problem_name": "string", "problem_description": "string",
@@ -1046,6 +1155,14 @@ Return ONLY valid JSON (no markdown) using this schema:
 }
 
 Rules:
+- health_score is an integer 0-100 summarising overall condition from the CURRENT image:
+  90-100 thriving, 75-89 healthy with minor notes, 55-74 needs attention, 30-54 struggling, 0-29 critical.
+  It must agree with plant_assistant.status: status="healthy" implies >= 75, "issue_detected" implies < 75.
+- findings: 2-3 items, each a specific observation from the image. "title" is 2-4 words, "text" is one
+  sentence. Report positive observations too — a healthy plant still gets findings (e.g. watering on schedule).
+- recommendations: 1-3 concrete actions, ordered by importance. "priority" is 1 (most important) to 3.
+  "title" is the action in 2-5 words, "explanation" is one sentence on why, "action_label" is the button
+  text for adding it to the care plan. A healthy plant gets 1 preventive recommendation.
 - Keep watering_plan in whole days (1-60).
 - amount_ml must be integer and clamped to 50..2500.
 - In care_recommendations.name, return botanical/cultivar identification from analysis (e.g., "Fittonia albivenis"), not the user nickname/plant label from app.
@@ -1055,10 +1172,12 @@ Rules:
 - Use history to adapt advice (avoid contradicting recent watering events unless visible condition strongly requires it).
 - If previous images are provided, mention trend in health_assessment (improving/stable/worsening) when possible.
 - Also consider these stabilizing factors when available: days since last watering, recent recommendedAmountMl vs actual amountMl from watering_events, and whether the plant was recently marked healthy/issue_detected.
+- care_recommendations.details are compact UI labels, not prose: max 30 characters each, no full sentences, no trailing period. Fill every key; omit one only if the species genuinely has no such requirement.
+- details.light_hours is digits and an optional dash only ("4-6"), with no unit word. details.temperature_optimal and details.temperature_minimum must include the °C unit.
 - plant_assistant fields by status — REQUIRED, never omit:
   - If status="healthy": praise_phrase (encouraging short phrase), health_summary (1-2 sentence assessment), maintenance_footer (short care reminder). Leave problem_name/problem_description/severity/action_steps/reassurance empty.
   - If status="issue_detected": problem_name, problem_description, severity, action_steps (array), follow_up_days, reassurance. Leave praise_phrase/health_summary/maintenance_footer empty.
-- CRITICAL: Write ALL string text fields in ${resolveLanguageName(language)}. Keep ONLY scientific names (species.ai_species_guess) and fixed enum values (soil.visual_state, other_care.growth_stage, plant_assistant.status, plant_assistant.severity) in English.`;
+- CRITICAL: Write ALL string text fields in ${resolveLanguageName(language)}. Keep ONLY scientific names (species.ai_species_guess) and fixed enum values (soil.visual_state, other_care.growth_stage, findings[].category, plant_assistant.status, plant_assistant.severity) in English.`;
 }
 
 function buildPlantChatSystemPrompt(context, options = {}) {
@@ -1205,6 +1324,10 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
           }],
           [ANALYSIS_TOKEN_PARAM]: 3000,
           temperature: 0.5,
+          // Same guard as the health check: a single malformed bracket sends
+          // parseAIResponse into its text-scraping fallback, which silently
+          // produces a half-empty plant instead of failing loudly.
+          response_format: { type: 'json_object' },
         });
 
         if (response.usage) {
@@ -1230,6 +1353,7 @@ exports.analyzePlantPhoto = functions.https.onRequest((req, res) => {
         }],
         [ANALYSIS_TOKEN_PARAM]: 1000,
         temperature: 0.7,
+        response_format: { type: 'json_object' },
       });
 
       if (idResponse.usage) {
@@ -1373,7 +1497,20 @@ Return ONLY a JSON object:
     "ideal_soil_moisture_min": 10,
     "ideal_soil_moisture_max": 20,
     "water": "...", "light": "...", "temperature": "...", "fertilizer": "...", "soil": "...",
-    "growth_rate": "...", "toxicity": "...", "placement": "...", "personality": "..."
+    "growth_rate": "...", "toxicity": "...", "placement": "...", "personality": "...",
+    "details": {
+      "watering_season": "active growth season, e.g. spring-summer",
+      "light_hours": "daily hours as digits, e.g. 4-6",
+      "light_type": "e.g. bright indirect",
+      "temperature_optimal": "e.g. 18-26 °C",
+      "temperature_minimum": "lowest tolerated, e.g. 10-12 °C",
+      "fertilizer_frequency": "e.g. every 2 weeks",
+      "fertilizer_dose": "e.g. half strength",
+      "soil_short": "soil in 3-4 words",
+      "temperature_short": "temperature in 3-4 words",
+      "fertilizer_short": "feeding in 3-4 words",
+      "placement_short": "placement in 3-4 words"
+    }
   },
   "other_care": { "growth_stage": "Seedling/Young/Mature/Established" },
   "interesting_facts": ["...", "...", "...", "..."],
@@ -1390,6 +1527,7 @@ Plant assistant rules: "healthy" if plant looks fine, else "issue_detected".
 specific_issues: 2-3 SPECIES-SPECIFIC CARE RISKS (not current problems).
 amount_ml: 50-1500 for normal pots, up to 2500 for very large containers.
 In care_recommendations.name, use "${confirmedSpecies}".
+care_recommendations.details are compact UI labels, not prose: max 30 characters each, no full sentences, no trailing period. Fill every key; omit one only if the species genuinely has no such requirement. details.light_hours is digits and an optional dash only ("4-6"), with no unit word; details.temperature_optimal and details.temperature_minimum must include the °C unit.
 care_recommendations.ideal_soil_moisture_min / ideal_soil_moisture_max: the IDEAL soil moisture percentage range for THIS species based on its botanical needs (0–100). Base this on species biology, NOT on the current visual soil state in the photo. Examples: cactus/succulent → 5–15; drought-tolerant → 15–30; average indoor → 30–50; tropical/moisture-loving → 50–70; bog plant → 70–90. These are integer percentages.
 
 Return ONLY JSON. No text. No markdown.
@@ -1419,32 +1557,65 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
       const promptText = buildHealthCheckAgentPrompt(context, plantName, language);
       const currentImageUrl = imageList.map(b64 => `data:image/jpeg;base64,${b64}`);
 
-      const previousImageUrls = getPreviousImagesForTier(context, 1);
-      const contentBlocks = buildHealthCheckContentBlocks(
-        promptText,
-        currentImageUrl,
-        previousImageUrls,
-        false
-      );
+      const accUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
-      const response = await openaiClient.chat.completions.create({
-        model: ANALYSIS_MODEL,
-        messages: [{ role: 'user', content: contentBlocks }],
-        [ANALYSIS_TOKEN_PARAM]: 3000,
-        temperature: 0.8,
-      });
+      // One retry: the result screen needs score + findings + recommendations, and a
+      // single sampling at temperature 0.8 drops them often enough to be worth asking
+      // again. The retry also widens the historical image tier so the model has more
+      // to compare against.
+      let content = '';
+      let parsed = null;
+      let verdict = { ok: false, reason: 'not_attempted' };
+      let previousImagesUsed = 0;
+      let attemptsUsed = 0;
 
-      const accUsage = response.usage
-        ? {
-            prompt_tokens: response.usage.prompt_tokens || 0,
-            completion_tokens: response.usage.completion_tokens || 0,
-            total_tokens: response.usage.total_tokens || 0,
-          }
-        : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+      for (let attempt = 0; attempt < HEALTH_CHECK_IMAGE_TIERS.length; attempt++) {
+        const isRetry = attempt > 0;
+        const previousImageUrls = getPreviousImagesForTier(
+          context,
+          HEALTH_CHECK_IMAGE_TIERS[attempt]
+        );
+        const contentBlocks = buildHealthCheckContentBlocks(
+          promptText,
+          currentImageUrl,
+          previousImageUrls,
+          isRetry
+        );
 
-      const content = response.choices?.[0]?.message?.content || '';
-      let recommendations = parseAIResponse(content);
-      recommendations = normalizeRecommendations(recommendations, req.body || {});
+        const response = await openaiClient.chat.completions.create({
+          model: ANALYSIS_MODEL,
+          messages: [{ role: 'user', content: contentBlocks }],
+          [ANALYSIS_TOKEN_PARAM]: 3000,
+          temperature: 0.8,
+          // Without this the model occasionally closes an array with `}` — the
+          // parse then fails, parseAIResponse silently drops to its text-scraping
+          // fallback, and the whole structured payload is lost.
+          response_format: { type: 'json_object' },
+        });
+
+        attemptsUsed = attempt + 1;
+        previousImagesUsed = previousImageUrls.length;
+
+        if (response.usage) {
+          accUsage.prompt_tokens += response.usage.prompt_tokens || 0;
+          accUsage.completion_tokens += response.usage.completion_tokens || 0;
+          accUsage.total_tokens += response.usage.total_tokens || 0;
+        }
+
+        content = response.choices?.[0]?.message?.content || '';
+        parsed = parseAIResponse(content);
+        verdict = evaluateHealthCheckAgentResult(parsed, context);
+        if (verdict.ok) break;
+
+        console.warn(
+          `⚠️ Health check attempt ${attemptsUsed} rejected: ${verdict.reason}` +
+            (attempt < HEALTH_CHECK_IMAGE_TIERS.length - 1 ? ' — retrying' : ' — using anyway')
+        );
+      }
+
+      // Even a rejected result gets normalized and returned: the fallbacks there give
+      // the user a usable screen, which beats an error toast after a 30-second wait.
+      let recommendations = normalizeRecommendations(parsed, req.body || {});
 
       if (accUsage.total_tokens > 0) {
         const db = admin.firestore();
@@ -1456,8 +1627,10 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
         recommendations,
         rawResponse: content,
         agent: {
-          attemptsUsed: 1,
-          previousImagesUsed: previousImageUrls.length,
+          attemptsUsed,
+          previousImagesUsed,
+          accepted: verdict.ok,
+          rejectedReason: verdict.ok ? null : verdict.reason,
           context: {
             healthChecksLoaded: context.recentHealthChecks.length,
             wateringEventsLoaded: context.recentWateringEvents.length,
@@ -1871,7 +2044,6 @@ async function sendWateringReminderPushMulticast(
       console.error('❌ FCM watering reminder send error:', e.message);
     }
   }
-  // Log push notification to Firestore for admin visibility
   if (successTotal > 0) {
     try {
       await db.collection('push_notifications').add({
@@ -2458,6 +2630,14 @@ function transformNewJsonToLegacy(jsonData) {
     // Pass the full structured object so the client can build
     // localized section titles in the user's language.
     care_recommendations: careRec,
+    // Health-report fields. This transform rebuilds the payload field by field,
+    // so anything not listed here is dropped before the client ever sees it.
+    health_score: jsonData.health_score ?? null,
+    findings: Array.isArray(jsonData.findings) ? jsonData.findings : [],
+    recommendations: Array.isArray(jsonData.recommendations) ? jsonData.recommendations : [],
+    // The result validator reads soil state to spot "water now" advice that
+    // contradicts a recent watering; without it that guard silently no-ops.
+    soil,
   };
 
   if (scientificWatering) {
@@ -4020,7 +4200,7 @@ exports.aggregateAiUsageDaily = functions.pubsub
 
     const yesterday = new Date(now);
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const dateKey = yesterday.toISOString().slice(0, 10); // YYYY-MM-DD
+    const dateKey = yesterday.toISOString().slice(0, 10);
 
     const startOfDay = admin.firestore.Timestamp.fromDate(new Date(`${dateKey}T00:00:00.000Z`));
     const endOfDay = admin.firestore.Timestamp.fromDate(new Date(`${dateKey}T23:59:59.999Z`));
@@ -4072,8 +4252,6 @@ exports.aggregateAiUsageDaily = functions.pubsub
 
 // ═══════════════════════════════════════════════════════════════════
 //  getAiStats — HTTP endpoint for agent/external access
-//  Auth: x-admin-token header or ?token= query param
-//  Set ADMIN_STATS_TOKEN in .env to enable
 // ═══════════════════════════════════════════════════════════════════
 exports.getAiStats = functions.https.onRequest((req, res) => {
   return cors(req, res, async () => {
@@ -4125,3 +4303,253 @@ exports.getAiStats = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+// ── Care task scheduler ─────────────────────────────────────────────────────
+//
+// Tasks are not generated daily. Each source has its own rhythm (SPEC v3 1.3),
+// and — crucially — nothing new is created for a plant while that plant still
+// has open tasks. Without that rule a neglected plant accumulates a backlog the
+// user can never clear, which is exactly what the "Сегодня" group is meant to
+// prevent.
+
+const TASK_FERTILIZE_EVERY_DAYS = 14;
+const TASK_RESCAN_EVERY_DAYS = 30;
+
+/** Стакан как база пересчёта дозы — та же, что на экране растения. */
+const GLASS_ML = 200;
+
+/** Календарные сутки между двумя моментами. */
+function daysBetween(from, to) {
+  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.floor((b - a) / 86400000);
+}
+
+/**
+ * Builds the task documents a plant is due for. Pure apart from `now` so the
+ * rules stay testable.
+ *
+ * `openCategories` holds the categories of the plant's open **scheduled** tasks.
+ * SPEC 1.3.3 held everything back while any task was open; that is now
+ * per-category, because watering pairs with a health check and a health check
+ * people skip must never stop the watering reminder.
+ */
+function plannedTasksFor(plant, openCategories, now, locale = 'en') {
+  const t = taskStrings(locale);
+  const out = [];
+  const lastFertilised = toDateSafe(plant.lastFertilisedAt);
+  const lastScan = toDateSafe(plant.lastHealthCheck);
+  const lastScanTask = toDateSafe(plant.lastScanTaskAt);
+  const cycleStart = toDateSafe(plant.lastWateredAt) || toDateSafe(plant.lastWatered);
+
+  // Watering is a task on the home deck (SPEC 1.3) even though the plant screen
+  // shows it as its hero widget — "no duplicates" applies to the plant's own
+  // "what to do" block, which filters watering out client-side.
+  const wateringDue = toDateSafe(plant.nextDueAt) || toDateSafe(plant.nextWatering);
+  // The client also treats a sticky `shouldWaterNow` from the analyser as "due"
+  // (`_canWaterPlant`). Without it the screen locks the health check while the
+  // scheduler issues nothing at all.
+  const wateringDueNow =
+    (wateringDue && wateringDue <= now) || plant.shouldWaterNow === true;
+
+  if (wateringDueNow && !openCategories.has('water')) {
+    const ml = Number(plant.wateringAmountMl);
+    const interval = Number(plant.wateringIntervalDays || plant.wateringFrequency);
+    const kv = [];
+    if (Number.isFinite(ml) && ml > 0) {
+      kv.push({ k: t.kvVolume, v: `${Math.round(ml)} ${t.unitMl}` });
+      kv.push({
+        k: t.kvThisIs,
+        v: `${(ml / GLASS_ML).toFixed(1).replace('.0', '')} ${t.unitGlasses}`,
+      });
+    }
+    if (Number.isFinite(interval) && interval > 0) {
+      kv.push({ k: t.kvCycle, v: t.valEveryNDays(interval) });
+    }
+    out.push({
+      title: t.waterTitle,
+      detail:
+        Number.isFinite(ml) && ml > 0
+          ? t.waterDetail(Math.round(ml))
+          : t.waterDetailPlain,
+      category: 'water',
+      // Numbers travel next to the text so a client can rebuild the whole card
+      // in its own language when the user switches the interface.
+      params: {
+        ml: Number.isFinite(ml) && ml > 0 ? Math.round(ml) : null,
+        intervalDays: Number.isFinite(interval) && interval > 0 ? interval : null,
+      },
+      // The real due date, not "now": a watering three days late has to read as
+      // three days late, both in the sort order and in the plant's score.
+      dueAt: wateringDue.toISOString(),
+      kv,
+      body: t.waterBody,
+    });
+  }
+
+  const needsFertiliser =
+    !lastFertilised || daysBetween(lastFertilised, now) >= TASK_FERTILIZE_EVERY_DAYS;
+  if (needsFertiliser && !openCategories.has('fertilizer')) {
+    out.push({
+      title: t.fertTitle,
+      detail: t.fertDetail,
+      category: 'fertilizer',
+      params: {},
+      kv: [
+        { k: t.kvRhythm, v: t.valFortnightly },
+        { k: t.kvDose, v: t.valHalfDose },
+      ],
+      body: t.fertBody,
+    });
+  }
+
+  // The health check rides along with watering: it goes out on the watering day
+  // whether or not the plant has been watered yet, so the user can water, tap
+  // "I have watered" (which unlocks the check) and then run it from the task.
+  //
+  // Both watermarks are anchored on the watering cycle, not on `now`. Anchoring
+  // on `now` would re-issue the task every six hours for as long as the plant
+  // stays thirsty — once after every completed check, forever. `lastScanTaskAt`
+  // is written when the task is created, so the rule holds no matter *how* the
+  // task was closed.
+  const scannedThisCycle =
+    lastScan && cycleStart && lastScan > cycleStart;
+  const issuedThisCycle =
+    lastScanTask && cycleStart && lastScanTask > cycleStart;
+
+  const needsRescan =
+    !scannedThisCycle &&
+    !issuedThisCycle &&
+    !openCategories.has('scan') &&
+    // Two triggers, one watermark. Letting the ceiling skip `issuedThisCycle`
+    // put a plant with an old check straight back into the six-hourly loop the
+    // watermark exists to prevent.
+    //
+    // The ceiling keeps slow-cycle plants honest: a cactus watered every 45 days
+    // would otherwise go a month and a half without a look.
+    (wateringDueNow ||
+      !lastScan ||
+      daysBetween(lastScan, now) >= TASK_RESCAN_EVERY_DAYS);
+
+  if (needsRescan) {
+    out.push({
+      title: t.scanTitle,
+      detail: t.scanDetail,
+      category: 'scan',
+      params: {},
+      // Same due date as its watering twin, so the pair ages together and the
+      // deck shows them as one cycle rather than two unrelated chores.
+      dueAt: wateringDueNow && wateringDue ? wateringDue.toISOString() : undefined,
+      kv: [
+        { k: t.kvRhythm, v: t.valMonthly },
+        { k: t.kvNeeds, v: t.valPhotos },
+      ],
+      body: t.scanBody,
+    });
+  }
+
+  return out;
+}
+
+// Exported for the unit tests under functions/test.
+exports.plannedTasksFor = plannedTasksFor;
+
+exports.scheduleCareTasks = functions.pubsub
+  .schedule('every 6 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = new Date();
+
+    const plantsSnap = await db
+      .collection('plants')
+      .where('deletedAt', '==', null)
+      .limit(500)
+      .get();
+
+    let created = 0;
+    let skipped = 0;
+    /** userId → language code, so each user's document is read once per tick. */
+    const localeByUser = new Map();
+
+    for (const doc of plantsSnap.docs) {
+      const plant = doc.data() || {};
+      if (!plant.userId) continue;
+
+      const openSnap = await db
+        .collection('tasks')
+        .where('userId', '==', plant.userId)
+        .where('plantId', '==', doc.id)
+        .where('done', '==', false)
+        .get();
+
+      // Only scheduled tasks hold back the rhythm. An analysis recommendation
+      // that `_taskCategoryFor` filed under "water" must not silence the
+      // watering reminder.
+      const openCategories = new Set(
+        openSnap.docs
+          .map((d) => d.data() || {})
+          .filter((t) => t.source === 'schedule')
+          .map((t) => t.category)
+          .filter(Boolean)
+      );
+
+      // One lookup per user, not per plant: a garden of twenty plants would
+      // otherwise read the same user document twenty times every tick.
+      if (!localeByUser.has(plant.userId)) {
+        let code = 'en';
+        try {
+          const userDoc = await db.collection('users').doc(plant.userId).get();
+          const u = userDoc.data() || {};
+          code = normaliseLocale(u.locale || u.language);
+        } catch (e) {
+          console.warn(`⚠️ locale lookup failed for ${plant.userId}: ${e}`);
+        }
+        localeByUser.set(plant.userId, code);
+      }
+      const planned = plannedTasksFor(
+        plant,
+        openCategories,
+        now,
+        localeByUser.get(plant.userId)
+      );
+      if (planned.length === 0) {
+        skipped++;
+        continue;
+      }
+
+      const batch = db.batch();
+      let issuedScan = false;
+      for (const task of planned) {
+        if (task.category === 'scan') issuedScan = true;
+        const ref = db.collection('tasks').doc();
+        batch.set(ref, {
+          ...task,
+          id: ref.id,
+          plantId: doc.id,
+          userId: plant.userId,
+          source: 'schedule',
+          // Most tasks start today; watering carries its own overdue date.
+          dueAt: task.dueAt || now.toISOString(),
+          postponedAt: null,
+          done: false,
+          completedAt: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        created++;
+      }
+      // The watermark that makes the scan rule idempotent: written with the task
+      // itself, so a check the user ticked off, skipped or completed properly all
+      // look the same to the next tick.
+      if (issuedScan) {
+        batch.update(doc.ref, { lastScanTaskAt: now.toISOString() });
+      }
+      await batch.commit();
+    }
+
+    console.log(
+      `🗓️ scheduleCareTasks: ${created} created, ${skipped} plants already busy ` +
+        `(of ${plantsSnap.size})`
+    );
+    return null;
+  });

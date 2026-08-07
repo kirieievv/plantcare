@@ -26,11 +26,22 @@ import 'package:plant_care/widgets/subscription_banner.dart';
 import 'package:plant_care/services/language_service.dart';
 import 'package:plant_care/widgets/botanly_shimmer.dart';
 import 'package:plant_care/utils/web_file_picker.dart';
+import 'package:plant_care/utils/cloud_functions.dart';
+import 'package:plant_care/utils/care_sections.dart';
 
 Map<String, dynamic>? _asStringKeyedMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
   if (v is Map) return Map<String, dynamic>.from(v);
   return null;
+}
+
+/// A 0-100 score, or null when the analyzer returned nothing usable. Values out
+/// of range are clamped rather than dropped: a stray 120 still means "healthy",
+/// and dropping it would leave the plant with no starting score at all.
+int? _asScore(dynamic v) {
+  if (v == null) return null;
+  final n = v is num ? v.toInt() : int.tryParse(v.toString());
+  return n?.clamp(0, 100);
 }
 
 String? _safeString(dynamic v) {
@@ -51,148 +62,33 @@ String? _firstNonEmptyString(Iterable<dynamic?> values) {
   return null;
 }
 
-/// Builds a multi-line care_tips string from nested `care_recommendations`
-/// (mirrors `transformNewJsonToLegacy` in Cloud Functions when the client
-/// receives nested JSON without a flat `care_tips` field).
+/// Builds the care_tips blob from nested `care_recommendations` (mirrors
+/// `transformNewJsonToLegacy` in Cloud Functions when the client receives
+/// nested JSON without a flat `care_tips` field).
 String? _composeCareTipsFromCareMap(Map<String, dynamic>? care) {
   if (care == null) return null;
-  final lang = LanguageService.localeNotifier.value.languageCode;
-  final lbl = _careLabelsForLang(lang);
-  final lines = <String>[];
-  void add(String labelKey, String key) {
-    final v = care[key];
-    if (v == null) return;
-    final s = v.toString().trim();
-    if (s.isNotEmpty) lines.add('${lbl[labelKey]}: $s');
-  }
-
-  add('cultivar', 'name');
-  add('generalDescription', 'general_description');
-  add('soil', 'soil');
-  add('soilMoisture', 'moisture');
-  add('moistureCheck', 'moisture_check_tip');
-  add('water', 'water');
-  add('light', 'light');
-  add('temperature', 'temperature');
-  add('fertilizer', 'fertilizer');
-  add('growthRate', 'growth_rate');
-  add('toxicity', 'toxicity');
-  add('placement', 'placement');
-  add('personality', 'personality');
-  if (lines.isEmpty) return null;
-  return lines.join('\n');
-}
-
-Map<String, String> _careLabelsForLang(String lang) {
-  switch (lang) {
-    case 'ru':
-      return {
-        'cultivar': 'Культивар', 'generalDescription': 'Общее описание',
-        'soil': 'Почва', 'soilMoisture': 'Влажность почвы',
-        'moistureCheck': 'Проверка влажности', 'water': 'Полив',
-        'light': 'Освещение', 'temperature': 'Температура',
-        'fertilizer': 'Удобрения', 'growthRate': 'Скорость роста',
-        'toxicity': 'Токсичность', 'placement': 'Размещение',
-        'personality': 'Характер',
-      };
-    case 'uk':
-      return {
-        'cultivar': 'Культивар', 'generalDescription': 'Загальний опис',
-        'soil': 'Ґрунт', 'soilMoisture': 'Вологість ґрунту',
-        'moistureCheck': 'Перевірка вологості', 'water': 'Полив',
-        'light': 'Освітлення', 'temperature': 'Температура',
-        'fertilizer': 'Добрива', 'growthRate': 'Швидкість росту',
-        'toxicity': 'Токсичність', 'placement': 'Розміщення',
-        'personality': 'Характер',
-      };
-    case 'de':
-      return {
-        'cultivar': 'Kultivar', 'generalDescription': 'Allgemeine Beschreibung',
-        'soil': 'Erde', 'soilMoisture': 'Bodenfeuchtigkeit',
-        'moistureCheck': 'Feuchtigkeitsprüfung', 'water': 'Wasser',
-        'light': 'Licht', 'temperature': 'Temperatur',
-        'fertilizer': 'Dünger', 'growthRate': 'Wachstumsrate',
-        'toxicity': 'Toxizität', 'placement': 'Standort',
-        'personality': 'Charakter',
-      };
-    case 'es':
-      return {
-        'cultivar': 'Cultivar', 'generalDescription': 'Descripción general',
-        'soil': 'Suelo', 'soilMoisture': 'Humedad del suelo',
-        'moistureCheck': 'Verificación de humedad', 'water': 'Agua',
-        'light': 'Luz', 'temperature': 'Temperatura',
-        'fertilizer': 'Fertilizante', 'growthRate': 'Tasa de crecimiento',
-        'toxicity': 'Toxicidad', 'placement': 'Ubicación',
-        'personality': 'Personalidad',
-      };
-    case 'fr':
-      return {
-        'cultivar': 'Cultivar', 'generalDescription': 'Description générale',
-        'soil': 'Sol', 'soilMoisture': 'Humidité du sol',
-        'moistureCheck': "Vérification de l'humidité", 'water': 'Eau',
-        'light': 'Lumière', 'temperature': 'Température',
-        'fertilizer': 'Engrais', 'growthRate': 'Taux de croissance',
-        'toxicity': 'Toxicité', 'placement': 'Emplacement',
-        'personality': 'Personnalité',
-      };
-    default:
-      return {
-        'cultivar': 'Cultivar', 'generalDescription': 'General Description',
-        'soil': 'Soil', 'soilMoisture': 'Soil Moisture',
-        'moistureCheck': 'Moisture Check', 'water': 'Water',
-        'light': 'Light', 'temperature': 'Temperature',
-        'fertilizer': 'Fertilizer', 'growthRate': 'Growth Rate',
-        'toxicity': 'Toxicity', 'placement': 'Placement',
-        'personality': 'Personality',
-      };
-  }
-}
-
-/// Maps any known care section label (all supported languages) to a canonical key.
-/// Used for icon selection so icons are language-independent.
-String? _labelToCanonicalKey(String raw) {
-  const map = <String, String>{
-    // English
-    'cultivar': 'cultivar', 'general description': 'generalDescription',
-    'soil': 'soil', 'soil moisture': 'soilMoisture', 'moisture': 'soilMoisture',
-    'moisture check': 'moistureCheck', 'water': 'water', 'light': 'light',
-    'temperature': 'temperature', 'fertilizer': 'fertilizer',
-    'growth rate': 'growthRate', 'toxicity': 'toxicity',
-    'placement': 'placement', 'personality': 'personality', 'name': 'cultivar',
-    // Russian
-    'культивар': 'cultivar', 'общее описание': 'generalDescription',
-    'почва': 'soil', 'влажность почвы': 'soilMoisture',
-    'проверка влажности': 'moistureCheck', 'полив': 'water',
-    'освещение': 'light', 'температура': 'temperature',
-    'удобрения': 'fertilizer', 'скорость роста': 'growthRate',
-    'токсичность': 'toxicity', 'размещение': 'placement', 'характер': 'personality',
-    // Ukrainian
-    'загальний опис': 'generalDescription', 'ґрунт': 'soil',
-    'вологість ґрунту': 'soilMoisture', 'перевірка вологості': 'moistureCheck',
-    'освітлення': 'light', 'добрива': 'fertilizer',
-    'швидкість росту': 'growthRate', 'токсичність': 'toxicity',
-    'розміщення': 'placement',
-    // German
-    'kultivar': 'cultivar', 'allgemeine beschreibung': 'generalDescription',
-    'erde': 'soil', 'bodenfeuchtigkeit': 'soilMoisture',
-    'feuchtigkeitsprüfung': 'moistureCheck', 'wasser': 'water',
-    'licht': 'light', 'temperatur': 'temperature', 'dünger': 'fertilizer',
-    'wachstumsrate': 'growthRate', 'toxizität': 'toxicity',
-    'standort': 'placement', 'charakter': 'personality',
-    // Spanish
-    'descripción general': 'generalDescription', 'suelo': 'soil',
-    'humedad del suelo': 'soilMoisture', 'verificación de humedad': 'moistureCheck',
-    'agua': 'water', 'luz': 'light', 'fertilizante': 'fertilizer',
-    'tasa de crecimiento': 'growthRate', 'toxicidad': 'toxicity',
-    'ubicación': 'placement', 'personalidad': 'personality',
-    // French
-    'description générale': 'generalDescription', 'sol': 'soil',
-    'humidité du sol': 'soilMoisture', "vérification de l'humidité": 'moistureCheck',
-    'eau': 'water', 'lumière': 'light', 'engrais': 'fertilizer',
-    'taux de croissance': 'growthRate', 'toxicité': 'toxicity',
-    'emplacement': 'placement', 'personnalité': 'personality',
+  const sourceKeys = <String, String>{
+    CareSection.cultivar: 'name',
+    CareSection.generalDescription: 'general_description',
+    CareSection.soil: 'soil',
+    CareSection.soilMoisture: 'moisture',
+    CareSection.moistureCheck: 'moisture_check_tip',
+    CareSection.water: 'water',
+    CareSection.light: 'light',
+    CareSection.temperature: 'temperature',
+    CareSection.fertilizer: 'fertilizer',
+    CareSection.growthRate: 'growth_rate',
+    CareSection.toxicity: 'toxicity',
+    CareSection.placement: 'placement',
+    CareSection.personality: 'personality',
   };
-  return map[raw.toLowerCase().trim()];
+  final sections = sourceKeys.map(
+    (section, key) => MapEntry(section, care[key]?.toString().trim()),
+  );
+  return composeCareTips(
+    sections,
+    LanguageService.localeNotifier.value.languageCode,
+  );
 }
 
 /// Flattens `analyzePlantPhoto` payloads so the UI always reads the same keys
@@ -239,6 +135,9 @@ Map<String, dynamic> _coerceAnalyzeRecommendationsMap(dynamic raw) {
     // This overwrites any flat English string the Cloud Function may have sent.
     final built = _composeCareTipsFromCareMap(care);
     if (built != null) rec['care_tips'] = built;
+
+    final details = extractCareDetails(care);
+    if (details != null) rec['care_details'] = details;
   } else if (species != null) {
     setIfEmpty('name', [rec['name'], species['ai_species_guess']]);
   }
@@ -370,6 +269,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _aiGeneralDescription;
   String? _aiName;
   String? _aiMoistureLevel;
+
+  /// Starting score for the plant (SPEC 1.1). The add flow already runs an
+  /// analysis, so a new plant arrives with a real number instead of waiting
+  /// for the first health check.
+  int? _aiHealthScore;
   int? _aiMoistureMin;
   int? _aiMoistureMax;
   String? _aiLight;
@@ -377,6 +281,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _aiWateringAmount;
   String? _aiSpecificIssues;
   String? _aiCareTips;
+  Map<String, String>? _careDetails;
   List<String>? _aiInterestingFacts;
   
   // Plant size assessment fields
@@ -451,6 +356,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     _aiGeneralDescription = null;
     _aiName = null;
     _aiMoistureLevel = null;
+    _aiHealthScore = null;
     _aiMoistureMin = null;
     _aiMoistureMax = null;
     _aiLight = null;
@@ -458,6 +364,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     _aiWateringAmount = null;
     _aiSpecificIssues = null;
     _aiCareTips = null;
+    _careDetails = null;
     _aiInterestingFacts = null;
     _aiPlantSize = null;
     _aiPotSize = null;
@@ -603,7 +510,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (userHint != null) body['userHint'] = userHint;
 
       final response = await http.post(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse(analyzePlantPhotoUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
@@ -641,6 +548,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiGeneralDescription = _safeString(recommendations['general_description']);
         _aiName = _safeString(recommendations['name']);
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
+        _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
             : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
@@ -651,6 +559,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiWateringAmount = _safeString(recommendations['watering_amount']);
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
+        _careDetails = recommendations['care_details'] as Map<String, String>?;
 
         _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
             ?.map((e) => e.toString())
@@ -679,14 +588,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _refreshStatus = 'success';
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.aiAnalysisCompleted),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(l10n.aiAnalysisCompleted),
+      //       backgroundColor: Colors.green,
+      //     ),
+      //   );
+      // }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -708,7 +618,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     try {
       // Test Firebase Functions connectivity
       final response = await http.get(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse(analyzePlantPhotoUrl),
       );
       
       if (mounted) {
@@ -754,7 +664,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final base64Image = base64Encode(_selectedImageBytes!);
 
       final response = await http.post(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse(analyzePlantPhotoUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'base64Image': base64Image,
@@ -776,6 +686,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiGeneralDescription = _safeString(recommendations['general_description']);
         _aiName = _safeString(recommendations['name']) ?? scientificName;
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
+        _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
             : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
@@ -796,6 +707,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
+        _careDetails = recommendations['care_details'] as Map<String, String>?;
         _aiInterestingFacts = (recommendations['interesting_facts'] is List)
             ? List<String>.from(recommendations['interesting_facts'])
             : null;
@@ -826,6 +738,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _isFetchingFullAnalysis = false;
         _isAnalyzing = false;
         _refreshStatus = 'error';
+        // Without this the full-screen loader stays up showing a finished
+        // progress list, and the error snackbar goes unnoticed behind it.
+        _showAnalysisLoader = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -860,7 +775,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (_confirmedSpecies != null) body['confirmedSpecies'] = _confirmedSpecies;
 
       final response = await http.post(
-        Uri.parse('https://us-central1-plant-care-94574.cloudfunctions.net/analyzePlantPhoto'),
+        Uri.parse(analyzePlantPhotoUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
@@ -889,6 +804,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiGeneralDescription = _safeString(recommendations['general_description']);
         _aiName = _safeString(recommendations['name']);
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
+        _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
             : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
@@ -902,6 +818,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _aiWateringAmount = _safeString(recommendations['watering_amount']);
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
+        _careDetails = recommendations['care_details'] as Map<String, String>?;
         
         _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
             ?.map((e) => e.toString())
@@ -926,14 +843,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         _refreshStatus = 'success';
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.aiAnalysisRefreshed),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(l10n.aiAnalysisRefreshed),
+      //       backgroundColor: Colors.green,
+      //     ),
+      //   );
+      // }
     } catch (e) {
       setState(() {
         _refreshStatus = 'error';
@@ -1242,18 +1160,35 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     );
   }
 
+  /// Saves the analysed plant and opens its screen.
+  ///
+  /// This runs on its own once the AI analysis finishes — there is no "add"
+  /// button any more. It used to start with the old button handler's form
+  /// checks, which bail out silently: correct when a person is looking at the
+  /// field they left blank, useless when nobody pressed anything. A failed
+  /// check simply ended the flow, leaving the user back on the form with no
+  /// explanation. Anything unusable now either gets filled in here or surfaces
+  /// as a real error.
   Future<void> _addPlant() async {
-    final nameEmpty = _nameController.text.trim().isEmpty;
-    if (nameEmpty) {
-      setState(() => _nameError = true);
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOut,
-      );
-      return;
+    // The name is normally pre-filled from the AI result before this runs; if
+    // that raced with the rebuild, fall back to the identified species rather
+    // than abandoning a finished analysis.
+    if (_nameController.text.trim().isEmpty) {
+      final fallback = (_aiName ?? _confirmedSpecies ?? '').trim();
+      if (fallback.isEmpty) {
+        setState(() {
+          _nameError = true;
+          _showAnalysisLoader = false;
+        });
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+        );
+        return;
+      }
+      _nameController.text = fallback;
     }
-    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
@@ -1312,6 +1247,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         aiWateringAmount: _aiWateringAmount,
         aiSpecificIssues: _aiSpecificIssues,
         aiCareTips: _aiCareTips,
+        careDetails: _careDetails,
         interestingFacts: _aiInterestingFacts,
         aiPlantSize: _aiPlantSize,
         aiPotSize: _aiPotSize,
@@ -1323,6 +1259,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         wateringMode: _wateringMode,
         wateringIntervalDays: _nextWateringInDays,
         shouldWaterNow: _shouldWaterNow, // From AI analysis
+        scanScore: _aiHealthScore,
         healthStatus: null, // No health status for new plants
         healthMessage: null, // No health message for new plants
         lastHealthCheck: null, // No health check for new plants
@@ -1331,53 +1268,71 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final plantId = await PlantService().addPlant(plant);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.plantAddedSuccessfully),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(l10n.plantAddedSuccessfully),
+        //     backgroundColor: Colors.green,
+        //     duration: Duration(seconds: 2),
+        //   ),
+        // );
 
         // Defer navigation to next frame so the SnackBar animation doesn't
         // conflict with Navigator operations (avoids !_debugLocked assertion).
+        // Resolved now, while this screen is certainly still attached.
+        // onPlantAdded() switches the tab and main navigation renders
+        // `_screens[_currentIndex]`, which detaches this screen — an ancestor
+        // lookup afterwards throws. Resolving it inside the post-frame callback
+        // also meant a disposed screen skipped the redirect without a word.
+        final navigator = Navigator.of(context, rootNavigator: true);
+
         SchedulerBinding.instance.addPostFrameCallback((_) async {
-          if (!mounted) return;
+
+          // The plant we just wrote is already in hand, so re-reading it is only
+          // an optimisation: the server copy carries the scheduling fields
+          // addPlant() computes. It must never gate the redirect — a slow or
+          // failed read used to leave the user staring at a finished loader.
+          Plant newPlant = plant.copyWith(id: plantId);
           try {
             final plantDoc = await FirebaseFirestore.instance
                 .collection('plants')
                 .doc(plantId)
-                .get();
-
-            if (!mounted) return;
-
-            if (plantDoc.exists) {
-              final plantData = plantDoc.data()!;
-              plantData['id'] = plantId;
-              final newPlant = Plant.fromMap(plantData);
-
-              // Switch the underlying tab to "My Plants" (index 1) BEFORE pushing,
-              // so pressing Back from PlantDetailsScreen returns to the plant list
-              // instead of to AddPlantScreen.
-              widget.onPlantAdded?.call();
-
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (_) => PlantDetailsScreen(plant: newPlant),
-                ),
-              );
-              // Hide the loader now that navigation is complete
-              if (mounted) setState(() => _showAnalysisLoader = false);
+                .get()
+                .timeout(const Duration(seconds: 5));
+            final data = plantDoc.data();
+            if (data != null) {
+              newPlant = Plant.fromMap({...data, 'id': plantId});
             }
-            // No fallback pop needed — if Firestore doc is missing the user
-            // simply stays on the tab; the SnackBar already confirmed success.
           } catch (e) {
-            debugPrint('❌ Error navigating to new plant: $e');
+            debugPrint('⚠️ Could not re-read plant $plantId ($e); '
+                'navigating with the locally built copy.');
+          }
+
+          try {
+            // Switch the underlying tab to "My Plants" (index 1) BEFORE pushing,
+            // so pressing Back from PlantDetailsScreen returns to the plant list
+            // instead of to AddPlantScreen.
+            widget.onPlantAdded?.call();
+
+            navigator.push(
+              MaterialPageRoute(
+                builder: (_) => PlantDetailsScreen(plant: newPlant),
+              ),
+            );
+          } catch (e, stack) {
+            debugPrint('❌ Error navigating to new plant: $e\n$stack');
+            // The loader covers the whole screen; leaving it up on a failed
+            // push would strand the user with no way forward.
+            if (mounted) setState(() => _showAnalysisLoader = false);
           }
         });
       }
     } catch (e) {
       if (!mounted) return;
+      // Nothing was created, so nothing will navigate — drop the full-screen
+      // loader before showing the paywall or the error, otherwise it covers
+      // both and the user is stuck on a finished progress list.
+      setState(() => _showAnalysisLoader = false);
       if (e is SubscriptionLimitException) {
         // Show paywall instead of error snackbar
         final subscribed = await showPaywall(context);
@@ -2941,8 +2896,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                         Expanded(
                           child: SingleChildScrollView(
                             controller: _scrollController,
+                            // The tab bar floats over the content now, so the
+                            // last field needs room to clear it.
                             padding: EdgeInsets.fromLTRB(
-                                20, 16, 20, limitReached ? 108 : 32),
+                                20, 16, 20, limitReached ? 180 : 112),
                             child: Form(
                               key: _formKey,
                               child: Column(
@@ -3069,16 +3026,16 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   /// [title] is the raw (possibly localized) label — we resolve the canonical key
   /// so icons work regardless of the app language.
   IconData _getIconForSection(String title) {
-    final canonical = _labelToCanonicalKey(title);
+    final canonical = careLabelToKey(title);
     switch (canonical) {
-      case 'water': return Icons.water_drop;
-      case 'light': return Icons.wb_sunny;
-      case 'temperature': return Icons.thermostat;
-      case 'soil':
-      case 'soilMoisture':
-      case 'moistureCheck': return Icons.eco;
-      case 'fertilizer': return Icons.grass;
-      case 'growthRate': return Icons.trending_up;
+      case CareSection.water: return Icons.water_drop;
+      case CareSection.light: return Icons.wb_sunny;
+      case CareSection.temperature: return Icons.thermostat;
+      case CareSection.soil:
+      case CareSection.soilMoisture:
+      case CareSection.moistureCheck: return Icons.eco;
+      case CareSection.fertilizer: return Icons.grass;
+      case CareSection.growthRate: return Icons.trending_up;
       case 'cultivar':
       case 'generalDescription': return Icons.local_florist;
       case 'toxicity': return Icons.warning_amber_outlined;

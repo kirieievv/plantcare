@@ -95,9 +95,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() => _isEditing = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.profileUpdatedSuccessfully)),
-      );
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text(l10n.profileUpdatedSuccessfully)),
+      // );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -152,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final subInfo = subSnap.data;
               if (_isLoading) {
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 112),
                   children: const [
                     BotanlyShimmer(
                       child: Column(
@@ -170,7 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
               final name = _userProfile?.name ?? l10n.plantLover;
               return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 112),
                 children: [
                   if (subInfo != null) ...[
                     StaggeredFadeUp(index: 0, show: true,

@@ -33,7 +33,7 @@
   "getNotifiedWhenPlantsNeedWater": "Recibe avisos cuando tus plantas necesiten agua",
   "quietHours": "Horas de silencio",
   "maxNotificationsPerDay": "Máx. notificaciones por día",
-  "notificationsCount": "{count} notificaciones",
+  "notificationsCount": "{count, plural, one{{count} notificación} other{{count} notificaciones}}",
   "@notificationsCount": {
     "placeholders": {
       "count": {
@@ -151,7 +151,7 @@
   "onceEvery7Days": "Una vez cada 7 días",
   "oncePerDay": "Una vez al día",
   "oncePerWeek": "Una vez por semana",
-  "onceEveryNDays": "Una vez cada {days} días",
+  "onceEveryNDays": "{days, plural, one{Todos los días} other{Una vez cada {days} días}}",
   "@onceEveryNDays": {
     "placeholders": {
       "days": {
@@ -159,7 +159,7 @@
       }
     }
   },
-  "onceEveryNWeeks": "Una vez cada {weeks} semanas",
+  "onceEveryNWeeks": "{weeks, plural, one{Todas las semanas} other{Una vez cada {weeks} semanas}}",
   "@onceEveryNWeeks": {
     "placeholders": {
       "weeks": {
@@ -198,7 +198,7 @@
   },
   "species": "Especie",
   "wateringFrequency": "Frecuencia de riego",
-  "everyNDays": "Cada {days} día(s)",
+  "everyNDays": "{days, plural, one{Cada {days} día} other{Cada {days} días}}",
   "@everyNDays": {
     "placeholders": {
       "days": {
@@ -284,13 +284,12 @@
   "healthy": "Saludables",
   "yourPlants": "Mis plantas",
   "plantCreatedSuccessfully": "¡Planta creada con éxito! 🌱",
-  "searchPlantsHint": "Buscar plantas…",
+  "searchPlantsHint": "Buscar por nombre o especie",
   "filterAll": "Todas",
   "filterOverdue": "Atrasadas",
   "noResultsTitle": "Sin resultados",
   "noResultsSub": "Prueba con otra búsqueda o filtro.",
   "edit": "Editar",
-  "loggedIn": "Conectado",
   "wateringRemindersBlockSub": "Recibe avisos cuando tus plantas necesiten agua.",
   "emailRemindersTitle": "Recordatorios por email",
   "emailRemindersSub": "Recibe recordatorios de riego por correo",
@@ -312,10 +311,10 @@
   "addPlantTitle": "Añadir planta",
   "addPlantSubtitle": "Captura, identifica y guarda",
   "snapTitle": "Toma una foto",
-  "snapDescription": "Identificaremos la especie en segundos.",
+  "snapDescription": "Una foto clara ayuda a nuestra IA a identificar\ntu planta y personalizar el cuidado",
   "useCamera": "Usar la cámara",
   "uploadFromGallery": "Subir de la galería",
-  "analyzing": "Analizando foto…",
+  "analyzing": "Analizando...",
   "couldntIdentify": "No pudimos identificar esta planta",
   "tryAnotherPhoto": "Prueba con otra foto o introduce la especie manualmente.",
   "topMatch": "Mejor coincidencia",
@@ -379,7 +378,7 @@
   "uploadPhotosToTrackHealth": "Sube fotos para seguir la salud de tu planta a lo largo del tiempo",
   "today": "Hoy",
   "yesterday": "Ayer",
-  "nDaysAgo": "Hace {days} días",
+  "nDaysAgo": "{days, plural, one{Hace {days} día} other{Hace {days} días}}",
   "@nDaysAgo": {
     "placeholders": {
       "days": {
@@ -387,7 +386,7 @@
       }
     }
   },
-  "healthStatusOk": "OK",
+  "healthStatusOk": "Bien",
   "healthStatusIssue": "Problema",
   "assistantTyping": "El asistente está escribiendo...",
   "chatSourceLabel": "Fuente: {source}",
@@ -403,8 +402,12 @@
   "chatPhotoQuota": "{used}/{limit} fotos hoy",
   "@chatPhotoQuota": {
     "placeholders": {
-      "used": {"type": "int"},
-      "limit": {"type": "int"}
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
     }
   },
   "chatPhotoQuotaExhausted": "Límite diario de fotos alcanzado. Inténtalo mañana.",
@@ -425,10 +428,11 @@
   "nextCheckAfterWatering": "Próximo check en {days} d",
   "@nextCheckAfterWatering": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
-  "analyzing": "Analizando...",
   "imageReadyForAnalysis": "¡Imagen subida con éxito! Lista para el análisis de salud.",
   "healthCheckTitle": "Revisión de salud",
   "healthCheckHistoryTitle": "Historial de salud",
@@ -446,7 +450,6 @@
   "lightLabel": "Luz",
   "perDay": "por día",
   "hoursLabel": "horas",
-  "careRecommendationsTitle": "Recomendaciones de cuidado",
   "careSectionCultivar": "Cultivar",
   "careSectionGeneralDescription": "Descripción general",
   "careSectionSoil": "Suelo",
@@ -489,10 +492,12 @@
   "wateringLabel": "Riego",
   "nowLabel": "Ahora",
   "nextIn1Day": "Siguiente en 1 día",
-  "nextInNDays": "Siguiente en {days} días",
+  "nextInNDays": "{days, plural, one{Siguiente en {days} día} other{Siguiente en {days} días}}",
   "@nextInNDays": {
     "placeholders": {
-      "days": {"type": "int"}
+      "days": {
+        "type": "int"
+      }
     }
   },
   "wateringDone": "Riego completado",
@@ -503,10 +508,13 @@
   "moistureLevelSlightlyMoist": "Ligeramente húmedo",
   "moistureLevelMoist": "Húmedo",
   "moistureLevelVeryMoist": "Muy húmedo",
-
   "bannerWaterTitle": "{name} necesita agua",
   "@bannerWaterTitle": {
-    "placeholders": { "name": {"type": "String"} }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "bannerWaterSubtitle": "Toca para regar o ver detalles",
   "bannerTipTitle": "Consejo del día",
@@ -521,30 +529,45 @@
   "tipCategoryGeneral": "General",
   "noTipsYet": "Los consejos se están generando. ¡Vuelve pronto!",
   "waterNow": "Regar ahora",
-
   "subscriptionTrialTitle": "Prueba gratuita",
-  "subscriptionActiveTitle": "Premium",
-  "subscriptionExpiredTitle": "Prueba finalizada",
-  "subscriptionGrandfatheredTitle": "Premium",
-  "subscriptionTrialDaysLeft": "{days} días restantes",
+  "subscriptionActiveTitle": "Premium activo",
+  "subscriptionExpiredTitle": "Suscripción caducada",
+  "subscriptionGrandfatheredTitle": "Acceso de por vida",
+  "subscriptionTrialDaysLeft": "{days, plural, one{Queda {days} día} other{Quedan {days} días}}",
   "@subscriptionTrialDaysLeft": {
-    "placeholders": { "days": {"type": "int"} }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionTrialEndsOn": "La prueba termina el {date}",
   "@subscriptionTrialEndsOn": {
-    "placeholders": { "date": {"type": "String"} }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
-  "subscriptionActiveUntil": "Activo hasta el {date}",
+  "subscriptionActiveUntil": "Activo hasta {date}",
   "@subscriptionActiveUntil": {
-    "placeholders": { "date": {"type": "String"} }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
-  "subscriptionManage": "Gestionar suscripción",
-  "subscriptionUpgrade": "Actualizar a Premium",
-  "subscriptionExpiredMessage": "Tu prueba ha finalizado. Suscríbete para seguir añadiendo y editando plantas.",
+  "subscriptionManage": "Gestionar",
+  "subscriptionUpgrade": "Mejorar",
+  "subscriptionExpiredMessage": "Tu suscripción ha caducado. Mejora para continuar.",
   "subscriptionPlantLimitReached": "Límite de plantas alcanzado",
   "subscriptionPlantLimitBannerTrial": "Límite del plan gratuito alcanzado. Pasa a Premium — hasta {limit} plantas.",
   "@subscriptionPlantLimitBannerTrial": {
-    "placeholders": { "limit": {"type": "int"} }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionPlantLimitBannerExpired": "Suscríbete para añadir más plantas.",
   "subscriptionReadOnlyNotice": "Modo de solo lectura. Suscríbete para editar tus plantas.",
@@ -552,7 +575,11 @@
   "paywallSubtitle": "Saca el máximo partido a tu colección de plantas",
   "paywallFeature1": "Hasta {limit} plantas",
   "@paywallFeature1": {
-    "placeholders": { "limit": {"type": "int"} }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "paywallFeature2": "Recordatorios de riego ilimitados",
   "paywallFeature3": "Asistente IA y análisis de salud",
@@ -570,26 +597,6 @@
   "paywallLoading": "Cargando planes…",
   "paywallPurchasing": "Procesando…",
   "paywallError": "Algo salió mal. Por favor, inténtalo de nuevo.",
-
-  "subscriptionUpgrade": "Mejorar",
-  "subscriptionManage": "Gestionar",
-  "subscriptionActiveTitle": "Premium activo",
-  "subscriptionGrandfatheredTitle": "Acceso de por vida",
-  "subscriptionTrialTitle": "Prueba gratuita",
-  "subscriptionExpiredTitle": "Suscripción caducada",
-  "subscriptionActiveUntil": "Activo hasta {date}",
-  "@subscriptionActiveUntil": {
-    "placeholders": { "date": {"type": "String"} }
-  },
-  "subscriptionTrialEndsOn": "La prueba termina el {date}",
-  "@subscriptionTrialEndsOn": {
-    "placeholders": { "date": {"type": "String"} }
-  },
-  "subscriptionTrialDaysLeft": "{days} días restantes",
-  "@subscriptionTrialDaysLeft": {
-    "placeholders": { "days": {"type": "int"} }
-  },
-  "subscriptionExpiredMessage": "Tu suscripción ha caducado. Mejora para continuar.",
   "stripeSuccessTitle": "¡Suscripción activada!",
   "stripeSuccessWaiting": "Activando tu suscripción",
   "stripeSuccessSubtitle": "¡Bienvenido a Botanly Premium! Ahora tienes acceso a todas las funciones.",
@@ -601,7 +608,9 @@
   "paywallChoosePlan": "ELIGE TU PLAN",
   "paywallPerMonth": "Solo {price} / mes",
   "@paywallPerMonth": {
-    "placeholders": { "price": {} }
+    "placeholders": {
+      "price": {}
+    }
   },
   "paywallStartPremium": "Iniciar Premium",
   "paywallSecured": "Protegido por Stripe",
@@ -610,11 +619,15 @@
   "paywallAutoRenews": "renovación automática",
   "errorOpeningBillingPortal": "No se pudo abrir el portal de facturación: {error}",
   "@errorOpeningBillingPortal": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "errorRestoring": "Error al restaurar: {error}",
   "@errorRestoring": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "emailCopied": "Correo copiado: support@botanly.app",
   "labelExpires": "Expira",
@@ -626,15 +639,21 @@
   "testWateringEmailQueued": "Correo de riego de prueba en cola.",
   "errorSendingTestEmail": "No se pudo enviar el correo de prueba: {error}",
   "@errorSendingTestEmail": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToSaveReminderChannels": "No se pudieron guardar los canales de recordatorio: {error}",
   "@failedToSaveReminderChannels": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToUpdateQuietHours": "No se pudieron actualizar las horas silenciosas: {error}",
   "@failedToUpdateQuietHours": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "deleteAccountTitle": "Eliminar cuenta",
   "deleteAccountSubtitle": "Desactivar permanentemente tu cuenta",
@@ -644,7 +663,9 @@
   "deleteAccountConfirmBtn": "Confirmar eliminación",
   "errorDeletingAccount": "No se pudo eliminar la cuenta: {error}",
   "@errorDeletingAccount": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "subPillPremium": "Premium",
   "subPillEarlyMember": "Miembro temprano",
@@ -653,21 +674,29 @@
   "subMetaActivePlan": "PLAN ACTIVO",
   "subMetaForeverPremium": "PREMIUM ETERNO",
   "subMetaTrialEnded": "PRUEBA FINALIZADA",
-  "subMetaNDayPreview": "VISTA PREVIA {n} DÍAS",
+  "subMetaNDayPreview": "{n, plural, one{VISTA PREVIA {n} DÍA} other{VISTA PREVIA {n} DÍAS}}",
   "@subMetaNDayPreview": {
-    "placeholders": { "n": { "type": "int" } }
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   },
   "subRenewsInDays": "Se renueva en {days} días · {date}",
   "@subRenewsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
   "subEndsInDays": "Termina en {days} días · {date}",
   "@subEndsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
@@ -703,7 +732,6 @@
   "tipShowLeaves": "mostrar las hojas",
   "tipSinglePlant": "planta sola",
   "snapYourSprout": "Fotografía tu brote",
-  "snapDescription": "Una foto clara ayuda a nuestra IA a identificar\ntu planta y personalizar el cuidado",
   "identifyingPlantPrefix": "Identificando tu ",
   "identifyingPlantWord": "planta",
   "identifyingSubtitle": "Mirando hojas, tallos y vecinos cercanos",
@@ -711,7 +739,11 @@
   "healthCheckPhotoHint": "Añade hasta 3 fotos — más ángulos significa un análisis más preciso. Solo la primera foto es obligatoria.",
   "healthCheckPhotoCounter": "{count} / 3",
   "@healthCheckPhotoCounter": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckSlot1Title": "Planta completa",
   "healthCheckSlot1Desc": "Fotografía toda la planta incluyendo la maceta — para que se vea la tierra y la maceta completa.",
@@ -724,7 +756,11 @@
   "healthCheckSlot3Tag": "Opcional",
   "healthCheckAnalyzeNPhotos": "Analizar {count} foto(s)",
   "@healthCheckAnalyzeNPhotos": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckError": "El análisis falló. Por favor, inténtalo de nuevo.",
   "healthCheckDefaultPraise": "🌱 ¡Tu planta está bien!",
@@ -744,32 +780,226 @@
   "addPlantAnalyzingSubtitle": "Esto suele tardar unos segundos…",
   "addPlantAnalysisComplete": "Análisis completo",
   "addPlantSeePlantProfile": "Ver perfil de la planta",
-
   "onboardingSkip": "Omitir",
   "onboardingGetStarted": "Comenzar",
-
   "onboarding1Eyebrow": "Bienvenido",
   "onboarding1Title": "Conoce ",
   "onboarding1TitleItalic": "Botanly",
   "onboarding1Body": "Tu compañero de IA para plantas felices y saludables — siempre en tu bolsillo.",
-
   "onboarding2Eyebrow": "Identificar",
   "onboarding2Title": "Nombra ",
   "onboarding2TitleItalic": "cualquier planta",
   "onboarding2Body": "Apunta la cámara y deja que la IA la identifique en segundos — especie, nombre y todo.",
-
   "onboarding3Eyebrow": "Cuidado",
   "onboarding3Title": "Cuidado ",
   "onboarding3TitleItalic": "sin esfuerzo",
   "onboarding3Body": "Recordatorios de riego, luz y tierra — perfectamente ajustados a cada planta.",
-
   "onboarding4Eyebrow": "Chequeo",
   "onboarding4Title": "Detecta problemas ",
   "onboarding4TitleItalic": "pronto",
   "onboarding4Body": "Toma una foto y obtén un chequeo de salud instantáneo con un plan claro para solucionarlo.",
-
   "onboarding5Eyebrow": "Listo",
   "onboarding5Title": "Crezcamos ",
   "onboarding5TitleItalic": "juntos",
-  "onboarding5Body": "Construye tu colección de plantas y no te pierdas nada. Tu era más verde empieza ahora."
+  "onboarding5Body": "Construye tu colección de plantas y no te pierdas nada. Tu era más verde empieza ahora.",
+  "tabCare": "Cuidado",
+  "tabAbout": "Info",
+  "tabHistory": "Historial",
+  "nDays": "{days, plural, =1{1 día} other{{days} días}}",
+  "@nDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "cycleJustStarted": "El ciclo acaba de empezar",
+  "cyclePercentComplete": "Ciclo {percent}% completado",
+  "@cyclePercentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "wateringAmount": "Cantidad",
+  "noDataAvailable": "Aún no hay datos",
+  "healthCheckHistoryEmptyHint": "Sube una foto cada par de semanas y crearemos una cronología de salud",
+  "milliliters": "{count} ml",
+  "millilitersShort": "ML",
+  "nHours": "{hours} h",
+  "lightDaily": "Al día",
+  "lightType": "Tipo",
+  "lightTypeDirect": "Directa",
+  "lightTypePartialSun": "Sol parcial",
+  "lightTypeBrightIndirect": "Brillante indirecta",
+  "lightTypeLowLight": "Poca luz",
+  "everyDay": "Cada día",
+  "healthCheckSeverity": "Gravedad",
+  "healthCheckFollowUp": "Seguimiento",
+  "severityLow": "Baja",
+  "severityMedium": "Media",
+  "severityHigh": "Alta",
+  "careKvFrequency": "Frecuencia",
+  "careKvSeason": "Temporada",
+  "careKvOptimal": "Óptima",
+  "careKvMinimum": "Mínima",
+  "careKvDose": "Dosis",
+  "healthAnalyzeCta": "Analizar salud",
+  "healthNeedsAttention": "Requiere atención",
+  "healthStatusHealthy": "Planta saludable",
+  "healthWhatToDo": "Qué hacer",
+  "healthClose": "Cerrar",
+  "healthNotSavedYet": "Aún no está en el historial",
+  "healthAskAssistant": "Preguntar a la IA",
+  "healthAddedToPlan": "Añadido al plan",
+  "healthLockedNeedsWatering": "Registra un riego para volver a comprobar",
+  "healthLockedLimitReached": "Comprobaciones agotadas para este ciclo",
+  "healthAdviceSub": "Ver qué hacer",
+  "healthAnalyzingTitle": "Analizando…",
+  "healthStepRecognize": "Reconociendo la planta",
+  "healthStepCompare": "Comparando con revisiones anteriores",
+  "healthStepAdvice": "Preparando recomendaciones",
+  "healthStepPhotos": "{count, plural, =1{1 foto recibida} other{{count} fotos recibidas}}",
+  "healthAdviceTitle": "{count, plural, =1{1 recomendación tras la revisión} other{{count} recomendaciones tras la revisión}}",
+  "healthHistoryLoadFailed": "No se pudo cargar el historial",
+  "healthUpToThreePhotos": "Hasta 3 fotos",
+  "healthResultTitle": "Resultado",
+  "taskAllDone": "Todo hecho: la planta está bien",
+  "taskBadgeScheduled": "Programado",
+  "taskBadgeAnalysis": "Tras el análisis",
+  "taskBadgeOverdue": "{days, plural, =1{1 día de retraso} other{{days} días de retraso}}",
+  "taskDone": "Hecho",
+  "taskDoneAlready": "Completado",
+  "taskLater": "Más tarde",
+  "taskAskAssistant": "Preguntar al asistente",
+  "taskAskQuestion": "¿Qué debo hacer con la tarea «{title}»?",
+  "homeGardenTitleLead": "Tu",
+  "homeGardenTitleAccent": "jardín",
+  "gardenHealthLabel": "Salud del jardín",
+  "gardenAllGood": "Todas las plantas están bien",
+  "gardenOneWeak": "{name} baja la media del jardín",
+  "gardenManyWeak": "{count, plural, =1{1 planta necesita tu cuidado} other{{count} plantas necesitan tu cuidado}}",
+  "homeOrbitHint": "Toca una planta para abrirla",
+  "homeAllTasksLink": "Todas las tareas",
+  "deckAllClearTitle": "El jardín está bien",
+  "taskOverdueShort": "{days, plural, =1{1 día} other{{days} días}}",
+  "taskPostponed": "Aplazada",
+  "allTasksTitle": "Todas las tareas",
+  "allTasksSubtitle": "{today} hoy · {later} después",
+  "allTasksToday": "Hoy",
+  "allTasksLater": "Después",
+  "allTasksRuleNote": "No aparecerán tareas nuevas hasta que resuelvas las de hoy.",
+  "allTasksNothingToday": "Nada pendiente para hoy",
+  "whenTomorrow": "Mañana",
+  "whenInAWeek": "En una semana",
+  "whenInNDays": "{days, plural, =1{En 1 día} other{En {days} días}}",
+  "careAskAbout": "Preguntar al asistente sobre {title}",
+  "careAskQuestion": "Cuéntame más sobre «{title}» para mi planta",
+  "healthAskQuestionIssue": "¿Qué hago primero según el análisis?",
+  "healthAskQuestionOk": "El análisis dice que la planta está sana, ¿qué puedo mejorar?",
+  "glassesOne": "1 vaso",
+  "glassesAmount": "{value} vasos",
+  "addPlantStepOf": "Paso {step} de {total}",
+  "addPlantTitleLead": "Añadir una",
+  "addPlantTitleAccent": "planta",
+  "addPlantNameHint": "¿Cómo la vas a llamar? Monty, Ficus Jr., Monstera. El dado elige por ti.",
+  "addPlantPhotosTitle": "Fotos",
+  "addPlantWholePlant": "Planta entera",
+  "addPlantWholePlantHint": "con la maceta y la tierra",
+  "addPlantRequired": "Necesaria",
+  "addPlantTwoAnglesHint": "Dos ángulos identifican la especie con más precisión: la segunda foto es opcional, pero ayuda.",
+  "addPlantTipLight": "buena luz",
+  "addPlantTipLeaves": "hojas visibles",
+  "addPlantTipSingle": "una planta",
+  "addPlantIdentifyCta": "Identificar la especie",
+  "addPlantRandomNames": "Monty|Brotecito|Ficus Jr.|Helechito|Albahaca Magna|Hojitas|Solete|Pip",
+  "addPlantIsThisYourPlant": "¿Es esta tu planta?",
+  "addPlantPickSpeciesHint": "Elige la opción más parecida: de ahí sale el plan de cuidados.",
+  "addPlantNoneMatch": "Ninguna coincide, la escribo yo",
+  "addPlantManualHint": "Escribe el nombre de la especie y buscamos de nuevo.",
+  "addPlantManualPlaceholder": "Por ejemplo, Monstera deliciosa",
+  "addPlantBuildPlanCta": "Crear el plan de cuidados",
+  "addPlantStartingScore": "Puntuación inicial {score}",
+  "addPlantPlanWatering": "Riego",
+  "addPlantPlanLight": "Luz",
+  "addPlantPlanSoil": "Tierra",
+  "addPlantSoilSlightlyMoist": "Ligeramente húmeda",
+  "addPlantEveryNDays": "{days, plural, =1{Cada día} other{Cada {days} días}}",
+  "addPlantCarePlan": "Plan de cuidados",
+  "addPlantNTasks": "{count, plural, =1{1 tarea} other{{count} tareas}}",
+  "addPlantFirstWatering": "Primer riego",
+  "addPlantToday": "hoy",
+  "addPlantWaterToday": "hoy",
+  "addPlantFertilising": "Abono",
+  "addPlantFertilisingDetail": "En dos semanas · media dosis",
+  "addPlantHealthCheck": "Chequeo de salud",
+  "addPlantHealthCheckDetail": "En un mes · 1–3 fotos",
+  "addPlantAddToGarden": "Añadir al jardín",
+  "addPlantNoSpeciesFound": "No se ha reconocido la planta. Prueba con otra foto.",
+  "addPlantNoPlan": "No se ha podido crear el plan de cuidados. Inténtalo de nuevo.",
+  "addPlantLoaderPhotos": "Fotos recibidas",
+  "addPlantLoaderIdentify": "Determinando la especie",
+  "addPlantLoaderPlan": "Creando el plan de cuidados",
+  "myPlantsTitleLead": "Mis",
+  "myPlantsTitleAccent": "plantas",
+  "myPlantsCount": "{count, plural, =1{1 planta} other{{count} plantas}}",
+  "myPlantsEmptyLabel": "Aún no hay nada",
+  "filterTomorrow": "Mañana",
+  "filterNeedsCare": "Necesita cuidados",
+  "myPlantsNothingFound": "No se ha encontrado nada",
+  "myPlantsNothingFoundHint": "Prueba con otro nombre u otra especie.",
+  "myPlantsAllClearTitle": "Todo en orden",
+  "myPlantsAllClearHint": "Ahora mismo no hay nada en este grupo: no hay de qué preocuparse.",
+  "addFirstPlantHint": "Add your first plant to get started",
+  "subHeroActiveLead": "Tu jardín está",
+  "subHeroActiveAccent": "bien cuidado",
+  "subHeroForeverLead": "Premium",
+  "subHeroForeverAccent": "para siempre",
+  "subHeroEndedLead": "El periodo de prueba ha",
+  "subHeroEndedAccent": "terminado",
+  "subMetaNoCharges": "Sin cargos",
+  "subFootAutoRenew": "Renovación automática activada · Cancela cuando quieras",
+  "subFootTrial": "Sin límites · Cuidado con IA · Recordatorios",
+  "subFootForever": "Todo desbloqueado",
+  "subFootFree": "Acceso limitado · Sin cuidado con IA",
+  "subCtaDetails": "Detalles",
+  "subCtaResume": "Reanudar",
+  "subTrialUntil": "Prueba hasta el {date}",
+  "subEndedOn": "Terminó el {date}",
+  "subscriptionManageTitle": "Suscripción",
+  "subscriptionPlanLabel": "Plan",
+  "subscriptionNextChargeLabel": "Próximo cargo",
+  "subscriptionAutoRenewLabel": "Renovación automática",
+  "subscriptionAutoRenewOn": "Activada",
+  "subscriptionAutoRenewOff": "Desactivada",
+  "subscriptionManageInStore": "La facturación la gestiona la App Store. Ve a Ajustes → ID de Apple → Suscripciones para cambiarla o cancelarla.",
+  "deleteAccountContinue": "Continuar",
+  "deleteAccountKeyword": "ELIMINAR",
+  "deleteAccountTypeWord": "Escribe {word} para confirmar.",
+  "settingsSavedToast": "¡Ajustes guardados!",
+  "quietHoursUpdatedToast": "¡Horas de silencio actualizadas!",
+  "signedInChip": "Sesión iniciada",
+  "securityLabel": "Seguridad",
+  "emailNotificationsLabel": "Email",
+  "changePasswordHint": "Al menos 6 caracteres",
+  "quietHoursNeedsPush": "Activa las push para usar las horas de silencio",
+  "quietHoursFrom": "Desde",
+  "quietHoursTo": "Hasta",
+  "quietHoursSummary": "{hours, plural, =1{Sin notificaciones durante 1 hora seguida} other{Sin notificaciones durante {hours} horas seguidas}}",
+  "passwordTooShortError": "La nueva contraseña debe tener al menos 6 caracteres.",
+  "passwordSameAsCurrentError": "La nueva contraseña debe ser distinta de la actual.",
+  "passwordsDoNotMatchError": "Las contraseñas no coinciden.",
+  "passwordCurrentWrongError": "La contraseña actual es incorrecta.",
+  "subscriptionLoading": "Cargando tu plan…",
+  "editPlantTitle": "Edición",
+  "newPhotoBadge": "Nueva foto",
+  "revertPhoto": "Restaurar la foto anterior",
+  "editPlantNameHint": "Así aparecerá la planta en el jardín y en los recordatorios",
+  "aiManagedNote": "La especie y el plan de cuidados los define la IA: se actualizan tras un nuevo análisis de salud.",
+  "noPhotoYet": "Aún no hay foto",
+  "gardenLoadError": "No se pudo cargar el jardín. Comprueba la conexión e inténtalo de nuevo.",
+  "pullToRefreshHint": "Desliza hacia abajo para actualizar",
+  "refreshingGarden": "Recopilando datos del jardín…",
+  "refreshFailed": "No se pudo actualizar. Comprueba la conexión."
 }

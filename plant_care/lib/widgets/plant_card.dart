@@ -45,37 +45,37 @@ class _PlantCardState extends State<PlantCard> {
       // Call the onWater callback
       widget.onWater!();
       
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.plantWateredSuccess(widget.plant.name),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Row(
+      //         children: [
+      //           Icon(
+      //             Icons.check_circle,
+      //             color: Colors.white,
+      //             size: 20,
+      //           ),
+      //           const SizedBox(width: 12),
+      //           Text(
+      //             AppLocalizations.of(context)!.plantWateredSuccess(widget.plant.name),
+      //             style: const TextStyle(
+      //               fontSize: 16,
+      //               fontWeight: FontWeight.w500,
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //       backgroundColor: Colors.green,
+      //       duration: const Duration(seconds: 3),
+      //       behavior: SnackBarBehavior.floating,
+      //       shape: RoundedRectangleBorder(
+      //         borderRadius: BorderRadius.circular(12),
+      //       ),
+      //       margin: const EdgeInsets.all(16),
+      //     ),
+      //   );
+      // }
     } catch (e) {
       // Show error message
       if (mounted) {

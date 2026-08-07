@@ -109,7 +109,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String notificationsCount(int count) {
-    return '$count notifications';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notifications',
+      one: '$count notification',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -340,12 +346,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String onceEveryNDays(int days) {
-    return 'Une fois tous les $days jours';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Une fois tous les $days jours',
+      one: 'Tous les jours',
+    );
+    return '$_temp0';
   }
 
   @override
   String onceEveryNWeeks(int weeks) {
-    return 'Une fois toutes les $weeks semaines';
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: 'Une fois toutes les $weeks semaines',
+      one: 'Toutes les semaines',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -417,7 +435,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String everyNDays(int days) {
-    return 'Tous les $days jour(s)';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Tous les $days jours',
+      one: 'Tous les $days jour',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -584,7 +608,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plantCreatedSuccessfully => 'Plante créée avec succès ! 🌱';
 
   @override
-  String get searchPlantsHint => 'Rechercher des plantes…';
+  String get searchPlantsHint => 'Rechercher par nom ou espèce';
 
   @override
   String get filterAll => 'Toutes';
@@ -842,11 +866,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String nDaysAgo(int days) {
-    return 'Il y a $days jours';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Il y a $days jours',
+      one: 'Il y a $days jour',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get healthStatusOk => 'OK';
+  String get healthStatusOk => 'Ça va';
 
   @override
   String get healthStatusIssue => 'Problème';
@@ -1040,7 +1070,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String nextInNDays(int days) {
-    return 'Suivant dans $days jours';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Suivant dans $days jours',
+      one: 'Suivant dans $days jour',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1112,7 +1148,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get waterNow => 'Arroser maintenant';
 
   @override
-  String get subscriptionUpgrade => 'Passer à Premium';
+  String get subscriptionUpgrade => 'Passer au Premium';
 
   @override
   String get subscriptionManage => 'Gérer';
@@ -1141,7 +1177,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String subscriptionTrialDaysLeft(int days) {
-    return '$days jours restants';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours restants',
+      one: '$days jour restant',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1356,7 +1398,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String subMetaNDayPreview(int n) {
-    return 'APERÇU $n JOURS';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'APERÇU $n JOURS',
+      one: 'APERÇU $n JOUR',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1518,7 +1566,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get healthCheckError => "L'analyse a échoué. Veuillez réessayer.";
+  String get healthCheckError => 'L\'analyse a échoué. Veuillez réessayer.';
 
   @override
   String get healthCheckDefaultPraise => '🌱 Votre plante se porte bien !';
@@ -1636,4 +1684,678 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboarding5Body => 'Constituez votre collection de plantes et ne ratez jamais rien. Votre ère la plus verte commence maintenant.';
+
+  @override
+  String get tabCare => 'Soins';
+
+  @override
+  String get tabAbout => 'Info';
+
+  @override
+  String get tabHistory => 'Historique';
+
+  @override
+  String nDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours',
+      one: '1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cycleJustStarted => 'Le cycle vient de commencer';
+
+  @override
+  String cyclePercentComplete(int percent) {
+    return 'Cycle terminé à $percent%';
+  }
+
+  @override
+  String get wateringAmount => 'Quantité';
+
+  @override
+  String get noDataAvailable => 'Pas encore de données';
+
+  @override
+  String get healthCheckHistoryEmptyHint => 'Ajoutez une photo toutes les deux semaines — nous créerons un suivi de santé';
+
+  @override
+  String milliliters(int count) {
+    return '$count ml';
+  }
+
+  @override
+  String get millilitersShort => 'ML';
+
+  @override
+  String nHours(String hours) {
+    return '$hours h';
+  }
+
+  @override
+  String get lightDaily => 'Par jour';
+
+  @override
+  String get lightType => 'Type';
+
+  @override
+  String get lightTypeDirect => 'Direct';
+
+  @override
+  String get lightTypePartialSun => 'Mi-soleil';
+
+  @override
+  String get lightTypeBrightIndirect => 'Vive indirecte';
+
+  @override
+  String get lightTypeLowLight => 'Faible luminosité';
+
+  @override
+  String get everyDay => 'Chaque jour';
+
+  @override
+  String get healthCheckSeverity => 'Gravité';
+
+  @override
+  String get healthCheckFollowUp => 'Suivi';
+
+  @override
+  String get severityLow => 'Faible';
+
+  @override
+  String get severityMedium => 'Moyenne';
+
+  @override
+  String get severityHigh => 'Élevée';
+
+  @override
+  String get careKvFrequency => 'Fréquence';
+
+  @override
+  String get careKvSeason => 'Saison';
+
+  @override
+  String get careKvOptimal => 'Optimale';
+
+  @override
+  String get careKvMinimum => 'Minimale';
+
+  @override
+  String get careKvDose => 'Dose';
+
+  @override
+  String get healthAnalyzeCta => 'Analyser la santé';
+
+  @override
+  String get healthNeedsAttention => 'Nécessite attention';
+
+  @override
+  String get healthStatusHealthy => 'Plante en bonne santé';
+
+  @override
+  String get healthWhatToDo => 'Que faire';
+
+  @override
+  String get healthClose => 'Fermer';
+
+  @override
+  String get healthNotSavedYet => 'Pas encore dans l\'historique';
+
+  @override
+  String get healthAskAssistant => 'Demander à l\'IA';
+
+  @override
+  String get healthAddedToPlan => 'Ajouté au plan';
+
+  @override
+  String get healthLockedNeedsWatering => 'Enregistrez un arrosage pour vérifier à nouveau';
+
+  @override
+  String get healthLockedLimitReached => 'Vérifications épuisées pour ce cycle';
+
+  @override
+  String get healthAdviceSub => 'Voir quoi faire';
+
+  @override
+  String get healthAnalyzingTitle => 'Analyse en cours…';
+
+  @override
+  String get healthStepRecognize => 'Reconnaissance de la plante';
+
+  @override
+  String get healthStepCompare => 'Comparaison avec les contrôles précédents';
+
+  @override
+  String get healthStepAdvice => 'Préparation des recommandations';
+
+  @override
+  String healthStepPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos reçues',
+      one: '1 photo reçue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String healthAdviceTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recommandations après le contrôle',
+      one: '1 recommandation après le contrôle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get healthHistoryLoadFailed => 'Impossible de charger l\'historique';
+
+  @override
+  String get healthUpToThreePhotos => 'Jusqu\'à 3 photos';
+
+  @override
+  String get healthResultTitle => 'Résultat';
+
+  @override
+  String get taskAllDone => 'Tout est fait — la plante va bien';
+
+  @override
+  String get taskBadgeScheduled => 'Planifié';
+
+  @override
+  String get taskBadgeAnalysis => 'Après l’analyse';
+
+  @override
+  String taskBadgeOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours de retard',
+      one: '1 jour de retard',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskDone => 'Fait';
+
+  @override
+  String get taskDoneAlready => 'Terminé';
+
+  @override
+  String get taskLater => 'Plus tard';
+
+  @override
+  String get taskAskAssistant => 'Demander à l’assistant';
+
+  @override
+  String taskAskQuestion(String title) {
+    return 'Que faire pour la tâche « $title » ?';
+  }
+
+  @override
+  String get homeGardenTitleLead => 'Ton';
+
+  @override
+  String get homeGardenTitleAccent => 'jardin';
+
+  @override
+  String get gardenHealthLabel => 'Santé du jardin';
+
+  @override
+  String get gardenAllGood => 'Toutes les plantes vont bien';
+
+  @override
+  String gardenOneWeak(String name) {
+    return '$name tire le jardin vers le bas';
+  }
+
+  @override
+  String gardenManyWeak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plantes ont besoin de toi',
+      one: '1 plante a besoin de toi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeOrbitHint => 'Touche une plante pour l’ouvrir';
+
+  @override
+  String get homeAllTasksLink => 'Toutes les tâches';
+
+  @override
+  String get deckAllClearTitle => 'Le jardin va bien';
+
+  @override
+  String taskOverdueShort(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours',
+      one: '1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskPostponed => 'Reportée';
+
+  @override
+  String get allTasksTitle => 'Toutes les tâches';
+
+  @override
+  String allTasksSubtitle(int today, int later) {
+    return '$today aujourd’hui · $later plus tard';
+  }
+
+  @override
+  String get allTasksToday => 'Aujourd’hui';
+
+  @override
+  String get allTasksLater => 'Plus tard';
+
+  @override
+  String get allTasksRuleNote => 'Les nouvelles tâches n’arriveront pas tant que celles du jour ne sont pas réglées.';
+
+  @override
+  String get allTasksNothingToday => 'Plus rien pour aujourd’hui';
+
+  @override
+  String get whenTomorrow => 'Demain';
+
+  @override
+  String get whenInAWeek => 'Dans une semaine';
+
+  @override
+  String whenInNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Dans $days jours',
+      one: 'Dans 1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String careAskAbout(String title) {
+    return 'Interroger l’assistant sur $title';
+  }
+
+  @override
+  String careAskQuestion(String title) {
+    return 'Parle-moi de « $title » pour ma plante';
+  }
+
+  @override
+  String get healthAskQuestionIssue => 'Que faire en premier d’après l’analyse ?';
+
+  @override
+  String get healthAskQuestionOk => 'L’analyse dit que la plante va bien — que puis-je améliorer ?';
+
+  @override
+  String get glassesOne => '1 verre';
+
+  @override
+  String glassesAmount(String value) {
+    return '$value verres';
+  }
+
+  @override
+  String addPlantStepOf(int step, int total) {
+    return 'Étape $step sur $total';
+  }
+
+  @override
+  String get addPlantTitleLead => 'Ajouter une';
+
+  @override
+  String get addPlantTitleAccent => 'plante';
+
+  @override
+  String get addPlantNameHint => 'Comment vas-tu l’appeler — Monty, Ficus Jr., Monstera. Le dé choisit pour toi.';
+
+  @override
+  String get addPlantPhotosTitle => 'Photos';
+
+  @override
+  String get addPlantWholePlant => 'Plante entière';
+
+  @override
+  String get addPlantWholePlantHint => 'avec le pot et la terre';
+
+  @override
+  String get addPlantRequired => 'Requise';
+
+  @override
+  String get addPlantTwoAnglesHint => 'Deux angles précisent mieux l’espèce — la seconde photo est facultative, mais elle aide.';
+
+  @override
+  String get addPlantTipLight => 'bonne lumière';
+
+  @override
+  String get addPlantTipLeaves => 'feuilles visibles';
+
+  @override
+  String get addPlantTipSingle => 'une seule plante';
+
+  @override
+  String get addPlantIdentifyCta => 'Identifier l’espèce';
+
+  @override
+  String get addPlantRandomNames => 'Monty|Pousse|Ficus Jr.|Fougère|Basilic le Grand|Feuillu|Solo|Pip';
+
+  @override
+  String get addPlantIsThisYourPlant => 'C’est bien ta plante ?';
+
+  @override
+  String get addPlantPickSpeciesHint => 'Choisis l’option la plus proche : le plan de soins en découle.';
+
+  @override
+  String get addPlantNoneMatch => 'Aucune ne correspond — je l’écris';
+
+  @override
+  String get addPlantManualHint => 'Écris le nom de l’espèce et nous cherchons à nouveau.';
+
+  @override
+  String get addPlantManualPlaceholder => 'Par exemple, Monstera deliciosa';
+
+  @override
+  String get addPlantBuildPlanCta => 'Créer le plan de soins';
+
+  @override
+  String addPlantStartingScore(int score) {
+    return 'Score de départ $score';
+  }
+
+  @override
+  String get addPlantPlanWatering => 'Arrosage';
+
+  @override
+  String get addPlantPlanLight => 'Lumière';
+
+  @override
+  String get addPlantPlanSoil => 'Terre';
+
+  @override
+  String get addPlantSoilSlightlyMoist => 'Légèrement humide';
+
+  @override
+  String addPlantEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Tous les $days jours',
+      one: 'Chaque jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addPlantCarePlan => 'Plan de soins';
+
+  @override
+  String addPlantNTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches',
+      one: '1 tâche',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addPlantFirstWatering => 'Premier arrosage';
+
+  @override
+  String get addPlantToday => 'aujourd’hui';
+
+  @override
+  String get addPlantWaterToday => 'aujourd’hui';
+
+  @override
+  String get addPlantFertilising => 'Engrais';
+
+  @override
+  String get addPlantFertilisingDetail => 'Dans deux semaines · demi-dose';
+
+  @override
+  String get addPlantHealthCheck => 'Bilan de santé';
+
+  @override
+  String get addPlantHealthCheckDetail => 'Dans un mois · 1–3 photos';
+
+  @override
+  String get addPlantAddToGarden => 'Ajouter au jardin';
+
+  @override
+  String get addPlantNoSpeciesFound => 'La plante n’a pas été reconnue. Essaie une autre photo.';
+
+  @override
+  String get addPlantNoPlan => 'Le plan de soins n’a pas pu être créé. Réessaie.';
+
+  @override
+  String get addPlantLoaderPhotos => 'Photos reçues';
+
+  @override
+  String get addPlantLoaderIdentify => 'Identification de l’espèce';
+
+  @override
+  String get addPlantLoaderPlan => 'Rédaction du plan de soins';
+
+  @override
+  String get myPlantsTitleLead => 'Mes';
+
+  @override
+  String get myPlantsTitleAccent => 'plantes';
+
+  @override
+  String myPlantsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plantes',
+      one: '1 plante',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get myPlantsEmptyLabel => 'Rien pour l’instant';
+
+  @override
+  String get filterTomorrow => 'Demain';
+
+  @override
+  String get filterNeedsCare => 'Besoin de soins';
+
+  @override
+  String get myPlantsNothingFound => 'Rien trouvé';
+
+  @override
+  String get myPlantsNothingFoundHint => 'Essaie un autre nom ou une autre espèce.';
+
+  @override
+  String get myPlantsAllClearTitle => 'Tout va bien';
+
+  @override
+  String get myPlantsAllClearHint => 'Ce groupe est vide pour le moment — rien d’inquiétant.';
+
+  @override
+  String get addFirstPlantHint => 'Add your first plant to get started';
+
+  @override
+  String get subHeroActiveLead => 'Ton jardin est';
+
+  @override
+  String get subHeroActiveAccent => 'bien suivi';
+
+  @override
+  String get subHeroForeverLead => 'Premium';
+
+  @override
+  String get subHeroForeverAccent => 'pour toujours';
+
+  @override
+  String get subHeroEndedLead => 'La période d’essai est';
+
+  @override
+  String get subHeroEndedAccent => 'terminée';
+
+  @override
+  String get subMetaNoCharges => 'Sans prélèvement';
+
+  @override
+  String get subFootAutoRenew => 'Renouvellement automatique activé · Annulable à tout moment';
+
+  @override
+  String get subFootTrial => 'Sans limites · Soins par IA · Rappels';
+
+  @override
+  String get subFootForever => 'Tout est débloqué';
+
+  @override
+  String get subFootFree => 'Accès limité · Sans soins par IA';
+
+  @override
+  String get subCtaDetails => 'Détails';
+
+  @override
+  String get subCtaResume => 'Reprendre';
+
+  @override
+  String subTrialUntil(String date) {
+    return 'Essai jusqu’au $date';
+  }
+
+  @override
+  String subEndedOn(String date) {
+    return 'Terminé le $date';
+  }
+
+  @override
+  String get subscriptionManageTitle => 'Abonnement';
+
+  @override
+  String get subscriptionPlanLabel => 'Formule';
+
+  @override
+  String get subscriptionNextChargeLabel => 'Prochain prélèvement';
+
+  @override
+  String get subscriptionAutoRenewLabel => 'Renouvellement automatique';
+
+  @override
+  String get subscriptionAutoRenewOn => 'Activé';
+
+  @override
+  String get subscriptionAutoRenewOff => 'Désactivé';
+
+  @override
+  String get subscriptionManageInStore => 'La facturation passe par l’App Store. Va dans Réglages → identifiant Apple → Abonnements pour la modifier ou l’annuler.';
+
+  @override
+  String get deleteAccountContinue => 'Continuer';
+
+  @override
+  String get deleteAccountKeyword => 'SUPPRIMER';
+
+  @override
+  String deleteAccountTypeWord(String word) {
+    return 'Tape $word pour confirmer.';
+  }
+
+  @override
+  String get settingsSavedToast => 'Réglages enregistrés !';
+
+  @override
+  String get quietHoursUpdatedToast => 'Heures calmes mises à jour !';
+
+  @override
+  String get signedInChip => 'Connecté';
+
+  @override
+  String get securityLabel => 'Sécurité';
+
+  @override
+  String get emailNotificationsLabel => 'Email';
+
+  @override
+  String get changePasswordHint => 'Au moins 6 caractères';
+
+  @override
+  String get quietHoursNeedsPush => 'Active les push pour utiliser les heures calmes';
+
+  @override
+  String get quietHoursFrom => 'De';
+
+  @override
+  String get quietHoursTo => 'À';
+
+  @override
+  String quietHoursSummary(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Aucune notification pendant $hours heures d’affilée',
+      one: 'Aucune notification pendant 1 heure d’affilée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get passwordTooShortError => 'Le nouveau mot de passe doit faire au moins 6 caractères.';
+
+  @override
+  String get passwordSameAsCurrentError => 'Le nouveau mot de passe doit être différent de l’actuel.';
+
+  @override
+  String get passwordsDoNotMatchError => 'Les mots de passe ne correspondent pas.';
+
+  @override
+  String get passwordCurrentWrongError => 'Le mot de passe actuel est incorrect.';
+
+  @override
+  String get subscriptionLoading => 'Chargement de ta formule…';
+
+  @override
+  String get editPlantTitle => 'Modification';
+
+  @override
+  String get newPhotoBadge => 'Nouvelle photo';
+
+  @override
+  String get revertPhoto => 'Rétablir la photo précédente';
+
+  @override
+  String get editPlantNameHint => 'C\'est ainsi que la plante apparaîtra dans le jardin et les rappels';
+
+  @override
+  String get aiManagedNote => 'L\'espèce et le plan de soins sont définis par l\'IA — ils se mettent à jour après un nouveau bilan de santé.';
+
+  @override
+  String get noPhotoYet => 'Pas encore de photo';
+
+  @override
+  String get gardenLoadError => 'Impossible de charger le jardin. Vérifiez la connexion et réessayez.';
+
+  @override
+  String get pullToRefreshHint => 'Tirez vers le bas pour actualiser';
+
+  @override
+  String get refreshingGarden => 'Collecte des données du jardin…';
+
+  @override
+  String get refreshFailed => 'Échec de l\'actualisation. Vérifiez la connexion.';
 }

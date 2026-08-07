@@ -33,9 +33,13 @@
   "getNotifiedWhenPlantsNeedWater": "Отримуйте сповіщення, коли рослинам потрібен полив",
   "quietHours": "Тихі години",
   "maxNotificationsPerDay": "Макс. сповіщень на день",
-  "notificationsCount": "{count} сповіщень",
+  "notificationsCount": "{count, plural, one{{count} сповіщення} few{{count} сповіщення} many{{count} сповіщень} other{{count} сповіщення}}",
   "@notificationsCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "theme": "Тема",
   "light": "Світла",
@@ -58,7 +62,9 @@
   "preferencesSavedSuccessfully": "Налаштування збережено!",
   "errorSavingPreferences": "Помилка збереження налаштувань: {error}",
   "@errorSavingPreferences": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "quietHoursUpdatedSuccessfully": "Тихі години оновлено!",
   "changePasswordTitle": "Змінити пароль",
@@ -75,7 +81,9 @@
   "passwordChangedSuccessfully": "Пароль успішно змінено.",
   "errorChangingPassword": "Помилка зміни пароля: {error}",
   "@errorChangingPassword": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "signOutConfirmTitle": "Вихід",
   "signOutConfirmMessage": "Ви впевнені, що хочете вийти?",
@@ -84,7 +92,9 @@
   "profileUpdatedSuccessfully": "Профіль успішно оновлено!",
   "errorUpdatingProfile": "Помилка оновлення профілю: {error}",
   "@errorUpdatingProfile": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "plantLover": "Любитель рослин",
   "profileInformation": "Інформація профілю",
@@ -105,25 +115,37 @@
   "addYourFirstPlant": "Додати першу рослину",
   "errorPickingImage": "Помилка вибору зображення: {error}",
   "@errorPickingImage": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToAnalyzePlantPhoto": "Не вдалося проаналізувати фото: {statusCode}",
   "@failedToAnalyzePlantPhoto": {
-    "placeholders": { "statusCode": { "type": "int" } }
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
   },
   "aiAnalysisCompleted": "ШІ-аналіз завершено! 🌱",
   "aiAnalysisFailed": "ШІ-аналіз не виконано: {error}",
   "@aiAnalysisFailed": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "apiTestError": "Помилка тесту API: {error}",
   "@apiTestError": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "aiAnalysisRefreshed": "ШІ-аналіз оновлено! 🔄",
   "aiAnalysisRefreshFailed": "Помилка оновлення ШІ-аналізу: {error}",
   "@aiAnalysisRefreshFailed": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "retry": "Повторити",
   "uploadPlantPhoto": "Завантажити фото рослини",
@@ -131,13 +153,21 @@
   "onceEvery7Days": "Раз на 7 днів",
   "oncePerDay": "Раз на день",
   "oncePerWeek": "Раз на тиждень",
-  "onceEveryNDays": "Раз на {days} днів",
+  "onceEveryNDays": "{days, plural, one{Щодня} few{Раз на {days} дні} many{Раз на {days} днів} other{Раз на {days} дня}}",
   "@onceEveryNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
-  "onceEveryNWeeks": "Раз на {weeks} тижнів",
+  "onceEveryNWeeks": "{weeks, plural, one{Щотижня} few{Раз на {weeks} тижні} many{Раз на {weeks} тижнів} other{Раз на {weeks} тижня}}",
   "@onceEveryNWeeks": {
-    "placeholders": { "weeks": { "type": "int" } }
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
   },
   "low": "Низький",
   "mediumLow": "Нижче середнього",
@@ -151,7 +181,9 @@
   "plantAddedSuccessfully": "Рослину успішно додано! 🌱",
   "errorAddingPlant": "Помилка додавання рослини: {error}",
   "@errorAddingPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "generateRandomName": "Випадкова назва",
   "plantName": "Назва рослини",
@@ -162,13 +194,19 @@
   "plantUpdatedSuccessfully": "Рослину успішно оновлено! 🌱",
   "errorUpdatingPlant": "Помилка оновлення рослини: {error}",
   "@errorUpdatingPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "species": "Вид",
   "wateringFrequency": "Частота поливу",
-  "everyNDays": "Кожні {days} дн.",
+  "everyNDays": "{days, plural, one{Кожен {days} день} few{Кожні {days} дні} many{Кожні {days} днів} other{Кожні {days} дня}}",
   "@everyNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "pleaseSelectWateringFrequency": "Виберіть частоту поливу",
   "notes": "Нотатки",
@@ -177,23 +215,31 @@
   "changeImage": "Змінити фото",
   "errorDeletingPlant": "Помилка видалення рослини: {error}",
   "@errorDeletingPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "plantNotDueForWateringYet": "Ця рослина ще не потребує поливу",
   "errorBuildingPlantDetailsScreen": "Помилка при відкритті екрана рослини: {error}",
   "@errorBuildingPlantDetailsScreen": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "aiCare": "ШІ-догляд",
   "aiAgent": "ШІ-помічник",
   "plantChatOpen": "Відкрити чат з рослиною",
   "plantChatTitle": "Чат про {plantName}",
   "@plantChatTitle": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "plantChatWelcome": "Привіт! Я ваш помічник з догляду за {plantName}. Запитайте про полив, ознаки хвороб або що робити далі.",
   "@plantChatWelcome": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "plantChatInputHint": "Запитайте про цю рослину...",
   "plantChatLoginAgain": "Будь ласка, увійдіть знову.",
@@ -224,7 +270,11 @@
   "verificationCodeSentAgain": "Код підтвердження надіслано повторно.",
   "resendCodeInSeconds": "Надіслати повторно через {seconds}с",
   "@resendCodeInSeconds": {
-    "placeholders": { "seconds": { "type": "int" } }
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "resendCode": "Надіслати код повторно",
   "setNewPassword": "Задати новий пароль",
@@ -236,8 +286,8 @@
   "healthy": "Здорові",
   "yourPlants": "Мої рослини",
   "plantCreatedSuccessfully": "Рослину успішно створено! 🌱",
-  "searchPlantsHint": "Пошук рослин…",
-  "filterAll": "Всі",
+  "searchPlantsHint": "Пошук за назвою або видом",
+  "filterAll": "Усі",
   "filterOverdue": "Прострочено",
   "noResultsTitle": "Нічого не знайдено",
   "noResultsSub": "Спробуйте інший запит або фільтр.",
@@ -263,7 +313,7 @@
   "addPlantTitle": "Додати рослину",
   "addPlantSubtitle": "Сфотографуйте, визначте, збережіть",
   "snapTitle": "Зробіть фото",
-  "snapDescription": "Ми визначимо вид за кілька секунд.",
+  "snapDescription": "Чітке фото допоможе нашому ШІ визначити\nвашу рослину та підібрати догляд",
   "useCamera": "Камера",
   "uploadFromGallery": "З галереї",
   "analyzing": "Аналіз...",
@@ -307,21 +357,33 @@
   "pushNotificationsSubtitle": "Сповіщення в додатку (iOS / Android)",
   "wateringOverdueNDays": "Прострочено {days}д",
   "@wateringOverdueNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "wateringToday": "Полив сьогодні",
   "wateringTomorrow": "Полив завтра",
   "wateringInNDays": "Полив через {days}д",
   "@wateringInNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "plantWateredSuccess": "{plantName} полито! 💧",
   "@plantWateredSuccess": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "errorWateringPlant": "Помилка поливу: {error}",
   "@errorWateringPlant": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "healthIssueDetected": "Виявлено проблему зі здоров'ям",
   "recommendedActionsLabel": "Рекомендовані дії:",
@@ -331,16 +393,22 @@
   "uploadPhotosToTrackHealth": "Завантажуйте фото для відстеження здоров'я рослини",
   "today": "Сьогодні",
   "yesterday": "Вчора",
-  "nDaysAgo": "{days} днів тому",
+  "nDaysAgo": "{days, plural, one{{days} день тому} few{{days} дні тому} many{{days} днів тому} other{{days} дня тому}}",
   "@nDaysAgo": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
-  "healthStatusOk": "ОК",
+  "healthStatusOk": "Гаразд",
   "healthStatusIssue": "Проблема",
   "assistantTyping": "Помічник друкує...",
   "chatSourceLabel": "Джерело: {source}",
   "@chatSourceLabel": {
-    "placeholders": { "source": {} }
+    "placeholders": {
+      "source": {}
+    }
   },
   "chatSourceKnowledgeBase": "База знань",
   "chatSourceContext": "Контекст",
@@ -349,8 +417,12 @@
   "chatPhotoQuota": "{used}/{limit} фото сьогодні",
   "@chatPhotoQuota": {
     "placeholders": {
-      "used": { "type": "int" },
-      "limit": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
     }
   },
   "chatPhotoQuotaExhausted": "Денний ліміт фото вичерпано. Спробуйте завтра.",
@@ -370,14 +442,20 @@
   "waterFirstLabel": "Спочатку полийте",
   "nextCheckAfterWatering": "Наступна перевірка через {days} д",
   "@nextCheckAfterWatering": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "imageReadyForAnalysis": "Фото завантажено! Готово до аналізу здоров'я.",
   "healthCheckTitle": "Перевірка здоров'я",
   "healthCheckHistoryTitle": "Історія перевірок здоров'я",
   "healthCheckUploadHint": "Завантажте фото {plantName} для ШІ-аналізу здоров'я",
   "@healthCheckUploadHint": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "deletePlant": "Видалити рослину",
   "deletePlantConfirm": "Ви впевнені, що хочете видалити цю рослину?",
@@ -395,7 +473,9 @@
   "uploadPhotosForHealthHistory": "Завантажуйте фото для відстеження здоров'я рослини",
   "plantDeletedMessage": "Рослину \"{plantName}\" видалено",
   "@plantDeletedMessage": {
-    "placeholders": { "plantName": {} }
+    "placeholders": {
+      "plantName": {}
+    }
   },
   "noImageAvailable": "Фото недоступне",
   "addPhotoToSeeYourPlant": "Додайте фото, щоб бачити свою рослину",
@@ -414,9 +494,13 @@
   "wateringLabel": "Полив",
   "nowLabel": "Зараз",
   "nextIn1Day": "Наступний через 1 день",
-  "nextInNDays": "Наступний через {days} днів",
+  "nextInNDays": "{days, plural, one{Наступний через {days} день} few{Наступний через {days} дні} many{Наступний через {days} днів} other{Наступний через {days} дня}}",
   "@nextInNDays": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "wateringDone": "Полив виконано",
   "moistureDry": "Суха",
@@ -428,7 +512,11 @@
   "moistureLevelVeryMoist": "Дуже волога",
   "bannerWaterTitle": "{name} потребує поливу",
   "@bannerWaterTitle": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "bannerWaterSubtitle": "Натисніть, щоб полити або переглянути деталі",
   "bannerTipTitle": "Порада дня",
@@ -451,21 +539,37 @@
   "subscriptionExpiredTitle": "Підписка закінчилась",
   "subscriptionActiveUntil": "Активний до {date}",
   "@subscriptionActiveUntil": {
-    "placeholders": { "date": { "type": "String" } }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "subscriptionTrialEndsOn": "Пробний період закінчується {date}",
   "@subscriptionTrialEndsOn": {
-    "placeholders": { "date": { "type": "String" } }
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
-  "subscriptionTrialDaysLeft": "Залишилось {days} днів",
+  "subscriptionTrialDaysLeft": "{days, plural, one{Залишився {days} день} few{Залишилось {days} дні} many{Залишилось {days} днів} other{Залишилось {days} дня}}",
   "@subscriptionTrialDaysLeft": {
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionExpiredMessage": "Ваша підписка закінчилась. Оформіть підписку, щоб продовжити.",
   "subscriptionPlantLimitReached": "Ліміт рослин досягнуто",
   "subscriptionPlantLimitBannerTrial": "Досягнуто ліміт безкоштовного плану. Перейдіть на Premium — до {limit} рослин.",
   "@subscriptionPlantLimitBannerTrial": {
-    "placeholders": { "limit": { "type": "int" } }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "subscriptionPlantLimitBannerExpired": "Оформіть підписку, щоб додавати рослини.",
   "subscriptionReadOnlyNotice": "Режим читання. Оформіть підписку для редагування.",
@@ -473,7 +577,11 @@
   "paywallSubtitle": "Отримайте максимум від колекції рослин",
   "paywallFeature1": "До {limit} рослин",
   "@paywallFeature1": {
-    "placeholders": { "limit": { "type": "int" } }
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
   },
   "paywallFeature2": "Необмежені нагадування про полив",
   "paywallFeature3": "ШІ-помічник та перевірки здоров'я",
@@ -496,10 +604,13 @@
   "paywallChoosePlan": "ОБЕРІТЬ ПЛАН",
   "paywallPerMonth": "Лише {price} / місяць",
   "@paywallPerMonth": {
-    "placeholders": { "price": {} }
+    "placeholders": {
+      "price": {}
+    }
   },
   "paywallStartPremium": "Почати Premium",
   "paywallSecured": "Захищено Stripe",
+  "paywallSecuredApple": "Захищено",
   "paywallCancelAnytime": "Скасування в будь-який час",
   "paywallAutoRenews": "автопоновлення",
   "stripeSuccessTitle": "Підписку активовано!",
@@ -508,11 +619,15 @@
   "stripeSuccessButton": "До моїх рослин",
   "errorOpeningBillingPortal": "Не вдалося відкрити портал оплати: {error}",
   "@errorOpeningBillingPortal": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "errorRestoring": "Помилка відновлення: {error}",
   "@errorRestoring": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "emailCopied": "Email скопійовано: support@botanly.app",
   "labelExpires": "Закінчується",
@@ -524,15 +639,21 @@
   "testWateringEmailQueued": "Тестовий email про полив надіслано.",
   "errorSendingTestEmail": "Не вдалося надіслати тестовий email: {error}",
   "@errorSendingTestEmail": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToSaveReminderChannels": "Помилка збереження каналів нагадувань: {error}",
   "@failedToSaveReminderChannels": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "failedToUpdateQuietHours": "Помилка оновлення тихих годин: {error}",
   "@failedToUpdateQuietHours": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "deleteAccountTitle": "Видалити акаунт",
   "deleteAccountSubtitle": "Назавжди вимкнути ваш акаунт",
@@ -542,7 +663,9 @@
   "deleteAccountConfirmBtn": "Підтвердити видалення",
   "errorDeletingAccount": "Не вдалося видалити акаунт: {error}",
   "@errorDeletingAccount": {
-    "placeholders": { "error": {} }
+    "placeholders": {
+      "error": {}
+    }
   },
   "subPillPremium": "Преміум",
   "subPillEarlyMember": "Ранній учасник",
@@ -551,21 +674,29 @@
   "subMetaActivePlan": "АКТИВНИЙ ПЛАН",
   "subMetaForeverPremium": "ВІЧНИЙ ПРЕМІУМ",
   "subMetaTrialEnded": "ПРОБНИЙ ПЕРІОД ЗАВЕРШЕНО",
-  "subMetaNDayPreview": "ПЕРЕГЛЯД {n} ДНІВ",
+  "subMetaNDayPreview": "{n, plural, one{ПЕРЕГЛЯД {n} ДЕНЬ} few{ПЕРЕГЛЯД {n} ДНІ} many{ПЕРЕГЛЯД {n} ДНІВ} other{ПЕРЕГЛЯД {n} ДНЯ}}",
   "@subMetaNDayPreview": {
-    "placeholders": { "n": { "type": "int" } }
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   },
   "subEndsInDays": "Закінчується через {days} дн. · {date}",
   "@subEndsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
   "subRenewsInDays": "Поновлюється через {days} дн. · {date}",
   "@subRenewsInDays": {
     "placeholders": {
-      "days": { "type": "int" },
+      "days": {
+        "type": "int"
+      },
       "date": {}
     }
   },
@@ -601,7 +732,6 @@
   "tipShowLeaves": "покажіть листя",
   "tipSinglePlant": "одна рослина",
   "snapYourSprout": "Сфотографуйте свій паросток",
-  "snapDescription": "Чітке фото допоможе нашому ШІ визначити\nвашу рослину та підібрати догляд",
   "identifyingPlantPrefix": "Визначаємо вашу ",
   "identifyingPlantWord": "рослину",
   "identifyingSubtitle": "Вивчаємо листя, стебла і сусідів поруч",
@@ -609,7 +739,11 @@
   "healthCheckPhotoHint": "Додайте до 3 фото — більше ракурсів означає точніший аналіз. Обов'язкове лише перше фото.",
   "healthCheckPhotoCounter": "{count} / 3",
   "@healthCheckPhotoCounter": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckSlot1Title": "Рослина повністю",
   "healthCheckSlot1Desc": "Сфотографуйте рослину повністю разом з горщиком — щоб було видно землю і весь горщик.",
@@ -622,7 +756,11 @@
   "healthCheckSlot3Tag": "За бажанням",
   "healthCheckAnalyzeNPhotos": "Аналізувати {count} фото",
   "@healthCheckAnalyzeNPhotos": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "healthCheckError": "Аналіз не вдався. Будь ласка, спробуйте ще раз.",
   "healthCheckDefaultPraise": "🌱 Ваша рослина почувається добре!",
@@ -642,32 +780,226 @@
   "addPlantAnalyzingSubtitle": "Зазвичай це займає кілька секунд…",
   "addPlantAnalysisComplete": "Аналіз завершено",
   "addPlantSeePlantProfile": "Переглянути профіль рослини",
-
   "onboardingSkip": "Пропустити",
   "onboardingGetStarted": "Почати",
-
   "onboarding1Eyebrow": "Ласкаво просимо",
   "onboarding1Title": "Знайомтесь: ",
   "onboarding1TitleItalic": "Botanly",
   "onboarding1Body": "Ваш ШІ-помічник для щасливих і здорових рослин — завжди поруч.",
-
   "onboarding2Eyebrow": "Визначення",
   "onboarding2Title": "Дізнайтесь ",
   "onboarding2TitleItalic": "будь-яку рослину",
   "onboarding2Body": "Наведіть камеру — ШІ визначить вид, назву та все інше за секунди.",
-
   "onboarding3Eyebrow": "Догляд",
   "onboarding3Title": "Догляд став ",
   "onboarding3TitleItalic": "простішим",
   "onboarding3Body": "Нагадування про полив, освітлення та ґрунт — точно налаштовані під кожну рослину.",
-
   "onboarding4Eyebrow": "Перевірка здоров'я",
   "onboarding4Title": "Помічайте проблеми ",
   "onboarding4TitleItalic": "вчасно",
   "onboarding4Body": "Сфотографуйте — отримайте миттєву перевірку здоров'я та чіткий план лікування.",
-
   "onboarding5Eyebrow": "Готово",
   "onboarding5Title": "Давайте ",
   "onboarding5TitleItalic": "рости разом",
-  "onboarding5Body": "Створіть свою колекцію і нічого не пропускайте. Ваша найзеленіша ера починається зараз."
+  "onboarding5Body": "Створіть свою колекцію і нічого не пропускайте. Ваша найзеленіша ера починається зараз.",
+  "tabCare": "Догляд",
+  "tabAbout": "Про рослину",
+  "tabHistory": "Історія",
+  "nDays": "{days, plural, one{{days} день} few{{days} дні} many{{days} днів} other{{days} дня}}",
+  "@nDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "cycleJustStarted": "Цикл щойно почався",
+  "cyclePercentComplete": "Цикл пройдено на {percent}%",
+  "@cyclePercentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "wateringAmount": "Обʼєм",
+  "noDataAvailable": "Поки немає даних",
+  "healthCheckHistoryEmptyHint": "Завантажуй фото раз на пару тижнів — складемо таймлайн стану рослини",
+  "milliliters": "{count} мл",
+  "millilitersShort": "МЛ",
+  "nHours": "{hours} год",
+  "lightDaily": "На день",
+  "lightType": "Тип",
+  "lightTypeDirect": "Пряме",
+  "lightTypePartialSun": "Півтінь",
+  "lightTypeBrightIndirect": "Яскраве розсіяне",
+  "lightTypeLowLight": "Слабке світло",
+  "everyDay": "Щодня",
+  "healthCheckSeverity": "Серйозність",
+  "healthCheckFollowUp": "Повторна перевірка",
+  "severityLow": "Низька",
+  "severityMedium": "Середня",
+  "severityHigh": "Висока",
+  "careKvFrequency": "Частота",
+  "careKvSeason": "Сезон",
+  "careKvOptimal": "Оптимум",
+  "careKvMinimum": "Мінімум",
+  "careKvDose": "Доза",
+  "healthAnalyzeCta": "Перевірити стан",
+  "healthNeedsAttention": "Потребує уваги",
+  "healthStatusHealthy": "Здорова рослина",
+  "healthWhatToDo": "Що зробити",
+  "healthClose": "Закрити",
+  "healthNotSavedYet": "Перевірка ще не в історії",
+  "healthAskAssistant": "Запитати AI",
+  "healthAddedToPlan": "Додано до плану",
+  "healthLockedNeedsWatering": "Позначте полив, щоб перевірити знову",
+  "healthLockedLimitReached": "Перевірки на цей цикл вичерпано",
+  "healthAdviceSub": "Подивитися, що зробити",
+  "healthAnalyzingTitle": "Аналізуємо…",
+  "healthStepRecognize": "Розпізнаємо рослину",
+  "healthStepCompare": "Порівнюємо з минулими перевірками",
+  "healthStepAdvice": "Формуємо рекомендації",
+  "healthStepPhotos": "{count, plural, one{{count} фото отримано} few{{count} фото отримано} other{{count} фото отримано}}",
+  "healthAdviceTitle": "{count, plural, one{{count} рекомендація після перевірки} few{{count} рекомендації після перевірки} other{{count} рекомендацій після перевірки}}",
+  "healthHistoryLoadFailed": "Не вдалося завантажити історію",
+  "healthUpToThreePhotos": "До 3 фото",
+  "healthResultTitle": "Результат",
+  "taskAllDone": "Усе зроблено — рослина в порядку",
+  "taskBadgeScheduled": "За розкладом",
+  "taskBadgeAnalysis": "Після аналізу",
+  "taskBadgeOverdue": "{days, plural, one{Прострочено {days} день} few{Прострочено {days} дні} many{Прострочено {days} днів} other{Прострочено {days} дня}}",
+  "taskDone": "Готово",
+  "taskDoneAlready": "Зроблено",
+  "taskLater": "Пізніше",
+  "taskAskAssistant": "Запитати асистента",
+  "taskAskQuestion": "Що потрібно зробити із завданням «{title}»?",
+  "homeGardenTitleLead": "Твій",
+  "homeGardenTitleAccent": "сад",
+  "gardenHealthLabel": "Здоров’я саду",
+  "gardenAllGood": "Усі рослини в порядку",
+  "gardenOneWeak": "{name} тягне сад униз",
+  "gardenManyWeak": "{count, plural, one{{count} рослині потрібен твій догляд} few{{count} рослинам потрібен твій догляд} other{{count} рослинам потрібен твій догляд}}",
+  "homeOrbitHint": "Натисни на рослину, щоб відкрити її",
+  "homeAllTasksLink": "Усі завдання",
+  "deckAllClearTitle": "Сад у порядку",
+  "taskOverdueShort": "{days, plural, one{{days} день} few{{days} дні} other{{days} днів}}",
+  "taskPostponed": "Відкладено",
+  "allTasksTitle": "Усі завдання",
+  "allTasksSubtitle": "{today} сьогодні · {later} далі",
+  "allTasksToday": "Сьогодні",
+  "allTasksLater": "Далі",
+  "allTasksRuleNote": "Нові завдання не з’являться, доки не розберешся із сьогоднішніми.",
+  "allTasksNothingToday": "На сьогодні все закрито",
+  "whenTomorrow": "Завтра",
+  "whenInAWeek": "Через тиждень",
+  "whenInNDays": "{days, plural, one{Через {days} день} few{Через {days} дні} other{Через {days} днів}}",
+  "careAskAbout": "Запитати асистента про {title}",
+  "careAskQuestion": "Розкажи докладніше про «{title}» для моєї рослини",
+  "healthAskQuestionIssue": "Що зробити за результатами аналізу насамперед?",
+  "healthAskQuestionOk": "Аналіз показав, що рослина здорова — що можна покращити?",
+  "glassesOne": "1 склянка",
+  "glassesAmount": "{value} склянки",
+  "addPlantStepOf": "Крок {step} з {total}",
+  "addPlantTitleLead": "Додати",
+  "addPlantTitleAccent": "рослину",
+  "addPlantNameHint": "Як зватимеш цю квітку — Моня, Фікусик, Monstera. Кубик придумає за тебе.",
+  "addPlantPhotosTitle": "Світлини",
+  "addPlantWholePlant": "Уся рослина",
+  "addPlantWholePlantHint": "з горщиком і ґрунтом",
+  "addPlantRequired": "Треба",
+  "addPlantTwoAnglesHint": "Два ракурси точніше визначають вид — друга світлина не обов’язкова, але допомагає.",
+  "addPlantTipLight": "добре світло",
+  "addPlantTipLeaves": "видно листя",
+  "addPlantTipSingle": "одна рослина",
+  "addPlantIdentifyCta": "Визначити вид",
+  "addPlantRandomNames": "Моня|Паросток|Фікусик|Зеленко|Базилік Великий|Листик|Сонько|Пих",
+  "addPlantIsThisYourPlant": "Це твоя рослина?",
+  "addPlantPickSpeciesHint": "Обери найближчий варіант — від цього залежить план догляду.",
+  "addPlantNoneMatch": "Нічого не підходить — введу сам",
+  "addPlantManualHint": "Введи назву виду — пошукаємо заново.",
+  "addPlantManualPlaceholder": "Наприклад, Monstera deliciosa",
+  "addPlantBuildPlanCta": "Скласти план догляду",
+  "addPlantStartingScore": "Стартовий бал {score}",
+  "addPlantPlanWatering": "Полив",
+  "addPlantPlanLight": "Світло",
+  "addPlantPlanSoil": "Ґрунт",
+  "addPlantSoilSlightlyMoist": "Злегка вологий",
+  "addPlantEveryNDays": "{days, plural, one{Раз на {days} день} few{Раз на {days} дні} other{Раз на {days} днів}}",
+  "addPlantCarePlan": "План догляду",
+  "addPlantNTasks": "{count, plural, one{{count} завдання} few{{count} завдання} other{{count} завдань}}",
+  "addPlantFirstWatering": "Перший полив",
+  "addPlantToday": "сьогодні",
+  "addPlantWaterToday": "сьогодні",
+  "addPlantFertilising": "Підживлення",
+  "addPlantFertilisingDetail": "Через 2 тижні · половинна доза",
+  "addPlantHealthCheck": "Перевірка здоров’я",
+  "addPlantHealthCheckDetail": "Через місяць · 1–3 світлини",
+  "addPlantAddToGarden": "Додати до саду",
+  "addPlantNoSpeciesFound": "Не вдалося розпізнати рослину. Спробуй іншу світлину.",
+  "addPlantNoPlan": "Не вдалося скласти план догляду. Спробуй ще раз.",
+  "addPlantLoaderPhotos": "Світлини отримано",
+  "addPlantLoaderIdentify": "Визначаємо вид",
+  "addPlantLoaderPlan": "Складаємо план догляду",
+  "myPlantsTitleLead": "Мої",
+  "myPlantsTitleAccent": "рослини",
+  "myPlantsCount": "{count, plural, one{{count} рослина} few{{count} рослини} other{{count} рослин}}",
+  "myPlantsEmptyLabel": "Поки порожньо",
+  "filterTomorrow": "Завтра",
+  "filterNeedsCare": "Потрібен догляд",
+  "myPlantsNothingFound": "Нічого не знайдено",
+  "myPlantsNothingFoundHint": "Спробуй іншу назву або вид.",
+  "myPlantsAllClearTitle": "Усе гаразд",
+  "myPlantsAllClearHint": "Зараз у цій групі порожньо — немає про що хвилюватися.",
+  "addFirstPlantHint": "Додайте першу рослину, щоб почати",
+  "subHeroActiveLead": "Сад",
+  "subHeroActiveAccent": "під наглядом",
+  "subHeroForeverLead": "Преміум",
+  "subHeroForeverAccent": "назавжди",
+  "subHeroEndedLead": "Пробний період",
+  "subHeroEndedAccent": "завершено",
+  "subMetaNoCharges": "Без списань",
+  "subFootAutoRenew": "Автопродовження увімкнено · Можна скасувати",
+  "subFootTrial": "Без обмежень · AI-догляд · Нагадування",
+  "subFootForever": "Усі можливості відкриті",
+  "subFootFree": "Обмежений доступ · Без AI-догляду",
+  "subCtaDetails": "Деталі",
+  "subCtaResume": "Відновити",
+  "subTrialUntil": "Пробний період до {date}",
+  "subEndedOn": "Завершився {date}",
+  "subscriptionManageTitle": "Підписка",
+  "subscriptionPlanLabel": "План",
+  "subscriptionNextChargeLabel": "Наступне списання",
+  "subscriptionAutoRenewLabel": "Автопродовження",
+  "subscriptionAutoRenewOn": "Увімкнено",
+  "subscriptionAutoRenewOff": "Вимкнено",
+  "subscriptionManageInStore": "Списаннями керує App Store. Змінити або скасувати підписку можна в Налаштуваннях → Apple ID → Підписки.",
+  "deleteAccountContinue": "Продовжити",
+  "deleteAccountKeyword": "ВИДАЛИТИ",
+  "deleteAccountTypeWord": "Введіть {word} для підтвердження.",
+  "settingsSavedToast": "Налаштування збережено!",
+  "quietHoursUpdatedToast": "Тихі години оновлено!",
+  "signedInChip": "Ви увійшли",
+  "securityLabel": "Безпека",
+  "emailNotificationsLabel": "Email",
+  "changePasswordHint": "Щонайменше 6 символів",
+  "quietHoursNeedsPush": "Увімкніть push, щоб користуватися тихими годинами",
+  "quietHoursFrom": "З",
+  "quietHoursTo": "До",
+  "quietHoursSummary": "{hours, plural, one{Сповіщення не прийдуть {hours} годину поспіль} few{Сповіщення не прийдуть {hours} години поспіль} other{Сповіщення не прийдуть {hours} годин поспіль}}",
+  "passwordTooShortError": "Новий пароль має бути не коротшим за 6 символів.",
+  "passwordSameAsCurrentError": "Новий пароль має відрізнятися від поточного.",
+  "passwordsDoNotMatchError": "Паролі не збігаються.",
+  "passwordCurrentWrongError": "Поточний пароль неправильний.",
+  "subscriptionLoading": "Завантажуємо ваш план…",
+  "editPlantTitle": "Редагування",
+  "newPhotoBadge": "Нове фото",
+  "revertPhoto": "Повернути попереднє фото",
+  "editPlantNameHint": "Так рослина називатиметься в саду та в нагадуваннях",
+  "aiManagedNote": "Вид і план догляду визначає ШІ — вони оновлюються після нового аналізу здоров'я.",
+  "noPhotoYet": "Фото поки немає",
+  "gardenLoadError": "Не вдалося завантажити сад. Перевір з'єднання та спробуй ще раз.",
+  "pullToRefreshHint": "Потягни вниз, щоб оновити",
+  "refreshingGarden": "Збираємо дані саду…",
+  "refreshFailed": "Не вдалося оновити. Перевір з'єднання."
 }

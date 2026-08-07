@@ -62,13 +62,14 @@ class _ForgotPasswordNewPasswordScreenState
         newPassword: newPassword,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.passwordResetSuccess,
-              style: GoogleFonts.dmSans(fontSize: 13)),
-          backgroundColor: BotanlyColors.moss,
-        ),
-      );
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(l10n.passwordResetSuccess,
+      //         style: GoogleFonts.dmSans(fontSize: 13)),
+      //     backgroundColor: BotanlyColors.moss,
+      //   ),
+      // );
       context.go('/login');
     } catch (e) {
       if (!mounted) return;

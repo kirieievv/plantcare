@@ -1,6 +1,90 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:typed_data';
 
+/// One observation the analyzer made about the plant in a health check.
+///
+/// [category] is a fixed English key the analyzer picks from a closed set — it
+/// selects the icon and tint, so unknown values must not reach the UI. The
+/// backend already coerces anything unexpected to `leaves`; [fromMap] repeats
+/// that guard for records written before the field existed.
+class HealthFinding {
+  static const categories = {'light', 'water', 'soil', 'leaves', 'pests'};
+
+  final String category;
+  final String title;
+  final String text;
+
+  const HealthFinding({
+    required this.category,
+    required this.title,
+    required this.text,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'category': category,
+        'title': title,
+        'text': text,
+      };
+
+  factory HealthFinding.fromMap(Map<String, dynamic> map) {
+    final raw = map['category']?.toString().toLowerCase() ?? '';
+    return HealthFinding(
+      category: categories.contains(raw) ? raw : 'leaves',
+      title: map['title']?.toString() ?? '',
+      text: map['text']?.toString() ?? '',
+    );
+  }
+}
+
+/// A single action from the "what to do" checklist of a health check.
+///
+/// [done] is owned by the user, not the analyzer: it is toggled from the result
+/// screen and written back into the same health-check document, so reopening an
+/// old check shows which steps were already taken.
+class HealthRecommendation {
+  final int priority; // 1 = most important, 3 = optional
+  final String title;
+  final String explanation;
+  final String actionLabel;
+  final bool done;
+
+  const HealthRecommendation({
+    required this.priority,
+    required this.title,
+    this.explanation = '',
+    this.actionLabel = '',
+    this.done = false,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'priority': priority,
+        'title': title,
+        'explanation': explanation,
+        'action_label': actionLabel,
+        'done': done,
+      };
+
+  factory HealthRecommendation.fromMap(Map<String, dynamic> map) {
+    final raw = map['priority'];
+    final parsed = raw is int ? raw : int.tryParse(raw?.toString() ?? '');
+    return HealthRecommendation(
+      priority: (parsed ?? 1).clamp(1, 3),
+      title: map['title']?.toString() ?? '',
+      explanation: map['explanation']?.toString() ?? '',
+      actionLabel: map['action_label']?.toString() ?? '',
+      done: map['done'] == true,
+    );
+  }
+
+  HealthRecommendation copyWith({bool? done}) => HealthRecommendation(
+        priority: priority,
+        title: title,
+        explanation: explanation,
+        actionLabel: actionLabel,
+        done: done ?? this.done,
+      );
+}
+
 /// Represents a single health check record
 class HealthCheckRecord {
   final String id;
@@ -13,6 +97,12 @@ class HealthCheckRecord {
   final List<Uint8List?> imageBytesList; // Up to 3 local byte arrays
   final Map<String, dynamic>? metadata; // Additional data like AI analysis details
 
+  /// 0–100 overall condition. Null for checks recorded before scoring existed —
+  /// the UI hides the ring rather than inventing a number.
+  final int? score;
+  final List<HealthFinding> findings;
+  final List<HealthRecommendation> recommendations;
+
   HealthCheckRecord({
     required this.id,
     required this.timestamp,
@@ -23,8 +113,13 @@ class HealthCheckRecord {
     List<String?>? imageUrls,
     List<Uint8List?>? imageBytesList,
     this.metadata,
+    this.score,
+    List<HealthFinding>? findings,
+    List<HealthRecommendation>? recommendations,
   })  : imageUrls = imageUrls ?? (imageUrl != null ? [imageUrl] : []),
-        imageBytesList = imageBytesList ?? (imageBytes != null ? [imageBytes] : []);
+        imageBytesList = imageBytesList ?? (imageBytes != null ? [imageBytes] : []),
+        findings = findings ?? const [],
+        recommendations = recommendations ?? const [];
 
   Map<String, dynamic> toMap() {
     return {
@@ -35,20 +130,24 @@ class HealthCheckRecord {
       'imageUrl': imageUrls.isNotEmpty ? imageUrls.first : imageUrl,
       'imageUrls': imageUrls,
       'metadata': metadata,
+      'score': score,
+      'findings': findings.map((f) => f.toMap()).toList(),
+      'recommendations': recommendations.map((r) => r.toMap()).toList(),
       // imageBytes / imageBytesList not stored in Firestore, only used locally
     };
   }
 
+  /// Reads a stored check back.
+  ///
+  /// Deliberately forgiving about everything except identity: callers map this
+  /// over a Firestore query and drop entries that throw, so a strict parse turns
+  /// one blank field into a check that silently vanishes from History while
+  /// still being counted against the per-cycle budget. A record that exists must
+  /// stay visible — an empty verdict is better than a missing row.
   factory HealthCheckRecord.fromMap(Map<String, dynamic> map) {
     try {
       if (map['id'] == null || map['id'].toString().isEmpty) {
         throw Exception('HealthCheckRecord: id is required');
-      }
-      if (map['status'] == null || map['status'].toString().isEmpty) {
-        throw Exception('HealthCheckRecord: status is required');
-      }
-      if (map['message'] == null || map['message'].toString().isEmpty) {
-        throw Exception('HealthCheckRecord: message is required');
       }
 
       final timestamp = Plant._parseTimestamp(map['timestamp']);
@@ -69,11 +168,20 @@ class HealthCheckRecord {
       return HealthCheckRecord(
         id: map['id'].toString(),
         timestamp: timestamp,
-        status: map['status'].toString(),
-        message: map['message'].toString(),
+        // Unknown status reads as 'ok' so the row renders neutrally instead of
+        // claiming a problem the analyzer never reported.
+        status: map['status']?.toString().isNotEmpty == true
+            ? map['status'].toString()
+            : 'ok',
+        message: map['message']?.toString() ?? '',
         imageUrl: imageUrls.isNotEmpty ? imageUrls.first : null,
         imageUrls: imageUrls,
         metadata: map['metadata'] is Map ? Map<String, dynamic>.from(map['metadata']) : null,
+        score: map['score'] is int
+            ? map['score']
+            : (map['score'] != null ? int.tryParse(map['score'].toString()) : null),
+        findings: _mapList(map['findings'], HealthFinding.fromMap),
+        recommendations: _mapList(map['recommendations'], HealthRecommendation.fromMap),
       );
     } catch (e) {
       print('❌ HealthCheckRecord.fromMap error: $e');
@@ -92,6 +200,9 @@ class HealthCheckRecord {
     List<String?>? imageUrls,
     List<Uint8List?>? imageBytesList,
     Map<String, dynamic>? metadata,
+    int? score,
+    List<HealthFinding>? findings,
+    List<HealthRecommendation>? recommendations,
   }) {
     return HealthCheckRecord(
       id: id ?? this.id,
@@ -103,7 +214,29 @@ class HealthCheckRecord {
       imageUrls: imageUrls ?? this.imageUrls,
       imageBytesList: imageBytesList ?? this.imageBytesList,
       metadata: metadata ?? this.metadata,
+      score: score ?? this.score,
+      findings: findings ?? this.findings,
+      recommendations: recommendations ?? this.recommendations,
     );
+  }
+
+  /// Firestore hands back `List<dynamic>` of `Map<Object?, Object?>`; a malformed
+  /// entry drops out instead of failing the whole record.
+  static List<T> _mapList<T>(
+    dynamic raw,
+    T Function(Map<String, dynamic>) build,
+  ) {
+    if (raw is! List) return const [];
+    final out = <T>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      try {
+        out.add(build(Map<String, dynamic>.from(item)));
+      } catch (_) {
+        // Skip the bad entry, keep the rest of the check readable.
+      }
+    }
+    return out;
   }
 }
 
@@ -127,6 +260,10 @@ class Plant {
   final String? aiWateringAmount; // AI-provided watering amount in ml
   final String? aiSpecificIssues;
   final String? aiCareTips;
+  /// Compact labels from `care_recommendations.details` — the key-value cells
+  /// in the care sheets. Keyed by `CareDetail`; null for plants analysed
+  /// before the analyzer started returning them.
+  final Map<String, String>? careDetails;
   final List<String>? interestingFacts;
   
   // Plant size assessment from AI analysis
@@ -160,6 +297,13 @@ class Plant {
   final bool shouldWaterNow; // From AI: true = water now, false = water later
   final DateTime? deletedAt; // Soft delete timestamp (null = active)
 
+  /// Score of the last analysis, 0–100 (SPEC 1.1).
+  ///
+  /// Set when the plant is added and re-set by every health check. The live
+  /// score is this minus current penalties, so closing tasks can never lift a
+  /// plant above what its last scan actually saw.
+  final int? scanScore;
+
   // Ideal soil moisture range from AI (e.g. 10–20%)
   final int? idealSoilMoistureMin;
   final int? idealSoilMoistureMax;
@@ -184,6 +328,7 @@ class Plant {
     this.aiWateringAmount,
     this.aiSpecificIssues,
     this.aiCareTips,
+    this.careDetails,
     this.interestingFacts,
     this.aiPlantSize,
     this.aiPotSize,
@@ -208,6 +353,7 @@ class Plant {
     int? overdueStreak,
     bool? shouldWaterNow,
     this.deletedAt,
+    this.scanScore,
     this.idealSoilMoistureMin,
     this.idealSoilMoistureMax,
   })  : notificationState = notificationState ?? 'ok',
@@ -235,6 +381,7 @@ class Plant {
       'aiWateringAmount': aiWateringAmount,
       'aiSpecificIssues': aiSpecificIssues,
       'aiCareTips': aiCareTips,
+      'careDetails': careDetails,
       'interestingFacts': interestingFacts,
       'aiPlantSize': aiPlantSize,
       'aiPotSize': aiPotSize,
@@ -259,6 +406,7 @@ class Plant {
       'overdueStreak': overdueStreak,
       'shouldWaterNow': shouldWaterNow,
       'deletedAt': deletedAt?.toIso8601String(),
+      'scanScore': scanScore,
       'idealSoilMoistureMin': idealSoilMoistureMin,
       'idealSoilMoistureMax': idealSoilMoistureMax,
     };
@@ -301,6 +449,10 @@ class Plant {
         aiWateringAmount: map['aiWateringAmount']?.toString(),
         aiSpecificIssues: map['aiSpecificIssues']?.toString(),
         aiCareTips: map['aiCareTips']?.toString(),
+        careDetails: map['careDetails'] is Map
+            ? Map<String, String>.from((map['careDetails'] as Map)
+                .map((k, v) => MapEntry(k.toString(), v.toString())))
+            : null,
         interestingFacts: map['interestingFacts'] is List ? List<String>.from(map['interestingFacts']) : null,
         aiPlantSize: map['aiPlantSize']?.toString(),
         aiPotSize: map['aiPotSize']?.toString(),
@@ -339,7 +491,10 @@ class Plant {
             ? (map['shouldWaterNow'] as bool)
             : false,
         deletedAt: _parseTimestamp(map['deletedAt']),
-        idealSoilMoistureMin: map['idealSoilMoistureMin'] is int
+        scanScore: map['scanScore'] is int
+          ? map['scanScore']
+          : (map['scanScore'] != null ? int.tryParse(map['scanScore'].toString()) : null),
+      idealSoilMoistureMin: map['idealSoilMoistureMin'] is int
             ? map['idealSoilMoistureMin']
             : (map['idealSoilMoistureMin'] != null ? int.tryParse(map['idealSoilMoistureMin'].toString()) : null),
         idealSoilMoistureMax: map['idealSoilMoistureMax'] is int
@@ -394,6 +549,7 @@ class Plant {
     String? aiWateringAmount,
     String? aiSpecificIssues,
     String? aiCareTips,
+    Map<String, String>? careDetails,
     List<String>? interestingFacts,
     String? aiPlantSize,
     String? aiPotSize,
@@ -418,6 +574,7 @@ class Plant {
     int? overdueStreak,
     bool? shouldWaterNow,
     DateTime? deletedAt,
+    int? scanScore,
     int? idealSoilMoistureMin,
     int? idealSoilMoistureMax,
   }) {
@@ -439,6 +596,7 @@ class Plant {
       aiWateringAmount: aiWateringAmount ?? this.aiWateringAmount,
       aiSpecificIssues: aiSpecificIssues ?? this.aiSpecificIssues,
       aiCareTips: aiCareTips ?? this.aiCareTips,
+      careDetails: careDetails ?? this.careDetails,
       interestingFacts: interestingFacts ?? this.interestingFacts,
       aiPlantSize: aiPlantSize ?? this.aiPlantSize,
       aiPotSize: aiPotSize ?? this.aiPotSize,
@@ -463,6 +621,7 @@ class Plant {
       overdueStreak: overdueStreak ?? this.overdueStreak,
       shouldWaterNow: shouldWaterNow ?? this.shouldWaterNow,
       deletedAt: deletedAt ?? this.deletedAt,
+      scanScore: scanScore ?? this.scanScore,
       idealSoilMoistureMin: idealSoilMoistureMin ?? this.idealSoilMoistureMin,
       idealSoilMoistureMax: idealSoilMoistureMax ?? this.idealSoilMoistureMax,
     );

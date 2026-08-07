@@ -26,7 +26,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PlantChatScreen extends StatefulWidget {
   final Plant plant;
 
-  const PlantChatScreen({super.key, required this.plant});
+  /// Asked automatically once history has loaded.
+  ///
+  /// SPEC 1.4: entering the chat from a task or an analysis carries the question
+  /// with it — an empty chat makes the user retype what the app already knew.
+  final String? initialQuestion;
+
+  const PlantChatScreen({
+    super.key,
+    required this.plant,
+    this.initialQuestion,
+  });
 
   @override
   State<PlantChatScreen> createState() => _PlantChatScreenState();
@@ -67,7 +77,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMessageHistory();
+    _bootstrap();
     _loadImageQuota();
     _inputController.addListener(() {
       final hasText = _inputController.text.trim().isNotEmpty;
@@ -102,6 +112,16 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
       'quota_used_${FirebaseAuth.instance.currentUser?.uid}_${widget.plant.id}';
   String get _quotaDateKey =>
       'quota_date_${FirebaseAuth.instance.currentUser?.uid}_${widget.plant.id}';
+
+  /// History first, then the question that opened this screen — asking before
+  /// the history lands would put the answer above the conversation it belongs to.
+  Future<void> _bootstrap() async {
+    await _loadMessageHistory();
+    if (!mounted) return;
+    final question = widget.initialQuestion?.trim();
+    if (question == null || question.isEmpty) return;
+    await _sendMessage(question);
+  }
 
   Future<void> _loadImageQuota() async {
     final user = FirebaseAuth.instance.currentUser;

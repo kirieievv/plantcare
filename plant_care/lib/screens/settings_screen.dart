@@ -420,14 +420,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         newPassword: newPasswordController.text.trim(),
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.passwordChangedSuccessfully),
-            backgroundColor: BotanlyColors.sage,
-          ),
-        );
-      }
+      // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(l10n.passwordChangedSuccessfully),
+      //       backgroundColor: BotanlyColors.sage,
+      //     ),
+      //   );
+      // }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -486,7 +487,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
           children: [
             _buildUserCard(l10n),
             const SizedBox(height: 18),
