@@ -1525,5 +1525,7 @@
       }
     }
   },
-  "careDiscussWithAssistant": "Обговорити з асистентом"
+  "careDiscussWithAssistant": "Обговорити з асистентом",
+  "chatProposalNextWatering": "Наступний полив",
+  "chatProposalToday": "сьогодні"
 }

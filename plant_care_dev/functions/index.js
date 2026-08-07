@@ -1425,7 +1425,9 @@ the rest accumulate.
 
 "proposal": at most one change to the plant's stored data, or null. Only when
 this conversation gives a concrete reason for it — never to tidy up, never on a
-guess. {"field", "value", "reason"}, reason one short sentence in the owner's
+guess. If the owner wants to water sooner or later than planned, move
+nextDueAt: the interval is the rhythm and cannot express "today", because it is
+counted from the last watering. {"field", "value", "reason"}, reason one short sentence in the owner's
 language explaining what changed. Allowed fields and value types:
 ${JSON.stringify(PROPOSABLE_FIELDS_HINT)}
 
@@ -2382,6 +2384,14 @@ exports.applyChatProposal = functions.https.onRequest((req, res) => {
       // number and left the plant still saying "now".
       if (clean.field === 'wateringIntervalDays') {
         Object.assign(update, scheduleFromInterval(plant, clean.to) || {});
+      }
+      // Moving the due date has to carry the flag with it. The screen trusts
+      // shouldWaterNow over the date, so leaving it behind gives a plant that
+      // is due today and still shows no way to say you watered it — which is
+      // the whole thing the owner was asking for.
+      if (clean.field === 'nextDueAt') {
+        update.nextWatering = clean.to;
+        update.shouldWaterNow = Date.parse(clean.to) <= Date.now();
       }
       await plantRef.update(update);
 

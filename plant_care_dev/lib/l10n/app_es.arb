@@ -1525,5 +1525,7 @@
       }
     }
   },
-  "careDiscussWithAssistant": "Consultar con el asistente"
+  "careDiscussWithAssistant": "Consultar con el asistente",
+  "chatProposalNextWatering": "Próximo riego",
+  "chatProposalToday": "hoy"
 }

@@ -3229,4 +3229,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get careDiscussWithAssistant => 'Обсудить с ассистентом';
+
+  @override
+  String get chatProposalNextWatering => 'Следующий полив';
+
+  @override
+  String get chatProposalToday => 'сегодня';
 }

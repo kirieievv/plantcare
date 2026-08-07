@@ -1692,5 +1692,7 @@
       }
     }
   },
-  "careDiscussWithAssistant": "Discuss with the assistant"
+  "careDiscussWithAssistant": "Discuss with the assistant",
+  "chatProposalNextWatering": "Next watering",
+  "chatProposalToday": "today"
 }

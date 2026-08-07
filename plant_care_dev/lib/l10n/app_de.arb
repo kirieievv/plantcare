@@ -1525,5 +1525,7 @@
       }
     }
   },
-  "careDiscussWithAssistant": "Mit dem Assistenten besprechen"
+  "careDiscussWithAssistant": "Mit dem Assistenten besprechen",
+  "chatProposalNextWatering": "Nächstes Gießen",
+  "chatProposalToday": "heute"
 }

@@ -3227,4 +3227,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get careDiscussWithAssistant => 'En parler à l’assistant';
+
+  @override
+  String get chatProposalNextWatering => 'Prochain arrosage';
+
+  @override
+  String get chatProposalToday => 'aujourd’hui';
 }

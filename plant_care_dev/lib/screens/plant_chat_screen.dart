@@ -2101,9 +2101,13 @@ class _ProposalCard extends StatelessWidget {
   /// the new value: a plant that never had the field set has no "from" to show,
   /// and inventing one would misdescribe what is happening.
   String _headline(AppLocalizations l10n) {
-    final to = _format(proposal.to);
+    final to = _format(proposal.to, l10n);
     if (proposal.from == null) return l10n.chatProposalSet(_label(l10n), to);
-    return l10n.chatProposalChange(_label(l10n), _format(proposal.from), to);
+    return l10n.chatProposalChange(
+      _label(l10n),
+      _format(proposal.from, l10n),
+      to,
+    );
   }
 
   String _label(AppLocalizations l10n) => switch (proposal.field) {
@@ -2114,16 +2118,24 @@ class _ProposalCard extends StatelessWidget {
     'nearHeatSource' => l10n.careSectionTemperature,
     'species' => l10n.chatProposalSpecies,
     'tasksPausedUntil' => l10n.chatProposalPause,
+    'nextDueAt' => l10n.chatProposalNextWatering,
     _ => proposal.field,
   };
 
-  String _format(Object? value) {
+  String _format(Object? value, AppLocalizations l10n) {
     if (value == null) return '—';
     if (value is bool) return value ? '✓' : '✗';
     final text = value.toString();
-    // A pause is stored as an instant; the owner cares about the day.
-    if (proposal.field == 'tasksPausedUntil' && text.length >= 10) {
-      return text.substring(0, 10);
+
+    // Both of these are stored as instants and read as days.
+    if (proposal.field == 'tasksPausedUntil' || proposal.field == 'nextDueAt') {
+      final at = DateTime.tryParse(text);
+      if (at == null) return text.length >= 10 ? text.substring(0, 10) : text;
+      // "Today" says what the change means; a date makes the reader work it out.
+      final now = DateTime.now();
+      final sameDay =
+          at.year == now.year && at.month == now.month && at.day == now.day;
+      return sameDay ? l10n.chatProposalToday : DateFormat.MMMd().format(at);
     }
     return text;
   }

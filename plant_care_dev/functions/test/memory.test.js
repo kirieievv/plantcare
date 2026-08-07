@@ -216,3 +216,49 @@ test('a nonsense interval changes nothing', () => {
   assert.strictEqual(scheduleFromInterval({}, -3), null);
   assert.strictEqual(scheduleFromInterval({}, 'soon'), null);
 });
+
+// ── Moving the watering to today ────────────────────────────────────
+
+test('a due date lands at the start of the day, not at a time within it', () => {
+  // The app shows its watering button once the due date is no longer ahead. An
+  // afternoon timestamp would keep "water today" hidden until the afternoon,
+  // which is not what today means.
+  const afternoon = new Date();
+  afternoon.setUTCHours(15, 40, 0, 0);
+
+  const p = sanitizeProposal(
+    { field: 'nextDueAt', value: afternoon.toISOString(), reason: 'Soil is dry' },
+    { nextDueAt: '2026-12-01T18:00:00.000Z' },
+  );
+
+  assert.ok(p, 'a due-date proposal must survive validation');
+  assert.ok(Date.parse(p.to) <= Date.now(), 'today must be actionable now');
+});
+
+test('a due date in the past is allowed', () => {
+  // An overdue plant is overdue; refusing the past would make it unsayable.
+  const p = sanitizeProposal(
+    { field: 'nextDueAt', value: '2026-08-01T00:00:00Z', reason: 'Missed it' },
+    { nextDueAt: '2026-12-01T00:00:00Z' },
+  );
+  assert.strictEqual(p.to, '2026-08-01T00:00:00.000Z');
+});
+
+test('a due date a year out is refused', () => {
+  const next = new Date(Date.now() + 400 * 86400000).toISOString();
+  assert.strictEqual(
+    sanitizeProposal({ field: 'nextDueAt', value: next, reason: 'r' }, {}),
+    null,
+  );
+});
+
+test('the interval is untouched by moving the date', () => {
+  // The rhythm and the next occurrence are different things: "water today, keep
+  // the schedule" has to be expressible without rewriting the rhythm.
+  const p = sanitizeProposal(
+    { field: 'nextDueAt', value: new Date().toISOString(), reason: 'Dry already' },
+    { wateringIntervalDays: 9, lastWateredAt: '2026-08-01T00:00:00Z' },
+  );
+  assert.strictEqual(p.field, 'nextDueAt');
+  assert.ok(!Object.prototype.hasOwnProperty.call(p, 'wateringIntervalDays'));
+});

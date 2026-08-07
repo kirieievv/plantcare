@@ -3193,4 +3193,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get careDiscussWithAssistant => 'Discuss with the assistant';
+
+  @override
+  String get chatProposalNextWatering => 'Next watering';
+
+  @override
+  String get chatProposalToday => 'today';
 }

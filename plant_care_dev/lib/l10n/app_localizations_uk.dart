@@ -3223,4 +3223,10 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get careDiscussWithAssistant => 'Обговорити з асистентом';
+
+  @override
+  String get chatProposalNextWatering => 'Наступний полив';
+
+  @override
+  String get chatProposalToday => 'сьогодні';
 }

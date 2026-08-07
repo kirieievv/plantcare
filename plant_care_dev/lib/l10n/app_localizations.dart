@@ -5601,6 +5601,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discuss with the assistant'**
   String get careDiscussWithAssistant;
+
+  /// No description provided for @chatProposalNextWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Next watering'**
+  String get chatProposalNextWatering;
+
+  /// No description provided for @chatProposalToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get chatProposalToday;
 }
 
 class _AppLocalizationsDelegate

@@ -74,6 +74,11 @@ const PROPOSABLE_FIELDS = {
   // Set only through a confirmed proposal — there is no toggle for it in the
   // app. An absence is agreed in conversation or not at all.
   tasksPausedUntil: { type: 'date', maxDaysAhead: MAX_PAUSE_DAYS },
+  // When the next watering is due. The health check has always been able to
+  // move this; the chat could not, so "the soil is dry, let us water today"
+  // had no way of being expressed — no interval counted from a watering six
+  // days ago can land on today.
+  nextDueAt: { type: 'dueDate', maxDaysAhead: 120 },
 };
 
 /** Compact shape handed to the model, so it does not have to guess types. */
@@ -84,6 +89,7 @@ const PROPOSABLE_FIELDS_HINT = Object.fromEntries(
       case 'int': return [field, `integer ${spec.min}-${spec.max}`];
       case 'bool': return [field, 'true|false'];
       case 'date': return [field, `ISO date, at most ${spec.maxDaysAhead} days ahead`];
+      case 'dueDate': return [field, "ISO date — today's date moves the watering to today"];
       default: return [field, `string, max ${spec.max} chars`];
     }
   }),
@@ -105,6 +111,28 @@ function coerce(spec, raw) {
       if (raw === 'true') return true;
       if (raw === 'false') return false;
       return null;
+    }
+    case 'dueDate': {
+      const at = Date.parse(raw);
+      if (Number.isNaN(at)) return null;
+
+      // Start of the day, not a time within it. "Water today" means the whole
+      // day is fair game: the app shows its watering button once the due date
+      // is no longer in the future, so an afternoon timestamp would keep the
+      // button hidden until the afternoon.
+      const day = new Date(at);
+      day.setUTCHours(0, 0, 0, 0);
+      let due = day.getTime();
+
+      // Far enough east, the start of the owner's today is still ahead of us in
+      // UTC, and "today" would arrive as a date they cannot act on yet. A day
+      // either side is close enough to mean now.
+      if (due > Date.now() && due - Date.now() < 86400000) due = Date.now();
+
+      const daysAhead = (due - Date.now()) / 86400000;
+      if (daysAhead > spec.maxDaysAhead) return null;
+      // The past is allowed and meaningful: an overdue plant is overdue.
+      return new Date(due).toISOString();
     }
     case 'date': {
       const at = Date.parse(raw);
