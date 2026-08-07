@@ -1906,7 +1906,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeGardenTitleAccent => 'Garten';
 
   @override
-  String get gardenHealthLabel => 'Gartengesundheit';
+  String get gardenHealthLabel => 'Garten-Index';
 
   @override
   String get gardenAllGood => 'Allen Pflanzen geht es gut';

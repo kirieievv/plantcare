@@ -876,7 +876,7 @@
   "taskAskQuestion": "Was ist bei der Aufgabe „{title}“ zu tun?",
   "homeGardenTitleLead": "Dein",
   "homeGardenTitleAccent": "Garten",
-  "gardenHealthLabel": "Gartengesundheit",
+  "gardenHealthLabel": "Garten-Index",
   "gardenAllGood": "Allen Pflanzen geht es gut",
   "gardenOneWeak": "{name} zieht den Garten runter",
   "gardenManyWeak": "{count, plural, =1{1 Pflanze braucht deine Pflege} other{{count} Pflanzen brauchen deine Pflege}}",
