@@ -247,7 +247,15 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
                       child: CircularProgressIndicator(color: kGlassAccent),
                     )
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                      // Room for the floating tab bar, measured rather than guessed:
+                      // the hand-counted 120 fell short of the 125 the bar occupies on a
+                      // phone with a home indicator, clipping the last row.
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        8,
+                        16,
+                        16 + MediaQuery.of(context).padding.bottom,
+                      ),
                       children: [
                         _account(),
                         BotanlySectionLabel(l10n.preferences),

@@ -378,7 +378,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: l10n.pullToRefreshHint,
                 child: ListView(
                   controller: _scroll,
-                  padding: const EdgeInsets.fromLTRB(16, 56, 16, 104),
+                  // The tab bar floats over the content, so the list has to
+                  // leave room for it. 104 was counted by hand and was wrong on
+                  // any phone with a home indicator, where the bar occupies 125
+                  // — the last plant card sat under it and no amount of
+                  // scrolling would free it. The Scaffold measures the bar for
+                  // us and reports it here, home indicator included.
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    56,
+                    16,
+                    16 + MediaQuery.of(context).padding.bottom,
+                  ),
                   physics: const AlwaysScrollableScrollPhysics(
                     parent: ClampingScrollPhysics(),
                   ),
