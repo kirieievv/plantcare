@@ -30,6 +30,7 @@ import 'package:plant_care/theme/botanly_glass.dart';
 import 'package:plant_care/services/language_service.dart';
 import 'package:plant_care/utils/care_sections.dart';
 import 'package:plant_care/utils/chat_topics.dart';
+import 'package:plant_care/utils/watering_due.dart';
 import 'package:plant_care/widgets/botanly_sheet.dart';
 import 'package:plant_care/widgets/health_result_view.dart';
 import 'package:plant_care/widgets/task_sheet.dart';
@@ -767,8 +768,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
 
   bool _canWaterPlant() {
     if (_wateredJustNow) return false;
-    if (_plant.shouldWaterNow) return true;
-    return !_nextWateringDate().isAfter(DateTime.now());
+    return wateringIsDue(_plant, DateTime.now());
   }
 
   /// True until the first watering is actually logged.
