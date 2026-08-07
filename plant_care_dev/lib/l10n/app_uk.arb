@@ -1527,5 +1527,10 @@
   },
   "careDiscussWithAssistant": "Обговорити з асистентом",
   "chatProposalNextWatering": "Наступний полив",
-  "chatProposalToday": "сьогодні"
+  "chatProposalToday": "сьогодні",
+  "cityPickerHint": "Почни вводити місто",
+  "cityPickerStartTyping": "Введи щонайменше дві літери",
+  "cityPickerSearching": "Шукаємо…",
+  "cityPickerNothingFound": "Місто з такою назвою не знайдено",
+  "cityUpdated": "Місто оновлено"
 }

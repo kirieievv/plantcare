@@ -1527,5 +1527,10 @@
   },
   "careDiscussWithAssistant": "Обсудить с ассистентом",
   "chatProposalNextWatering": "Следующий полив",
-  "chatProposalToday": "сегодня"
+  "chatProposalToday": "сегодня",
+  "cityPickerHint": "Начни вводить город",
+  "cityPickerStartTyping": "Введи хотя бы две буквы",
+  "cityPickerSearching": "Ищем…",
+  "cityPickerNothingFound": "Город с таким названием не найден",
+  "cityUpdated": "Город обновлён"
 }

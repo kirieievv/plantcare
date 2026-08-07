@@ -670,15 +670,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen>
       // live navigator, and `mounted` alone has proven unreliable here.
       final navigator = Navigator.of(context, rootNavigator: true);
 
+      // A soft delete, and nothing else: the plant's tasks, conversation, facts
+      // and memory all stay. Deleting them here used to look like tidiness, but
+      // a plant's history is worth keeping, and every screen that lists tasks
+      // already intersects them with the plants the user has — so none of it
+      // comes back to haunt the deck by being left in place.
       await PlantService().deletePlant(_plant.id);
-      // Without this the plant's tasks outlive it: the deck hides them because
-      // it drops tasks whose plant is gone, but they keep loading, keep
-      // counting on the all-tasks screen and never expire on their own.
-      try {
-        await TaskService().deleteForPlant(_plant.id);
-      } catch (e) {
-        debugPrint('⚠️ Could not clear tasks of the deleted plant: $e');
-      }
 
       // No farewell toast, on purpose. Announcing the deletion means asking a
       // ScaffoldMessenger to show a snack bar from a screen that is about to be

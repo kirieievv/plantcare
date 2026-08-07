@@ -1527,5 +1527,10 @@
   },
   "careDiscussWithAssistant": "Mit dem Assistenten besprechen",
   "chatProposalNextWatering": "Nächstes Gießen",
-  "chatProposalToday": "heute"
+  "chatProposalToday": "heute",
+  "cityPickerHint": "Stadt eingeben",
+  "cityPickerStartTyping": "Mindestens zwei Buchstaben eingeben",
+  "cityPickerSearching": "Wird gesucht …",
+  "cityPickerNothingFound": "Keine Stadt mit diesem Namen gefunden",
+  "cityUpdated": "Stadt aktualisiert"
 }

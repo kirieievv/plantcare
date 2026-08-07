@@ -1527,5 +1527,10 @@
   },
   "careDiscussWithAssistant": "En parler à l’assistant",
   "chatProposalNextWatering": "Prochain arrosage",
-  "chatProposalToday": "aujourd’hui"
+  "chatProposalToday": "aujourd’hui",
+  "cityPickerHint": "Commencez à saisir une ville",
+  "cityPickerStartTyping": "Saisissez au moins deux lettres",
+  "cityPickerSearching": "Recherche…",
+  "cityPickerNothingFound": "Aucune ville trouvée sous ce nom",
+  "cityUpdated": "Ville mise à jour"
 }

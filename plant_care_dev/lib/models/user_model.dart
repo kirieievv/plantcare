@@ -56,8 +56,13 @@ class UserModel {
       uid: map['uid'] ?? '',
       email: map['email'] ?? '',
       name: map['name'] ?? '',
-      bio: map['bio'],
-      location: map['location'],
+      bio: map['bio'] is String ? map['bio'] as String : null,
+      // Type-checked rather than cast. This field once collided with the
+      // weather module's own `location` — an object landed where a string was
+      // expected, `fromMap` threw, and the caller's catch turned the whole
+      // profile into null: the name saved fine and then rendered as a dash.
+      // One malformed field must not cost the user their entire profile.
+      location: map['location'] is String ? map['location'] as String : null,
       createdAt: _parseTimestamp(map['createdAt']),
       lastLogin: _parseTimestamp(map['lastLogin']),
       updatedAt: _parseTimestamp(map['updatedAt']),

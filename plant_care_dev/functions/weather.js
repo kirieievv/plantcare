@@ -206,7 +206,7 @@ async function locationOf(userId) {
   if (!userId) return null;
   try {
     const snap = await admin.firestore().collection('users').doc(userId).get();
-    const loc = snap.data()?.location;
+    const loc = snap.data()?.geo;
     if (!loc || !Number.isFinite(loc.lat) || !Number.isFinite(loc.lon)) {
       return null;
     }
@@ -215,6 +215,40 @@ async function locationOf(userId) {
     console.warn(`⚠️ weather: could not read location for ${userId}: ${e}`);
     return null;
   }
+}
+
+/**
+ * City suggestions for a typed prefix, in the user's language.
+ *
+ * Doubles as the geocoder: each hit carries its own coordinates, which is what
+ * makes a manually chosen city actually change the weather. Typing a name
+ * without resolving it would store a label and keep the old sky.
+ *
+ * No dictionary of our own (SPEC 6.2): the provider localises the names, so
+ * "Munich" comes back as "Мюнхен" in Russian and "München" in German without us
+ * maintaining a translation table that would rot.
+ */
+async function searchCities(query, language = 'en', count = 6) {
+  const name = String(query || '').trim();
+  if (name.length < 2) return [];
+
+  const url =
+    'https://geocoding-api.open-meteo.com/v1/search' +
+    `?name=${encodeURIComponent(name)}` +
+    `&count=${Math.min(Math.max(count, 1), 10)}` +
+    `&language=${encodeURIComponent(language)}&format=json`;
+
+  const body = await getJson(url);
+  return (body.results || []).map((r) => ({
+    city: r.name,
+    // Region and country disambiguate the four Springfields.
+    region: r.admin1 || null,
+    country: r.country || null,
+    countryCode: r.country_code || null,
+    lat: round(r.latitude),
+    lon: round(r.longitude),
+    timezone: r.timezone || null,
+  }));
 }
 
 const CONDITION_WORDS = {
@@ -279,6 +313,7 @@ module.exports = {
   describeWeather,
   locationOf,
   lookupCityByIp,
+  searchCities,
   weatherForCity,
   weatherSnapshot,
 };

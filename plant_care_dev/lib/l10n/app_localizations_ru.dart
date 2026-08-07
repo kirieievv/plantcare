@@ -99,8 +99,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get wateringReminders => 'Напоминания о поливе';
 
   @override
-  String get getNotifiedWhenPlantsNeedWater =>
-      'Получайте уведомления, когда растениям нужен полив';
+  String get getNotifiedWhenPlantsNeedWater => 'Получайте уведомления, когда растениям нужен полив';
 
   @override
   String get quietHours => 'Тихие часы';
@@ -134,8 +133,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get testNotifications => 'Тест уведомлений';
 
   @override
-  String get checkNotificationSetupAndPermissions =>
-      'Проверить настройки и разрешения уведомлений';
+  String get checkNotificationSetupAndPermissions => 'Проверить настройки и разрешения уведомлений';
 
   @override
   String get language => 'Язык';
@@ -396,8 +394,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get pleaseUploadPlantImage => 'Пожалуйста, загрузите фото растения';
 
   @override
-  String get pleaseWaitForAiAnalysisBeforeAddingPlant =>
-      'Подождите завершения ИИ-анализа перед добавлением растения';
+  String get pleaseWaitForAiAnalysisBeforeAddingPlant => 'Подождите завершения ИИ-анализа перед добавлением растения';
 
   @override
   String get plantLowercase => 'растение';
@@ -512,12 +509,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get plantChatRequestFailed => 'Запрос к чату не выполнен';
 
   @override
-  String get plantChatCouldNotGenerateResponse =>
-      'Не удалось сгенерировать ответ. Попробуйте ещё раз.';
+  String get plantChatCouldNotGenerateResponse => 'Не удалось сгенерировать ответ. Попробуйте ещё раз.';
 
   @override
-  String get plantChatConnectionError =>
-      'Что-то пошло не так при соединении с помощником. Попробуйте ещё раз.';
+  String get plantChatConnectionError => 'Что-то пошло не так при соединении с помощником. Попробуйте ещё раз.';
 
   @override
   String get plantChatQuickWaterToday => 'Можно ли полить сегодня?';
@@ -529,8 +524,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get plantChatQuickWhatToDoNow => 'Что делать прямо сейчас?';
 
   @override
-  String get plantChatImageQuotaReached =>
-      'Дневной лимит фото достигнут. Попробуйте завтра.';
+  String get plantChatImageQuotaReached => 'Дневной лимит фото достигнут. Попробуйте завтра.';
 
   @override
   String get splashTagline => 'Умный уход за растениями';
@@ -539,8 +533,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get getStarted => 'Начать';
 
   @override
-  String get splashDescription =>
-      'Следите за растениями, получайте персонализированные советы\nи отслеживайте их здоровье — всё в одном месте.';
+  String get splashDescription => 'Следите за растениями, получайте персонализированные советы\nи отслеживайте их здоровье — всё в одном месте.';
 
   @override
   String get forgotPassword => 'Забыли пароль?';
@@ -555,8 +548,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorPinNotFound => 'Код не найден. Запросите новый.';
 
   @override
-  String get errorTooManyAttempts =>
-      'Слишком много попыток. Запросите новый код.';
+  String get errorTooManyAttempts => 'Слишком много попыток. Запросите новый код.';
 
   @override
   String get errorSendFailed => 'Не удалось отправить код. Попробуйте ещё раз.';
@@ -574,8 +566,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get resetYourPassword => 'Восстановить пароль';
 
   @override
-  String get enterEmailForCode =>
-      'Введите email аккаунта, чтобы получить код подтверждения.';
+  String get enterEmailForCode => 'Введите email аккаунта, чтобы получить код подтверждения.';
 
   @override
   String get sendCode => 'Отправить код';
@@ -587,8 +578,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get weSentACodeTo => 'Мы отправили 6-значный код на';
 
   @override
-  String get verificationCodeSentAgain =>
-      'Код подтверждения отправлен повторно.';
+  String get verificationCodeSentAgain => 'Код подтверждения отправлен повторно.';
 
   @override
   String resendCodeInSeconds(int seconds) {
@@ -608,8 +598,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get updatePassword => 'Обновить пароль';
 
   @override
-  String get passwordResetSuccess =>
-      'Пароль успешно сброшен. Пожалуйста, войдите.';
+  String get passwordResetSuccess => 'Пароль успешно сброшен. Пожалуйста, войдите.';
 
   @override
   String get totalPlants => 'Всего растений';
@@ -645,8 +634,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get edit => 'Редактировать';
 
   @override
-  String get wateringRemindersBlockSub =>
-      'Получайте уведомления о поливе растений.';
+  String get wateringRemindersBlockSub => 'Получайте уведомления о поливе растений.';
 
   @override
   String get emailRemindersTitle => 'Email-напоминания';
@@ -709,8 +697,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get snapTitle => 'Сделайте фото';
 
   @override
-  String get snapDescription =>
-      'Чёткое фото поможет нашему ИИ определить\nваше растение и подобрать уход';
+  String get snapDescription => 'Чёткое фото поможет нашему ИИ определить\nваше растение и подобрать уход';
 
   @override
   String get useCamera => 'Камера';
@@ -725,8 +712,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get couldntIdentify => 'Не удалось определить растение';
 
   @override
-  String get tryAnotherPhoto =>
-      'Попробуйте другое фото или введите вид вручную ниже.';
+  String get tryAnotherPhoto => 'Попробуйте другое фото или введите вид вручную ниже.';
 
   @override
   String get topMatch => 'Лучшее совпадение';
@@ -834,8 +820,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get pushNotifications => 'Push-уведомления';
 
   @override
-  String get pushNotificationsSubtitle =>
-      'Уведомления в приложении (iOS / Android)';
+  String get pushNotificationsSubtitle => 'Уведомления в приложении (iOS / Android)';
 
   @override
   String wateringOverdueNDays(int days) {
@@ -870,8 +855,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get recommendedActionsLabel => 'Рекомендуемые действия:';
 
   @override
-  String get healthAlertNote =>
-      'Уведомление будет отображаться до тех пор, пока следующая проверка не вернёт статус OK';
+  String get healthAlertNote => 'Уведомление будет отображаться до тех пор, пока следующая проверка не вернёт статус OK';
 
   @override
   String get addHealthCheckTooltip => 'Добавить проверку здоровья';
@@ -880,8 +864,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noHealthChecksYet => 'Проверок здоровья пока нет';
 
   @override
-  String get uploadPhotosToTrackHealth =>
-      'Загружайте фото для отслеживания здоровья растения';
+  String get uploadPhotosToTrackHealth => 'Загружайте фото для отслеживания здоровья растения';
 
   @override
   String get today => 'Сегодня';
@@ -934,15 +917,13 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get chatPhotoQuotaExhausted =>
-      'Дневной лимит фото достигнут. Попробуйте завтра.';
+  String get chatPhotoQuotaExhausted => 'Дневной лимит фото достигнут. Попробуйте завтра.';
 
   @override
   String get chatPhotoUploading => 'Загрузка фото...';
 
   @override
-  String get chatPhotoUploadFailed =>
-      'Не удалось загрузить фото. Попробуйте ещё раз.';
+  String get chatPhotoUploadFailed => 'Не удалось загрузить фото. Попробуйте ещё раз.';
 
   @override
   String get chatRemovePhoto => 'Удалить фото';
@@ -954,8 +935,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatClearHistory => 'Новый чат';
 
   @override
-  String get chatClearHistoryConfirm =>
-      'Начать новый разговор? История будет удалена.';
+  String get chatClearHistoryConfirm => 'Начать новый разговор? История будет удалена.';
 
   @override
   String get chatClearHistorySuccess => 'Новый разговор начат.';
@@ -987,8 +967,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get imageReadyForAnalysis =>
-      'Фото загружено! Готово к анализу здоровья.';
+  String get imageReadyForAnalysis => 'Фото загружено! Готово к анализу здоровья.';
 
   @override
   String get healthCheckTitle => 'Проверка здоровья';
@@ -1005,8 +984,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deletePlant => 'Удалить растение';
 
   @override
-  String get deletePlantConfirm =>
-      'Вы уверены, что хотите удалить это растение?';
+  String get deletePlantConfirm => 'Вы уверены, что хотите удалить это растение?';
 
   @override
   String get delete => 'Удалить';
@@ -1030,12 +1008,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get interestingFactsTitle => 'Интересные факты';
 
   @override
-  String get noCareRecommendationsYet =>
-      'Рекомендации по уходу от ИИ пока недоступны для этого растения.';
+  String get noCareRecommendationsYet => 'Рекомендации по уходу от ИИ пока недоступны для этого растения.';
 
   @override
-  String get noInterestingFactsYet =>
-      'Интересные факты от ИИ пока недоступны для этого растения.';
+  String get noInterestingFactsYet => 'Интересные факты от ИИ пока недоступны для этого растения.';
 
   @override
   String get noDescriptionYet => 'Описание ещё не добавлено.';
@@ -1044,8 +1020,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get swipeToSeeMore => 'Листайте, чтобы увидеть больше';
 
   @override
-  String get uploadPhotosForHealthHistory =>
-      'Загружайте фото для отслеживания здоровья растения';
+  String get uploadPhotosForHealthHistory => 'Загружайте фото для отслеживания здоровья растения';
 
   @override
   String plantDeletedMessage(Object plantName) {
@@ -1056,8 +1031,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noImageAvailable => 'Фото недоступно';
 
   @override
-  String get addPhotoToSeeYourPlant =>
-      'Добавьте фото, чтобы видеть своё растение';
+  String get addPhotoToSeeYourPlant => 'Добавьте фото, чтобы видеть своё растение';
 
   @override
   String get isThisYourPlant => 'Это ваше растение?';
@@ -1069,15 +1043,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noneOfThese => 'Ни один не подходит';
 
   @override
-  String get typePlantNameRetry =>
-      'Введите название растения, и мы попробуем снова';
+  String get typePlantNameRetry => 'Введите название растения, и мы попробуем снова';
 
   @override
   String get gettingCareRecommendations => 'Получаем рекомендации по уходу';
 
   @override
-  String get imageUploadedAnalysisComplete =>
-      'Фото загружено! ИИ-анализ завершён.';
+  String get imageUploadedAnalysisComplete => 'Фото загружено! ИИ-анализ завершён.';
 
   @override
   String get aiCareRecommendationsHeader => 'Рекомендации по уходу от ИИ';
@@ -1149,8 +1121,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get bannerWaterSubtitle =>
-      'Нажмите, чтобы полить или посмотреть детали';
+  String get bannerWaterSubtitle => 'Нажмите, чтобы полить или посмотреть детали';
 
   @override
   String get bannerTipTitle => 'Совет дня';
@@ -1162,8 +1133,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get tipsOfTheDay => 'Советы дня';
 
   @override
-  String get tipsOfTheDaySub =>
-      'Сезонные советы от ИИ · обновляются еженедельно';
+  String get tipsOfTheDaySub => 'Сезонные советы от ИИ · обновляются еженедельно';
 
   @override
   String get tipCategoryWatering => 'Полив';
@@ -1231,8 +1201,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get subscriptionExpiredMessage =>
-      'Ваша подписка истекла. Оформите подписку, чтобы продолжить.';
+  String get subscriptionExpiredMessage => 'Ваша подписка истекла. Оформите подписку, чтобы продолжить.';
 
   @override
   String get subscriptionPlantLimitReached => 'Лимит растений достигнут';
@@ -1243,12 +1212,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get subscriptionPlantLimitBannerExpired =>
-      'Оформите подписку, чтобы добавлять растения.';
+  String get subscriptionPlantLimitBannerExpired => 'Оформите подписку, чтобы добавлять растения.';
 
   @override
-  String get subscriptionReadOnlyNotice =>
-      'Режим чтения. Оформите подписку для редактирования.';
+  String get subscriptionReadOnlyNotice => 'Режим чтения. Оформите подписку для редактирования.';
 
   @override
   String get paywallTitle => 'Открыть Premium';
@@ -1298,8 +1265,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get paywallRestoreAlreadyActive => 'Ваша подписка уже активна.';
 
   @override
-  String get paywallTerms =>
-      'Подписка автоматически продлевается. Отмените в любое время в настройках App Store.';
+  String get paywallTerms => 'Подписка автоматически продлевается. Отмените в любое время в настройках App Store.';
 
   @override
   String get paywallLoading => 'Загружаем планы…';
@@ -1314,8 +1280,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get paywallHeroTitle => 'Расти без ограничений.';
 
   @override
-  String get paywallHeroDescription =>
-      'Ваш персональный ИИ-ассистент — напоминания о поливе, проверка здоровья, сезонные советы и всё необходимое для процветания ваших растений.';
+  String get paywallHeroDescription => 'Ваш персональный ИИ-ассистент — напоминания о поливе, проверка здоровья, сезонные советы и всё необходимое для процветания ваших растений.';
 
   @override
   String get paywallChoosePlan => 'ВЫБЕРИТЕ ПЛАН';
@@ -1347,8 +1312,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stripeSuccessWaiting => 'Активируем вашу подписку';
 
   @override
-  String get stripeSuccessSubtitle =>
-      'Добро пожаловать в Botanly Premium! Теперь у вас есть доступ ко всем функциям.';
+  String get stripeSuccessSubtitle => 'Добро пожаловать в Botanly Premium! Теперь у вас есть доступ ко всем функциям.';
 
   @override
   String get stripeSuccessButton => 'К моим растениям';
@@ -1409,8 +1373,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deleteAccountSubtitle => 'Навсегда отключить ваш аккаунт';
 
   @override
-  String get deleteAccountConfirmBody =>
-      'Ваш аккаунт будет навсегда отключён, и вы потеряете доступ к приложению. Данные о ваших растениях будут сохранены.\n\nЭто действие нельзя отменить.';
+  String get deleteAccountConfirmBody => 'Ваш аккаунт будет навсегда отключён, и вы потеряете доступ к приложению. Данные о ваших растениях будут сохранены.\n\nЭто действие нельзя отменить.';
 
   @override
   String get deleteAccountAreYouSure => 'Вы уверены?';
@@ -1474,8 +1437,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get subActiveSubscription => 'Активная подписка';
 
   @override
-  String get subGrantedEarlyMember =>
-      'Предоставлен как раннему участнику Botanly';
+  String get subGrantedEarlyMember => 'Предоставлен как раннему участнику Botanly';
 
   @override
   String get subDaysLeft => 'дней осталось';
@@ -1490,8 +1452,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get subAutoRenewOn => 'Автопродление включено  ·  Можно отменить';
 
   @override
-  String get subAutoRenewOff =>
-      'Автопродление выключено  ·  Доступ до истечения';
+  String get subAutoRenewOff => 'Автопродление выключено  ·  Доступ до истечения';
 
   @override
   String get subDetails => 'Детали';
@@ -1500,15 +1461,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get subReactivate => 'Возобновить';
 
   @override
-  String get subNoChargesEver =>
-      'Без оплаты навсегда  ·  Все возможности открыты';
+  String get subNoChargesEver => 'Без оплаты навсегда  ·  Все возможности открыты';
 
   @override
   String get subLimitedAccess => 'Ограниченный доступ  ·  Без AI-ухода';
 
   @override
-  String get subUnlimitedAccess =>
-      'Без ограничений  ·  AI-уход  ·  Напоминания';
+  String get subUnlimitedAccess => 'Без ограничений  ·  AI-уход  ·  Напоминания';
 
   @override
   String get subHeroYourePrefix => 'Вы ';
@@ -1553,12 +1512,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get manageInAppStore => 'Управление в App Store';
 
   @override
-  String get manageBillingSubtitleWeb =>
-      'Отмените, обновите карту или просмотрите счета\nчерез портал Stripe.';
+  String get manageBillingSubtitleWeb => 'Отмените, обновите карту или просмотрите счета\nчерез портал Stripe.';
 
   @override
-  String get manageBillingSubtitleAppStore =>
-      'Для отключения автопродления или отмены перейдите\nв подписки App Store.';
+  String get manageBillingSubtitleAppStore => 'Для отключения автопродления или отмены перейдите\nв подписки App Store.';
 
   @override
   String get tipGoodLight => 'хорошее освещение';
@@ -1585,8 +1542,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get specificIssues => 'Специфические проблемы';
 
   @override
-  String get healthCheckPhotoHint =>
-      'Добавьте до 3 фото — чем больше ракурсов, тем точнее анализ. Обязательно только первое фото.';
+  String get healthCheckPhotoHint => 'Добавьте до 3 фото — чем больше ракурсов, тем точнее анализ. Обязательно только первое фото.';
 
   @override
   String healthCheckPhotoCounter(int count) {
@@ -1597,8 +1553,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get healthCheckSlot1Title => 'Растение целиком';
 
   @override
-  String get healthCheckSlot1Desc =>
-      'Снимите растение полностью вместе с горшком — чтобы было видно землю и весь горшок.';
+  String get healthCheckSlot1Desc => 'Снимите растение полностью вместе с горшком — чтобы было видно землю и весь горшок.';
 
   @override
   String get healthCheckSlot1Tag => 'Обязательно';
@@ -1607,8 +1562,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get healthCheckSlot2Title => 'Крупный план';
 
   @override
-  String get healthCheckSlot2Desc =>
-      'Поднесите камеру ближе, без горшка — чтобы чётко видны листья и их фактура.';
+  String get healthCheckSlot2Desc => 'Поднесите камеру ближе, без горшка — чтобы чётко видны листья и их фактура.';
 
   @override
   String get healthCheckSlot2Tag => 'По желанию';
@@ -1617,8 +1571,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get healthCheckSlot3Title => 'Проблемная зона';
 
   @override
-  String get healthCheckSlot3Desc =>
-      'Хотите показать что-то отдельно? Сфотографируйте пятно, вредителя или повреждённый лист.';
+  String get healthCheckSlot3Desc => 'Хотите показать что-то отдельно? Сфотографируйте пятно, вредителя или повреждённый лист.';
 
   @override
   String get healthCheckSlot3Tag => 'По желанию';
@@ -1629,16 +1582,13 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get healthCheckError =>
-      'Анализ не выполнен. Пожалуйста, попробуйте ещё раз.';
+  String get healthCheckError => 'Анализ не выполнен. Пожалуйста, попробуйте ещё раз.';
 
   @override
-  String get healthCheckDefaultPraise =>
-      '🌱 Ваше растение чувствует себя хорошо!';
+  String get healthCheckDefaultPraise => '🌱 Ваше растение чувствует себя хорошо!';
 
   @override
-  String get healthCheckDefaultFooter =>
-      'Продолжайте ухаживать за растением согласно рекомендациям и отмечайте, когда поливаете.';
+  String get healthCheckDefaultFooter => 'Продолжайте ухаживать за растением согласно рекомендациям и отмечайте, когда поливаете.';
 
   @override
   String get addPlantWholePlantTitle => 'Растение целиком';
@@ -1659,8 +1609,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPlantCloseUpTag => 'По желанию';
 
   @override
-  String get addPlantDualHint =>
-      'Два ракурса помогут ИИ точнее определить ваше растение.';
+  String get addPlantDualHint => 'Два ракурса помогут ИИ точнее определить ваше растение.';
 
   @override
   String get addPlantAnalyzeButton => 'Анализировать растение';
@@ -1678,8 +1627,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPlantAnalyzingTitle => 'Анализируем ваше растение';
 
   @override
-  String get addPlantAnalyzingSubtitle =>
-      'Обычно это занимает несколько секунд…';
+  String get addPlantAnalyzingSubtitle => 'Обычно это занимает несколько секунд…';
 
   @override
   String get addPlantAnalysisComplete => 'Анализ завершён';
@@ -1703,8 +1651,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboarding1TitleItalic => 'Botanly';
 
   @override
-  String get onboarding1Body =>
-      'Ваш ИИ-помощник для счастливых и здоровых растений — всегда под рукой.';
+  String get onboarding1Body => 'Ваш ИИ-помощник для счастливых и здоровых растений — всегда под рукой.';
 
   @override
   String get onboarding2Eyebrow => 'Определение';
@@ -1716,8 +1663,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboarding2TitleItalic => 'любое растение';
 
   @override
-  String get onboarding2Body =>
-      'Наведите камеру — ИИ определит вид, название и всё остальное за секунды.';
+  String get onboarding2Body => 'Наведите камеру — ИИ определит вид, название и всё остальное за секунды.';
 
   @override
   String get onboarding3Eyebrow => 'Уход';
@@ -1729,8 +1675,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboarding3TitleItalic => 'проще';
 
   @override
-  String get onboarding3Body =>
-      'Напоминания о поливе, освещении и почве — точно настроенные под каждое растение.';
+  String get onboarding3Body => 'Напоминания о поливе, освещении и почве — точно настроенные под каждое растение.';
 
   @override
   String get onboarding4Eyebrow => 'Проверка здоровья';
@@ -1742,8 +1687,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboarding4TitleItalic => 'вовремя';
 
   @override
-  String get onboarding4Body =>
-      'Сфотографируйте — получите мгновенную проверку здоровья и чёткий план лечения.';
+  String get onboarding4Body => 'Сфотографируйте — получите мгновенную проверку здоровья и чёткий план лечения.';
 
   @override
   String get onboarding5Eyebrow => 'Готово';
@@ -1755,8 +1699,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboarding5TitleItalic => 'расти вместе';
 
   @override
-  String get onboarding5Body =>
-      'Создайте свою коллекцию и никогда ничего не пропускайте. Ваша самая зелёная эра начинается сейчас.';
+  String get onboarding5Body => 'Создайте свою коллекцию и никогда ничего не пропускайте. Ваша самая зелёная эра начинается сейчас.';
 
   @override
   String get tabCare => 'Уход';
@@ -1795,8 +1738,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noDataAvailable => 'Пока нет данных';
 
   @override
-  String get healthCheckHistoryEmptyHint =>
-      'Загружай фото раз в пару недель — соберём таймлайн состояния растения';
+  String get healthCheckHistoryEmptyHint => 'Загружай фото раз в пару недель — соберём таймлайн состояния растения';
 
   @override
   String milliliters(int count) {
@@ -1887,8 +1829,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get healthAddedToPlan => 'Добавлено в план';
 
   @override
-  String get healthLockedNeedsWatering =>
-      'Отметьте полив, чтобы проверить снова';
+  String get healthLockedNeedsWatering => 'Отметьте полив, чтобы проверить снова';
 
   @override
   String get healthLockedLimitReached => 'Проверки на этот цикл исчерпаны';
@@ -2048,8 +1989,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get allTasksLater => 'Дальше';
 
   @override
-  String get allTasksRuleNote =>
-      'Новые задачи не появятся, пока не разберёшься с сегодняшними.';
+  String get allTasksRuleNote => 'Новые задачи не появятся, пока не разберёшься с сегодняшними.';
 
   @override
   String get allTasksNothingToday => 'На сегодня всё закрыто';
@@ -2083,12 +2023,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get healthAskQuestionIssue =>
-      'Что сделать по результатам анализа в первую очередь?';
+  String get healthAskQuestionIssue => 'Что сделать по результатам анализа в первую очередь?';
 
   @override
-  String get healthAskQuestionOk =>
-      'Анализ показал, что растение здорово — что можно улучшить?';
+  String get healthAskQuestionOk => 'Анализ показал, что растение здорово — что можно улучшить?';
 
   @override
   String get glassesOne => '1 стакан';
@@ -2110,8 +2048,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPlantTitleAccent => 'растение';
 
   @override
-  String get addPlantNameHint =>
-      'Как будешь звать этот цветок — Моня, Фикусыч, Monstera. Кубик придумает за тебя.';
+  String get addPlantNameHint => 'Как будешь звать этот цветок — Моня, Фикусыч, Monstera. Кубик придумает за тебя.';
 
   @override
   String get addPlantPhotosTitle => 'Фотографии';
@@ -2126,8 +2063,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPlantRequired => 'Нужно';
 
   @override
-  String get addPlantTwoAnglesHint =>
-      'Два ракурса помогают точнее определить вид — второе фото не обязательно, но повышает точность.';
+  String get addPlantTwoAnglesHint => 'Два ракурса помогают точнее определить вид — второе фото не обязательно, но повышает точность.';
 
   @override
   String get addPlantTipLight => 'хороший свет';
@@ -2142,22 +2078,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPlantIdentifyCta => 'Определить вид';
 
   @override
-  String get addPlantRandomNames =>
-      'Моня|Фикусыч|Зелёныш|Кактус Петрович|Листик|Бобо|Тихон|Пушок';
+  String get addPlantRandomNames => 'Моня|Фикусыч|Зелёныш|Кактус Петрович|Листик|Бобо|Тихон|Пушок';
 
   @override
   String get addPlantIsThisYourPlant => 'Это твоё растение?';
 
   @override
-  String get addPlantPickSpeciesHint =>
-      'Выбери подходящий вариант — от этого зависит план ухода.';
+  String get addPlantPickSpeciesHint => 'Выбери подходящий вариант — от этого зависит план ухода.';
 
   @override
   String get addPlantNoneMatch => 'Ничего не подходит — введу сам';
 
   @override
-  String get addPlantManualHint =>
-      'Введи название вида — поищем заново по нему.';
+  String get addPlantManualHint => 'Введи название вида — поищем заново по нему.';
 
   @override
   String get addPlantManualPlaceholder => 'Например, Monstera deliciosa';
@@ -2234,12 +2167,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPlantAddToGarden => 'Добавить в сад';
 
   @override
-  String get addPlantNoSpeciesFound =>
-      'Не удалось распознать растение. Попробуй другое фото.';
+  String get addPlantNoSpeciesFound => 'Не удалось распознать растение. Попробуй другое фото.';
 
   @override
-  String get addPlantNoPlan =>
-      'Не удалось составить план ухода. Попробуй ещё раз.';
+  String get addPlantNoPlan => 'Не удалось составить план ухода. Попробуй ещё раз.';
 
   @override
   String get addPlantLoaderPhotos => 'Фото получены';
@@ -2287,8 +2218,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myPlantsAllClearTitle => 'Всё в порядке';
 
   @override
-  String get myPlantsAllClearHint =>
-      'Сейчас в этой группе пусто — не о чем беспокоиться.';
+  String get myPlantsAllClearHint => 'Сейчас в этой группе пусто — не о чем беспокоиться.';
 
   @override
   String get addFirstPlantHint => 'Добавьте первое растение для начала';
@@ -2361,8 +2291,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get subscriptionAutoRenewOff => 'Выключено';
 
   @override
-  String get subscriptionManageInStore =>
-      'Списаниями управляет App Store. Изменить или отменить подписку можно в Настройках → Apple ID → Подписки.';
+  String get subscriptionManageInStore => 'Списаниями управляет App Store. Изменить или отменить подписку можно в Настройках → Apple ID → Подписки.';
 
   @override
   String get deleteAccountContinue => 'Продолжить';
@@ -2394,8 +2323,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get changePasswordHint => 'Минимум 6 символов';
 
   @override
-  String get quietHoursNeedsPush =>
-      'Включите push, чтобы использовать тихие часы';
+  String get quietHoursNeedsPush => 'Включите push, чтобы использовать тихие часы';
 
   @override
   String get quietHoursFrom => 'С';
@@ -2416,12 +2344,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get passwordTooShortError =>
-      'Новый пароль должен быть не короче 6 символов.';
+  String get passwordTooShortError => 'Новый пароль должен быть не короче 6 символов.';
 
   @override
-  String get passwordSameAsCurrentError =>
-      'Новый пароль должен отличаться от текущего.';
+  String get passwordSameAsCurrentError => 'Новый пароль должен отличаться от текущего.';
 
   @override
   String get passwordsDoNotMatchError => 'Пароли не совпадают.';
@@ -2442,19 +2368,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get revertPhoto => 'Вернуть прежнее фото';
 
   @override
-  String get editPlantNameHint =>
-      'Так растение будет называться в саду и в напоминаниях';
+  String get editPlantNameHint => 'Так растение будет называться в саду и в напоминаниях';
 
   @override
-  String get aiManagedNote =>
-      'Вид и план ухода определяет ИИ — они обновляются после нового анализа здоровья.';
+  String get aiManagedNote => 'Вид и план ухода определяет ИИ — они обновляются после нового анализа здоровья.';
 
   @override
   String get noPhotoYet => 'Фото пока нет';
 
   @override
-  String get gardenLoadError =>
-      'Не удалось загрузить сад. Проверь соединение и попробуй ещё раз.';
+  String get gardenLoadError => 'Не удалось загрузить сад. Проверь соединение и попробуй ещё раз.';
 
   @override
   String get pullToRefreshHint => 'Потяни вниз, чтобы обновить';
@@ -2520,8 +2443,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get quizPotQuestionAccent => 'диаметра';
 
   @override
-  String get quizPotWhy =>
-      'От объёма грунта зависит, сколько воды нужно за один полив.';
+  String get quizPotWhy => 'От объёма грунта зависит, сколько воды нужно за один полив.';
 
   @override
   String get quizPotHint => 'Диаметр по краю горшка, а не по растению.';
@@ -2553,8 +2475,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get quizMaterialQuestionAccent => 'дренаж';
 
   @override
-  String get quizMaterialWhy =>
-      'Терракота сохнет вдвое быстрее пластика. Без отверстий растёт риск корневой гнили.';
+  String get quizMaterialWhy => 'Терракота сохнет вдвое быстрее пластика. Без отверстий растёт риск корневой гнили.';
 
   @override
   String get quizMatPlastic => 'Пластик';
@@ -2604,8 +2525,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get quizPlaceQuestionAccent => 'стоит';
 
   @override
-  String get quizPlaceWhy =>
-      'Так мы поймём, сколько света оно реально получает — и нужно ли притенение.';
+  String get quizPlaceWhy => 'Так мы поймём, сколько света оно реально получает — и нужно ли притенение.';
 
   @override
   String get quizPlaceSouth => 'Юг';
@@ -2667,8 +2587,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get quizWaterQuestionAccent => 'последний раз';
 
   @override
-  String get quizWaterWhy =>
-      'От этого зависит дата первого полива — иначе задача поставится вслепую.';
+  String get quizWaterWhy => 'От этого зависит дата первого полива — иначе задача поставится вслепую.';
 
   @override
   String get quizWaterToday => 'Сегодня';
@@ -2731,8 +2650,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPlantAddDrainage => 'Сделать дренаж';
 
   @override
-  String get addPlantAddDrainageDetail =>
-      'Без отверстий вода застаивается у корней';
+  String get addPlantAddDrainageDetail => 'Без отверстий вода застаивается у корней';
 
   @override
   String get addPlantMoveFromHeat => 'Отодвинуть от тепла';
@@ -2792,8 +2710,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get lockedSubLimit =>
-      'Подписка снимает лимит — растений может быть сколько угодно.';
+  String get lockedSubLimit => 'Подписка снимает лимит — растений может быть сколько угодно.';
 
   @override
   String lockedSubCancelled(String date) {
@@ -2820,8 +2737,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get lockedKeepPlantsDesc =>
-      'Остаются в саду вместе с историей проверок';
+  String get lockedKeepPlantsDesc => 'Остаются в саду вместе с историей проверок';
 
   @override
   String get lockedKeepReminders => 'Напоминания о поливе';
@@ -2833,22 +2749,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lockedUnlockNewPlants => 'Новые растения';
 
   @override
-  String get lockedUnlockNewPlantsDesc =>
-      'Определение вида по фото и персональный план ухода';
+  String get lockedUnlockNewPlantsDesc => 'Определение вида по фото и персональный план ухода';
 
   @override
   String get lockedUnlockHealth => 'Проверка здоровья';
 
   @override
-  String get lockedUnlockHealthDesc =>
-      'Анализ по фото, балл состояния и рекомендации';
+  String get lockedUnlockHealthDesc => 'Анализ по фото, балл состояния и рекомендации';
 
   @override
   String get lockedUnlockChat => 'AI-ассистент';
 
   @override
-  String get lockedUnlockChatDesc =>
-      'Ответы по каждому растению с учётом его условий';
+  String get lockedUnlockChatDesc => 'Ответы по каждому растению с учётом его условий';
 
   @override
   String get lockedPlanYear => 'Год';
@@ -2866,8 +2779,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lockedPlanBadge => 'Выгодно';
 
   @override
-  String get lockedFinePrint =>
-      'Подписка продлевается автоматически. Отменить можно в любой момент в настройках магазина.';
+  String get lockedFinePrint => 'Подписка продлевается автоматически. Отменить можно в любой момент в настройках магазина.';
 
   @override
   String lockedCtaResume(String plan) {
@@ -2892,15 +2804,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get billingIssueTitle => 'Не прошёл платёж';
 
   @override
-  String get billingIssueBody =>
-      'Проверьте способ оплаты — доступ работает, пока магазин повторяет попытки.';
+  String get billingIssueBody => 'Проверьте способ оплаты — доступ работает, пока магазин повторяет попытки.';
 
   @override
   String get duplicateSubscriptionTitle => 'Найдены две подписки';
 
   @override
-  String get duplicateSubscriptionBody =>
-      'Вы платите одновременно в App Store и на сайте. Одну из подписок стоит отменить.';
+  String get duplicateSubscriptionBody => 'Вы платите одновременно в App Store и на сайте. Одну из подписок стоит отменить.';
 
   @override
   String get gateBarTitleTrial => 'Пробный период завершён';
@@ -2931,15 +2841,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gateSheetAccent => 'по подписке';
 
   @override
-  String get gateSheetBody =>
-      'Пробный период завершён. Растение и его уход остаются с тобой — вернётся только то, что считает AI.';
+  String get gateSheetBody => 'Пробный период завершён. Растение и его уход остаются с тобой — вернётся только то, что считает AI.';
 
   @override
   String get gateSheetKeepWatering => 'Полив и напоминания работают';
 
   @override
-  String get gateSheetKeepHistory =>
-      'История проверок и карточки ухода открываются';
+  String get gateSheetKeepHistory => 'История проверок и карточки ухода открываются';
 
   @override
   String get gateSheetCta => 'Возобновить подписку';
@@ -3000,15 +2908,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get limitBody => 'Освободи место или открой десять.';
 
   @override
-  String get limitBodyPremium =>
-      'Убери растение, которого больше нет, чтобы освободить место для нового.';
+  String get limitBodyPremium => 'Убери растение, которого больше нет, чтобы освободить место для нового.';
 
   @override
   String get limitPathUpgrade => 'Открыть 10 мест';
 
   @override
-  String get limitPathUpgradeDesc =>
-      'Вместе с проверкой здоровья и ассистентом';
+  String get limitPathUpgradeDesc => 'Вместе с проверкой здоровья и ассистентом';
 
   @override
   String get limitPathFree => 'Освободить место';
@@ -3138,8 +3044,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get memoryTitle => 'Что ассистент знает';
 
   @override
-  String get memoryExplainer =>
-      'Записано из ваших сообщений в чате. Удалите всё неверное — это используется в каждом ответе.';
+  String get memoryExplainer => 'Записано из ваших сообщений в чате. Удалите всё неверное — это используется в каждом ответе.';
 
   @override
   String get memoryLoadFailed => 'Не удалось загрузить.';
@@ -3235,4 +3140,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatProposalToday => 'сегодня';
+
+  @override
+  String get cityPickerHint => 'Начни вводить город';
+
+  @override
+  String get cityPickerStartTyping => 'Введи хотя бы две буквы';
+
+  @override
+  String get cityPickerSearching => 'Ищем…';
+
+  @override
+  String get cityPickerNothingFound => 'Город с таким названием не найден';
+
+  @override
+  String get cityUpdated => 'Город обновлён';
 }

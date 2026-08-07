@@ -1694,5 +1694,10 @@
   },
   "careDiscussWithAssistant": "Discuss with the assistant",
   "chatProposalNextWatering": "Next watering",
-  "chatProposalToday": "today"
+  "chatProposalToday": "today",
+  "cityPickerHint": "Start typing a city",
+  "cityPickerStartTyping": "Type at least two letters",
+  "cityPickerSearching": "Searching…",
+  "cityPickerNothingFound": "No city found by that name",
+  "cityUpdated": "City updated"
 }

@@ -13,6 +13,8 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,6 +119,57 @@ class WeatherInfo {
     'condition': condition.name,
     'humidity': humidity,
   };
+}
+
+/// One city suggestion. Region and country are what tell four Springfields
+/// apart; the coordinates are what make choosing one actually change the sky.
+class CitySuggestion {
+  final String city;
+  final String? region;
+  final String? country;
+  final String? countryCode;
+  final double lat;
+  final double lon;
+  final String? timezone;
+
+  const CitySuggestion({
+    required this.city,
+    required this.lat,
+    required this.lon,
+    this.region,
+    this.country,
+    this.countryCode,
+    this.timezone,
+  });
+
+  /// "Bavaria, Germany" — enough to pick the right one, short enough for a row.
+  String get subtitle =>
+      [region, country].where((p) => p != null && p.isNotEmpty).join(', ');
+
+  UserLocation toLocation() => UserLocation(
+    city: city,
+    countryCode: countryCode,
+    lat: lat,
+    lon: lon,
+    timezone: timezone,
+    source: 'manual',
+  );
+
+  static CitySuggestion? fromMap(Map<String, dynamic> map) {
+    final lat = (map['lat'] as num?)?.toDouble();
+    final lon = (map['lon'] as num?)?.toDouble();
+    final city = map['city']?.toString();
+    if (lat == null || lon == null || city == null || city.isEmpty) return null;
+    return CitySuggestion(
+      city: city,
+      region: map['region']?.toString(),
+      country: map['country']?.toString(),
+      countryCode: map['countryCode']?.toString(),
+      lat: lat,
+      lon: lon,
+      timezone: map['timezone']?.toString(),
+    );
+  }
 }
 
 /// Location plus weather, as the header needs them.
@@ -293,8 +346,41 @@ class WeatherService {
     return WeatherInfo.fromMap(body['weather'] as Map<String, dynamic>?);
   }
 
-  /// Stores a city the user typed. Pins `source: manual` so no later lookup
-  /// overwrites it, then refreshes the weather for the new coordinates.
+  /// Suggestions for what the user has typed so far, in their language.
+  ///
+  /// Returns an empty list on any failure: a dead suggestion service must not
+  /// block someone from typing a city name.
+  Future<List<CitySuggestion>> searchCities(String query) async {
+    if (query.trim().length < 2) return const [];
+    try {
+      final response = await http
+          .post(
+            Uri.parse(searchCitiesUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'query': query.trim(),
+              'language': LanguageService.localeNotifier.value.languageCode,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return const [];
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return (body['cities'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(CitySuggestion.fromMap)
+          .whereType<CitySuggestion>()
+          .toList();
+    } catch (e) {
+      debugPrint('⚠️ WeatherService: city search failed: \$e');
+      return const [];
+    }
+  }
+
+  /// Stores a city the user picked and re-reads the weather for it.
+  ///
+  /// Written to Firestore as well as cached, with `source: manual` — that flag
+  /// is what stops the next IP lookup from undoing the choice. Kept under `geo`
+  /// rather than `location`, which the profile owns as free text.
   Future<WeatherReading> setManualCity(UserLocation location) async {
     final manual = UserLocation(
       city: location.city,
@@ -304,6 +390,19 @@ class WeatherService {
       timezone: location.timezone,
       source: 'manual',
     );
+
+    final uid = AuthService.currentUser?.uid;
+    if (uid != null) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'geo': {...manual.toMap(), 'updatedAt': FieldValue.serverTimestamp()},
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('⚠️ WeatherService: could not store the chosen city: \$e');
+      }
+    }
+
+    // New coordinates, so a real re-read rather than the cached city's numbers.
     final weather = await _fetchWeather(manual);
     return _publish((location: manual, weather: weather));
   }

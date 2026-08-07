@@ -195,23 +195,8 @@ class TaskService {
     return docs.length;
   }
 
-  /// Deletes a plant's tasks outright — called when the plant itself is removed,
-  /// so its chores stop counting against the garden.
-  Future<void> deleteForPlant(String plantId) async {
-    final user = AuthService.currentUser;
-    if (user == null) return;
-
-    final snap = await _firestore
-        .collection(_collection)
-        .where('userId', isEqualTo: user.uid)
-        .where('plantId', isEqualTo: plantId)
-        .get();
-    if (snap.docs.isEmpty) return;
-
-    final batch = _firestore.batch();
-    for (final doc in snap.docs) {
-      batch.delete(doc.reference);
-    }
-    await batch.commit();
-  }
+  // There is deliberately no deleteForPlant. Removing a plant leaves its tasks
+  // where they are, along with its conversation and everything the assistant
+  // learned about it. They do not reappear anywhere: each screen that lists
+  // tasks intersects them with the plants the user still has.
 }

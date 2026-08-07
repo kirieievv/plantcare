@@ -78,3 +78,9 @@ String get getWeatherUrl {
   final projectId = Firebase.app().options.projectId;
   return 'https://us-central1-$projectId.cloudfunctions.net/getWeather';
 }
+
+/// City suggestions while the user types, localised by the provider.
+String get searchCitiesUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/searchCities';
+}

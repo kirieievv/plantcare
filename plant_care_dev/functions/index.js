@@ -5069,87 +5069,23 @@ const PLANT_SLOTS_FREE = 3;
 const PLANT_SLOTS_PREMIUM = 10;
 
 /**
- * Deletes everything that only existed because the plant did.
+ * Nothing is swept when a plant goes away.
  *
- * Removing a plant used to leave its conversation, its extracted facts and its
- * memory document behind indefinitely. Nothing surfaced them again, which is
- * exactly what makes it a retention problem rather than clutter: the owner
- * believes the plant and everything they said about it are gone, and the
- * transcript of what their home looks like is still there.
+ * There used to be a trigger here that deleted a plant's conversation, its
+ * extracted facts, its memory document and its tasks the moment the plant was
+ * removed, on the reasoning that an owner who deletes a plant expects what they
+ * said about it to go with it.
  *
- * Runs server-side on the document itself rather than from the app, so it does
- * not depend on the app still being open when the deletion lands — and so it
- * covers a hard delete too, which no client path performs today but which the
- * admin tooling can.
+ * The owner decided otherwise: a plant's history is worth keeping, chat
+ * included, and deleting the account keeps it too — `deleteAccount` has always
+ * disabled the login and left every document standing, which is what the
+ * confirmation dialog promises in all six languages.
  *
- * Tasks are already cleared by TaskService.deleteForPlant; they are swept again
- * here because "the app did it" is not a guarantee the server can rely on.
+ * Nothing resurfaces as a result. Every screen that lists tasks intersects them
+ * with the plants the user actually has, so a deleted plant's chores stay out of
+ * the deck, out of "All tasks" and off the plant rows without needing the rows
+ * to be gone from the database.
  */
-async function purgePlantData(db, plantId, userId) {
-  const deleted = { facts: 0, memory: 0, messages: 0, tasks: 0 };
-
-  const deleteAll = async (query, key) => {
-    try {
-      const snap = await query.limit(400).get();
-      if (snap.empty) return;
-      const batch = db.batch();
-      for (const doc of snap.docs) batch.delete(doc.ref);
-      await batch.commit();
-      deleted[key] += snap.size;
-      // A plant with more than this has an unusual history; go round again
-      // rather than silently keeping the tail.
-      if (snap.size === 400) await deleteAll(query, key);
-    } catch (e) {
-      console.warn(`⚠️ Purge ${key} for ${plantId}:`, e.message);
-    }
-  };
-
-  const plantRef = db.collection('plants').doc(plantId);
-  await deleteAll(plantRef.collection('facts'), 'facts');
-  await deleteAll(plantRef.collection('memory'), 'memory');
-
-  if (userId) {
-    const chatRef = db
-      .collection('users').doc(userId)
-      .collection('plant_chats').doc(plantId);
-    await deleteAll(chatRef.collection('messages'), 'messages');
-    try {
-      await chatRef.delete();
-    } catch (e) {
-      console.warn(`⚠️ Purge chat doc for ${plantId}:`, e.message);
-    }
-
-    await deleteAll(
-      db.collection('tasks')
-        .where('userId', '==', userId)
-        .where('plantId', '==', plantId),
-      'tasks',
-    );
-  }
-
-  console.log(
-    `🧹 Purged plant ${plantId}: ${deleted.facts} facts, ${deleted.memory} memory, ` +
-    `${deleted.messages} messages, ${deleted.tasks} tasks`
-  );
-  return deleted;
-}
-
-exports.purgeDeletedPlantData = functions.firestore
-  .document('plants/{plantId}')
-  .onWrite(async (change, context) => {
-    const before = change.before.exists ? change.before.data() : null;
-    const after = change.after.exists ? change.after.data() : null;
-
-    // Two ways a plant goes away: the app's soft delete stamps `deletedAt`, and
-    // a hard delete removes the document. The first is the one users take.
-    const softDeleted = !!after?.deletedAt && !before?.deletedAt;
-    const hardDeleted = !!before && !after;
-    if (!softDeleted && !hardDeleted) return null;
-
-    const userId = (after || before)?.userId || null;
-    await purgePlantData(admin.firestore(), context.params.plantId, userId);
-    return null;
-  });
 
 exports.enforcePlantSlotLimit = functions.firestore
   .document('plants/{plantId}')
