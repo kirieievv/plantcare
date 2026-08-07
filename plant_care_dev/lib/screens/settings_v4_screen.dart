@@ -30,6 +30,17 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
   String _quietEnd = '08:00';
   bool _loaded = false;
 
+  /// The name shown on the account card, taken from the profile.
+  ///
+  /// Not the Firebase Auth display name, which is where this used to come
+  /// from. That one is written once at sign-up and by nothing since — the
+  /// registration screen that asked for it was removed, and editing the
+  /// profile writes here instead. So the header could show a name typed a
+  /// year ago while the profile showed a different one, with no way to
+  /// reconcile them. The profile is the only place a name can be set, so it
+  /// is the only place worth reading.
+  String _name = '';
+
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   @override
@@ -52,6 +63,7 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
 
       if (!mounted) return;
       setState(() {
+        _name = (data?['name'] as String? ?? '').trim();
         _quietStart = data?['quietHours']?['start'] ?? '22:00';
         _quietEnd = data?['quietHours']?['end'] ?? '08:00';
         if (channels is Map) {
@@ -277,7 +289,9 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
 
   Widget _account() {
     final email = widget.user.email ?? '';
-    final name = widget.user.displayName?.trim();
+    // Empty means empty: no name line, no placeholder dash. The email moves up
+    // and takes the headline, which is the one thing always known.
+    final name = _name;
 
     return GlassSurface(
       padding: const EdgeInsets.all(16),
@@ -303,7 +317,7 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name == null || name.isEmpty ? email : name,
+                  name.isEmpty ? email : name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: glassFont(
@@ -313,7 +327,7 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
                     color: kGlassInk,
                   ),
                 ),
-                if (name != null && name.isNotEmpty && email.isNotEmpty) ...[
+                if (name.isNotEmpty && email.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     email,
