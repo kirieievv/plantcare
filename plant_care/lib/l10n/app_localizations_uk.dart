@@ -1705,7 +1705,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get tabCare => 'Догляд';
 
   @override
-  String get tabAbout => 'Про рослину';
+  String get tabAbout => 'Інфо';
 
   @override
   String get tabHistory => 'Історія';

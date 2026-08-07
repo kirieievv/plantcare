@@ -1705,7 +1705,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get tabCare => 'Уход';
 
   @override
-  String get tabAbout => 'О растении';
+  String get tabAbout => 'Инфо';
 
   @override
   String get tabHistory => 'История';

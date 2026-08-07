@@ -803,7 +803,7 @@
   "onboarding5TitleItalic": "расти вместе",
   "onboarding5Body": "Создайте свою коллекцию и никогда ничего не пропускайте. Ваша самая зелёная эра начинается сейчас.",
   "tabCare": "Уход",
-  "tabAbout": "О растении",
+  "tabAbout": "Инфо",
   "tabHistory": "История",
   "nDays": "{days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}}",
   "@nDays": {
