@@ -440,7 +440,7 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
                 (data['proposal'] as Map?)?.cast<String, dynamic>(),
                 offeredAt: createdAt,
               ),
-            );
+            )..docId = doc.id;
           })
           .where((m) => m.text.trim().isNotEmpty || m.imageUrl != null)
           .toList();
@@ -485,16 +485,20 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   Future<void> _persistMessage(_ChatMessage message) async {
     final ref = _messagesCollection();
     if (ref == null) return;
-    await ref.add({
+    final doc = await ref.add({
       'role': message.role,
       'text': message.text,
       'source': message.source,
       if (message.proposal != null) 'proposal': message.proposal!.toMap(),
       if (message.imageUrl != null) 'imageUrl': message.imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
-      'createdAtClient': DateTime.now().toIso8601String(),
+      // The message's own instant, not the moment of saving. They differ by
+      // however long the request took, and anything matching on this later
+      // would silently never match.
+      'createdAtClient': message.createdAt.toIso8601String(),
       'plantId': widget.plant.id,
     });
+    message.docId = doc.id;
   }
 
   // ─────────────────────── Send ───────────────────────
@@ -728,24 +732,18 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
     final updated = message.withProposal(next);
     setState(() => _messages[index] = updated);
 
-    // Best effort: the outcome is worth keeping so reopening the chat does not
-    // offer a settled change again, but failing to store it must not undo the
-    // decision the owner just made.
+    // Best effort on the write, but never silent: the owner's decision has to
+    // survive reopening the chat, and a failure here is the difference between
+    // a settled card and one that quietly offers itself again.
     final ref = _messagesCollection();
-    if (ref == null) return;
-    ref
-        .where(
-          'createdAtClient',
-          isEqualTo: message.createdAt.toIso8601String(),
-        )
-        .limit(1)
-        .get()
-        .then((snap) {
-          for (final doc in snap.docs) {
-            doc.reference.update({'proposal': next.toMap()});
-          }
-        })
-        .catchError((_) {});
+    final id = message.docId;
+    if (ref == null || id == null) {
+      debugPrint('⚠️ Chat: proposal outcome not stored — message has no id');
+      return;
+    }
+    ref.doc(id).update({'proposal': next.toMap()}).catchError((Object e) {
+      debugPrint('⚠️ Chat: could not store proposal outcome: $e');
+    });
   }
 
   void _scrollToBottom() {
@@ -2230,6 +2228,16 @@ class _ChatMessage {
   final String? imageUrl;
   final DateTime createdAt;
 
+  /// Firestore document id, once the message has been written or loaded.
+  ///
+  /// Mutable and assigned exactly once, which earns the exception: the
+  /// alternative was finding the row again by timestamp, and the timestamp
+  /// written into the document was taken at save time while the one searched
+  /// for was taken at construction. They were never equal, so a proposal's
+  /// outcome was never actually stored — the buttons settled on screen and came
+  /// back alive on reopening.
+  String? docId;
+
   /// A change the assistant offered alongside this answer, if any.
   final ChatProposal? proposal;
 
@@ -2238,7 +2246,7 @@ class _ChatMessage {
   /// worth carrying forward.
   final SuggestedTask? suggestedTask;
 
-  const _ChatMessage({
+  _ChatMessage({
     required this.role,
     required this.text,
     this.source,
@@ -2255,5 +2263,5 @@ class _ChatMessage {
     imageUrl: imageUrl,
     createdAt: createdAt,
     proposal: next,
-  );
+  )..docId = docId;
 }
