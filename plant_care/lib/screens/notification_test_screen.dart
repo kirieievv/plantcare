@@ -36,10 +36,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
   Future<void> _showAppDialog(WidgetBuilder builder) async {
     if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: builder,
-    );
+    await showDialog(context: context, builder: builder);
   }
 
   @override
@@ -151,7 +148,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
     try {
       final result = await WebPushTester.refreshFCMToken();
-      
+
       if (result['success'] == true) {
         // Update the test results with the new token
         setState(() {
@@ -167,7 +164,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             };
           }
         });
-        
+
         _showSnackBar(
           SnackBar(
             content: Text(
@@ -210,12 +207,12 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
     try {
       final result = await WebPushTester.getAllUserTokens();
-      
+
       if (result['success'] == true) {
         final tokens = result['tokens'] as List<String>;
         final tokenCount = result['tokenCount'] as int;
         final lastUpdate = result['lastTokenUpdate'] as String?;
-        
+
         _showSnackBar(
           SnackBar(
             content: Text(
@@ -227,18 +224,29 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             duration: const Duration(seconds: 5),
           ),
         );
-        
+
         // Show tokens in a dialog
         _showAppDialog(
           (context) => AlertDialog(
-            title: Text(_tr(en: 'All FCM Tokens', es: 'Todos los tokens FCM', fr: 'Tous les jetons FCM')),
+            title: Text(
+              _tr(
+                en: 'All FCM Tokens',
+                es: 'Todos los tokens FCM',
+                fr: 'Tous les jetons FCM',
+              ),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('${_tr(en: 'Token Count', es: 'Cantidad de tokens', fr: 'Nombre de jetons')}: $tokenCount'),
-                  if (lastUpdate != null) Text('${_tr(en: 'Last Update', es: 'Ultima actualizacion', fr: 'Derniere mise a jour')}: $lastUpdate'),
+                  Text(
+                    '${_tr(en: 'Token Count', es: 'Cantidad de tokens', fr: 'Nombre de jetons')}: $tokenCount',
+                  ),
+                  if (lastUpdate != null)
+                    Text(
+                      '${_tr(en: 'Last Update', es: 'Ultima actualizacion', fr: 'Derniere mise a jour')}: $lastUpdate',
+                    ),
                   const SizedBox(height: 16),
                   ...tokens.asMap().entries.map((entry) {
                     final index = entry.key;
@@ -246,7 +254,10 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${_tr(en: 'Token', es: 'Token', fr: 'Jeton')} $index:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          '${_tr(en: 'Token', es: 'Token', fr: 'Jeton')} $index:',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 4),
                         Container(
                           width: double.infinity,
@@ -258,7 +269,10 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                           ),
                           child: SelectableText(
                             token,
-                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'monospace',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -382,22 +396,58 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         duration: Duration(seconds: 5),
       ),
     );
-    
+
     // Show instructions dialog
     _showAppDialog(
       (context) => AlertDialog(
-        title: Text(_tr(en: 'Clear Browser Cache', es: 'Limpiar cache del navegador', fr: 'Vider le cache du navigateur')),
+        title: Text(
+          _tr(
+            en: 'Clear Browser Cache',
+            es: 'Limpiar cache del navegador',
+            fr: 'Vider le cache du navigateur',
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_tr(en: 'To clear browser cache:', es: 'Para limpiar la cache del navegador:', fr: 'Pour vider le cache du navigateur :')),
+            Text(
+              _tr(
+                en: 'To clear browser cache:',
+                es: 'Para limpiar la cache del navegador:',
+                fr: 'Pour vider le cache du navigateur :',
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(_tr(en: '1. Press Ctrl+Shift+R (or Cmd+Shift+R on Mac)', es: '1. Pulsa Ctrl+Shift+R (o Cmd+Shift+R en Mac)', fr: '1. Appuyez sur Ctrl+Shift+R (ou Cmd+Shift+R sur Mac)')),
-            Text(_tr(en: '2. Or go to Settings → Privacy → Clear browsing data', es: '2. O ve a Configuracion → Privacidad → Borrar datos de navegacion', fr: '2. Ou allez dans Reglages → Confidentialite → Effacer les donnees de navigation')),
-            Text(_tr(en: '3. Or close and reopen the browser tab', es: '3. O cierra y vuelve a abrir la pestana del navegador', fr: '3. Ou fermez et rouvrez l onglet du navigateur')),
+            Text(
+              _tr(
+                en: '1. Press Ctrl+Shift+R (or Cmd+Shift+R on Mac)',
+                es: '1. Pulsa Ctrl+Shift+R (o Cmd+Shift+R en Mac)',
+                fr: '1. Appuyez sur Ctrl+Shift+R (ou Cmd+Shift+R sur Mac)',
+              ),
+            ),
+            Text(
+              _tr(
+                en: '2. Or go to Settings → Privacy → Clear browsing data',
+                es: '2. O ve a Configuracion → Privacidad → Borrar datos de navegacion',
+                fr: '2. Ou allez dans Reglages → Confidentialite → Effacer les donnees de navigation',
+              ),
+            ),
+            Text(
+              _tr(
+                en: '3. Or close and reopen the browser tab',
+                es: '3. O cierra y vuelve a abrir la pestana del navegador',
+                fr: '3. Ou fermez et rouvrez l onglet du navigateur',
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(_tr(en: 'This will help clear cached FCM tokens.', es: 'Esto ayudara a limpiar tokens FCM en cache.', fr: 'Cela aidera a effacer les jetons FCM en cache.')),
+            Text(
+              _tr(
+                en: 'This will help clear cached FCM tokens.',
+                es: 'Esto ayudara a limpiar tokens FCM en cache.',
+                fr: 'Cela aidera a effacer les jetons FCM en cache.',
+              ),
+            ),
           ],
         ),
         actions: [
@@ -434,7 +484,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             };
           }
         });
-        
+
         _showSnackBar(
           SnackBar(
             content: Text(
@@ -445,11 +495,10 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             duration: const Duration(seconds: 3),
           ),
         );
-        
+
         // Automatically test the new token
         await Future.delayed(const Duration(seconds: 1));
         await _sendWebPushTest();
-        
       } else {
         setState(() {
           _error = result['error'];
@@ -656,29 +705,67 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             duration: const Duration(seconds: 5),
           ),
         );
-        
+
         // Show verification dialog
         await Future.delayed(const Duration(seconds: 2));
         _showAppDialog(
           (context) => AlertDialog(
-            title: Text(_tr(en: 'Did You See the Notification?', es: 'Viste la notificacion?', fr: 'Avez-vous vu la notification ?')),
+            title: Text(
+              _tr(
+                en: 'Did You See the Notification?',
+                es: 'Viste la notificacion?',
+                fr: 'Avez-vous vu la notification ?',
+              ),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_tr(en: 'Please check:', es: 'Por favor revisa:', fr: 'Veuillez verifier :')),
+                Text(
+                  _tr(
+                    en: 'Please check:',
+                    es: 'Por favor revisa:',
+                    fr: 'Veuillez verifier :',
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text(_tr(en: '1. Did a notification popup appear?', es: '1. Aparecio un popup de notificacion?', fr: '1. Une popup de notification est-elle apparue ?')),
-                Text(_tr(en: '2. Check your browser\'s notification center', es: '2. Revisa el centro de notificaciones del navegador', fr: '2. Verifiez le centre de notifications du navigateur')),
-                Text(_tr(en: '3. Look for a Plant Care notification', es: '3. Busca una notificacion de Plant Care', fr: '3. Cherchez une notification Plant Care')),
+                Text(
+                  _tr(
+                    en: '1. Did a notification popup appear?',
+                    es: '1. Aparecio un popup de notificacion?',
+                    fr: '1. Une popup de notification est-elle apparue ?',
+                  ),
+                ),
+                Text(
+                  _tr(
+                    en: '2. Check your browser\'s notification center',
+                    es: '2. Revisa el centro de notificaciones del navegador',
+                    fr: '2. Verifiez le centre de notifications du navigateur',
+                  ),
+                ),
+                Text(
+                  _tr(
+                    en: '3. Look for a Plant Care notification',
+                    es: '3. Busca una notificacion de Plant Care',
+                    fr: '3. Cherchez une notification Plant Care',
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text(_tr(en: 'If you didn\'t see it, the notification might be blocked or the service worker isn\'t working properly.', es: 'Si no la viste, la notificacion puede estar bloqueada o el service worker no funciona bien.', fr: 'Si vous ne l avez pas vue, la notification peut etre bloquee ou le service worker ne fonctionne pas correctement.')),
+                Text(
+                  _tr(
+                    en: 'If you didn\'t see it, the notification might be blocked or the service worker isn\'t working properly.',
+                    es: 'Si no la viste, la notificacion puede estar bloqueada o el service worker no funciona bien.',
+                    fr: 'Si vous ne l avez pas vue, la notification peut etre bloquee ou le service worker ne fonctionne pas correctement.',
+                  ),
+                ),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(_tr(en: 'I saw it!', es: 'La vi!', fr: 'Je l ai vue !')),
+                child: Text(
+                  _tr(en: 'I saw it!', es: 'La vi!', fr: 'Je l ai vue !'),
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -696,7 +783,13 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                     ),
                   );
                 },
-                child: Text(_tr(en: 'I didn\'t see it', es: 'No la vi', fr: 'Je ne l ai pas vue')),
+                child: Text(
+                  _tr(
+                    en: 'I didn\'t see it',
+                    es: 'No la vi',
+                    fr: 'Je ne l ai pas vue',
+                  ),
+                ),
               ),
             ],
           ),
@@ -767,7 +860,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
           fr: 'Ceci est une vraie notification push via FCM ! 🎉',
         ),
       );
-      
+
       if (results['success']) {
         _showSnackBar(
           SnackBar(
@@ -872,9 +965,9 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Test Results
                   if (_testResults != null) ...[
                     Card(
@@ -892,22 +985,69 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 16),
-                            _buildInfoRow(_tr(en: 'Platform', es: 'Plataforma', fr: 'Plateforme'), _testResults!['platform']),
-                            _buildInfoRow(_tr(en: 'Is Web', es: 'Es web', fr: 'Est web'), _testResults!['isWeb'].toString()),
-                            _buildInfoRow(_tr(en: 'Success', es: 'Exito', fr: 'Succes'), _testResults!['success'].toString()),
+                            _buildInfoRow(
+                              _tr(
+                                en: 'Platform',
+                                es: 'Plataforma',
+                                fr: 'Plateforme',
+                              ),
+                              _testResults!['platform'],
+                            ),
+                            _buildInfoRow(
+                              _tr(en: 'Is Web', es: 'Es web', fr: 'Est web'),
+                              _testResults!['isWeb'].toString(),
+                            ),
+                            _buildInfoRow(
+                              _tr(en: 'Success', es: 'Exito', fr: 'Succes'),
+                              _testResults!['success'].toString(),
+                            ),
                             if (_testResults!['permissionStatus'] != null)
-                              _buildInfoRow(_tr(en: 'Permission', es: 'Permiso', fr: 'Autorisation'), _testResults!['permissionStatus']),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Permission',
+                                  es: 'Permiso',
+                                  fr: 'Autorisation',
+                                ),
+                                _testResults!['permissionStatus'],
+                              ),
                             if (_testResults!['alert'] != null)
-                              _buildInfoRow(_tr(en: 'Alert Permission', es: 'Permiso de alerta', fr: 'Autorisation d alerte'), _testResults!['alert'].toString()),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Alert Permission',
+                                  es: 'Permiso de alerta',
+                                  fr: 'Autorisation d alerte',
+                                ),
+                                _testResults!['alert'].toString(),
+                              ),
                             if (_testResults!['badge'] != null)
-                              _buildInfoRow(_tr(en: 'Badge Permission', es: 'Permiso de insignia', fr: 'Autorisation de badge'), _testResults!['badge'].toString()),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Badge Permission',
+                                  es: 'Permiso de insignia',
+                                  fr: 'Autorisation de badge',
+                                ),
+                                _testResults!['badge'].toString(),
+                              ),
                             if (_testResults!['sound'] != null)
-                              _buildInfoRow(_tr(en: 'Sound Permission', es: 'Permiso de sonido', fr: 'Autorisation du son'), _testResults!['sound'].toString()),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Sound Permission',
+                                  es: 'Permiso de sonido',
+                                  fr: 'Autorisation du son',
+                                ),
+                                _testResults!['sound'].toString(),
+                              ),
                             if (_testResults!['token'] != null) ...[
                               const SizedBox(height: 8),
                               Text(
-                                _tr(en: 'FCM Token:', es: 'Token FCM:', fr: 'Jeton FCM :'),
-                                style: const TextStyle(fontWeight: FontWeight.w500),
+                                _tr(
+                                  en: 'FCM Token:',
+                                  es: 'Token FCM:',
+                                  fr: 'Jeton FCM :',
+                                ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Container(
@@ -916,7 +1056,9 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade100,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
                                 child: SelectableText(
                                   _testResults!['token'],
@@ -929,42 +1071,131 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                               const SizedBox(height: 8),
                             ],
                             if (_testResults!['tokenLength'] != null)
-                              _buildInfoRow(_tr(en: 'Token Length', es: 'Longitud del token', fr: 'Longueur du jeton'), _testResults!['tokenLength'].toString()),
-                            _buildInfoRow(_tr(en: 'User Logged In', es: 'Usuario conectado', fr: 'Utilisateur connecte'), _testResults!['userLoggedIn'].toString()),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Token Length',
+                                  es: 'Longitud del token',
+                                  fr: 'Longueur du jeton',
+                                ),
+                                _testResults!['tokenLength'].toString(),
+                              ),
+                            _buildInfoRow(
+                              _tr(
+                                en: 'User Logged In',
+                                es: 'Usuario conectado',
+                                fr: 'Utilisateur connecte',
+                              ),
+                              _testResults!['userLoggedIn'].toString(),
+                            ),
                             if (_testResults!['userId'] != null)
-                              _buildInfoRow(_tr(en: 'User ID', es: 'ID de usuario', fr: 'ID utilisateur'), _testResults!['userId']),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'User ID',
+                                  es: 'ID de usuario',
+                                  fr: 'ID utilisateur',
+                                ),
+                                _testResults!['userId'],
+                              ),
                             if (_testResults!['userEmail'] != null)
-                              _buildInfoRow(_tr(en: 'User Email', es: 'Correo del usuario', fr: 'E-mail utilisateur'), _testResults!['userEmail']),
-                            _buildInfoRow(_tr(en: 'Watering Reminders', es: 'Recordatorios de riego', fr: 'Rappels d arrosage'), _testResults!['wateringReminders'].toString()),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'User Email',
+                                  es: 'Correo del usuario',
+                                  fr: 'E-mail utilisateur',
+                                ),
+                                _testResults!['userEmail'],
+                              ),
+                            _buildInfoRow(
+                              _tr(
+                                en: 'Watering Reminders',
+                                es: 'Recordatorios de riego',
+                                fr: 'Rappels d arrosage',
+                              ),
+                              _testResults!['wateringReminders'].toString(),
+                            ),
                             if (_testResults!['isMobileSafari'] != null)
-                              _buildInfoRow(_tr(en: 'Mobile Safari', es: 'Safari movil', fr: 'Safari mobile'), _testResults!['isMobileSafari'].toString()),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Mobile Safari',
+                                  es: 'Safari movil',
+                                  fr: 'Safari mobile',
+                                ),
+                                _testResults!['isMobileSafari'].toString(),
+                              ),
                             if (_testResults!['isMacOSSafari'] != null)
-                              _buildInfoRow('macOS Safari', _testResults!['isMacOSSafari'].toString()),
+                              _buildInfoRow(
+                                'macOS Safari',
+                                _testResults!['isMacOSSafari'].toString(),
+                              ),
                             if (_testResults!['webPermission'] != null)
-                              _buildInfoRow(_tr(en: 'Web Permission', es: 'Permiso web', fr: 'Autorisation web'), _testResults!['webPermission']),
-                            if (_testResults!['notificationSupport'] != null) ...[
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Web Permission',
+                                  es: 'Permiso web',
+                                  fr: 'Autorisation web',
+                                ),
+                                _testResults!['webPermission'],
+                              ),
+                            if (_testResults!['notificationSupport'] !=
+                                null) ...[
                               const SizedBox(height: 8),
                               Text(
-                                _tr(en: 'Browser Support:', es: 'Compatibilidad del navegador:', fr: 'Compatibilite du navigateur :'),
-                                style: const TextStyle(fontWeight: FontWeight.w500),
+                                _tr(
+                                  en: 'Browser Support:',
+                                  es: 'Compatibilidad del navegador:',
+                                  fr: 'Compatibilite du navigateur :',
+                                ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                              if (_testResults!['notificationSupport']['supported'] != null)
-                                _buildInfoRow('  ${_tr(en: 'Supported', es: 'Compatible', fr: 'Pris en charge')}', _testResults!['notificationSupport']['supported'].toString()),
-                              if (_testResults!['notificationSupport']['browser'] != null)
-                                _buildInfoRow('  ${_tr(en: 'Browser', es: 'Navegador', fr: 'Navigateur')}', _testResults!['notificationSupport']['browser']),
+                              if (_testResults!['notificationSupport']['supported'] !=
+                                  null)
+                                _buildInfoRow(
+                                  '  ${_tr(en: 'Supported', es: 'Compatible', fr: 'Pris en charge')}',
+                                  _testResults!['notificationSupport']['supported']
+                                      .toString(),
+                                ),
+                              if (_testResults!['notificationSupport']['browser'] !=
+                                  null)
+                                _buildInfoRow(
+                                  '  ${_tr(en: 'Browser', es: 'Navegador', fr: 'Navigateur')}',
+                                  _testResults!['notificationSupport']['browser'],
+                                ),
                             ],
                             if (_testResults!['tokenError'] != null)
-                              _buildInfoRow(_tr(en: 'Token Error', es: 'Error de token', fr: 'Erreur de jeton'), _testResults!['tokenError']),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Token Error',
+                                  es: 'Error de token',
+                                  fr: 'Erreur de jeton',
+                                ),
+                                _testResults!['tokenError'],
+                              ),
                             if (_testResults!['recommendation'] != null)
-                              _buildInfoRow(_tr(en: 'Recommendation', es: 'Recomendacion', fr: 'Recommandation'), _testResults!['recommendation']),
-                            _buildInfoRow(_tr(en: 'Timestamp', es: 'Marca de tiempo', fr: 'Horodatage'), _testResults!['timestamp']),
+                              _buildInfoRow(
+                                _tr(
+                                  en: 'Recommendation',
+                                  es: 'Recomendacion',
+                                  fr: 'Recommandation',
+                                ),
+                                _testResults!['recommendation'],
+                              ),
+                            _buildInfoRow(
+                              _tr(
+                                en: 'Timestamp',
+                                es: 'Marca de tiempo',
+                                fr: 'Horodatage',
+                              ),
+                              _testResults!['timestamp'],
+                            ),
                           ],
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Action Buttons
                     Column(
                       children: [
@@ -974,7 +1205,13 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                               child: ElevatedButton.icon(
                                 onPressed: _sendTestNotification,
                                 icon: const Icon(Icons.send),
-                                label: Text(_tr(en: 'Send FCM Test', es: 'Enviar prueba FCM', fr: 'Envoyer test FCM')),
+                                label: Text(
+                                  _tr(
+                                    en: 'Send FCM Test',
+                                    es: 'Enviar prueba FCM',
+                                    fr: 'Envoyer test FCM',
+                                  ),
+                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                   foregroundColor: Colors.white,
@@ -986,7 +1223,13 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                               child: ElevatedButton.icon(
                                 onPressed: _runNotificationTest,
                                 icon: const Icon(Icons.refresh),
-                                label: Text(_tr(en: 'Refresh Test', es: 'Actualizar prueba', fr: 'Actualiser le test')),
+                                label: Text(
+                                  _tr(
+                                    en: 'Refresh Test',
+                                    es: 'Actualizar prueba',
+                                    fr: 'Actualiser le test',
+                                  ),
+                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,
@@ -1001,149 +1244,215 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                           child: ElevatedButton.icon(
                             onPressed: _showWebTestNotification,
                             icon: const Icon(Icons.web),
-                            label: Text(_tr(en: 'Show Web Test Notification', es: 'Mostrar notificacion web de prueba', fr: 'Afficher une notification web de test')),
+                            label: Text(
+                              _tr(
+                                en: 'Show Web Test Notification',
+                                es: 'Mostrar notificacion web de prueba',
+                                fr: 'Afficher une notification web de test',
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orange,
                               foregroundColor: Colors.white,
                             ),
                           ),
                         ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _refreshFCMToken,
-                      icon: const Icon(Icons.refresh),
-                      label: Text(_tr(en: 'Refresh FCM Token', es: 'Actualizar token FCM', fr: 'Actualiser le jeton FCM')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _showAllTokens,
-                      icon: const Icon(Icons.list),
-                      label: Text(_tr(en: 'Show All Tokens', es: 'Mostrar todos los tokens', fr: 'Afficher tous les jetons')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _sendSimpleTest,
-                      icon: const Icon(Icons.check_circle),
-                      label: Text(_tr(en: 'Simple Token Test', es: 'Prueba simple de token', fr: 'Test simple du jeton')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _clearBrowserCache,
-                      icon: const Icon(Icons.clear_all),
-                      label: Text(_tr(en: 'Clear Browser Cache', es: 'Limpiar cache del navegador', fr: 'Vider le cache du navigateur')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepOrange,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _forceNewToken,
-                      icon: const Icon(Icons.refresh),
-                      label: Text(_tr(en: 'Force New Token', es: 'Forzar nuevo token', fr: 'Forcer un nouveau jeton')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _testToken0,
-                      icon: const Icon(Icons.numbers),
-                      label: Text(_tr(en: 'Test Token 0', es: 'Probar token 0', fr: 'Tester le jeton 0')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _testToken1,
-                      icon: const Icon(Icons.numbers),
-                      label: Text(_tr(en: 'Test Token 1', es: 'Probar token 1', fr: 'Tester le jeton 1')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _sendSafariNotification,
-                      icon: const Icon(Icons.apple),
-                      label: Text(_tr(en: 'Send Safari Notification', es: 'Enviar notificacion Safari', fr: 'Envoyer une notification Safari')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueGrey,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _sendAndVerifyNotification,
-                      icon: const Icon(Icons.notifications_active),
-                      label: Text(_tr(en: 'Send & Verify Notification', es: 'Enviar y verificar notificacion', fr: 'Envoyer et verifier la notification')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _sendWebPushTest,
-                      icon: const Icon(Icons.cloud_upload),
-                      label: Text(_tr(en: 'Send Real Push Notification', es: 'Enviar notificacion push real', fr: 'Envoyer une vraie notification push')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _refreshFCMToken,
+                            icon: const Icon(Icons.refresh),
+                            label: Text(
+                              _tr(
+                                en: 'Refresh FCM Token',
+                                es: 'Actualizar token FCM',
+                                fr: 'Actualiser le jeton FCM',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _showAllTokens,
+                            icon: const Icon(Icons.list),
+                            label: Text(
+                              _tr(
+                                en: 'Show All Tokens',
+                                es: 'Mostrar todos los tokens',
+                                fr: 'Afficher tous les jetons',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _sendSimpleTest,
+                            icon: const Icon(Icons.check_circle),
+                            label: Text(
+                              _tr(
+                                en: 'Simple Token Test',
+                                es: 'Prueba simple de token',
+                                fr: 'Test simple du jeton',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _clearBrowserCache,
+                            icon: const Icon(Icons.clear_all),
+                            label: Text(
+                              _tr(
+                                en: 'Clear Browser Cache',
+                                es: 'Limpiar cache del navegador',
+                                fr: 'Vider le cache du navigateur',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepOrange,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _forceNewToken,
+                            icon: const Icon(Icons.refresh),
+                            label: Text(
+                              _tr(
+                                en: 'Force New Token',
+                                es: 'Forzar nuevo token',
+                                fr: 'Forcer un nouveau jeton',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _testToken0,
+                            icon: const Icon(Icons.numbers),
+                            label: Text(
+                              _tr(
+                                en: 'Test Token 0',
+                                es: 'Probar token 0',
+                                fr: 'Tester le jeton 0',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _testToken1,
+                            icon: const Icon(Icons.numbers),
+                            label: Text(
+                              _tr(
+                                en: 'Test Token 1',
+                                es: 'Probar token 1',
+                                fr: 'Tester le jeton 1',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _sendSafariNotification,
+                            icon: const Icon(Icons.apple),
+                            label: Text(
+                              _tr(
+                                en: 'Send Safari Notification',
+                                es: 'Enviar notificacion Safari',
+                                fr: 'Envoyer une notification Safari',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueGrey,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _sendAndVerifyNotification,
+                            icon: const Icon(Icons.notifications_active),
+                            label: Text(
+                              _tr(
+                                en: 'Send & Verify Notification',
+                                es: 'Enviar y verificar notificacion',
+                                fr: 'Envoyer et verifier la notification',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _sendWebPushTest,
+                            icon: const Icon(Icons.cloud_upload),
+                            label: Text(
+                              _tr(
+                                en: 'Send Real Push Notification',
+                                es: 'Enviar notificacion push real',
+                                fr: 'Envoyer une vraie notification push',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Instructions
                   Card(
                     child: Padding(
@@ -1162,19 +1471,22 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                           const SizedBox(height: 16),
                           Text(
                             _tr(
-                              en: '1. Make sure you\'re logged in to your account\n'
+                              en:
+                                  '1. Make sure you\'re logged in to your account\n'
                                   '2. Grant notification permissions when prompted\n'
                                   '3. Check that all permissions are granted (green checkmarks)\n'
                                   '4. Note your FCM token (this should be generated)\n'
                                   '5. For mobile Safari: Add this page to your home screen\n'
                                   '6. Test by sending a notification (requires backend setup)',
-                              es: '1. Asegurate de haber iniciado sesion en tu cuenta\n'
+                              es:
+                                  '1. Asegurate de haber iniciado sesion en tu cuenta\n'
                                   '2. Otorga permisos de notificacion cuando se soliciten\n'
                                   '3. Verifica que todos los permisos esten concedidos (checks verdes)\n'
                                   '4. Anota tu token FCM (debe generarse)\n'
                                   '5. En Safari movil: agrega esta pagina a la pantalla de inicio\n'
                                   '6. Prueba enviando una notificacion (requiere backend configurado)',
-                              fr: '1. Verifiez que vous etes connecte a votre compte\n'
+                              fr:
+                                  '1. Verifiez que vous etes connecte a votre compte\n'
                                   '2. Accordez les autorisations de notification lorsque demande\n'
                                   '3. Verifiez que toutes les autorisations sont accordees (checks verts)\n'
                                   '4. Notez votre jeton FCM (il doit etre genere)\n'
@@ -1195,7 +1507,11 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _tr(en: 'FCM Token Not Working?', es: 'El token FCM no funciona?', fr: 'Le jeton FCM ne fonctionne pas ?'),
+                                  _tr(
+                                    en: 'FCM Token Not Working?',
+                                    es: 'El token FCM no funciona?',
+                                    fr: 'Le jeton FCM ne fonctionne pas ?',
+                                  ),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.red.shade700,
@@ -1204,7 +1520,8 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   _tr(
-                                    en: 'For real push notifications, you need:\n'
+                                    en:
+                                        'For real push notifications, you need:\n'
                                         '1. VAPID key (already configured) ✅\n'
                                         '2. Firebase Server Key:\n'
                                         '   • Go to Firebase Console → Project Settings\n'
@@ -1212,7 +1529,8 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                         '   • Find "Server key" section\n'
                                         '   • Copy the server key\n'
                                         '   • Update the app code with your server key',
-                                    es: 'Para notificaciones push reales, necesitas:\n'
+                                    es:
+                                        'Para notificaciones push reales, necesitas:\n'
                                         '1. Clave VAPID (ya configurada) ✅\n'
                                         '2. Clave del servidor de Firebase:\n'
                                         '   • Ve a Firebase Console → Configuracion del proyecto\n'
@@ -1220,7 +1538,8 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                         '   • Busca la seccion "Server key"\n'
                                         '   • Copia la clave del servidor\n'
                                         '   • Actualiza el codigo de la app con esa clave',
-                                    fr: 'Pour de vraies notifications push, vous avez besoin de :\n'
+                                    fr:
+                                        'Pour de vraies notifications push, vous avez besoin de :\n'
                                         '1. Cle VAPID (deja configuree) ✅\n'
                                         '2. Cle serveur Firebase :\n'
                                         '   • Allez dans Firebase Console → Parametres du projet\n'
@@ -1246,7 +1565,11 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _tr(en: 'Mobile Safari Tips:', es: 'Consejos para Safari movil:', fr: 'Conseils Safari mobile :'),
+                                  _tr(
+                                    en: 'Mobile Safari Tips:',
+                                    es: 'Consejos para Safari movil:',
+                                    fr: 'Conseils Safari mobile :',
+                                  ),
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.blue.shade700,
@@ -1255,13 +1578,16 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   _tr(
-                                    en: '• Notifications work best when the app is added to home screen\n'
+                                    en:
+                                        '• Notifications work best when the app is added to home screen\n'
                                         '• Make sure Safari notifications are enabled in Settings\n'
                                         '• Test with the app in background, not just foreground',
-                                    es: '• Las notificaciones funcionan mejor cuando agregas la app a inicio\n'
+                                    es:
+                                        '• Las notificaciones funcionan mejor cuando agregas la app a inicio\n'
                                         '• Asegurate de activar notificaciones de Safari en Configuracion\n'
                                         '• Prueba con la app en segundo plano, no solo en primer plano',
-                                    fr: '• Les notifications marchent mieux si l app est sur l ecran d accueil\n'
+                                    fr:
+                                        '• Les notifications marchent mieux si l app est sur l ecran d accueil\n'
                                         '• Verifiez que les notifications Safari sont activees dans Reglages\n'
                                         '• Testez avec l app en arriere-plan, pas seulement au premier plan',
                                   ),
@@ -1294,10 +1620,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontFamily: 'monospace'),
-            ),
+            child: Text(value, style: const TextStyle(fontFamily: 'monospace')),
           ),
         ],
       ),

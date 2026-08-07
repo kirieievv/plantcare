@@ -20,9 +20,10 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   bool _initialized = false;
   bool _tokenRegistered = false;
+
   /// Last Firebase uid for which we saved the current device token to Firestore.
   String? _registeredTokenUserId;
   String? _currentToken;
@@ -76,7 +77,9 @@ class NotificationService {
 
   /// Initialize local notifications plugin
   Future<void> _initializeLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -95,10 +98,11 @@ class NotificationService {
 
     // Create notification channel for Android
     if (Platform.isAndroid) {
-      final androidImplementation =
-          _localNotifications.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-      
+      final androidImplementation = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
       await androidImplementation?.createNotificationChannel(
         const AndroidNotificationChannel(
           'watering_reminders',
@@ -121,12 +125,17 @@ class NotificationService {
         provisional: false,
       );
 
-      print('🔔 NotificationService: Permission status: ${settings.authorizationStatus}');
+      print(
+        '🔔 NotificationService: Permission status: ${settings.authorizationStatus}',
+      );
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         print('✅ NotificationService: Notification permissions granted');
-      } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-        print('⚠️ NotificationService: Provisional notification permissions granted');
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.provisional) {
+        print(
+          '⚠️ NotificationService: Provisional notification permissions granted',
+        );
       } else {
         print('❌ NotificationService: Notification permissions denied');
       }
@@ -144,13 +153,17 @@ class NotificationService {
       if (success) return;
 
       if (attempt < _maxTokenRetries) {
-        print('🔄 NotificationService: Retry $attempt/$_maxTokenRetries '
-            'in ${_retryDelay.inSeconds}s...');
+        print(
+          '🔄 NotificationService: Retry $attempt/$_maxTokenRetries '
+          'in ${_retryDelay.inSeconds}s...',
+        );
         await Future.delayed(_retryDelay);
       }
     }
-    print('⚠️ NotificationService: Could not register FCM token after '
-        '$_maxTokenRetries attempts. Will rely on onTokenRefresh.');
+    print(
+      '⚠️ NotificationService: Could not register FCM token after '
+      '$_maxTokenRetries attempts. Will rely on onTokenRefresh.',
+    );
   }
 
   /// Get FCM token and register it with Firestore.
@@ -159,12 +172,14 @@ class NotificationService {
     try {
       final user = AuthService.currentUser;
       if (user == null) {
-        print('⚠️ NotificationService: No user logged in, skipping token registration');
+        print(
+          '⚠️ NotificationService: No user logged in, skipping token registration',
+        );
         return false;
       }
 
       String? token;
-      
+
       if (kIsWeb) {
         try {
           final settings = await _fcm.requestPermission(
@@ -173,12 +188,14 @@ class NotificationService {
             sound: true,
             provisional: false,
           );
-          
+
           if (settings.authorizationStatus == AuthorizationStatus.authorized) {
             await Future.delayed(const Duration(seconds: 2));
             token = await _fcm.getToken();
           } else {
-            print('❌ NotificationService: Web notification permission not granted');
+            print(
+              '❌ NotificationService: Web notification permission not granted',
+            );
             return false;
           }
         } catch (e) {
@@ -321,7 +338,9 @@ class NotificationService {
   Future<void> _checkInitialMessage() async {
     final message = await _fcm.getInitialMessage();
     if (message != null) {
-      print('🔔 NotificationService: App opened from notification (was terminated)');
+      print(
+        '🔔 NotificationService: App opened from notification (was terminated)',
+      );
       await _handleNotificationAction(message.data);
     }
   }
@@ -394,7 +413,9 @@ class NotificationService {
         await _snoozePlantReminder(plantId);
         break;
       case 'open_plant':
-        print('ℹ️ NotificationService: open_plant for $plantId (type=${data['type']})');
+        print(
+          'ℹ️ NotificationService: open_plant for $plantId (type=${data['type']})',
+        );
         break;
       default:
         print('ℹ️ NotificationService: Opening plant details for $plantId');
@@ -405,7 +426,7 @@ class NotificationService {
   /// Handle taps on local notifications
   void _onNotificationTapped(NotificationResponse response) {
     print('🔔 NotificationService: Local notification tapped');
-    
+
     if (response.actionId == 'mark_watered') {
       final data = _decodePayload(response.payload ?? '');
       final plantId = data['plantId'];
@@ -429,7 +450,7 @@ class NotificationService {
   Future<void> _markPlantWatered(String plantId) async {
     try {
       print('💧 NotificationService: Marking plant $plantId as watered');
-      
+
       final user = AuthService.currentUser;
       if (user == null) return;
 
@@ -438,19 +459,24 @@ class NotificationService {
 
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(plantDoc);
-        
+
         if (!snapshot.exists) {
           print('⚠️ NotificationService: Plant $plantId not found');
           return;
         }
 
         final data = snapshot.data()!;
-        final wateringIntervalDays = data['wateringIntervalDays'] ?? data['wateringFrequency'] ?? 7;
+        final wateringIntervalDays =
+            data['wateringIntervalDays'] ?? data['wateringFrequency'] ?? 7;
         final preferredTime = data['preferredTime'] ?? '18:00';
 
         // Calculate next due date at preferred time
-        final nextDue = _calculateNextDueAt(now, wateringIntervalDays, preferredTime);
-        
+        final nextDue = _calculateNextDueAt(
+          now,
+          wateringIntervalDays,
+          preferredTime,
+        );
+
         // Set next notification to 1 hour before due time
         final nextNotification = nextDue.subtract(const Duration(hours: 1));
 
@@ -476,7 +502,7 @@ class NotificationService {
   Future<void> _snoozePlantReminder(String plantId) async {
     try {
       print('⏰ NotificationService: Snoozing plant $plantId for 6 hours');
-      
+
       final now = DateTime.now();
       final snoozedUntil = now.add(const Duration(hours: 6));
 
@@ -491,7 +517,11 @@ class NotificationService {
   }
 
   /// Calculate next due date at preferred time
-  DateTime _calculateNextDueAt(DateTime from, int intervalDays, String preferredTime) {
+  DateTime _calculateNextDueAt(
+    DateTime from,
+    int intervalDays,
+    String preferredTime,
+  ) {
     // Parse preferred time (HH:mm)
     final timeParts = preferredTime.split(':');
     final hour = int.parse(timeParts[0]);
@@ -499,15 +529,9 @@ class NotificationService {
 
     // Add interval days to current date
     var nextDue = from.add(Duration(days: intervalDays));
-    
+
     // Set to preferred time
-    nextDue = DateTime(
-      nextDue.year,
-      nextDue.month,
-      nextDue.day,
-      hour,
-      minute,
-    );
+    nextDue = DateTime(nextDue.year, nextDue.month, nextDue.day, hour, minute);
 
     return nextDue;
   }
@@ -520,7 +544,7 @@ class NotificationService {
   /// Decode notification payload from string
   Map<String, String> _decodePayload(String payload) {
     if (payload.isEmpty) return {};
-    
+
     return Map.fromEntries(
       payload.split('&').map((pair) {
         final parts = pair.split('=');
@@ -553,10 +577,7 @@ class NotificationService {
       if (user == null) return;
 
       await _firestore.collection('users').doc(user.uid).update({
-        'quietHours': {
-          'start': start,
-          'end': end,
-        },
+        'quietHours': {'start': start, 'end': end},
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -590,7 +611,9 @@ class NotificationService {
         'muted': muted,
       });
 
-      print('✅ NotificationService: Plant $plantId ${muted ? "muted" : "unmuted"}');
+      print(
+        '✅ NotificationService: Plant $plantId ${muted ? "muted" : "unmuted"}',
+      );
     } catch (e) {
       print('❌ NotificationService: Error toggling plant mute: $e');
     }
@@ -603,5 +626,3 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('🔔 Background message received: ${message.notification?.title}');
   // Handle background message
 }
-
-

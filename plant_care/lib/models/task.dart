@@ -9,23 +9,37 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Where a task came from. Drives the single badge a row is allowed to show.
-enum TaskSource { schedule, analysis }
+/// Where a task came from, and it decides what may be done to it.
+///
+/// `schedule` is derived: recomputed from the plant's own numbers whenever they
+/// change, so it can be thrown away and rebuilt freely.
+///
+/// `analysis` is advice a health check gave. It is not derived and must never be
+/// swept by a recompute — it carries a health-score penalty while it is open,
+/// and clearing it silently hands that penalty back.
+///
+/// `chat` is a one-off the owner agreed to in conversation: repotting in a
+/// fortnight, checking on something after a trip. Rules would never produce it.
+enum TaskSource { schedule, analysis, chat }
 
 /// Icon and tint bucket. Kept as a closed set so an unknown value from the
 /// analyzer can never reach the UI without a glyph.
 enum TaskCategory { water, light, soil, fertilizer, scan, other }
 
-TaskSource _sourceFrom(String? raw) =>
-    raw == 'analysis' ? TaskSource.analysis : TaskSource.schedule;
+TaskSource _sourceFrom(String? raw) => switch (raw) {
+  'analysis' => TaskSource.analysis,
+  'chat' => TaskSource.chat,
+  _ => TaskSource.schedule,
+};
 
 TaskCategory _categoryFrom(String? raw) => switch (raw) {
-      'water' => TaskCategory.water,
-      'light' => TaskCategory.light,
-      'soil' => TaskCategory.soil,
-      'fertilizer' => TaskCategory.fertilizer,
-      'scan' => TaskCategory.scan,
-      _ => TaskCategory.other,
-    };
+  'water' => TaskCategory.water,
+  'light' => TaskCategory.light,
+  'soil' => TaskCategory.soil,
+  'fertilizer' => TaskCategory.fertilizer,
+  'scan' => TaskCategory.scan,
+  _ => TaskCategory.other,
+};
 
 class CareTask {
   final String id;
@@ -84,28 +98,29 @@ class CareTask {
 
   /// Due today or earlier — what the "Today" group and the deck show.
   bool isActiveAt(DateTime now) =>
-      !done && !dueAt.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
+      !done &&
+      !dueAt.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'plantId': plantId,
-        'userId': userId,
-        'title': title,
-        'detail': detail,
-        'source': source.name,
-        'category': category.name,
-        'dueAt': dueAt.toIso8601String(),
-        'postponedAt': postponedAt?.toIso8601String(),
-        'done': done,
-        'completedAt': completedAt?.toIso8601String(),
-        // Never write the raw pairs: Firestore rejects nested arrays and the
-        // whole batch fails, which is how the scheduler silently wrote nothing.
-        'kv': [
-          for (final pair in kv)
-            if (pair.length >= 2) {'k': pair[0], 'v': pair[1]},
-        ],
-        'body': body,
-      };
+    'id': id,
+    'plantId': plantId,
+    'userId': userId,
+    'title': title,
+    'detail': detail,
+    'source': source.name,
+    'category': category.name,
+    'dueAt': dueAt.toIso8601String(),
+    'postponedAt': postponedAt?.toIso8601String(),
+    'done': done,
+    'completedAt': completedAt?.toIso8601String(),
+    // Never write the raw pairs: Firestore rejects nested arrays and the
+    // whole batch fails, which is how the scheduler silently wrote nothing.
+    'kv': [
+      for (final pair in kv)
+        if (pair.length >= 2) {'k': pair[0], 'v': pair[1]},
+    ],
+    'body': body,
+  };
 
   factory CareTask.fromMap(Map<String, dynamic> map) {
     final due = _parseDate(map['dueAt']);
@@ -138,22 +153,21 @@ class CareTask {
     bool? done,
     DateTime? completedAt,
     bool clearPostponed = false,
-  }) =>
-      CareTask(
-        id: id,
-        plantId: plantId,
-        userId: userId,
-        title: title,
-        detail: detail,
-        source: source,
-        category: category,
-        dueAt: dueAt ?? this.dueAt,
-        postponedAt: clearPostponed ? null : (postponedAt ?? this.postponedAt),
-        done: done ?? this.done,
-        completedAt: completedAt ?? this.completedAt,
-        kv: kv,
-        body: body,
-      );
+  }) => CareTask(
+    id: id,
+    plantId: plantId,
+    userId: userId,
+    title: title,
+    detail: detail,
+    source: source,
+    category: category,
+    dueAt: dueAt ?? this.dueAt,
+    postponedAt: clearPostponed ? null : (postponedAt ?? this.postponedAt),
+    done: done ?? this.done,
+    completedAt: completedAt ?? this.completedAt,
+    kv: kv,
+    body: body,
+  );
 
   static DateTime? _parseDate(dynamic v) {
     if (v == null) return null;
@@ -208,7 +222,9 @@ int compareTasks(CareTask a, CareTask b, DateTime now) {
   // Watering and its health check are issued together with the same due date,
   // and the user is meant to water first — so the tie is broken by what the
   // sequence demands, not by chance.
-  final byCategory = categoryRank(a.category).compareTo(categoryRank(b.category));
+  final byCategory = categoryRank(
+    a.category,
+  ).compareTo(categoryRank(b.category));
   if (byCategory != 0) return byCategory;
 
   // Last resort, and it has to exist: Dart's sort is not stable, so returning 0
@@ -226,13 +242,13 @@ bool isScheduledScan(CareTask task) =>
 
 /// Order within one due date: water first, the health check that follows it last.
 int categoryRank(TaskCategory category) => switch (category) {
-      TaskCategory.water => 0,
-      TaskCategory.fertilizer => 1,
-      TaskCategory.light => 2,
-      TaskCategory.soil => 3,
-      TaskCategory.other => 4,
-      TaskCategory.scan => 5,
-    };
+  TaskCategory.water => 0,
+  TaskCategory.fertilizer => 1,
+  TaskCategory.light => 2,
+  TaskCategory.soil => 3,
+  TaskCategory.other => 4,
+  TaskCategory.scan => 5,
+};
 
 List<CareTask> sortTasks(List<CareTask> tasks, DateTime now) {
   final sorted = [...tasks]..sort((a, b) => compareTasks(a, b, now));
@@ -276,8 +292,8 @@ int plantPenalties({
   int openRecommendations = 0,
   bool lightDeficit = false,
 }) {
-  final overdue =
-      (overdueWateringDays.clamp(0, 1 << 30) * _kOverduePerDay).clamp(0, _kOverdueMax);
+  final overdue = (overdueWateringDays.clamp(0, 1 << 30) * _kOverduePerDay)
+      .clamp(0, _kOverdueMax);
   final recs = openRecommendations.clamp(0, 1 << 30) * _kOpenRecommendation;
   final light = lightDeficit ? _kLightDeficit : 0;
   return overdue + recs + light;

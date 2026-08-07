@@ -13,8 +13,9 @@ class StripeService {
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    final callable = FirebaseFunctions.instance
-        .httpsCallable('createStripeCheckout');
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'createStripeCheckout',
+    );
 
     final result = await callable.call<Map<dynamic, dynamic>>({
       'priceId': priceId,

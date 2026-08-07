@@ -23,14 +23,18 @@ const int kLightDeficitDays = 3;
 
 int scanScoreOf(Plant plant) =>
     plant.scanScore ??
-    (plant.healthStatus == 'issue' ? kLegacyScanScoreIssue : kLegacyScanScoreOk);
+    (plant.healthStatus == 'issue'
+        ? kLegacyScanScoreIssue
+        : kLegacyScanScoreOk);
 
 /// Whole days the watering is late. Zero when it is due today or later.
 int overdueWateringDaysOf(Plant plant, DateTime now) {
   final due = plant.nextDueAt ?? plant.nextWatering;
-  final days = DateTime(now.year, now.month, now.day)
-      .difference(DateTime(due.year, due.month, due.day))
-      .inDays;
+  final days = DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).difference(DateTime(due.year, due.month, due.day)).inDays;
   return days < 0 ? 0 : days;
 }
 
@@ -54,8 +58,7 @@ int livePlantScore(Plant plant, Iterable<CareTask> openTasks, {DateTime? now}) {
     scanScore: scanScoreOf(plant),
     overdueWateringDays: overdueWateringDaysOf(plant, at),
     openRecommendations: recommendations,
-    lightDeficit:
-        lightTasks.any((t) => t.ageDaysAt(at) >= kLightDeficitDays),
+    lightDeficit: lightTasks.any((t) => t.ageDaysAt(at) >= kLightDeficitDays),
   );
 }
 
@@ -68,12 +71,16 @@ GardenHealth gardenHealthOf(
   DateTime? now,
 }) {
   final at = now ?? DateTime.now();
-  return GardenHealth.from(plants.map((p) => (
+  return GardenHealth.from(
+    plants.map(
+      (p) => (
         name: p.name,
         score: livePlantScore(
           p,
           allOpenTasks.where((t) => t.plantId == p.id),
           now: at,
         ),
-      )));
+      ),
+    ),
+  );
 }

@@ -4284,6 +4284,1362 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t refresh. Check your connection.'**
   String get refreshFailed;
+
+  /// No description provided for @addPlantHeaderPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a {accent}'**
+  String addPlantHeaderPhoto(String accent);
+
+  /// No description provided for @addPlantHeaderPhotoAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'plant'**
+  String get addPlantHeaderPhotoAccent;
+
+  /// No description provided for @addPlantHeaderSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the {accent}'**
+  String addPlantHeaderSpecies(String accent);
+
+  /// No description provided for @addPlantHeaderSpeciesAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'species'**
+  String get addPlantHeaderSpeciesAccent;
+
+  /// No description provided for @addPlantHeaderConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'About the {accent}'**
+  String addPlantHeaderConditions(String accent);
+
+  /// No description provided for @addPlantHeaderConditionsAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'conditions'**
+  String get addPlantHeaderConditionsAccent;
+
+  /// No description provided for @addPlantHeaderPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Care {accent}'**
+  String addPlantHeaderPlan(String accent);
+
+  /// No description provided for @addPlantHeaderPlanAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'plan'**
+  String get addPlantHeaderPlanAccent;
+
+  /// No description provided for @addPlantBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get addPlantBack;
+
+  /// No description provided for @quizQuestionOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {step} of {total}'**
+  String quizQuestionOf(int step, int total);
+
+  /// No description provided for @quizNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get quizNext;
+
+  /// No description provided for @quizBuildPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Build the plan'**
+  String get quizBuildPlan;
+
+  /// No description provided for @quizPotQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'What {accent} is the pot?'**
+  String quizPotQuestion(String accent);
+
+  /// No description provided for @quizPotQuestionAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'diameter'**
+  String get quizPotQuestionAccent;
+
+  /// No description provided for @quizPotWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'The volume of soil decides how much water one watering needs.'**
+  String get quizPotWhy;
+
+  /// No description provided for @quizPotHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Measure across the rim of the pot, not the plant.'**
+  String get quizPotHint;
+
+  /// No description provided for @unitCm.
+  ///
+  /// In en, this message translates to:
+  /// **'cm'**
+  String get unitCm;
+
+  /// No description provided for @volumeMl.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} ml'**
+  String volumeMl(String value);
+
+  /// No description provided for @volumeLitres.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} l'**
+  String volumeLitres(String value);
+
+  /// No description provided for @quizPotPerWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'{volume} per watering'**
+  String quizPotPerWatering(String volume);
+
+  /// No description provided for @quizMaterialQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the pot made of, and does it have {accent}?'**
+  String quizMaterialQuestion(String accent);
+
+  /// No description provided for @quizMaterialQuestionAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'drainage'**
+  String get quizMaterialQuestionAccent;
+
+  /// No description provided for @quizMaterialWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Terracotta dries twice as fast as plastic. Without holes, root rot gets likely.'**
+  String get quizMaterialWhy;
+
+  /// No description provided for @quizMatPlastic.
+  ///
+  /// In en, this message translates to:
+  /// **'Plastic'**
+  String get quizMatPlastic;
+
+  /// No description provided for @quizMatPlasticDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Holds moisture longer'**
+  String get quizMatPlasticDesc;
+
+  /// No description provided for @quizMatCeramic.
+  ///
+  /// In en, this message translates to:
+  /// **'Ceramic'**
+  String get quizMatCeramic;
+
+  /// No description provided for @quizMatCeramicDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Glazed, does not breathe'**
+  String get quizMatCeramicDesc;
+
+  /// No description provided for @quizMatTerracotta.
+  ///
+  /// In en, this message translates to:
+  /// **'Terracotta'**
+  String get quizMatTerracotta;
+
+  /// No description provided for @quizMatTerracottaDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Breathes, dries fast'**
+  String get quizMatTerracottaDesc;
+
+  /// No description provided for @quizMatUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure'**
+  String get quizMatUnknown;
+
+  /// No description provided for @quizMatUnknownDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We will take an average'**
+  String get quizMatUnknownDesc;
+
+  /// No description provided for @quizDrainageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Drainage holes'**
+  String get quizDrainageLabel;
+
+  /// No description provided for @quizDrainageYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get quizDrainageYes;
+
+  /// No description provided for @quizDrainageYesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra water runs into the saucer'**
+  String get quizDrainageYesDesc;
+
+  /// No description provided for @quizDrainageNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get quizDrainageNo;
+
+  /// No description provided for @quizDrainageNoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Water sits at the roots'**
+  String get quizDrainageNoDesc;
+
+  /// No description provided for @quizPlaceQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Where does the plant {accent}?'**
+  String quizPlaceQuestion(String accent);
+
+  /// No description provided for @quizPlaceQuestionAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'stand'**
+  String get quizPlaceQuestionAccent;
+
+  /// No description provided for @quizPlaceWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'This tells us how much light it really gets — and whether it needs shading.'**
+  String get quizPlaceWhy;
+
+  /// No description provided for @quizPlaceSouth.
+  ///
+  /// In en, this message translates to:
+  /// **'South'**
+  String get quizPlaceSouth;
+
+  /// No description provided for @quizPlaceSouthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Windowsill, plenty of sun'**
+  String get quizPlaceSouthDesc;
+
+  /// No description provided for @quizPlaceEast.
+  ///
+  /// In en, this message translates to:
+  /// **'East / west'**
+  String get quizPlaceEast;
+
+  /// No description provided for @quizPlaceEastDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle morning sun'**
+  String get quizPlaceEastDesc;
+
+  /// No description provided for @quizPlaceNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'North'**
+  String get quizPlaceNorth;
+
+  /// No description provided for @quizPlaceNorthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Light, but no direct sun'**
+  String get quizPlaceNorthDesc;
+
+  /// No description provided for @quizPlaceRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Away from the window'**
+  String get quizPlaceRoom;
+
+  /// No description provided for @quizPlaceRoomDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Far from any window'**
+  String get quizPlaceRoomDesc;
+
+  /// No description provided for @quizPlaceBalcony.
+  ///
+  /// In en, this message translates to:
+  /// **'Balcony'**
+  String get quizPlaceBalcony;
+
+  /// No description provided for @quizPlaceBalconyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Outdoors, seasonal'**
+  String get quizPlaceBalconyDesc;
+
+  /// No description provided for @quizPlaceBath.
+  ///
+  /// In en, this message translates to:
+  /// **'Bathroom'**
+  String get quizPlaceBath;
+
+  /// No description provided for @quizPlaceBathDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Humid, little light'**
+  String get quizPlaceBathDesc;
+
+  /// No description provided for @quizHeatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiator or air conditioner nearby'**
+  String get quizHeatLabel;
+
+  /// No description provided for @quizHeatNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get quizHeatNo;
+
+  /// No description provided for @quizHeatNoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordinary room air'**
+  String get quizHeatNoDesc;
+
+  /// No description provided for @quizHeatYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get quizHeatYes;
+
+  /// No description provided for @quizHeatYesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Dries out the soil and the air'**
+  String get quizHeatYesDesc;
+
+  /// No description provided for @quizWaterQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'When did you {accent} water it?'**
+  String quizWaterQuestion(String accent);
+
+  /// No description provided for @quizWaterQuestionAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'last'**
+  String get quizWaterQuestionAccent;
+
+  /// No description provided for @quizWaterWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'The first watering date depends on it — otherwise the task is set blind.'**
+  String get quizWaterWhy;
+
+  /// No description provided for @quizWaterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get quizWaterToday;
+
+  /// No description provided for @quizWaterTodayDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The soil is still damp'**
+  String get quizWaterTodayDesc;
+
+  /// No description provided for @quizWaterFewDays.
+  ///
+  /// In en, this message translates to:
+  /// **'2–3 days ago'**
+  String get quizWaterFewDays;
+
+  /// No description provided for @quizWaterFewDaysDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The top layer has dried out'**
+  String get quizWaterFewDaysDesc;
+
+  /// No description provided for @quizWaterWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'About a week ago'**
+  String get quizWaterWeek;
+
+  /// No description provided for @quizWaterWeekDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Probably time to water'**
+  String get quizWaterWeekDesc;
+
+  /// No description provided for @quizWaterUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure'**
+  String get quizWaterUnknown;
+
+  /// No description provided for @quizWaterUnknownDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We will check the photo and the soil'**
+  String get quizWaterUnknownDesc;
+
+  /// No description provided for @addPlantPlanTuned.
+  ///
+  /// In en, this message translates to:
+  /// **'Built from your answers'**
+  String get addPlantPlanTuned;
+
+  /// No description provided for @addPlantCheckToday.
+  ///
+  /// In en, this message translates to:
+  /// **'check the soil today'**
+  String get addPlantCheckToday;
+
+  /// No description provided for @placeLightSouth.
+  ///
+  /// In en, this message translates to:
+  /// **'6–8 h'**
+  String get placeLightSouth;
+
+  /// No description provided for @placeLightEast.
+  ///
+  /// In en, this message translates to:
+  /// **'4–6 h'**
+  String get placeLightEast;
+
+  /// No description provided for @placeLightNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'2–3 h'**
+  String get placeLightNorth;
+
+  /// No description provided for @placeLightRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Little light'**
+  String get placeLightRoom;
+
+  /// No description provided for @placeLightBalcony.
+  ///
+  /// In en, this message translates to:
+  /// **'6–9 h'**
+  String get placeLightBalcony;
+
+  /// No description provided for @placeLightBath.
+  ///
+  /// In en, this message translates to:
+  /// **'2–3 h'**
+  String get placeLightBath;
+
+  /// No description provided for @soilModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderately damp'**
+  String get soilModerate;
+
+  /// No description provided for @addPlantAddLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Add light'**
+  String get addPlantAddLight;
+
+  /// No description provided for @addPlantAddLightDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Closer to a window, or a grow lamp for 4–6 h'**
+  String get addPlantAddLightDetail;
+
+  /// No description provided for @addPlantAddDrainage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add drainage'**
+  String get addPlantAddDrainage;
+
+  /// No description provided for @addPlantAddDrainageDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Without holes the water sits at the roots'**
+  String get addPlantAddDrainageDetail;
+
+  /// No description provided for @addPlantMoveFromHeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Move away from the heat'**
+  String get addPlantMoveFromHeat;
+
+  /// No description provided for @addPlantMoveFromHeatDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'A radiator dries the soil out'**
+  String get addPlantMoveFromHeatDetail;
+
+  /// No description provided for @lockedLabelTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding is paused'**
+  String get lockedLabelTrial;
+
+  /// No description provided for @lockedLabelLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Free plan limit'**
+  String get lockedLabelLimit;
+
+  /// No description provided for @lockedLabelCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription cancelled'**
+  String get lockedLabelCancelled;
+
+  /// No description provided for @lockedPillTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial finished'**
+  String get lockedPillTrial;
+
+  /// No description provided for @lockedPillLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Free plan · {count} of {limit}'**
+  String lockedPillLimit(int count, int limit);
+
+  /// No description provided for @lockedPillCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Access has ended'**
+  String get lockedPillCancelled;
+
+  /// No description provided for @lockedLeadTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'New plants {accent}'**
+  String lockedLeadTrial(String accent);
+
+  /// No description provided for @lockedLeadTrialAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'are waiting on a subscription'**
+  String get lockedLeadTrialAccent;
+
+  /// No description provided for @lockedLeadLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The free plan holds {accent}'**
+  String lockedLeadLimit(String accent);
+
+  /// No description provided for @lockedLeadLimitAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'{limit} plants'**
+  String lockedLeadLimitAccent(int limit);
+
+  /// No description provided for @lockedLeadCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'The subscription {accent}'**
+  String lockedLeadCancelled(String accent);
+
+  /// No description provided for @lockedLeadCancelledAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'is not active'**
+  String get lockedLeadCancelledAccent;
+
+  /// No description provided for @lockedSubTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'The trial ended on {date}'**
+  String lockedSubTrial(String date);
+
+  /// No description provided for @lockedSubLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'A subscription removes the limit — keep as many plants as you like.'**
+  String get lockedSubLimit;
+
+  /// No description provided for @lockedSubCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium was active until {date}'**
+  String lockedSubCancelled(String date);
+
+  /// No description provided for @lockedKeepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What stays'**
+  String get lockedKeepTitle;
+
+  /// No description provided for @lockedUnlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What a subscription brings back'**
+  String get lockedUnlockTitle;
+
+  /// No description provided for @lockedKeepPlants.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 plant looked after} other{{count} plants looked after}}'**
+  String lockedKeepPlants(int count);
+
+  /// No description provided for @lockedKeepPlantsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'They stay in the garden along with their check history'**
+  String get lockedKeepPlantsDesc;
+
+  /// No description provided for @lockedKeepReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering reminders'**
+  String get lockedKeepReminders;
+
+  /// No description provided for @lockedKeepRemindersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep arriving just as before'**
+  String get lockedKeepRemindersDesc;
+
+  /// No description provided for @lockedUnlockNewPlants.
+  ///
+  /// In en, this message translates to:
+  /// **'New plants'**
+  String get lockedUnlockNewPlants;
+
+  /// No description provided for @lockedUnlockNewPlantsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Species from a photo and a care plan of their own'**
+  String get lockedUnlockNewPlantsDesc;
+
+  /// No description provided for @lockedUnlockHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health check'**
+  String get lockedUnlockHealth;
+
+  /// No description provided for @lockedUnlockHealthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo analysis, a score and what to do about it'**
+  String get lockedUnlockHealthDesc;
+
+  /// No description provided for @lockedUnlockChat.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get lockedUnlockChat;
+
+  /// No description provided for @lockedUnlockChatDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers for each plant, aware of its conditions'**
+  String get lockedUnlockChatDesc;
+
+  /// No description provided for @lockedPlanYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get lockedPlanYear;
+
+  /// No description provided for @lockedPlanMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get lockedPlanMonth;
+
+  /// No description provided for @lockedPlanYearNote.
+  ///
+  /// In en, this message translates to:
+  /// **'\$21.99 a year · \$1.83 a month'**
+  String get lockedPlanYearNote;
+
+  /// No description provided for @lockedPlanMonthNote.
+  ///
+  /// In en, this message translates to:
+  /// **'\$1.99 a month · cancel any time'**
+  String get lockedPlanMonthNote;
+
+  /// No description provided for @lockedPlanBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Best value'**
+  String get lockedPlanBadge;
+
+  /// No description provided for @lockedFinePrint.
+  ///
+  /// In en, this message translates to:
+  /// **'The subscription renews automatically. Cancel any time in your store settings.'**
+  String get lockedFinePrint;
+
+  /// No description provided for @lockedCtaResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume · {plan}'**
+  String lockedCtaResume(String plan);
+
+  /// No description provided for @lockedCtaUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade · {plan}'**
+  String lockedCtaUpgrade(String plan);
+
+  /// No description provided for @lockedRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get lockedRestore;
+
+  /// No description provided for @lockedRestoreDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases restored'**
+  String get lockedRestoreDone;
+
+  /// No description provided for @lockedRestoreNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to restore on this account'**
+  String get lockedRestoreNothing;
+
+  /// No description provided for @billingIssueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A payment did not go through'**
+  String get billingIssueTitle;
+
+  /// No description provided for @billingIssueBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your payment method — access stays on while the store retries.'**
+  String get billingIssueBody;
+
+  /// No description provided for @duplicateSubscriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Two subscriptions found'**
+  String get duplicateSubscriptionTitle;
+
+  /// No description provided for @duplicateSubscriptionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You are paying in the App Store and on the web at the same time. Cancel one of them.'**
+  String get duplicateSubscriptionBody;
+
+  /// No description provided for @gateBarTitleTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial finished'**
+  String get gateBarTitleTrial;
+
+  /// No description provided for @gateBarTitleExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription is not active'**
+  String get gateBarTitleExpired;
+
+  /// No description provided for @gateBarBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering keeps working; analysis and the assistant need a subscription'**
+  String get gateBarBody;
+
+  /// No description provided for @gateBarAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get gateBarAction;
+
+  /// No description provided for @gateStaleScore.
+  ///
+  /// In en, this message translates to:
+  /// **'The score is not updating — it needs a health check'**
+  String get gateStaleScore;
+
+  /// No description provided for @gateSheetHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health check {accent}'**
+  String gateSheetHealth(String accent);
+
+  /// No description provided for @gateSheetChat.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI assistant {accent}'**
+  String gateSheetChat(String accent);
+
+  /// No description provided for @gateSheetAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'needs a subscription'**
+  String get gateSheetAccent;
+
+  /// No description provided for @gateSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The trial has finished. The plant and its care stay with you — only what the AI works out comes back with a subscription.'**
+  String get gateSheetBody;
+
+  /// No description provided for @gateSheetKeepWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering and reminders keep working'**
+  String get gateSheetKeepWatering;
+
+  /// No description provided for @gateSheetKeepHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Check history and care cards stay open'**
+  String get gateSheetKeepHistory;
+
+  /// No description provided for @gateSheetCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume subscription'**
+  String get gateSheetCta;
+
+  /// No description provided for @gateSheetLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get gateSheetLater;
+
+  /// No description provided for @limitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Every slot is taken'**
+  String get limitLabel;
+
+  /// No description provided for @limitCountOf.
+  ///
+  /// In en, this message translates to:
+  /// **'of {limit} slots'**
+  String limitCountOf(int limit);
+
+  /// No description provided for @limitPlanTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial'**
+  String get limitPlanTrial;
+
+  /// No description provided for @limitPlanFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free plan'**
+  String get limitPlanFree;
+
+  /// No description provided for @limitPlanPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get limitPlanPremium;
+
+  /// No description provided for @limitLegendUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken'**
+  String get limitLegendUsed;
+
+  /// No description provided for @limitLegendLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens with Premium'**
+  String get limitLegendLocked;
+
+  /// No description provided for @limitLeadTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'There are {accent}'**
+  String limitLeadTrial(String accent);
+
+  /// No description provided for @limitLeadTrialAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'no free slots left'**
+  String get limitLeadTrialAccent;
+
+  /// No description provided for @limitLeadFree.
+  ///
+  /// In en, this message translates to:
+  /// **'The free plan has {accent}'**
+  String limitLeadFree(String accent);
+
+  /// No description provided for @limitLeadFreeAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'{limit} slots'**
+  String limitLeadFreeAccent(int limit);
+
+  /// No description provided for @limitLeadPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'All ten slots {accent}'**
+  String limitLeadPremium(String accent);
+
+  /// No description provided for @limitLeadPremiumAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'are taken'**
+  String get limitLeadPremiumAccent;
+
+  /// No description provided for @limitBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Free up a slot or open ten of them.'**
+  String get limitBody;
+
+  /// No description provided for @limitBodyPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove a plant you no longer keep to make room for a new one.'**
+  String get limitBodyPremium;
+
+  /// No description provided for @limitPathUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Open 10 slots'**
+  String get limitPathUpgrade;
+
+  /// No description provided for @limitPathUpgradeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Health checks and the assistant come with it'**
+  String get limitPathUpgradeDesc;
+
+  /// No description provided for @limitPathFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free up a slot'**
+  String get limitPathFree;
+
+  /// No description provided for @limitPathFreeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove a plant you no longer keep'**
+  String get limitPathFreeDesc;
+
+  /// No description provided for @limitPremiumTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get limitPremiumTitle;
+
+  /// No description provided for @limitCtaUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade · {plan}'**
+  String limitCtaUpgrade(String plan);
+
+  /// No description provided for @weatherDetectedByNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected from network'**
+  String get weatherDetectedByNetwork;
+
+  /// No description provided for @profileCityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get profileCityLabel;
+
+  /// No description provided for @profileCityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Affects care recommendations'**
+  String get profileCityHint;
+
+  /// No description provided for @unitsTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature units'**
+  String get unitsTemperature;
+
+  /// No description provided for @unitsCelsius.
+  ///
+  /// In en, this message translates to:
+  /// **'°C'**
+  String get unitsCelsius;
+
+  /// No description provided for @unitsFahrenheit.
+  ///
+  /// In en, this message translates to:
+  /// **'°F'**
+  String get unitsFahrenheit;
+
+  /// No description provided for @unitsAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get unitsAutomatic;
+
+  /// No description provided for @weatherDegrees.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}°'**
+  String weatherDegrees(String value);
+
+  /// No description provided for @chatProposalApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get chatProposalApply;
+
+  /// No description provided for @chatProposalDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'No thanks'**
+  String get chatProposalDecline;
+
+  /// No description provided for @chatProposalApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied'**
+  String get chatProposalApplied;
+
+  /// No description provided for @chatProposalDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get chatProposalDeclined;
+
+  /// No description provided for @chatProposalOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Outdated'**
+  String get chatProposalOutdated;
+
+  /// No description provided for @chatProposalPot.
+  ///
+  /// In en, this message translates to:
+  /// **'Pot'**
+  String get chatProposalPot;
+
+  /// No description provided for @chatProposalSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Species'**
+  String get chatProposalSpecies;
+
+  /// No description provided for @chatProposalPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause reminders until'**
+  String get chatProposalPause;
+
+  /// No description provided for @chatProposalChange.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {from} → {to}'**
+  String chatProposalChange(String label, String from, String to);
+
+  /// No description provided for @chatProposalSet.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {to}'**
+  String chatProposalSet(String label, String to);
+
+  /// No description provided for @chatTopicWater.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering'**
+  String get chatTopicWater;
+
+  /// No description provided for @chatTopicSoil.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil'**
+  String get chatTopicSoil;
+
+  /// No description provided for @chatTopicLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get chatTopicLight;
+
+  /// No description provided for @chatTopicTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get chatTopicTemperature;
+
+  /// No description provided for @chatTopicFertilizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Fertiliser'**
+  String get chatTopicFertilizer;
+
+  /// No description provided for @chatTopicDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get chatTopicDiagnostics;
+
+  /// No description provided for @chatShowWholeConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show whole conversation'**
+  String get chatShowWholeConversation;
+
+  /// No description provided for @chatTitleWithTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant · {topic}'**
+  String chatTitleWithTopic(String topic);
+
+  /// No description provided for @plantChatQuickWaterEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I water it earlier?'**
+  String get plantChatQuickWaterEarly;
+
+  /// No description provided for @plantChatQuickSoilSlowToDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is the soil slow to dry?'**
+  String get plantChatQuickSoilSlowToDry;
+
+  /// No description provided for @plantChatQuickEnoughLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Is it getting enough light?'**
+  String get plantChatQuickEnoughLight;
+
+  /// No description provided for @plantChatQuickLeggyGrowth.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is it getting leggy?'**
+  String get plantChatQuickLeggyGrowth;
+
+  /// No description provided for @plantChatQuickShouldMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Should I move it?'**
+  String get plantChatQuickShouldMove;
+
+  /// No description provided for @plantChatQuickRepotWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When should I repot it?'**
+  String get plantChatQuickRepotWhen;
+
+  /// No description provided for @plantChatQuickSoilCompacted.
+  ///
+  /// In en, this message translates to:
+  /// **'Why has the soil gone hard?'**
+  String get plantChatQuickSoilCompacted;
+
+  /// No description provided for @plantChatQuickWhichSoil.
+  ///
+  /// In en, this message translates to:
+  /// **'Which soil is best for it?'**
+  String get plantChatQuickWhichSoil;
+
+  /// No description provided for @memoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What the assistant knows'**
+  String get memoryTitle;
+
+  /// No description provided for @memoryExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Written from what you tell the assistant in chat. Remove anything that is wrong — it is used in every answer.'**
+  String get memoryExplainer;
+
+  /// No description provided for @memoryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load.'**
+  String get memoryLoadFailed;
+
+  /// No description provided for @memorySuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'replaced'**
+  String get memorySuperseded;
+
+  /// No description provided for @memoryForgetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget this?'**
+  String get memoryForgetConfirm;
+
+  /// No description provided for @memoryForgetAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get memoryForgetAction;
+
+  /// No description provided for @memoryKindPlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it stands'**
+  String get memoryKindPlacement;
+
+  /// No description provided for @memoryKindContainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pot'**
+  String get memoryKindContainer;
+
+  /// No description provided for @memoryKindWateringHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Care habits'**
+  String get memoryKindWateringHabit;
+
+  /// No description provided for @memoryKindSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Species'**
+  String get memoryKindSpecies;
+
+  /// No description provided for @memoryKindEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions'**
+  String get memoryKindEnvironment;
+
+  /// No description provided for @memoryKindIntervention.
+  ///
+  /// In en, this message translates to:
+  /// **'What was done'**
+  String get memoryKindIntervention;
+
+  /// No description provided for @memoryKindSymptom.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptom'**
+  String get memoryKindSymptom;
+
+  /// No description provided for @memoryKindConstraint.
+  ///
+  /// In en, this message translates to:
+  /// **'Constraint'**
+  String get memoryKindConstraint;
+
+  /// No description provided for @memoryKindGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get memoryKindGoal;
+
+  /// No description provided for @memoryKindPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Preference'**
+  String get memoryKindPreference;
+
+  /// No description provided for @memoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet. As you talk about {name}, what you tell the assistant is kept here.'**
+  String memoryEmpty(String name);
+
+  /// No description provided for @chatTaskOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a reminder?'**
+  String get chatTaskOffer;
+
+  /// No description provided for @chatTaskInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'in {days} days'**
+  String chatTaskInDays(int days);
+
+  /// No description provided for @chatTaskCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder set'**
+  String get chatTaskCreated;
+
+  /// No description provided for @chatCtxNextWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Next watering in {days} d.'**
+  String chatCtxNextWatering(int days);
+
+  /// No description provided for @chatCtxWaterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Watering due today'**
+  String get chatCtxWaterToday;
+
+  /// No description provided for @chatCtxLastWatered.
+  ///
+  /// In en, this message translates to:
+  /// **'Last watered {date}'**
+  String chatCtxLastWatered(String date);
+
+  /// No description provided for @chatCtxLight.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h · {type}'**
+  String chatCtxLight(String hours, String type);
+
+  /// No description provided for @chatCtxTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimum {value}'**
+  String chatCtxTemperature(String value);
+
+  /// No description provided for @chatCtxFertilizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed {value}'**
+  String chatCtxFertilizer(String value);
+
+  /// No description provided for @careDiscussWithAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Discuss with the assistant'**
+  String get careDiscussWithAssistant;
+
+  /// No description provided for @chatProposalNextWatering.
+  ///
+  /// In en, this message translates to:
+  /// **'Next watering'**
+  String get chatProposalNextWatering;
+
+  /// No description provided for @chatProposalToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get chatProposalToday;
+
+  /// No description provided for @cityPickerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start typing a city'**
+  String get cityPickerHint;
+
+  /// No description provided for @cityPickerStartTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'Type at least two letters'**
+  String get cityPickerStartTyping;
+
+  /// No description provided for @cityPickerSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching…'**
+  String get cityPickerSearching;
+
+  /// No description provided for @cityPickerNothingFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No city found by that name'**
+  String get cityPickerNothingFound;
+
+  /// No description provided for @cityUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'City updated'**
+  String get cityUpdated;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

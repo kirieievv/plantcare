@@ -13,6 +13,8 @@ import 'package:plant_care/services/auth_service.dart';
 import 'package:plant_care/services/notification_service.dart';
 import 'package:plant_care/services/subscription_service.dart';
 import 'package:plant_care/services/user_service.dart';
+import 'package:plant_care/services/weather_service.dart';
+import 'package:plant_care/widgets/city_picker_sheet.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
 import 'package:plant_care/widgets/botanly_kit.dart';
 import 'package:plant_care/widgets/botanly_sheet.dart';
@@ -28,7 +30,6 @@ class ProfileV4Screen extends StatefulWidget {
 class _ProfileV4ScreenState extends State<ProfileV4Screen> {
   final _name = TextEditingController();
   final _bio = TextEditingController();
-  final _location = TextEditingController();
 
   UserModel? _profile;
   bool _loading = true;
@@ -48,7 +49,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
   void dispose() {
     _name.dispose();
     _bio.dispose();
-    _location.dispose();
     super.dispose();
   }
 
@@ -61,7 +61,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
         _loading = false;
         _name.text = profile?.name ?? '';
         _bio.text = profile?.bio ?? '';
-        _location.text = profile?.location ?? '';
       });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -83,8 +82,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
       await UserService.updateUserProfile(
         name: name,
         bio: _bio.text.trim().isEmpty ? null : _bio.text.trim(),
-        location:
-            _location.text.trim().isEmpty ? null : _location.text.trim(),
       );
       await _load();
       if (!mounted) return;
@@ -108,9 +105,9 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
     if (info.isActive) {
       _openManageSheet(info);
     } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
     }
   }
 
@@ -333,6 +330,8 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
                         ),
                         BotanlySectionLabel(l10n.profileInformation),
                         _profileCard(),
+                        BotanlySectionLabel(l10n.profileCityLabel),
+                        _locationCard(),
                         BotanlySectionLabel(l10n.accountInfo),
                         _accountCard(email),
                         const SizedBox(height: 18),
@@ -359,6 +358,46 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
         ],
       ),
     );
+  }
+
+  /// City and units.
+  ///
+  /// The only place in the app that explains where the city came from — hence
+  /// the "detected from network" line rather than a tooltip somewhere else.
+  /// Editing it pins `source: manual`, after which no IP lookup overwrites it.
+  Widget _locationCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final reading = WeatherService().current;
+    final city = reading?.location?.city;
+
+    return GlassSurface(
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        children: [
+          BotanlyListRow(
+            glyph: BotanlySvg.pin,
+            title: l10n.profileCityLabel,
+            subtitle: city == null
+                ? l10n.profileCityHint
+                // Two facts, one line: what it is and where it came from.
+                : '$city · ${reading!.location!.isManual ? l10n.profileCityHint : l10n.weatherDetectedByNetwork}',
+            onTap: _editCity,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editCity() async {
+    final chosen = await showCityPicker(context);
+    if (chosen == null || !mounted) return;
+
+    // The suggestion brought its own coordinates, so this is a real move: the
+    // weather is re-read for the new place rather than relabelled.
+    await WeatherService().setManualCity(chosen.toLocation());
+    if (!mounted) return;
+    setState(() {});
+    showBotanlyToast(context, AppLocalizations.of(context)!.cityUpdated);
   }
 
   Widget _header(String? email) {
@@ -476,12 +515,10 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
         ),
         const SizedBox(height: 14),
         _Field(label: l10n.name, value: _profile?.name ?? '—'),
-        _Field(label: l10n.bio, value: _emptyDash(_profile?.bio)),
-        _Field(
-          label: l10n.location,
-          value: _emptyDash(_profile?.location),
-          last: true,
-        ),
+        // No location row: the city has its own card right below, where it can
+        // carry coordinates and drive the weather. Two fields for one fact left
+        // the user editing the one that changed nothing.
+        _Field(label: l10n.bio, value: _emptyDash(_profile?.bio), last: true),
       ],
     );
   }
@@ -519,12 +556,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
           glyph: BotanlySvg.edit,
           maxLines: 3,
         ),
-        const SizedBox(height: 10),
-        BotanlyField(
-          controller: _location,
-          hint: l10n.location,
-          glyph: BotanlySvg.pin,
-        ),
         const SizedBox(height: 14),
         Row(
           children: [
@@ -540,7 +571,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
                           _nameError = null;
                           _name.text = _profile?.name ?? '';
                           _bio.text = _profile?.bio ?? '';
-                          _location.text = _profile?.location ?? '';
                         });
                       },
               ),
@@ -561,7 +591,6 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
 
   Widget _accountCard(String? email) {
     final created = _profile?.createdAt;
-    final lastLogin = _profile?.lastLogin;
 
     return GlassSurface(
       padding: const EdgeInsets.all(16),
@@ -572,10 +601,8 @@ class _ProfileV4ScreenState extends State<ProfileV4Screen> {
             label: l10n.memberSince,
             value: created == null ? '—' : botanlyDate(context, created),
           ),
-          _Field(
-            label: l10n.lastLogin,
-            value: lastLogin == null ? '—' : botanlyDate(context, lastLogin),
-          ),
+          // No "last login": it is always the moment you opened the screen, so
+          // it never says anything you did not already know.
           _Field(label: l10n.email, value: email ?? '—', last: true),
         ],
       ),

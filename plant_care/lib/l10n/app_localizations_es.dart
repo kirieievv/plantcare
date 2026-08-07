@@ -2358,4 +2358,770 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get refreshFailed => 'No se pudo actualizar. Comprueba la conexión.';
+
+  @override
+  String addPlantHeaderPhoto(String accent) {
+    return 'Añadir una $accent';
+  }
+
+  @override
+  String get addPlantHeaderPhotoAccent => 'planta';
+
+  @override
+  String addPlantHeaderSpecies(String accent) {
+    return 'Confirmar la $accent';
+  }
+
+  @override
+  String get addPlantHeaderSpeciesAccent => 'especie';
+
+  @override
+  String addPlantHeaderConditions(String accent) {
+    return 'Sobre las $accent';
+  }
+
+  @override
+  String get addPlantHeaderConditionsAccent => 'condiciones';
+
+  @override
+  String addPlantHeaderPlan(String accent) {
+    return '$accent de cuidados';
+  }
+
+  @override
+  String get addPlantHeaderPlanAccent => 'Plan';
+
+  @override
+  String get addPlantBack => 'Atrás';
+
+  @override
+  String quizQuestionOf(int step, int total) {
+    return 'Pregunta $step de $total';
+  }
+
+  @override
+  String get quizNext => 'Siguiente';
+
+  @override
+  String get quizBuildPlan => 'Crear el plan';
+
+  @override
+  String quizPotQuestion(String accent) {
+    return '¿Qué $accent tiene la maceta?';
+  }
+
+  @override
+  String get quizPotQuestionAccent => 'diámetro';
+
+  @override
+  String get quizPotWhy => 'El volumen de sustrato decide cuánta agua necesita cada riego.';
+
+  @override
+  String get quizPotHint => 'Mide por el borde de la maceta, no la planta.';
+
+  @override
+  String get unitCm => 'cm';
+
+  @override
+  String volumeMl(String value) {
+    return '$value ml';
+  }
+
+  @override
+  String volumeLitres(String value) {
+    return '$value l';
+  }
+
+  @override
+  String quizPotPerWatering(String volume) {
+    return '$volume por riego';
+  }
+
+  @override
+  String quizMaterialQuestion(String accent) {
+    return '¿De qué es la maceta y tiene $accent?';
+  }
+
+  @override
+  String get quizMaterialQuestionAccent => 'drenaje';
+
+  @override
+  String get quizMaterialWhy => 'El barro se seca el doble de rápido que el plástico. Sin agujeros crece el riesgo de pudrición.';
+
+  @override
+  String get quizMatPlastic => 'Plástico';
+
+  @override
+  String get quizMatPlasticDesc => 'Retiene la humedad más tiempo';
+
+  @override
+  String get quizMatCeramic => 'Cerámica';
+
+  @override
+  String get quizMatCeramicDesc => 'Esmaltada, no transpira';
+
+  @override
+  String get quizMatTerracotta => 'Barro';
+
+  @override
+  String get quizMatTerracottaDesc => 'Transpira, se seca rápido';
+
+  @override
+  String get quizMatUnknown => 'No lo sé';
+
+  @override
+  String get quizMatUnknownDesc => 'Tomaremos la media';
+
+  @override
+  String get quizDrainageLabel => 'Agujeros de drenaje';
+
+  @override
+  String get quizDrainageYes => 'Sí';
+
+  @override
+  String get quizDrainageYesDesc => 'El agua sobrante cae al plato';
+
+  @override
+  String get quizDrainageNo => 'No';
+
+  @override
+  String get quizDrainageNoDesc => 'El agua se estanca en las raíces';
+
+  @override
+  String quizPlaceQuestion(String accent) {
+    return '¿Dónde $accent la planta?';
+  }
+
+  @override
+  String get quizPlaceQuestionAccent => 'está';
+
+  @override
+  String get quizPlaceWhy => 'Así sabremos cuánta luz recibe de verdad — y si necesita sombra.';
+
+  @override
+  String get quizPlaceSouth => 'Sur';
+
+  @override
+  String get quizPlaceSouthDesc => 'Alféizar, mucho sol';
+
+  @override
+  String get quizPlaceEast => 'Este / oeste';
+
+  @override
+  String get quizPlaceEastDesc => 'Sol suave de la mañana';
+
+  @override
+  String get quizPlaceNorth => 'Norte';
+
+  @override
+  String get quizPlaceNorthDesc => 'Hay luz, no sol';
+
+  @override
+  String get quizPlaceRoom => 'En el interior';
+
+  @override
+  String get quizPlaceRoomDesc => 'Lejos de la ventana';
+
+  @override
+  String get quizPlaceBalcony => 'Balcón';
+
+  @override
+  String get quizPlaceBalconyDesc => 'Al aire libre, por temporada';
+
+  @override
+  String get quizPlaceBath => 'Baño';
+
+  @override
+  String get quizPlaceBathDesc => 'Húmedo, poca luz';
+
+  @override
+  String get quizHeatLabel => 'Radiador o aire acondicionado cerca';
+
+  @override
+  String get quizHeatNo => 'No';
+
+  @override
+  String get quizHeatNoDesc => 'Aire normal de la habitación';
+
+  @override
+  String get quizHeatYes => 'Sí';
+
+  @override
+  String get quizHeatYesDesc => 'Reseca el sustrato y el aire';
+
+  @override
+  String quizWaterQuestion(String accent) {
+    return '¿Cuándo la regaste por $accent?';
+  }
+
+  @override
+  String get quizWaterQuestionAccent => 'última vez';
+
+  @override
+  String get quizWaterWhy => 'De esto depende la fecha del primer riego — si no, la tarea se fija a ciegas.';
+
+  @override
+  String get quizWaterToday => 'Hoy';
+
+  @override
+  String get quizWaterTodayDesc => 'El sustrato aún está húmedo';
+
+  @override
+  String get quizWaterFewDays => 'Hace 2–3 días';
+
+  @override
+  String get quizWaterFewDaysDesc => 'La capa superior se ha secado';
+
+  @override
+  String get quizWaterWeek => 'Hace una semana';
+
+  @override
+  String get quizWaterWeekDesc => 'Seguramente toca regar';
+
+  @override
+  String get quizWaterUnknown => 'No lo sé';
+
+  @override
+  String get quizWaterUnknownDesc => 'Lo comprobaremos con la foto y el sustrato';
+
+  @override
+  String get addPlantPlanTuned => 'Hecho con tus respuestas';
+
+  @override
+  String get addPlantCheckToday => 'lo comprobamos hoy';
+
+  @override
+  String get placeLightSouth => '6–8 h';
+
+  @override
+  String get placeLightEast => '4–6 h';
+
+  @override
+  String get placeLightNorth => '2–3 h';
+
+  @override
+  String get placeLightRoom => 'Poca luz';
+
+  @override
+  String get placeLightBalcony => '6–9 h';
+
+  @override
+  String get placeLightBath => '2–3 h';
+
+  @override
+  String get soilModerate => 'Moderadamente húmedo';
+
+  @override
+  String get addPlantAddLight => 'Añadir luz';
+
+  @override
+  String get addPlantAddLightDetail => 'Más cerca de la ventana o lámpara de cultivo 4–6 h';
+
+  @override
+  String get addPlantAddDrainage => 'Hacer drenaje';
+
+  @override
+  String get addPlantAddDrainageDetail => 'Sin agujeros el agua se estanca en las raíces';
+
+  @override
+  String get addPlantMoveFromHeat => 'Alejar del calor';
+
+  @override
+  String get addPlantMoveFromHeatDetail => 'El radiador reseca el sustrato';
+
+  @override
+  String get lockedLabelTrial => 'Añadir está en pausa';
+
+  @override
+  String get lockedLabelLimit => 'Límite del plan gratuito';
+
+  @override
+  String get lockedLabelCancelled => 'Suscripción cancelada';
+
+  @override
+  String get lockedPillTrial => 'Prueba finalizada';
+
+  @override
+  String lockedPillLimit(int count, int limit) {
+    return 'Plan gratuito · $count de $limit';
+  }
+
+  @override
+  String get lockedPillCancelled => 'El acceso ha terminado';
+
+  @override
+  String lockedLeadTrial(String accent) {
+    return 'Las plantas nuevas $accent';
+  }
+
+  @override
+  String get lockedLeadTrialAccent => 'esperan una suscripción';
+
+  @override
+  String lockedLeadLimit(String accent) {
+    return 'El plan gratuito admite $accent';
+  }
+
+  @override
+  String lockedLeadLimitAccent(int limit) {
+    return '$limit plantas';
+  }
+
+  @override
+  String lockedLeadCancelled(String accent) {
+    return 'La suscripción $accent';
+  }
+
+  @override
+  String get lockedLeadCancelledAccent => 'no está activa';
+
+  @override
+  String lockedSubTrial(String date) {
+    return 'La prueba terminó el $date';
+  }
+
+  @override
+  String get lockedSubLimit => 'La suscripción quita el límite: tantas plantas como quieras.';
+
+  @override
+  String lockedSubCancelled(String date) {
+    return 'Premium estuvo activo hasta $date';
+  }
+
+  @override
+  String get lockedKeepTitle => 'Lo que se queda';
+
+  @override
+  String get lockedUnlockTitle => 'Lo que devuelve la suscripción';
+
+  @override
+  String lockedKeepPlants(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plantas cuidadas',
+      one: '1 planta cuidada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lockedKeepPlantsDesc => 'Se quedan en el jardín junto con su historial';
+
+  @override
+  String get lockedKeepReminders => 'Recordatorios de riego';
+
+  @override
+  String get lockedKeepRemindersDesc => 'Siguen llegando como antes';
+
+  @override
+  String get lockedUnlockNewPlants => 'Plantas nuevas';
+
+  @override
+  String get lockedUnlockNewPlantsDesc => 'Identificación por foto y un plan de cuidados propio';
+
+  @override
+  String get lockedUnlockHealth => 'Chequeo de salud';
+
+  @override
+  String get lockedUnlockHealthDesc => 'Análisis por foto, puntuación y recomendaciones';
+
+  @override
+  String get lockedUnlockChat => 'Asistente de IA';
+
+  @override
+  String get lockedUnlockChatDesc => 'Respuestas por planta, teniendo en cuenta sus condiciones';
+
+  @override
+  String get lockedPlanYear => 'Año';
+
+  @override
+  String get lockedPlanMonth => 'Mes';
+
+  @override
+  String get lockedPlanYearNote => '21,99 \$ al año · 1,83 \$ al mes';
+
+  @override
+  String get lockedPlanMonthNote => '1,99 \$ al mes · cancela cuando quieras';
+
+  @override
+  String get lockedPlanBadge => 'Mejor precio';
+
+  @override
+  String get lockedFinePrint => 'La suscripción se renueva automáticamente. Cancélala cuando quieras en los ajustes de la tienda.';
+
+  @override
+  String lockedCtaResume(String plan) {
+    return 'Reanudar · $plan';
+  }
+
+  @override
+  String lockedCtaUpgrade(String plan) {
+    return 'Mejorar · $plan';
+  }
+
+  @override
+  String get lockedRestore => 'Restaurar compras';
+
+  @override
+  String get lockedRestoreDone => 'Compras restauradas';
+
+  @override
+  String get lockedRestoreNothing => 'No hay nada que restaurar en esta cuenta';
+
+  @override
+  String get billingIssueTitle => 'Un pago no se completó';
+
+  @override
+  String get billingIssueBody => 'Revisa tu método de pago: el acceso sigue mientras la tienda lo reintenta.';
+
+  @override
+  String get duplicateSubscriptionTitle => 'Se encontraron dos suscripciones';
+
+  @override
+  String get duplicateSubscriptionBody => 'Estás pagando en la App Store y en la web a la vez. Cancela una de las dos.';
+
+  @override
+  String get gateBarTitleTrial => 'Prueba finalizada';
+
+  @override
+  String get gateBarTitleExpired => 'La suscripción no está activa';
+
+  @override
+  String get gateBarBody => 'El riego sigue; el análisis y el asistente requieren suscripción';
+
+  @override
+  String get gateBarAction => 'Reanudar';
+
+  @override
+  String get gateStaleScore => 'La puntuación no se actualiza: hace falta un chequeo de salud';
+
+  @override
+  String gateSheetHealth(String accent) {
+    return 'Chequeo de salud $accent';
+  }
+
+  @override
+  String gateSheetChat(String accent) {
+    return 'El asistente de IA $accent';
+  }
+
+  @override
+  String get gateSheetAccent => 'requiere suscripción';
+
+  @override
+  String get gateSheetBody => 'La prueba ha terminado. La planta y sus cuidados se quedan; solo vuelve lo que calcula la IA.';
+
+  @override
+  String get gateSheetKeepWatering => 'El riego y los recordatorios siguen funcionando';
+
+  @override
+  String get gateSheetKeepHistory => 'El historial y las fichas de cuidado siguen accesibles';
+
+  @override
+  String get gateSheetCta => 'Reanudar la suscripción';
+
+  @override
+  String get gateSheetLater => 'Más tarde';
+
+  @override
+  String get limitLabel => 'Todas las plazas ocupadas';
+
+  @override
+  String limitCountOf(int limit) {
+    return 'de $limit plazas';
+  }
+
+  @override
+  String get limitPlanTrial => 'Prueba';
+
+  @override
+  String get limitPlanFree => 'Plan gratuito';
+
+  @override
+  String get limitPlanPremium => 'Premium';
+
+  @override
+  String get limitLegendUsed => 'Ocupado';
+
+  @override
+  String get limitLegendLocked => 'Se abre con Premium';
+
+  @override
+  String limitLeadTrial(String accent) {
+    return 'No $accent';
+  }
+
+  @override
+  String get limitLeadTrialAccent => 'quedan plazas libres';
+
+  @override
+  String limitLeadFree(String accent) {
+    return 'El plan gratuito tiene $accent';
+  }
+
+  @override
+  String limitLeadFreeAccent(int limit) {
+    return '$limit plazas';
+  }
+
+  @override
+  String limitLeadPremium(String accent) {
+    return 'Las diez plazas $accent';
+  }
+
+  @override
+  String get limitLeadPremiumAccent => 'están ocupadas';
+
+  @override
+  String get limitBody => 'Libera una plaza o abre diez.';
+
+  @override
+  String get limitBodyPremium => 'Quita una planta que ya no tengas para hacer sitio.';
+
+  @override
+  String get limitPathUpgrade => 'Abrir 10 plazas';
+
+  @override
+  String get limitPathUpgradeDesc => 'Junto con el chequeo de salud y el asistente';
+
+  @override
+  String get limitPathFree => 'Liberar una plaza';
+
+  @override
+  String get limitPathFreeDesc => 'Quitar una planta que ya no tengas';
+
+  @override
+  String get limitPremiumTitle => 'Premium';
+
+  @override
+  String limitCtaUpgrade(String plan) {
+    return 'Mejorar · $plan';
+  }
+
+  @override
+  String get weatherDetectedByNetwork => 'Detectado por la red';
+
+  @override
+  String get profileCityLabel => 'Ciudad';
+
+  @override
+  String get profileCityHint => 'Influye en las recomendaciones de cuidado';
+
+  @override
+  String get unitsTemperature => 'Unidades de temperatura';
+
+  @override
+  String get unitsCelsius => '°C';
+
+  @override
+  String get unitsFahrenheit => '°F';
+
+  @override
+  String get unitsAutomatic => 'Automático';
+
+  @override
+  String weatherDegrees(String value) {
+    return '$value°';
+  }
+
+  @override
+  String get chatProposalApply => 'Aplicar';
+
+  @override
+  String get chatProposalDecline => 'No, gracias';
+
+  @override
+  String get chatProposalApplied => 'Aplicado';
+
+  @override
+  String get chatProposalDeclined => 'Rechazado';
+
+  @override
+  String get chatProposalOutdated => 'Obsoleto';
+
+  @override
+  String get chatProposalPot => 'Maceta';
+
+  @override
+  String get chatProposalSpecies => 'Especie';
+
+  @override
+  String get chatProposalPause => 'Pausar recordatorios hasta';
+
+  @override
+  String chatProposalChange(String label, String from, String to) {
+    return '$label: $from → $to';
+  }
+
+  @override
+  String chatProposalSet(String label, String to) {
+    return '$label: $to';
+  }
+
+  @override
+  String get chatTopicWater => 'Riego';
+
+  @override
+  String get chatTopicSoil => 'Sustrato';
+
+  @override
+  String get chatTopicLight => 'Luz';
+
+  @override
+  String get chatTopicTemperature => 'Temperatura';
+
+  @override
+  String get chatTopicFertilizer => 'Abono';
+
+  @override
+  String get chatTopicDiagnostics => 'Diagnóstico';
+
+  @override
+  String get chatShowWholeConversation => 'Ver toda la conversación';
+
+  @override
+  String chatTitleWithTopic(String topic) {
+    return 'Asistente · $topic';
+  }
+
+  @override
+  String get plantChatQuickWaterEarly => '¿Puedo regarla antes?';
+
+  @override
+  String get plantChatQuickSoilSlowToDry => '¿Por qué el sustrato tarda en secarse?';
+
+  @override
+  String get plantChatQuickEnoughLight => '¿Recibe suficiente luz?';
+
+  @override
+  String get plantChatQuickLeggyGrowth => '¿Por qué se ahíla?';
+
+  @override
+  String get plantChatQuickShouldMove => '¿Debería cambiarla de sitio?';
+
+  @override
+  String get plantChatQuickRepotWhen => '¿Cuándo trasplantarla?';
+
+  @override
+  String get plantChatQuickSoilCompacted => '¿Por qué se ha compactado el sustrato?';
+
+  @override
+  String get plantChatQuickWhichSoil => '¿Qué sustrato le va mejor?';
+
+  @override
+  String get memoryTitle => 'Lo que sabe el asistente';
+
+  @override
+  String get memoryExplainer => 'Tomado de tus mensajes en el chat. Elimina lo que esté mal: se usa en cada respuesta.';
+
+  @override
+  String get memoryLoadFailed => 'No se pudo cargar.';
+
+  @override
+  String get memorySuperseded => 'reemplazado';
+
+  @override
+  String get memoryForgetConfirm => '¿Olvidar esto?';
+
+  @override
+  String get memoryForgetAction => 'Olvidar';
+
+  @override
+  String get memoryKindPlacement => 'Dónde está';
+
+  @override
+  String get memoryKindContainer => 'Maceta';
+
+  @override
+  String get memoryKindWateringHabit => 'Hábitos de cuidado';
+
+  @override
+  String get memoryKindSpecies => 'Especie';
+
+  @override
+  String get memoryKindEnvironment => 'Condiciones';
+
+  @override
+  String get memoryKindIntervention => 'Lo realizado';
+
+  @override
+  String get memoryKindSymptom => 'Síntoma';
+
+  @override
+  String get memoryKindConstraint => 'Limitación';
+
+  @override
+  String get memoryKindGoal => 'Objetivo';
+
+  @override
+  String get memoryKindPreference => 'Preferencia';
+
+  @override
+  String memoryEmpty(String name) {
+    return 'Nada todavía. Lo que le cuentes al asistente sobre $name aparecerá aquí.';
+  }
+
+  @override
+  String get chatTaskOffer => '¿Crear un recordatorio?';
+
+  @override
+  String chatTaskInDays(int days) {
+    return 'en $days días';
+  }
+
+  @override
+  String get chatTaskCreated => 'Recordatorio creado';
+
+  @override
+  String chatCtxNextWatering(int days) {
+    return 'Próximo riego en $days d.';
+  }
+
+  @override
+  String get chatCtxWaterToday => 'Riego hoy';
+
+  @override
+  String chatCtxLastWatered(String date) {
+    return 'Último riego $date';
+  }
+
+  @override
+  String chatCtxLight(String hours, String type) {
+    return '$hours h · $type';
+  }
+
+  @override
+  String chatCtxTemperature(String value) {
+    return 'Óptimo $value';
+  }
+
+  @override
+  String chatCtxFertilizer(String value) {
+    return 'Abonado $value';
+  }
+
+  @override
+  String get careDiscussWithAssistant => 'Consultar con el asistente';
+
+  @override
+  String get chatProposalNextWatering => 'Próximo riego';
+
+  @override
+  String get chatProposalToday => 'hoy';
+
+  @override
+  String get cityPickerHint => 'Empieza a escribir una ciudad';
+
+  @override
+  String get cityPickerStartTyping => 'Escribe al menos dos letras';
+
+  @override
+  String get cityPickerSearching => 'Buscando…';
+
+  @override
+  String get cityPickerNothingFound => 'No se encontró ninguna ciudad con ese nombre';
+
+  @override
+  String get cityUpdated => 'Ciudad actualizada';
 }

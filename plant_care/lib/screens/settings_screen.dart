@@ -26,8 +26,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedTheme = 'light';
-  String _selectedLanguage =
-      LanguageService.localeNotifier.value.languageCode;
+  String _selectedLanguage = LanguageService.localeNotifier.value.languageCode;
   bool _isLoading = false;
 
   bool _reminderEmail = true;
@@ -65,8 +64,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final preferences = await AuthService.getUserPreferences();
       final rawTheme = preferences['theme'] as String?;
-      final normalizedTheme =
-          (rawTheme == 'dark' || rawTheme == 'light') ? rawTheme! : 'light';
+      final normalizedTheme = (rawTheme == 'dark' || rawTheme == 'light')
+          ? rawTheme!
+          : 'light';
       if (!mounted) return;
       setState(() {
         _selectedTheme = normalizedTheme;
@@ -122,15 +122,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.user.uid)
-          .set(
-        {
-          'wateringReminderChannels': {
-            'email': _reminderEmail,
-            'push': _reminderPush,
-          },
-        },
-        SetOptions(merge: true),
-      );
+          .set({
+            'wateringReminderChannels': {
+              'email': _reminderEmail,
+              'push': _reminderPush,
+            },
+          }, SetOptions(merge: true));
       await AuthService.saveUserPreferences({
         'watering_reminders': _reminderEmail || _reminderPush,
       });
@@ -138,7 +135,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.failedToSaveReminderChannels(e.toString())),
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.failedToSaveReminderChannels(e.toString()),
+          ),
           backgroundColor: BotanlyColors.red,
         ),
       );
@@ -153,11 +154,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _openQuietHoursEditor() async {
     final l10n = AppLocalizations.of(context)!;
     final initialStart = TimeOfDay(
-        hour: _hourFrom(_quietHoursStart),
-        minute: _minuteFrom(_quietHoursStart));
+      hour: _hourFrom(_quietHoursStart),
+      minute: _minuteFrom(_quietHoursStart),
+    );
     final initialEnd = TimeOfDay(
-        hour: _hourFrom(_quietHoursEnd),
-        minute: _minuteFrom(_quietHoursEnd));
+      hour: _hourFrom(_quietHoursEnd),
+      minute: _minuteFrom(_quietHoursEnd),
+    );
 
     TimeOfDay start = initialStart;
     TimeOfDay end = initialEnd;
@@ -224,16 +227,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Expanded(
                           child: BotanlyPrimaryButton(
                             label: l10n.save,
-                            onPressed: () =>
-                                Navigator.of(ctx).pop(true),
+                            onPressed: () => Navigator.of(ctx).pop(true),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: BotanlySecondaryButton(
                             label: l10n.cancel,
-                            onPressed: () =>
-                                Navigator.of(ctx).pop(false),
+                            onPressed: () => Navigator.of(ctx).pop(false),
                           ),
                         ),
                       ],
@@ -277,11 +278,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: onTap,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F8EB),
                   border: Border.all(
-                      color: const Color(0xFFE4EBE1), width: 1.5),
+                    color: const Color(0xFFE4EBE1),
+                    width: 1.5,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -315,7 +320,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.failedToUpdateQuietHours(e.toString())),
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.failedToUpdateQuietHours(e.toString()),
+          ),
           backgroundColor: BotanlyColors.red,
         ),
       );
@@ -341,8 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: currentPasswordController,
                 obscureText: true,
-                decoration:
-                    InputDecoration(labelText: l10n.currentPassword),
+                decoration: InputDecoration(labelText: l10n.currentPassword),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.enterCurrentPassword;
@@ -362,8 +370,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (value.trim().length < 6) {
                     return l10n.passwordAtLeast6;
                   }
-                  if (value.trim() ==
-                      currentPasswordController.text.trim()) {
+                  if (value.trim() == currentPasswordController.text.trim()) {
                     return l10n.newPasswordMustBeDifferent;
                   }
                   return null;
@@ -373,8 +380,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: confirmPasswordController,
                 obscureText: true,
-                decoration:
-                    InputDecoration(labelText: l10n.confirmNewPassword),
+                decoration: InputDecoration(labelText: l10n.confirmNewPassword),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.confirmYourNewPassword;
@@ -476,7 +482,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
   // ─────────────────────── Build ───────────────────────
 
   @override
@@ -567,8 +572,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.only(bottom: 10),
             margin: const EdgeInsets.only(bottom: 6),
             decoration: const BoxDecoration(
-              border: Border(
-                  bottom: BorderSide(color: Color(0xFFE4EBE1))),
+              border: Border(bottom: BorderSide(color: Color(0xFFE4EBE1))),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,9 +609,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return [
         BotanlyShimmer(
           child: Column(
-            children: List.generate(5, (i) => ShimmerSettingsRow(
-              showDivider: i < 4,
-            )),
+            children: List.generate(
+              5,
+              (i) => ShimmerSettingsRow(showDivider: i < 4),
+            ),
           ),
         ),
       ];
@@ -647,8 +652,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       BotanlySettingsRow(
         title: l10n.quietHoursLabel,
         subtitle: '$_quietHoursStart — $_quietHoursEnd',
-        trailing: const Icon(Icons.edit_outlined,
-            size: 16, color: BotanlyColors.inkMute),
+        trailing: const Icon(
+          Icons.edit_outlined,
+          size: 16,
+          color: BotanlyColors.inkMute,
+        ),
         onTap: _openQuietHoursEditor,
       ),
       BotanlySettingsRow(
@@ -656,14 +664,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: _selectedLanguage == 'en'
             ? l10n.english
             : _selectedLanguage == 'es'
-                ? l10n.spanish
-                : _selectedLanguage == 'fr'
-                    ? l10n.french
-                    : _selectedLanguage == 'ru'
-                        ? l10n.russian
-                        : _selectedLanguage == 'uk'
-                            ? l10n.ukrainian
-                            : l10n.german,
+            ? l10n.spanish
+            : _selectedLanguage == 'fr'
+            ? l10n.french
+            : _selectedLanguage == 'ru'
+            ? l10n.russian
+            : _selectedLanguage == 'uk'
+            ? l10n.ukrainian
+            : l10n.german,
         showDivider: false,
         trailing: _SelectPill<String>(
           value: _selectedLanguage,
@@ -686,11 +694,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
 
     return List.generate(rows.length, (i) {
-      return StaggeredFadeUp(
-        index: i,
-        show: true,
-        child: rows[i],
-      );
+      return StaggeredFadeUp(index: i, show: true, child: rows[i]);
     });
   }
 
@@ -705,8 +709,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leadingFg: BotanlyColors.blue,
             title: l10n.changePasswordTitleRow,
             subtitle: l10n.changePasswordSubRow,
-            trailing: const Icon(Icons.chevron_right,
-                size: 18, color: BotanlyColors.inkMute),
+            trailing: const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: BotanlyColors.inkMute,
+            ),
             onTap: _isLoading ? null : _showChangePasswordDialog,
           ),
           BotanlySettingsRow(
@@ -716,8 +723,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: l10n.signOut,
             subtitle: l10n.signOutSubRow,
             showDivider: false,
-            trailing: const Icon(Icons.chevron_right,
-                size: 18, color: BotanlyColors.inkMute),
+            trailing: const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: BotanlyColors.inkMute,
+            ),
             onTap: _signOut,
           ),
         ],
@@ -762,19 +772,21 @@ class _SelectPill<T> extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             items: items
-                .map((e) => PopupMenuItem<T>(
-                      value: e.value,
-                      child: Text(
-                        e.label,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: e.value == value
-                              ? BotanlyColors.sage
-                              : BotanlyColors.moss,
-                        ),
+                .map(
+                  (e) => PopupMenuItem<T>(
+                    value: e.value,
+                    child: Text(
+                      e.label,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: e.value == value
+                            ? BotanlyColors.sage
+                            : BotanlyColors.moss,
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           );
           if (selected != null) onChanged(selected);
@@ -798,8 +810,11 @@ class _SelectPill<T> extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              const Icon(Icons.keyboard_arrow_down_rounded,
-                  size: 18, color: BotanlyColors.moss),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18,
+                color: BotanlyColors.moss,
+              ),
             ],
           ),
         ),
@@ -808,8 +823,7 @@ class _SelectPill<T> extends StatelessWidget {
   }
 
   RelativeRect _menuPositionFromContext(BuildContext ctx) {
-    final overlay =
-        Overlay.of(ctx).context.findRenderObject() as RenderBox?;
+    final overlay = Overlay.of(ctx).context.findRenderObject() as RenderBox?;
     final box = ctx.findRenderObject() as RenderBox?;
     if (overlay == null || box == null) return RelativeRect.fill;
     final position = box.localToGlobal(Offset.zero, ancestor: overlay);
@@ -821,4 +835,3 @@ class _SelectPill<T> extends StatelessWidget {
     );
   }
 }
-

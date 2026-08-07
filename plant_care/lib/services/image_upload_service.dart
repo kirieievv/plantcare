@@ -9,12 +9,17 @@ class ImageUploadService {
 
   /// Upload plant image from bytes (e.g. from picker). Returns download URL.
   /// Use this when adding a new plant to avoid storing base64 in Firestore.
-  Future<String> uploadPlantImageFromBytes(List<int> imageBytes, String plantName) async {
+  Future<String> uploadPlantImageFromBytes(
+    List<int> imageBytes,
+    String plantName,
+  ) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('User not authenticated');
 
     final safeName = plantName.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
-    final baseName = safeName.isEmpty ? 'plant' : safeName.split(RegExp(r'\s+')).first;
+    final baseName = safeName.isEmpty
+        ? 'plant'
+        : safeName.split(RegExp(r'\s+')).first;
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final fileName = 'plants/${user.uid}/${baseName}_$timestamp.jpg';
 
@@ -38,10 +43,10 @@ class ImageUploadService {
       // Create a unique filename
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'plants/${user.uid}/${plantName}_$timestamp.jpg';
-      
+
       // Create a reference to the file location
       final storageRef = _storage.ref().child(fileName);
-      
+
       // Upload the file
       final uploadTask = storageRef.putFile(
         imageFile,
@@ -54,13 +59,13 @@ class ImageUploadService {
           },
         ),
       );
-      
+
       // Wait for the upload to complete
       final snapshot = await uploadTask;
-      
+
       // Get the download URL
       final downloadUrl = await snapshot.ref.getDownloadURL();
-      
+
       return downloadUrl;
     } catch (e) {
       throw Exception('Failed to upload image: $e');
@@ -99,13 +104,13 @@ class ImageUploadService {
       // Extract the file path from the URL
       final uri = Uri.parse(imageUrl);
       final pathSegments = uri.pathSegments;
-      
+
       if (pathSegments.length >= 3) {
         // Firebase Storage URLs have a specific structure
         // We need to extract the actual file path
         final filePath = pathSegments.sublist(2).join('/');
         final storageRef = _storage.ref().child(filePath);
-        
+
         await storageRef.delete();
       }
     } catch (e) {
@@ -113,4 +118,4 @@ class ImageUploadService {
       print('Failed to delete image: $e');
     }
   }
-} 
+}

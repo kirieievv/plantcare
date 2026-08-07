@@ -53,10 +53,7 @@ class BotanlyAuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scrollChild = Padding(
-      padding: padding,
-      child: child,
-    );
+    final scrollChild = Padding(padding: padding, child: child);
 
     return Scaffold(
       backgroundColor: BotanlyColors.chromeBg,
@@ -82,7 +79,7 @@ class BotanlyAuthScaffold extends StatelessWidget {
                               constraints: BoxConstraints(
                                 minHeight:
                                     MediaQuery.of(context).size.height -
-                                        (showBackButton ? 100 : 50),
+                                    (showBackButton ? 100 : 50),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -234,8 +231,9 @@ class _BotanlyAuthFieldState extends State<BotanlyAuthField> {
         keyboardType: widget.keyboardType,
         textInputAction: widget.textInputAction,
         autofocus: widget.autofocus,
-        autofillHints:
-            widget.autofillHints != null ? [widget.autofillHints!] : null,
+        autofillHints: widget.autofillHints != null
+            ? [widget.autofillHints!]
+            : null,
         onChanged: widget.onChanged,
         onSubmitted: widget.onSubmitted,
         inputFormatters: widget.inputFormatters,
@@ -253,16 +251,20 @@ class _BotanlyAuthFieldState extends State<BotanlyAuthField> {
           ),
           filled: true,
           fillColor: Colors.white.withValues(alpha: 0.6),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           prefixIcon: widget.icon == null
               ? null
               : Padding(
                   padding: const EdgeInsets.only(left: 14, right: 6),
                   child: Icon(widget.icon, color: iconColor, size: 20),
                 ),
-          prefixIconConstraints:
-              const BoxConstraints(minWidth: 44, minHeight: 20),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 44,
+            minHeight: 20,
+          ),
           suffixIcon: widget.showToggleObscure
               ? IconButton(
                   icon: Icon(
@@ -329,10 +331,7 @@ class BotanlyAuthPrimaryButton extends StatelessWidget {
                 : const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      BotanlyColors.authSage,
-                      BotanlyColors.moss,
-                    ],
+                    colors: [BotanlyColors.authSage, BotanlyColors.moss],
                   ),
             boxShadow: loading
                 ? null
@@ -437,11 +436,7 @@ class BotanlyAuthErrorBox extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 18,
-            color: Color(0xFFB91C1C),
-          ),
+          const Icon(Icons.error_outline, size: 18, color: Color(0xFFB91C1C)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

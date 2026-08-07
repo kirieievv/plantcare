@@ -23,8 +23,10 @@ class ForgotPasswordPinScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
-  final List<TextEditingController> _digitControllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _digitControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isSubmitting = false;
   String _error = '';
@@ -67,12 +69,18 @@ class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
 
   String _localizeError(String code, AppLocalizations l10n) {
     switch (code) {
-      case 'INVALID_PIN': return l10n.errorInvalidPin;
-      case 'PIN_EXPIRED': return l10n.errorPinExpired;
-      case 'PIN_NOT_FOUND': return l10n.errorPinNotFound;
-      case 'TOO_MANY_ATTEMPTS': return l10n.errorTooManyAttempts;
-      case 'SEND_FAILED': return l10n.errorSendFailed;
-      default: return l10n.errorGeneric;
+      case 'INVALID_PIN':
+        return l10n.errorInvalidPin;
+      case 'PIN_EXPIRED':
+        return l10n.errorPinExpired;
+      case 'PIN_NOT_FOUND':
+        return l10n.errorPinNotFound;
+      case 'TOO_MANY_ATTEMPTS':
+        return l10n.errorTooManyAttempts;
+      case 'SEND_FAILED':
+        return l10n.errorSendFailed;
+      default:
+        return l10n.errorGeneric;
     }
   }
 
@@ -85,13 +93,12 @@ class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
       _error = '';
     });
     try {
-      await AuthService.verifyPasswordResetPin(
-          email: widget.email, pin: pin);
+      await AuthService.verifyPasswordResetPin(email: widget.email, pin: pin);
       if (!mounted) return;
-      context.pushReplacement('/forgot-password/reset', extra: <String, String>{
-        'email': widget.email,
-        'pin': pin,
-      });
+      context.pushReplacement(
+        '/forgot-password/reset',
+        extra: <String, String>{'email': widget.email, 'pin': pin},
+      );
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -104,8 +111,7 @@ class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
     }
   }
 
-  String get _currentPin =>
-      _digitControllers.map((c) => c.text).join();
+  String get _currentPin => _digitControllers.map((c) => c.text).join();
 
   void _clearPinInputs() {
     for (final c in _digitControllers) {
@@ -222,7 +228,8 @@ class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(
-        color: color ??
+        color:
+            color ??
             (focused
                 ? BotanlyColors.moss.withValues(alpha: 0.7)
                 : BotanlyColors.moss.withValues(alpha: 0.2)),
@@ -281,8 +288,9 @@ class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(BotanlyColors.moss),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      BotanlyColors.moss,
+                    ),
                   ),
                 ),
               ),
@@ -297,9 +305,7 @@ class _ForgotPasswordPinScreenState extends State<ForgotPasswordPinScreen> {
               onPressed: (_resendSeconds > 0 || _isSubmitting)
                   ? null
                   : _resendCode,
-              style: TextButton.styleFrom(
-                foregroundColor: BotanlyColors.moss,
-              ),
+              style: TextButton.styleFrom(foregroundColor: BotanlyColors.moss),
               child: Text(
                 _resendSeconds > 0
                     ? l10n.resendCodeInSeconds(_resendSeconds)

@@ -65,14 +65,15 @@ class SubscriptionCard extends StatelessWidget {
                 if (info.isTrial && info.trialDaysRemaining != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      l10n.subscriptionTrialDaysLeft(
-                          info.trialDaysRemaining!),
+                      l10n.subscriptionTrialDaysLeft(info.trialDaysRemaining!),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -190,7 +191,8 @@ class SubscriptionCard extends StatelessWidget {
       case SubscriptionStatus.trial:
         if (info.trialExpiresAt != null) {
           return l10n.subscriptionTrialEndsOn(
-              formatSubDate(info.trialExpiresAt!));
+            formatSubDate(info.trialExpiresAt!),
+          );
         }
         return l10n.subscriptionTrialTitle;
       case SubscriptionStatus.expired:
@@ -226,8 +228,7 @@ class SubscriptionCard extends StatelessWidget {
       return GestureDetector(
         onTap: () => showPaywall(context),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -248,8 +249,7 @@ class SubscriptionCard extends StatelessWidget {
       return GestureDetector(
         onTap: () => showPaywall(context),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(12),
@@ -270,8 +270,7 @@ class SubscriptionCard extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         // Open native subscription management
-        await SystemChannels.platform
-            .invokeMethod('SystemNavigator.pop');
+        await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

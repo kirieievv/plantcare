@@ -1001,5 +1001,536 @@
   "gardenLoadError": "Der Garten konnte nicht geladen werden. Prüfe die Verbindung und versuche es erneut.",
   "pullToRefreshHint": "Zum Aktualisieren nach unten ziehen",
   "refreshingGarden": "Gartendaten werden gesammelt…",
-  "refreshFailed": "Aktualisieren fehlgeschlagen. Prüfe die Verbindung."
+  "refreshFailed": "Aktualisieren fehlgeschlagen. Prüfe die Verbindung.",
+  "addPlantHeaderPhoto": "{accent} hinzufügen",
+  "@addPlantHeaderPhoto": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPhotoAccent": "Pflanze",
+  "addPlantHeaderSpecies": "{accent} bestätigen",
+  "@addPlantHeaderSpecies": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderSpeciesAccent": "Art",
+  "addPlantHeaderConditions": "Zu den {accent}",
+  "@addPlantHeaderConditions": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderConditionsAccent": "Bedingungen",
+  "addPlantHeaderPlan": "{accent}plan",
+  "@addPlantHeaderPlan": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPlanAccent": "Pflege",
+  "addPlantBack": "Zurück",
+  "quizQuestionOf": "Frage {step} von {total}",
+  "@quizQuestionOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quizNext": "Weiter",
+  "quizBuildPlan": "Plan erstellen",
+  "quizPotQuestion": "Welchen {accent} hat der Topf?",
+  "@quizPotQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotQuestionAccent": "Durchmesser",
+  "quizPotWhy": "Das Erdvolumen bestimmt, wie viel Wasser eine Gabe braucht.",
+  "quizPotHint": "Am Topfrand messen, nicht an der Pflanze.",
+  "unitCm": "cm",
+  "volumeMl": "{value} ml",
+  "@volumeMl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLitres": "{value} l",
+  "@volumeLitres": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotPerWatering": "{volume} pro Gabe",
+  "@quizPotPerWatering": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestion": "Woraus ist der Topf, und hat er {accent}?",
+  "@quizMaterialQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestionAccent": "Abzugslöcher",
+  "quizMaterialWhy": "Terrakotta trocknet doppelt so schnell wie Kunststoff. Ohne Löcher steigt das Risiko von Wurzelfäule.",
+  "quizMatPlastic": "Kunststoff",
+  "quizMatPlasticDesc": "Hält Feuchtigkeit länger",
+  "quizMatCeramic": "Keramik",
+  "quizMatCeramicDesc": "Glasiert, atmet nicht",
+  "quizMatTerracotta": "Terrakotta",
+  "quizMatTerracottaDesc": "Atmet, trocknet schnell",
+  "quizMatUnknown": "Weiß ich nicht",
+  "quizMatUnknownDesc": "Wir nehmen den Mittelwert",
+  "quizDrainageLabel": "Abzugslöcher",
+  "quizDrainageYes": "Ja",
+  "quizDrainageYesDesc": "Überschüssiges Wasser läuft in den Untersetzer",
+  "quizDrainageNo": "Nein",
+  "quizDrainageNoDesc": "Wasser steht an den Wurzeln",
+  "quizPlaceQuestion": "Wo {accent} die Pflanze?",
+  "@quizPlaceQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPlaceQuestionAccent": "steht",
+  "quizPlaceWhy": "So wissen wir, wie viel Licht sie wirklich bekommt — und ob sie Schatten braucht.",
+  "quizPlaceSouth": "Süden",
+  "quizPlaceSouthDesc": "Fensterbank, viel Sonne",
+  "quizPlaceEast": "Osten / Westen",
+  "quizPlaceEastDesc": "Sanfte Morgensonne",
+  "quizPlaceNorth": "Norden",
+  "quizPlaceNorthDesc": "Licht ja, Sonne nein",
+  "quizPlaceRoom": "Mitten im Raum",
+  "quizPlaceRoomDesc": "Weit vom Fenster",
+  "quizPlaceBalcony": "Balkon",
+  "quizPlaceBalconyDesc": "Draußen, saisonal",
+  "quizPlaceBath": "Badezimmer",
+  "quizPlaceBathDesc": "Feucht, wenig Licht",
+  "quizHeatLabel": "Heizung oder Klimaanlage in der Nähe",
+  "quizHeatNo": "Nein",
+  "quizHeatNoDesc": "Normale Raumluft",
+  "quizHeatYes": "Ja",
+  "quizHeatYesDesc": "Trocknet Erde und Luft aus",
+  "quizWaterQuestion": "Wann hast du {accent} gegossen?",
+  "@quizWaterQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizWaterQuestionAccent": "zuletzt",
+  "quizWaterWhy": "Davon hängt das Datum der ersten Gabe ab — sonst wird die Aufgabe blind gesetzt.",
+  "quizWaterToday": "Heute",
+  "quizWaterTodayDesc": "Die Erde ist noch feucht",
+  "quizWaterFewDays": "Vor 2–3 Tagen",
+  "quizWaterFewDaysDesc": "Die obere Schicht ist trocken",
+  "quizWaterWeek": "Vor etwa einer Woche",
+  "quizWaterWeekDesc": "Wahrscheinlich Zeit zu gießen",
+  "quizWaterUnknown": "Weiß ich nicht",
+  "quizWaterUnknownDesc": "Wir prüfen Foto und Erde",
+  "addPlantPlanTuned": "Nach deinen Antworten erstellt",
+  "addPlantCheckToday": "heute prüfen",
+  "placeLightSouth": "6–8 Std.",
+  "placeLightEast": "4–6 Std.",
+  "placeLightNorth": "2–3 Std.",
+  "placeLightRoom": "Wenig Licht",
+  "placeLightBalcony": "6–9 Std.",
+  "placeLightBath": "2–3 Std.",
+  "soilModerate": "Mäßig feucht",
+  "addPlantAddLight": "Mehr Licht",
+  "addPlantAddLightDetail": "Näher ans Fenster oder Pflanzenlampe für 4–6 Std.",
+  "addPlantAddDrainage": "Für Abzug sorgen",
+  "addPlantAddDrainageDetail": "Ohne Löcher steht das Wasser an den Wurzeln",
+  "addPlantMoveFromHeat": "Von der Wärme wegstellen",
+  "addPlantMoveFromHeatDetail": "Die Heizung trocknet die Erde aus",
+  "lockedLabelTrial": "Hinzufügen pausiert",
+  "lockedLabelLimit": "Limit des Gratisplans",
+  "lockedLabelCancelled": "Abo gekündigt",
+  "lockedPillTrial": "Testphase beendet",
+  "lockedPillLimit": "Gratisplan · {count} von {limit}",
+  "@lockedPillLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedPillCancelled": "Zugang beendet",
+  "lockedLeadTrial": "Neue Pflanzen {accent}",
+  "@lockedLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadTrialAccent": "warten auf ein Abo",
+  "lockedLeadLimit": "Der Gratisplan fasst {accent}",
+  "@lockedLeadLimit": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadLimitAccent": "{limit} Pflanzen",
+  "@lockedLeadLimitAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedLeadCancelled": "Das Abo {accent}",
+  "@lockedLeadCancelled": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadCancelledAccent": "ist nicht aktiv",
+  "lockedSubTrial": "Die Testphase endete am {date}",
+  "@lockedSubTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedSubLimit": "Ein Abo hebt das Limit auf — beliebig viele Pflanzen.",
+  "lockedSubCancelled": "Premium war aktiv bis {date}",
+  "@lockedSubCancelled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedKeepTitle": "Was bleibt",
+  "lockedUnlockTitle": "Was ein Abo zurückbringt",
+  "lockedKeepPlants": "{count, plural, =1{1 Pflanze in Obhut} other{{count} Pflanzen in Obhut}}",
+  "@lockedKeepPlants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedKeepPlantsDesc": "Sie bleiben im Garten samt ihrer Prüf-Historie",
+  "lockedKeepReminders": "Gieß-Erinnerungen",
+  "lockedKeepRemindersDesc": "Kommen weiterhin wie bisher",
+  "lockedUnlockNewPlants": "Neue Pflanzen",
+  "lockedUnlockNewPlantsDesc": "Art per Foto bestimmen und ein eigener Pflegeplan",
+  "lockedUnlockHealth": "Gesundheitscheck",
+  "lockedUnlockHealthDesc": "Fotoanalyse, Zustandswert und Empfehlungen",
+  "lockedUnlockChat": "KI-Assistent",
+  "lockedUnlockChatDesc": "Antworten zu jeder Pflanze samt ihrer Bedingungen",
+  "lockedPlanYear": "Jahr",
+  "lockedPlanMonth": "Monat",
+  "lockedPlanYearNote": "21,99 $ pro Jahr · 1,83 $ pro Monat",
+  "lockedPlanMonthNote": "1,99 $ pro Monat · jederzeit kündbar",
+  "lockedPlanBadge": "Günstiger",
+  "lockedFinePrint": "Das Abo verlängert sich automatisch. Jederzeit in den Store-Einstellungen kündbar.",
+  "lockedCtaResume": "Fortsetzen · {plan}",
+  "@lockedCtaResume": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCtaUpgrade": "Upgraden · {plan}",
+  "@lockedCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedRestore": "Käufe wiederherstellen",
+  "lockedRestoreDone": "Käufe wiederhergestellt",
+  "lockedRestoreNothing": "Auf diesem Konto gibt es nichts wiederherzustellen",
+  "billingIssueTitle": "Eine Zahlung ist fehlgeschlagen",
+  "billingIssueBody": "Prüfen Sie Ihre Zahlungsmethode — der Zugang bleibt, solange der Store es erneut versucht.",
+  "duplicateSubscriptionTitle": "Zwei Abos gefunden",
+  "duplicateSubscriptionBody": "Sie zahlen gleichzeitig im App Store und im Web. Kündigen Sie eines davon.",
+  "gateBarTitleTrial": "Testphase beendet",
+  "gateBarTitleExpired": "Abo ist nicht aktiv",
+  "gateBarBody": "Gießen läuft weiter; Analyse und Assistent brauchen ein Abo",
+  "gateBarAction": "Fortsetzen",
+  "gateStaleScore": "Der Wert wird nicht aktualisiert — dafür braucht es einen Gesundheitscheck",
+  "gateSheetHealth": "Gesundheitscheck {accent}",
+  "@gateSheetHealth": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetChat": "Der KI-Assistent {accent}",
+  "@gateSheetChat": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetAccent": "braucht ein Abo",
+  "gateSheetBody": "Die Testphase ist beendet. Die Pflanze und ihre Pflege bleiben — zurück kommt nur das, was die KI berechnet.",
+  "gateSheetKeepWatering": "Gießen und Erinnerungen laufen weiter",
+  "gateSheetKeepHistory": "Prüf-Historie und Pflegekarten bleiben zugänglich",
+  "gateSheetCta": "Abo fortsetzen",
+  "gateSheetLater": "Später",
+  "limitLabel": "Alle Plätze belegt",
+  "limitCountOf": "von {limit} Plätzen",
+  "@limitCountOf": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitPlanTrial": "Testphase",
+  "limitPlanFree": "Gratisplan",
+  "limitPlanPremium": "Premium",
+  "limitLegendUsed": "Belegt",
+  "limitLegendLocked": "Öffnet sich mit Premium",
+  "limitLeadTrial": "Es gibt {accent}",
+  "@limitLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadTrialAccent": "keine freien Plätze mehr",
+  "limitLeadFree": "Der Gratisplan hat {accent}",
+  "@limitLeadFree": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadFreeAccent": "{limit} Plätze",
+  "@limitLeadFreeAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitLeadPremium": "Alle zehn Plätze {accent}",
+  "@limitLeadPremium": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadPremiumAccent": "sind belegt",
+  "limitBody": "Machen Sie einen Platz frei oder öffnen Sie zehn.",
+  "limitBodyPremium": "Entfernen Sie eine Pflanze, die Sie nicht mehr haben, um Platz zu schaffen.",
+  "limitPathUpgrade": "10 Plätze öffnen",
+  "limitPathUpgradeDesc": "Zusammen mit Gesundheitscheck und Assistent",
+  "limitPathFree": "Platz frei machen",
+  "limitPathFreeDesc": "Eine Pflanze entfernen, die Sie nicht mehr haben",
+  "limitPremiumTitle": "Premium",
+  "limitCtaUpgrade": "Upgraden · {plan}",
+  "@limitCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherDetectedByNetwork": "Über das Netzwerk ermittelt",
+  "profileCityLabel": "Stadt",
+  "profileCityHint": "Beeinflusst die Pflegeempfehlungen",
+  "unitsTemperature": "Temperatureinheiten",
+  "unitsCelsius": "°C",
+  "unitsFahrenheit": "°F",
+  "unitsAutomatic": "Automatisch",
+  "weatherDegrees": "{value}°",
+  "@weatherDegrees": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalApply": "Übernehmen",
+  "chatProposalDecline": "Nein danke",
+  "chatProposalApplied": "Übernommen",
+  "chatProposalDeclined": "Abgelehnt",
+  "chatProposalOutdated": "Veraltet",
+  "chatProposalPot": "Topf",
+  "chatProposalSpecies": "Art",
+  "chatProposalPause": "Erinnerungen pausieren bis",
+  "chatProposalChange": "{label}: {from} → {to}",
+  "@chatProposalChange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalSet": "{label}: {to}",
+  "@chatProposalSet": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTopicWater": "Gießen",
+  "chatTopicSoil": "Erde",
+  "chatTopicLight": "Licht",
+  "chatTopicTemperature": "Temperatur",
+  "chatTopicFertilizer": "Dünger",
+  "chatTopicDiagnostics": "Diagnose",
+  "chatShowWholeConversation": "Ganzes Gespräch anzeigen",
+  "chatTitleWithTopic": "Assistent · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Kann ich früher gießen?",
+  "plantChatQuickSoilSlowToDry": "Warum trocknet die Erde so langsam?",
+  "plantChatQuickEnoughLight": "Bekommt sie genug Licht?",
+  "plantChatQuickLeggyGrowth": "Warum wird sie so lang?",
+  "plantChatQuickShouldMove": "Sollte ich sie umstellen?",
+  "plantChatQuickRepotWhen": "Wann sollte ich umtopfen?",
+  "plantChatQuickSoilCompacted": "Warum ist die Erde hart geworden?",
+  "plantChatQuickWhichSoil": "Welche Erde ist am besten?",
+  "memoryTitle": "Was der Assistent weiß",
+  "memoryExplainer": "Aus Ihren Nachrichten im Chat übernommen. Entfernen Sie Falsches — es fließt in jede Antwort ein.",
+  "memoryLoadFailed": "Konnte nicht geladen werden.",
+  "memorySuperseded": "ersetzt",
+  "memoryForgetConfirm": "Das vergessen?",
+  "memoryForgetAction": "Vergessen",
+  "memoryKindPlacement": "Standort",
+  "memoryKindContainer": "Topf",
+  "memoryKindWateringHabit": "Pflegegewohnheiten",
+  "memoryKindSpecies": "Art",
+  "memoryKindEnvironment": "Bedingungen",
+  "memoryKindIntervention": "Durchgeführt",
+  "memoryKindSymptom": "Symptom",
+  "memoryKindConstraint": "Einschränkung",
+  "memoryKindGoal": "Ziel",
+  "memoryKindPreference": "Vorliebe",
+  "memoryEmpty": "Noch nichts. Was Sie dem Assistenten über {name} erzählen, steht hier.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Erinnerung setzen?",
+  "chatTaskInDays": "in {days} Tagen",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Erinnerung gesetzt",
+  "chatCtxNextWatering": "Nächstes Gießen in {days} T.",
+  "@chatCtxNextWatering": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatCtxWaterToday": "Heute gießen",
+  "chatCtxLastWatered": "Zuletzt gegossen {date}",
+  "@chatCtxLastWatered": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxLight": "{hours} Std · {type}",
+  "@chatCtxLight": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxTemperature": "Optimum {value}",
+  "@chatCtxTemperature": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxFertilizer": "Düngen {value}",
+  "@chatCtxFertilizer": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "careDiscussWithAssistant": "Mit dem Assistenten besprechen",
+  "chatProposalNextWatering": "Nächstes Gießen",
+  "chatProposalToday": "heute",
+  "cityPickerHint": "Stadt eingeben",
+  "cityPickerStartTyping": "Mindestens zwei Buchstaben eingeben",
+  "cityPickerSearching": "Wird gesucht …",
+  "cityPickerNothingFound": "Keine Stadt mit diesem Namen gefunden",
+  "cityUpdated": "Stadt aktualisiert"
 }

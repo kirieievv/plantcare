@@ -5,8 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageService {
   static const String _languageKey = 'language';
-  static final ValueNotifier<Locale> localeNotifier =
-      ValueNotifier<Locale>(const Locale('en'));
+  static final ValueNotifier<Locale> localeNotifier = ValueNotifier<Locale>(
+    const Locale('en'),
+  );
 
   /// Called once at app startup. Priority: SharedPreferences → device locale.
   /// After login, call [syncFromFirestore] to pull the user's saved language.
@@ -72,10 +73,9 @@ class LanguageService {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) return;
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set({'language': code}, SetOptions(merge: true));
+      FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'language': code,
+      }, SetOptions(merge: true));
     } catch (_) {}
   }
 

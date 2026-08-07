@@ -1001,5 +1001,536 @@
   "gardenLoadError": "Impossible de charger le jardin. Vérifiez la connexion et réessayez.",
   "pullToRefreshHint": "Tirez vers le bas pour actualiser",
   "refreshingGarden": "Collecte des données du jardin…",
-  "refreshFailed": "Échec de l'actualisation. Vérifiez la connexion."
+  "refreshFailed": "Échec de l'actualisation. Vérifiez la connexion.",
+  "addPlantHeaderPhoto": "Ajouter une {accent}",
+  "@addPlantHeaderPhoto": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPhotoAccent": "plante",
+  "addPlantHeaderSpecies": "Confirmer l’{accent}",
+  "@addPlantHeaderSpecies": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderSpeciesAccent": "espèce",
+  "addPlantHeaderConditions": "Sur les {accent}",
+  "@addPlantHeaderConditions": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderConditionsAccent": "conditions",
+  "addPlantHeaderPlan": "{accent} de soins",
+  "@addPlantHeaderPlan": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPlanAccent": "Plan",
+  "addPlantBack": "Retour",
+  "quizQuestionOf": "Question {step} sur {total}",
+  "@quizQuestionOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quizNext": "Suivant",
+  "quizBuildPlan": "Créer le plan",
+  "quizPotQuestion": "Quel est le {accent} du pot ?",
+  "@quizPotQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotQuestionAccent": "diamètre",
+  "quizPotWhy": "Le volume de terreau détermine la quantité d’eau par arrosage.",
+  "quizPotHint": "Mesure au bord du pot, pas la plante.",
+  "unitCm": "cm",
+  "volumeMl": "{value} ml",
+  "@volumeMl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLitres": "{value} l",
+  "@volumeLitres": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotPerWatering": "{volume} par arrosage",
+  "@quizPotPerWatering": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestion": "En quoi est le pot, et a-t-il un {accent} ?",
+  "@quizMaterialQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestionAccent": "drainage",
+  "quizMaterialWhy": "La terre cuite sèche deux fois plus vite que le plastique. Sans trous, le risque de pourriture augmente.",
+  "quizMatPlastic": "Plastique",
+  "quizMatPlasticDesc": "Retient l’humidité plus longtemps",
+  "quizMatCeramic": "Céramique",
+  "quizMatCeramicDesc": "Émaillée, ne respire pas",
+  "quizMatTerracotta": "Terre cuite",
+  "quizMatTerracottaDesc": "Respire, sèche vite",
+  "quizMatUnknown": "Je ne sais pas",
+  "quizMatUnknownDesc": "Nous prendrons une moyenne",
+  "quizDrainageLabel": "Trous de drainage",
+  "quizDrainageYes": "Oui",
+  "quizDrainageYesDesc": "L’eau en trop s’écoule dans la soucoupe",
+  "quizDrainageNo": "Non",
+  "quizDrainageNoDesc": "L’eau stagne au niveau des racines",
+  "quizPlaceQuestion": "Où la plante est-elle {accent} ?",
+  "@quizPlaceQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPlaceQuestionAccent": "placée",
+  "quizPlaceWhy": "Nous saurons ainsi la lumière qu’elle reçoit vraiment — et s’il faut l’ombrer.",
+  "quizPlaceSouth": "Sud",
+  "quizPlaceSouthDesc": "Rebord de fenêtre, beaucoup de soleil",
+  "quizPlaceEast": "Est / ouest",
+  "quizPlaceEastDesc": "Soleil doux du matin",
+  "quizPlaceNorth": "Nord",
+  "quizPlaceNorthDesc": "De la lumière, pas de soleil",
+  "quizPlaceRoom": "Au fond de la pièce",
+  "quizPlaceRoomDesc": "Loin de la fenêtre",
+  "quizPlaceBalcony": "Balcon",
+  "quizPlaceBalconyDesc": "Dehors, selon la saison",
+  "quizPlaceBath": "Salle de bain",
+  "quizPlaceBathDesc": "Humide, peu de lumière",
+  "quizHeatLabel": "Radiateur ou climatisation à proximité",
+  "quizHeatNo": "Non",
+  "quizHeatNoDesc": "Air ambiant normal",
+  "quizHeatYes": "Oui",
+  "quizHeatYesDesc": "Assèche le terreau et l’air",
+  "quizWaterQuestion": "Quand l’as-tu arrosée pour la {accent} ?",
+  "@quizWaterQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizWaterQuestionAccent": "dernière fois",
+  "quizWaterWhy": "La date du premier arrosage en dépend — sinon la tâche est fixée à l’aveugle.",
+  "quizWaterToday": "Aujourd’hui",
+  "quizWaterTodayDesc": "Le terreau est encore humide",
+  "quizWaterFewDays": "Il y a 2–3 jours",
+  "quizWaterFewDaysDesc": "La couche supérieure a séché",
+  "quizWaterWeek": "Il y a environ une semaine",
+  "quizWaterWeekDesc": "Il est sans doute temps d’arroser",
+  "quizWaterUnknown": "Je ne sais pas",
+  "quizWaterUnknownDesc": "Nous vérifierons la photo et le terreau",
+  "addPlantPlanTuned": "Établi d’après tes réponses",
+  "addPlantCheckToday": "vérifions aujourd’hui",
+  "placeLightSouth": "6–8 h",
+  "placeLightEast": "4–6 h",
+  "placeLightNorth": "2–3 h",
+  "placeLightRoom": "Peu de lumière",
+  "placeLightBalcony": "6–9 h",
+  "placeLightBath": "2–3 h",
+  "soilModerate": "Modérément humide",
+  "addPlantAddLight": "Ajouter de la lumière",
+  "addPlantAddLightDetail": "Plus près d’une fenêtre ou lampe horticole 4–6 h",
+  "addPlantAddDrainage": "Faire un drainage",
+  "addPlantAddDrainageDetail": "Sans trous, l’eau stagne au niveau des racines",
+  "addPlantMoveFromHeat": "Éloigner de la chaleur",
+  "addPlantMoveFromHeatDetail": "Le radiateur assèche le terreau",
+  "lockedLabelTrial": "Ajout en pause",
+  "lockedLabelLimit": "Limite du plan gratuit",
+  "lockedLabelCancelled": "Abonnement annulé",
+  "lockedPillTrial": "Période d’essai terminée",
+  "lockedPillLimit": "Plan gratuit · {count} sur {limit}",
+  "@lockedPillLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedPillCancelled": "L’accès a pris fin",
+  "lockedLeadTrial": "Les nouvelles plantes {accent}",
+  "@lockedLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadTrialAccent": "attendent un abonnement",
+  "lockedLeadLimit": "Le plan gratuit contient {accent}",
+  "@lockedLeadLimit": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadLimitAccent": "{limit} plantes",
+  "@lockedLeadLimitAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedLeadCancelled": "L’abonnement {accent}",
+  "@lockedLeadCancelled": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadCancelledAccent": "n’est pas actif",
+  "lockedSubTrial": "La période d’essai s’est terminée le {date}",
+  "@lockedSubTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedSubLimit": "Un abonnement lève la limite — autant de plantes que vous voulez.",
+  "lockedSubCancelled": "Premium était actif jusqu’au {date}",
+  "@lockedSubCancelled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedKeepTitle": "Ce qui reste",
+  "lockedUnlockTitle": "Ce que l’abonnement rend",
+  "lockedKeepPlants": "{count, plural, =1{1 plante suivie} other{{count} plantes suivies}}",
+  "@lockedKeepPlants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedKeepPlantsDesc": "Elles restent dans le jardin avec leur historique",
+  "lockedKeepReminders": "Rappels d’arrosage",
+  "lockedKeepRemindersDesc": "Continuent d’arriver comme avant",
+  "lockedUnlockNewPlants": "Nouvelles plantes",
+  "lockedUnlockNewPlantsDesc": "Identification par photo et un plan de soins personnel",
+  "lockedUnlockHealth": "Bilan de santé",
+  "lockedUnlockHealthDesc": "Analyse photo, score d’état et recommandations",
+  "lockedUnlockChat": "Assistant IA",
+  "lockedUnlockChatDesc": "Des réponses par plante, en tenant compte de ses conditions",
+  "lockedPlanYear": "An",
+  "lockedPlanMonth": "Mois",
+  "lockedPlanYearNote": "21,99 $ par an · 1,83 $ par mois",
+  "lockedPlanMonthNote": "1,99 $ par mois · annulable à tout moment",
+  "lockedPlanBadge": "Avantageux",
+  "lockedFinePrint": "L’abonnement se renouvelle automatiquement. Annulable à tout moment dans les réglages du store.",
+  "lockedCtaResume": "Reprendre · {plan}",
+  "@lockedCtaResume": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCtaUpgrade": "Passer au supérieur · {plan}",
+  "@lockedCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedRestore": "Restaurer les achats",
+  "lockedRestoreDone": "Achats restaurés",
+  "lockedRestoreNothing": "Rien à restaurer sur ce compte",
+  "billingIssueTitle": "Un paiement a échoué",
+  "billingIssueBody": "Vérifiez votre moyen de paiement — l’accès reste actif pendant les nouvelles tentatives.",
+  "duplicateSubscriptionTitle": "Deux abonnements trouvés",
+  "duplicateSubscriptionBody": "Vous payez à la fois sur l’App Store et sur le web. Annulez l’un des deux.",
+  "gateBarTitleTrial": "Période d’essai terminée",
+  "gateBarTitleExpired": "L’abonnement n’est pas actif",
+  "gateBarBody": "L’arrosage fonctionne ; l’analyse et l’assistant demandent un abonnement",
+  "gateBarAction": "Reprendre",
+  "gateStaleScore": "Le score ne se met plus à jour — il faut un bilan de santé",
+  "gateSheetHealth": "Bilan de santé {accent}",
+  "@gateSheetHealth": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetChat": "L’assistant IA {accent}",
+  "@gateSheetChat": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetAccent": "demande un abonnement",
+  "gateSheetBody": "La période d’essai est terminée. La plante et ses soins restent — seul ce que l’IA calcule revient.",
+  "gateSheetKeepWatering": "L’arrosage et les rappels continuent",
+  "gateSheetKeepHistory": "L’historique et les fiches de soin restent accessibles",
+  "gateSheetCta": "Reprendre l’abonnement",
+  "gateSheetLater": "Plus tard",
+  "limitLabel": "Toutes les places sont prises",
+  "limitCountOf": "sur {limit} places",
+  "@limitCountOf": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitPlanTrial": "Période d’essai",
+  "limitPlanFree": "Plan gratuit",
+  "limitPlanPremium": "Premium",
+  "limitLegendUsed": "Occupé",
+  "limitLegendLocked": "S’ouvre avec Premium",
+  "limitLeadTrial": "Il n’y a {accent}",
+  "@limitLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadTrialAccent": "plus de places libres",
+  "limitLeadFree": "Le plan gratuit a {accent}",
+  "@limitLeadFree": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadFreeAccent": "{limit} places",
+  "@limitLeadFreeAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitLeadPremium": "Les dix places {accent}",
+  "@limitLeadPremium": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadPremiumAccent": "sont prises",
+  "limitBody": "Libérez une place ou ouvrez-en dix.",
+  "limitBodyPremium": "Retirez une plante que vous n’avez plus pour faire de la place.",
+  "limitPathUpgrade": "Ouvrir 10 places",
+  "limitPathUpgradeDesc": "Avec le bilan de santé et l’assistant",
+  "limitPathFree": "Libérer une place",
+  "limitPathFreeDesc": "Retirer une plante que vous n’avez plus",
+  "limitPremiumTitle": "Premium",
+  "limitCtaUpgrade": "Passer au supérieur · {plan}",
+  "@limitCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherDetectedByNetwork": "Détecté via le réseau",
+  "profileCityLabel": "Ville",
+  "profileCityHint": "Influence les recommandations de soin",
+  "unitsTemperature": "Unités de température",
+  "unitsCelsius": "°C",
+  "unitsFahrenheit": "°F",
+  "unitsAutomatic": "Automatique",
+  "weatherDegrees": "{value}°",
+  "@weatherDegrees": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalApply": "Appliquer",
+  "chatProposalDecline": "Non merci",
+  "chatProposalApplied": "Appliqué",
+  "chatProposalDeclined": "Refusé",
+  "chatProposalOutdated": "Obsolète",
+  "chatProposalPot": "Pot",
+  "chatProposalSpecies": "Espèce",
+  "chatProposalPause": "Suspendre les rappels jusqu’au",
+  "chatProposalChange": "{label}: {from} → {to}",
+  "@chatProposalChange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalSet": "{label}: {to}",
+  "@chatProposalSet": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTopicWater": "Arrosage",
+  "chatTopicSoil": "Substrat",
+  "chatTopicLight": "Lumière",
+  "chatTopicTemperature": "Température",
+  "chatTopicFertilizer": "Engrais",
+  "chatTopicDiagnostics": "Diagnostic",
+  "chatShowWholeConversation": "Voir toute la conversation",
+  "chatTitleWithTopic": "Assistant · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Puis-je l’arroser plus tôt ?",
+  "plantChatQuickSoilSlowToDry": "Pourquoi le substrat sèche-t-il lentement ?",
+  "plantChatQuickEnoughLight": "Reçoit-elle assez de lumière ?",
+  "plantChatQuickLeggyGrowth": "Pourquoi s’étiole-t-elle ?",
+  "plantChatQuickShouldMove": "Faut-il la déplacer ?",
+  "plantChatQuickRepotWhen": "Quand la rempoter ?",
+  "plantChatQuickSoilCompacted": "Pourquoi le substrat s’est-il tassé ?",
+  "plantChatQuickWhichSoil": "Quel substrat lui convient ?",
+  "memoryTitle": "Ce que sait l’assistant",
+  "memoryExplainer": "Repris de vos messages dans le chat. Supprimez ce qui est faux : c’est utilisé dans chaque réponse.",
+  "memoryLoadFailed": "Chargement impossible.",
+  "memorySuperseded": "remplacé",
+  "memoryForgetConfirm": "Oublier ceci ?",
+  "memoryForgetAction": "Oublier",
+  "memoryKindPlacement": "Emplacement",
+  "memoryKindContainer": "Pot",
+  "memoryKindWateringHabit": "Habitudes d’entretien",
+  "memoryKindSpecies": "Espèce",
+  "memoryKindEnvironment": "Conditions",
+  "memoryKindIntervention": "Interventions",
+  "memoryKindSymptom": "Symptôme",
+  "memoryKindConstraint": "Contrainte",
+  "memoryKindGoal": "Objectif",
+  "memoryKindPreference": "Préférence",
+  "memoryEmpty": "Rien pour l’instant. Ce que vous direz à l’assistant sur {name} apparaîtra ici.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Créer un rappel ?",
+  "chatTaskInDays": "dans {days} jours",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Rappel créé",
+  "chatCtxNextWatering": "Prochain arrosage dans {days} j.",
+  "@chatCtxNextWatering": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatCtxWaterToday": "Arrosage aujourd’hui",
+  "chatCtxLastWatered": "Dernier arrosage {date}",
+  "@chatCtxLastWatered": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxLight": "{hours} h · {type}",
+  "@chatCtxLight": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxTemperature": "Optimum {value}",
+  "@chatCtxTemperature": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxFertilizer": "Engrais {value}",
+  "@chatCtxFertilizer": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "careDiscussWithAssistant": "En parler à l’assistant",
+  "chatProposalNextWatering": "Prochain arrosage",
+  "chatProposalToday": "aujourd’hui",
+  "cityPickerHint": "Commencez à saisir une ville",
+  "cityPickerStartTyping": "Saisissez au moins deux lettres",
+  "cityPickerSearching": "Recherche…",
+  "cityPickerNothingFound": "Aucune ville trouvée sous ce nom",
+  "cityUpdated": "Ville mise à jour"
 }

@@ -13,6 +13,16 @@ import 'package:plant_care/widgets/botanly_nav_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 
+/// Where the "Add plant" tab sits in the shell.
+///
+/// Named because three different places send the user here — the paywall CTA,
+/// the empty plant list and the limit screen — and a bare `2` scattered across
+/// them quietly breaks the day someone reorders the menu.
+const int kAddPlantTabIndex = 2;
+
+/// Where the plant list sits. Same reason.
+const int kMyPlantsTabIndex = 1;
+
 class MainNavigationScreen extends StatefulWidget {
   final User? user;
   final int initialIndex;
@@ -67,10 +77,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     _screens = [
       HomeScreen(user: widget.user, onTabChange: changeTab),
-      MyPlantsScreen(onAddPlant: () => setState(() => _currentIndex = 2)),
+      MyPlantsScreen(
+        onAddPlant: () => setState(() => _currentIndex = kAddPlantTabIndex),
+      ),
       // v4 redesign; the pre-v4 screen stays in the tree as
       // add_plant_screen.dart until the new flow has been through QA.
-      AddPlantScreenV4(onPlantAdded: () => setState(() => _currentIndex = 1)),
+      AddPlantScreenV4(
+        onPlantAdded: () => setState(() => _currentIndex = kMyPlantsTabIndex),
+        onOpenPlants: () => setState(() => _currentIndex = kMyPlantsTabIndex),
+      ),
       const ProfileV4Screen(),
       SettingsV4Screen(user: widget.user!),
     ];

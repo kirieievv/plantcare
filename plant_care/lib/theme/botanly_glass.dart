@@ -178,6 +178,23 @@ class BotanlySvg {
       '8c-1-3-4-4-6-4 0 3 2 5 6 4ZM12 8c1-2.5 3.5-3.5 5.5-3.5 0 2.5-2 '
       '4.5-5.5 3.5Z"/></svg>';
 
+  // ── weather (SPEC 12) ──────────────────────────────────────────────────
+  //
+  // Four states, matching what the provider's codes collapse to. Colour does
+  // the talking in the header, so the shapes stay plain.
+  static const cloud =
+      '$_open stroke-width="1.9" stroke-linejoin="round"><path d="M7 18h9.5a3.5 '
+      '3.5 0 0 0 .3-7 5.5 5.5 0 0 0-10.5 1.4A3.2 3.2 0 0 0 7 18z"/></svg>';
+
+  static const rain =
+      '$_open stroke-width="1.9" stroke-linejoin="round"><path d="M7 15h9.5a3.5 '
+      '3.5 0 0 0 .3-7 5.5 5.5 0 0 0-10.5 1.4A3.2 3.2 0 0 0 7 15z"/><path '
+      'd="M9 19l-.6 1.6M13 19l-.6 1.6M17 19l-.6 1.6"/></svg>';
+
+  static const snowflake =
+      '$_open stroke-width="1.9" stroke-linejoin="round"><path d="M12 3v18M4.5 '
+      '7.5l15 9M19.5 7.5l-15 9"/></svg>';
+
   static const sun =
       '$_open stroke-width="1.8"><circle cx="12" cy="12" '
       'r="4.6"/><path d="M12 1.6v2.2M12 20.2v2.2M1.6 12h2.2M20.2 12h2.2M4.6 '

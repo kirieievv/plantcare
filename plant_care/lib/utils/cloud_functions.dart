@@ -19,6 +19,12 @@ String get chatPlantAssistantUrl {
   return 'https://us-central1-$projectId.cloudfunctions.net/chatPlantAssistant';
 }
 
+/// Apply or decline a change the assistant proposed in chat.
+String get applyChatProposalUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/applyChatProposal';
+}
+
 /// Request one-time reset PIN for password recovery.
 String get requestPasswordResetPinUrl {
   final projectId = Firebase.app().options.projectId;
@@ -59,4 +65,22 @@ String get sendEmailVerificationPinUrl {
 String get verifyEmailPinUrl {
   final projectId = Firebase.app().options.projectId;
   return 'https://us-central1-$projectId.cloudfunctions.net/verifyEmailPin';
+}
+
+/// City from the caller's IP — no geolocation permission involved.
+String get resolveUserLocationUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/resolveUserLocation';
+}
+
+/// Current weather for a set of coordinates, served from the shared city cache.
+String get getWeatherUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/getWeather';
+}
+
+/// City suggestions while the user types, localised by the provider.
+String get searchCitiesUrl {
+  final projectId = Firebase.app().options.projectId;
+  return 'https://us-central1-$projectId.cloudfunctions.net/searchCities';
 }

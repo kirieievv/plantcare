@@ -32,7 +32,8 @@ class BotanlyPlantTile extends StatelessWidget {
     final dueDay = DateTime(due.year, due.month, due.day);
     final days = dueDay.difference(today).inDays;
 
-    final waterNow = plant.shouldWaterNow &&
+    final waterNow =
+        plant.shouldWaterNow &&
         plant.wateringMode != 'recheck_only' &&
         (plant.wateringAmountMl == null || plant.wateringAmountMl! > 0);
     final overdue = !waterNow && days < 0;
@@ -40,17 +41,17 @@ class BotanlyPlantTile extends StatelessWidget {
     final accent = waterNow
         ? BotanlyColors.sageLight
         : overdue
-            ? BotanlyColors.red
-            : dueSoon
-                ? BotanlyColors.amber
-                : BotanlyColors.sageLight;
+        ? BotanlyColors.red
+        : dueSoon
+        ? BotanlyColors.amber
+        : BotanlyColors.sageLight;
     final accentBg = waterNow
         ? BotanlyColors.sagePale
         : overdue
-            ? BotanlyColors.redPale
-            : dueSoon
-                ? BotanlyColors.amberPale
-                : BotanlyColors.sagePale;
+        ? BotanlyColors.redPale
+        : dueSoon
+        ? BotanlyColors.amberPale
+        : BotanlyColors.sagePale;
 
     final String statusLabel;
     if (waterNow) {
@@ -128,12 +129,10 @@ class BotanlyPlantTile extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Container(
-                            padding:
-                                const EdgeInsets.fromLTRB(6, 3, 9, 3),
+                            padding: const EdgeInsets.fromLTRB(6, 3, 9, 3),
                             decoration: BoxDecoration(
                               color: accentBg,
-                              borderRadius:
-                                  BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -166,10 +165,10 @@ class BotanlyPlantTile extends StatelessWidget {
                       state: overdue
                           ? _WaterState.overdue
                           : (days == 0 ||
-                                  plant.shouldWaterNow ||
-                                  plant.notificationState == 'due')
-                              ? _WaterState.needsWater
-                              : _WaterState.inactive,
+                                plant.shouldWaterNow ||
+                                plant.notificationState == 'due')
+                          ? _WaterState.needsWater
+                          : _WaterState.inactive,
                       onTap: onWater,
                     ),
                   ],
@@ -202,13 +201,11 @@ class _Thumb extends StatelessWidget {
               imageUrl!,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const Center(
-                child:
-                    Text('🌱', style: TextStyle(fontSize: 26, height: 1)),
+                child: Text('🌱', style: TextStyle(fontSize: 26, height: 1)),
               ),
             )
           : const Center(
-              child:
-                  Text('🌱', style: TextStyle(fontSize: 26, height: 1)),
+              child: Text('🌱', style: TextStyle(fontSize: 26, height: 1)),
             ),
     );
   }
@@ -250,10 +247,7 @@ class _WaterButton extends StatelessWidget {
           width: 38,
           height: 38,
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: bg,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
           child: Icon(Icons.water_drop_rounded, size: 18, color: fg),
         ),
       ),

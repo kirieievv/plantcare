@@ -9,7 +9,7 @@ class UserModel {
   final DateTime? createdAt;
   final DateTime? lastLogin;
   final DateTime? updatedAt;
-  
+
   // Notification settings
   final String? timezone; // IANA timezone (e.g., "America/New_York")
   final Map<String, String>? quietHours; // {start: "22:00", end: "08:00"}
@@ -29,8 +29,8 @@ class UserModel {
     this.quietHours,
     List<String>? fcmTokens,
     int? maxPushesPerDay,
-  })  : fcmTokens = fcmTokens ?? [],
-        maxPushesPerDay = maxPushesPerDay ?? 3;
+  }) : fcmTokens = fcmTokens ?? [],
+       maxPushesPerDay = maxPushesPerDay ?? 3;
 
   // Convert to Map for Firestore
   Map<String, dynamic> toMap() {
@@ -56,13 +56,18 @@ class UserModel {
       uid: map['uid'] ?? '',
       email: map['email'] ?? '',
       name: map['name'] ?? '',
-      bio: map['bio'],
-      location: map['location'],
+      bio: map['bio'] is String ? map['bio'] as String : null,
+      // Type-checked rather than cast. This field once collided with the
+      // weather module's own `location` — an object landed where a string was
+      // expected, `fromMap` threw, and the caller's catch turned the whole
+      // profile into null: the name saved fine and then rendered as a dash.
+      // One malformed field must not cost the user their entire profile.
+      location: map['location'] is String ? map['location'] as String : null,
       createdAt: _parseTimestamp(map['createdAt']),
       lastLogin: _parseTimestamp(map['lastLogin']),
       updatedAt: _parseTimestamp(map['updatedAt']),
       timezone: map['timezone'],
-      quietHours: map['quietHours'] != null 
+      quietHours: map['quietHours'] != null
           ? Map<String, String>.from(map['quietHours'])
           : null,
       fcmTokens: map['fcmTokens'] != null
@@ -75,13 +80,13 @@ class UserModel {
   // Helper method to parse Firestore timestamps
   static DateTime? _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return null;
-    
+
     if (timestamp is String) {
       return DateTime.parse(timestamp);
     } else if (timestamp is Timestamp) {
       return timestamp.toDate();
     }
-    
+
     return null;
   }
 
@@ -115,4 +120,4 @@ class UserModel {
       maxPushesPerDay: maxPushesPerDay ?? this.maxPushesPerDay,
     );
   }
-} 
+}

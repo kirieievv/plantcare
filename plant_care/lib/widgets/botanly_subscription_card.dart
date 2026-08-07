@@ -15,8 +15,8 @@ import 'package:plant_care/widgets/botanly_kit.dart';
 
 /// One date format across the whole app: "10 авг 2026".
 String botanlyDate(BuildContext context, DateTime date) => DateFormat.yMMMd(
-      Localizations.localeOf(context).toLanguageTag(),
-    ).format(date);
+  Localizations.localeOf(context).toLanguageTag(),
+).format(date);
 
 class BotanlySubscriptionCard extends StatelessWidget {
   final SubscriptionInfo info;
@@ -152,7 +152,9 @@ class BotanlySubscriptionCard extends StatelessWidget {
                     onTap: onPrimary,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 12),
+                        horizontal: 8,
+                        vertical: 12,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

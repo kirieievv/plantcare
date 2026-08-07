@@ -27,9 +27,9 @@ class TaskService {
         // Not swallowed: an empty list and a failed query look identical on
         // screen, and that is exactly how the health-check history bug hid.
         .handleError((Object error, StackTrace stack) {
-      print('❌ TaskService: open-tasks query failed: $error');
-      Error.throwWithStackTrace(error, stack);
-    });
+          print('❌ TaskService: open-tasks query failed: $error');
+          Error.throwWithStackTrace(error, stack);
+        });
   }
 
   /// Open tasks of one plant, watering included — the scheduler does store it as
@@ -48,9 +48,9 @@ class TaskService {
         .snapshots()
         .map(_decode)
         .handleError((Object error, StackTrace stack) {
-      print('❌ TaskService: plant-tasks query failed: $error');
-      Error.throwWithStackTrace(error, stack);
-    });
+          print('❌ TaskService: plant-tasks query failed: $error');
+          Error.throwWithStackTrace(error, stack);
+        });
   }
 
   List<CareTask> _decode(QuerySnapshot<Map<String, dynamic>> snap) {
@@ -123,6 +123,38 @@ class TaskService {
     }
     await batch.commit();
     return ids;
+  }
+
+  /// Records a one-off the owner agreed to in chat.
+  ///
+  /// `source: chat` rather than `analysis` because the two behave differently
+  /// on the way out: analysis advice carries a health-score penalty while it is
+  /// open, and this does not. It is not `schedule` either — a recompute would
+  /// delete it, and no rule would ever bring it back.
+  Future<String?> createFromChat({
+    required String plantId,
+    required String title,
+    required int dueInDays,
+    required TaskCategory category,
+  }) async {
+    final user = AuthService.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final ref = _firestore.collection(_collection).doc();
+    await ref.set({
+      'id': ref.id,
+      'plantId': plantId,
+      'userId': user.uid,
+      'title': title,
+      'category': category.name,
+      'source': TaskSource.chat.name,
+      'dueAt': DateTime.now().add(Duration(days: dueInDays)).toIso8601String(),
+      'postponedAt': null,
+      'done': false,
+      'completedAt': null,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
   }
 
   /// Closes every open task of a given category for a plant — used when a

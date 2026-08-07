@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:plant_care/models/plant.dart';
@@ -65,31 +66,11 @@ String? _firstNonEmptyString(Iterable<dynamic?> values) {
 /// Builds the care_tips blob from nested `care_recommendations` (mirrors
 /// `transformNewJsonToLegacy` in Cloud Functions when the client receives
 /// nested JSON without a flat `care_tips` field).
-String? _composeCareTipsFromCareMap(Map<String, dynamic>? care) {
-  if (care == null) return null;
-  const sourceKeys = <String, String>{
-    CareSection.cultivar: 'name',
-    CareSection.generalDescription: 'general_description',
-    CareSection.soil: 'soil',
-    CareSection.soilMoisture: 'moisture',
-    CareSection.moistureCheck: 'moisture_check_tip',
-    CareSection.water: 'water',
-    CareSection.light: 'light',
-    CareSection.temperature: 'temperature',
-    CareSection.fertilizer: 'fertilizer',
-    CareSection.growthRate: 'growth_rate',
-    CareSection.toxicity: 'toxicity',
-    CareSection.placement: 'placement',
-    CareSection.personality: 'personality',
-  };
-  final sections = sourceKeys.map(
-    (section, key) => MapEntry(section, care[key]?.toString().trim()),
-  );
-  return composeCareTips(
-    sections,
-    LanguageService.localeNotifier.value.languageCode,
-  );
-}
+String? _composeCareTipsFromCareMap(Map<String, dynamic>? care) =>
+    composeCareTipsFromCareMap(
+      care,
+      LanguageService.localeNotifier.value.languageCode,
+    );
 
 /// Flattens `analyzePlantPhoto` payloads so the UI always reads the same keys
 /// whether the backend sent legacy flat fields or nested `care_recommendations`.
@@ -97,7 +78,8 @@ Map<String, dynamic> _coerceAnalyzeRecommendationsMap(dynamic raw) {
   if (raw == null || raw is! Map) return <String, dynamic>{};
   final rec = Map<String, dynamic>.from(raw as Map);
   final care = _asStringKeyedMap(rec['care_recommendations']);
-  final soil = _asStringKeyedMap(rec['soil']) ?? _asStringKeyedMap(rec['soil_data']);
+  final soil =
+      _asStringKeyedMap(rec['soil']) ?? _asStringKeyedMap(rec['soil_data']);
   final wp = _asStringKeyedMap(rec['watering_plan']);
   final species = _asStringKeyedMap(rec['species']);
 
@@ -124,10 +106,12 @@ Map<String, dynamic> _coerceAnalyzeRecommendationsMap(dynamic raw) {
     setIfEmpty('watering_amount', [rec['watering_amount'], care['water']]);
 
     // Lift moisture range from care_recommendations to top level
-    if (rec['ideal_soil_moisture_min'] == null && care['ideal_soil_moisture_min'] != null) {
+    if (rec['ideal_soil_moisture_min'] == null &&
+        care['ideal_soil_moisture_min'] != null) {
       rec['ideal_soil_moisture_min'] = care['ideal_soil_moisture_min'];
     }
-    if (rec['ideal_soil_moisture_max'] == null && care['ideal_soil_moisture_max'] != null) {
+    if (rec['ideal_soil_moisture_max'] == null &&
+        care['ideal_soil_moisture_max'] != null) {
       rec['ideal_soil_moisture_max'] = care['ideal_soil_moisture_max'];
     }
 
@@ -189,8 +173,9 @@ Map<String, dynamic> _coerceAnalyzeRecommendationsMap(dynamic raw) {
         .map((e) => e.toString().trim())
         .where((s) => s.isNotEmpty)
         .join('\n');
-    rec['specific_issues'] =
-        joined.isEmpty ? 'No specific issues detected' : joined;
+    rec['specific_issues'] = joined.isEmpty
+        ? 'No specific issues detected'
+        : joined;
   } else if (issues == null ||
       (issues is String && issues.toString().trim().isEmpty)) {
     rec['specific_issues'] = 'No specific issues detected';
@@ -200,34 +185,34 @@ Map<String, dynamic> _coerceAnalyzeRecommendationsMap(dynamic raw) {
 }
 
 /// ⚠️ IMPORTANT: AUTOMATIC NAVIGATION FEATURE ⚠️
-/// 
+///
 /// This screen automatically redirects users to their newly created plant's details page
 /// after successful plant creation. This is a key user experience feature that should
 /// NOT be removed without careful consideration.
-/// 
+///
 /// FEATURE DESCRIPTION:
 /// - User creates a plant → Success message appears → Automatically redirected to PlantDetailsScreen
 /// - Uses Navigator.pushReplacement to prevent accidental return to add plant form
 /// - Provides fallback navigation if automatic navigation fails
-/// 
+///
 /// WHY THIS FEATURE EXISTS:
 /// - Better UX: Users see their new plant immediately after creation
 /// - No confusion: No need to search for the new plant in a list
 /// - Seamless flow: Direct transition from creation to management
-/// 
+///
 /// IF YOU NEED TO MODIFY THIS BEHAVIOR:
 /// 1. Test thoroughly to ensure the change improves user experience
 /// 2. Consider adding a user preference option rather than removing the feature
 /// 3. Update all related comments and documentation
 /// 4. Ensure the change works from all entry points (Dashboard, Bottom Navigation)
-/// 
+///
 /// RELATED FILES:
 /// - dashboard_screen.dart: Simplified navigation logic (relies on this feature)
 /// - plant_details_screen.dart: Destination screen for new plants
 /// - plant_service.dart: Plant creation service
-/// 
+///
 /// LAST UPDATED: [Current Date] - Automatic navigation implemented
-/// 
+///
 class AddPlantScreen extends StatefulWidget {
   /// Called after a plant is successfully added, before navigating to its details.
   /// Use this to switch the parent tab to Home/My Plants so pressing Back
@@ -245,13 +230,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   final _nameController = TextEditingController();
   final _scrollController = ScrollController();
   bool _nameError = false;
-  
 
   // Slot 0 = whole plant (required), slot 1 = close-up (optional)
   Uint8List? _selectedImageBytes; // kept for legacy compat (= slot 0)
-  Uint8List? _slot1ImageBytes;    // close-up photo
+  Uint8List? _slot1ImageBytes; // close-up photo
   bool _showAnalysisLoader = false; // fullscreen step-loader
-  int _loaderInitialStep = 1;       // 1 = normal flow, 2 = from species confirmation
+  int _loaderInitialStep = 1; // 1 = normal flow, 2 = from species confirmation
   bool _loaderShowProfileButton = true;
   bool _isLoading = false;
   bool _isAnalyzing = false;
@@ -283,12 +267,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _aiCareTips;
   Map<String, String>? _careDetails;
   List<String>? _aiInterestingFacts;
-  
+
   // Plant size assessment fields
   String? _aiPlantSize;
   String? _aiPotSize;
   String? _aiGrowthStage;
-  
+
   // Scientific watering calculation fields
   int? _wateringAmountMl;
   List<int>? _wateringRangeMl;
@@ -297,27 +281,105 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? _wateringMode;
   int? _nextWateringInDays;
   bool _shouldWaterNow = false; // From AI watering_plan
-  
+
   // Refresh status
   bool _isRefreshing = false;
-  String? _refreshStatus = 'error'; // Start with error status since we know API is failing
-  
+  String? _refreshStatus =
+      'error'; // Start with error status since we know API is failing
+
   // Random plant names for name generator
   final List<String> _randomPlantNames = [
-    'Fernando', 'Leafy', 'Buddy', 'Sprout', 'Greenie', 'Planty', 'Grower', 'Flora',
-    'Verdant', 'Emerald', 'Jade', 'Sage', 'Olive', 'Mint', 'Basil', 'Rosemary',
-    'Thyme', 'Lavender', 'Ivy', 'Willow', 'Maple', 'Oak', 'Pine', 'Cedar',
-    'Bamboo', 'Palm', 'Cactus', 'Succulent', 'Herb', 'Spice', 'Blossom', 'Bloom',
-    'Petunia', 'Daisy', 'Rose', 'Tulip', 'Lily', 'Orchid', 'Sunflower', 'Marigold',
-    'Zinnia', 'Pansy', 'Violet', 'Iris', 'Peony', 'Chrysanthemum', 'Dahlia', 'Aster',
-    'Cosmos', 'Snapdragon', 'Foxglove', 'Delphinium', 'Larkspur', 'Columbine',
-    'Monstera', 'Philodendron', 'Pothos', 'Snake Plant', 'ZZ Plant', 'Fiddle Leaf',
-    'Bird of Paradise', 'Elephant Ear', 'Calathea', 'Prayer Plant', 'Alocasia',
-    'Anthurium', 'Peace Lily', 'Chinese Evergreen', 'Dracaena', 'Schefflera',
-    'Ficus', 'Jade Plant', 'Aloe Vera', 'Haworthia', 'Echeveria', 'Sedum',
-    'Crassula', 'Kalanchoe', 'Peperomia', 'Begonia', 'Impatiens', 'Geranium',
-    'Coleus', 'Polka Dot Plant', 'Nerve Plant', 'Pilea', 'String of Pearls',
-    'String of Hearts', 'Burro\'s Tail', 'Jade Necklace', 'Trailing Jade'
+    'Fernando',
+    'Leafy',
+    'Buddy',
+    'Sprout',
+    'Greenie',
+    'Planty',
+    'Grower',
+    'Flora',
+    'Verdant',
+    'Emerald',
+    'Jade',
+    'Sage',
+    'Olive',
+    'Mint',
+    'Basil',
+    'Rosemary',
+    'Thyme',
+    'Lavender',
+    'Ivy',
+    'Willow',
+    'Maple',
+    'Oak',
+    'Pine',
+    'Cedar',
+    'Bamboo',
+    'Palm',
+    'Cactus',
+    'Succulent',
+    'Herb',
+    'Spice',
+    'Blossom',
+    'Bloom',
+    'Petunia',
+    'Daisy',
+    'Rose',
+    'Tulip',
+    'Lily',
+    'Orchid',
+    'Sunflower',
+    'Marigold',
+    'Zinnia',
+    'Pansy',
+    'Violet',
+    'Iris',
+    'Peony',
+    'Chrysanthemum',
+    'Dahlia',
+    'Aster',
+    'Cosmos',
+    'Snapdragon',
+    'Foxglove',
+    'Delphinium',
+    'Larkspur',
+    'Columbine',
+    'Monstera',
+    'Philodendron',
+    'Pothos',
+    'Snake Plant',
+    'ZZ Plant',
+    'Fiddle Leaf',
+    'Bird of Paradise',
+    'Elephant Ear',
+    'Calathea',
+    'Prayer Plant',
+    'Alocasia',
+    'Anthurium',
+    'Peace Lily',
+    'Chinese Evergreen',
+    'Dracaena',
+    'Schefflera',
+    'Ficus',
+    'Jade Plant',
+    'Aloe Vera',
+    'Haworthia',
+    'Echeveria',
+    'Sedum',
+    'Crassula',
+    'Kalanchoe',
+    'Peperomia',
+    'Begonia',
+    'Impatiens',
+    'Geranium',
+    'Coleus',
+    'Polka Dot Plant',
+    'Nerve Plant',
+    'Pilea',
+    'String of Pearls',
+    'String of Hearts',
+    'Burro\'s Tail',
+    'Jade Necklace',
+    'Trailing Jade',
   ];
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
@@ -389,7 +451,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
   void _generateRandomPlantName() {
     final random = Random();
-    final randomName = _randomPlantNames[random.nextInt(_randomPlantNames.length)];
+    final randomName =
+        _randomPlantNames[random.nextInt(_randomPlantNames.length)];
     setState(() {
       _nameController.text = randomName;
     });
@@ -410,8 +473,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final bytes = await pickCenteredImageFromWeb();
       if (bytes != null && mounted) {
         setState(() {
-          if (slot == 0) _selectedImageBytes = bytes;
-          else _slot1ImageBytes = bytes;
+          if (slot == 0)
+            _selectedImageBytes = bytes;
+          else
+            _slot1ImageBytes = bytes;
         });
       }
     }
@@ -458,8 +523,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         final bytes = await image.readAsBytes();
         if (mounted) {
           setState(() {
-            if (slot == 0) _selectedImageBytes = bytes;
-            else _slot1ImageBytes = bytes;
+            if (slot == 0)
+              _selectedImageBytes = bytes;
+            else
+              _slot1ImageBytes = bytes;
           });
         }
       }
@@ -481,7 +548,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     await _pickImageForSlot(0);
   }
 
-  Future<void> _analyzePlantPhoto(Uint8List imageBytes, {String? userHint}) async {
+  Future<void> _analyzePlantPhoto(
+    Uint8List imageBytes, {
+    String? userHint,
+  }) async {
     setState(() {
       _clearAiAnalysisPayload();
       _isAnalyzing = true;
@@ -502,7 +572,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final base64Images = images.map(base64Encode).toList();
 
       final body = <String, dynamic>{
-        'base64Image': base64Images.first,   // legacy compat
+        'base64Image': base64Images.first, // legacy compat
         'base64Images': base64Images,
         'language': LanguageService.localeNotifier.value.languageCode,
         'userId': FirebaseAuth.instance.currentUser?.uid,
@@ -514,15 +584,18 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
-      
+
       if (response.statusCode != 200) {
         throw Exception(l10n.failedToAnalyzePlantPhoto(response.statusCode));
       }
-      
+
       final result = jsonDecode(response.body);
 
       if (result['step'] == 'identification') {
-        final candidates = (result['speciesCandidates'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+        final candidates =
+            (result['speciesCandidates'] as List?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
         setState(() {
           _speciesCandidates = candidates;
           _showSpeciesSelection = true;
@@ -532,11 +605,14 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         return;
       }
 
-      final recommendations =
-          _coerceAnalyzeRecommendationsMap(result['recommendations']);
+      final recommendations = _coerceAnalyzeRecommendationsMap(
+        result['recommendations'],
+      );
 
       print('🔍 AI Analysis Results (coerced):');
-      print('🔍 general_description: ${recommendations['general_description']}');
+      print(
+        '🔍 general_description: ${recommendations['general_description']}',
+      );
       print('🔍 name: ${recommendations['name']}');
       print('🔍 moisture_level: ${recommendations['moisture_level']}');
       print('🔍 light: ${recommendations['light']}');
@@ -545,46 +621,61 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       print('🔍 care_tips: ${recommendations['care_tips']}');
 
       setState(() {
-        _aiGeneralDescription = _safeString(recommendations['general_description']);
+        _aiGeneralDescription = _safeString(
+          recommendations['general_description'],
+        );
         _aiName = _safeString(recommendations['name']);
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
         _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
-            : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
+            : int.tryParse(
+                recommendations['ideal_soil_moisture_min']?.toString() ?? '',
+              );
         _aiMoistureMax = recommendations['ideal_soil_moisture_max'] is int
             ? recommendations['ideal_soil_moisture_max']
-            : int.tryParse(recommendations['ideal_soil_moisture_max']?.toString() ?? '');
+            : int.tryParse(
+                recommendations['ideal_soil_moisture_max']?.toString() ?? '',
+              );
         _aiLight = _safeString(recommendations['light']);
         _aiWateringAmount = _safeString(recommendations['watering_amount']);
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
         _careDetails = recommendations['care_details'] as Map<String, String>?;
 
-        _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .where((s) => s.trim().isNotEmpty)
-            .toList();
+        _aiInterestingFacts =
+            (recommendations['interesting_facts'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .where((s) => s.trim().isNotEmpty)
+                .toList();
 
         _aiPlantSize = recommendations['plant_size'];
         _aiPotSize = recommendations['pot_size'];
         _aiGrowthStage = recommendations['growth_stage'];
 
-        final wateringPlan = recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
+        final wateringPlan =
+            recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
         final nextDays = wateringPlan['next_watering_in_days'];
-        _nextWateringInDays = nextDays != null ? int.tryParse(nextDays.toString()) : null;
+        _nextWateringInDays = nextDays != null
+            ? int.tryParse(nextDays.toString())
+            : null;
         _shouldWaterNow = wateringPlan['should_water_now'] == true;
-        _aiWateringFrequency = _nextWateringInDays?.toString() ??
+        _aiWateringFrequency =
+            _nextWateringInDays?.toString() ??
             _safeString(recommendations['watering_frequency']);
-        
-        _wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
-        
+
+        _wateringAmountMl =
+            wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+
         // Extract scientific watering calculation data (legacy support)
-        _wateringRangeMl = recommendations['range_ml'] != null ? List<int>.from(recommendations['range_ml']) : null;
-        _nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        _wateringRangeMl = recommendations['range_ml'] != null
+            ? List<int>.from(recommendations['range_ml'])
+            : null;
+        _nextAfterWateringHours =
+            recommendations['next_after_watering_in_hours'];
         _nextCheckHours = recommendations['next_check_in_hours'];
         _wateringMode = recommendations['mode'];
-        
+
         _refreshStatus = 'success';
       });
 
@@ -617,19 +708,19 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   Future<void> _testApiConnection() async {
     try {
       // Test Firebase Functions connectivity
-      final response = await http.get(
-        Uri.parse(analyzePlantPhotoUrl),
-      );
-      
+      final response = await http.get(Uri.parse(analyzePlantPhotoUrl));
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              response.statusCode == 405 
-                ? '✅ Firebase Functions are accessible! (Method not allowed is expected for GET)' 
-                : '❌ Firebase Functions test failed. Status: ${response.statusCode}',
+              response.statusCode == 405
+                  ? '✅ Firebase Functions are accessible! (Method not allowed is expected for GET)'
+                  : '❌ Firebase Functions test failed. Status: ${response.statusCode}',
             ),
-            backgroundColor: response.statusCode == 405 ? Colors.green : Colors.red,
+            backgroundColor: response.statusCode == 405
+                ? Colors.green
+                : Colors.red,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -679,30 +770,41 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       }
 
       final result = jsonDecode(response.body);
-      final recommendations =
-          _coerceAnalyzeRecommendationsMap(result['recommendations']);
+      final recommendations = _coerceAnalyzeRecommendationsMap(
+        result['recommendations'],
+      );
 
       setState(() {
-        _aiGeneralDescription = _safeString(recommendations['general_description']);
+        _aiGeneralDescription = _safeString(
+          recommendations['general_description'],
+        );
         _aiName = _safeString(recommendations['name']) ?? scientificName;
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
         _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
-            : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
+            : int.tryParse(
+                recommendations['ideal_soil_moisture_min']?.toString() ?? '',
+              );
         _aiMoistureMax = recommendations['ideal_soil_moisture_max'] is int
             ? recommendations['ideal_soil_moisture_max']
-            : int.tryParse(recommendations['ideal_soil_moisture_max']?.toString() ?? '');
+            : int.tryParse(
+                recommendations['ideal_soil_moisture_max']?.toString() ?? '',
+              );
         _aiLight = _safeString(recommendations['light']);
 
         final wateringPlan =
             recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
         final nextDays = wateringPlan['next_watering_in_days'];
-        _nextWateringInDays = nextDays != null ? int.tryParse(nextDays.toString()) : null;
-        _aiWateringFrequency = _nextWateringInDays?.toString() ??
+        _nextWateringInDays = nextDays != null
+            ? int.tryParse(nextDays.toString())
+            : null;
+        _aiWateringFrequency =
+            _nextWateringInDays?.toString() ??
             _safeString(recommendations['watering_frequency']);
         _aiWateringAmount = _safeString(recommendations['watering_amount']);
-        _wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+        _wateringAmountMl =
+            wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
         _shouldWaterNow = wateringPlan['should_water_now'] == true;
 
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
@@ -714,10 +816,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
         _aiPlantSize = recommendations['plant_size'];
         _aiPotSize = recommendations['pot_size'];
-        _aiGrowthStage = recommendations['growth_stage'] ?? recommendations['other_care']?['growth_stage'];
+        _aiGrowthStage =
+            recommendations['growth_stage'] ??
+            recommendations['other_care']?['growth_stage'];
 
-        _wateringRangeMl = recommendations['range_ml'] != null ? List<int>.from(recommendations['range_ml']) : null;
-        _nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        _wateringRangeMl = recommendations['range_ml'] != null
+            ? List<int>.from(recommendations['range_ml'])
+            : null;
+        _nextAfterWateringHours =
+            recommendations['next_after_watering_in_hours'];
         _nextCheckHours = recommendations['next_check_in_hours'];
         _wateringMode = recommendations['mode'];
 
@@ -744,7 +851,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorGeneric), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(l10n.errorGeneric),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -758,7 +868,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
   Future<void> _refreshAnalysis() async {
     if (_selectedImageBytes == null) return;
-    
+
     setState(() {
       _isRefreshing = true;
       _refreshStatus = null;
@@ -766,28 +876,32 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
     try {
       final base64Image = base64Encode(_selectedImageBytes!);
-      
+
       final body = <String, dynamic>{
         'base64Image': base64Image,
         'language': LanguageService.localeNotifier.value.languageCode,
         'userId': FirebaseAuth.instance.currentUser?.uid,
       };
-      if (_confirmedSpecies != null) body['confirmedSpecies'] = _confirmedSpecies;
+      if (_confirmedSpecies != null)
+        body['confirmedSpecies'] = _confirmedSpecies;
 
       final response = await http.post(
         Uri.parse(analyzePlantPhotoUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
-      
+
       if (response.statusCode != 200) {
         throw Exception(l10n.failedToAnalyzePlantPhoto(response.statusCode));
       }
-      
+
       final result = jsonDecode(response.body);
 
       if (result['step'] == 'identification') {
-        final candidates = (result['speciesCandidates'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+        final candidates =
+            (result['speciesCandidates'] as List?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
         setState(() {
           _speciesCandidates = candidates;
           _showSpeciesSelection = true;
@@ -797,49 +911,68 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         return;
       }
 
-      final recommendations =
-          _coerceAnalyzeRecommendationsMap(result['recommendations']);
+      final recommendations = _coerceAnalyzeRecommendationsMap(
+        result['recommendations'],
+      );
 
       setState(() {
-        _aiGeneralDescription = _safeString(recommendations['general_description']);
+        _aiGeneralDescription = _safeString(
+          recommendations['general_description'],
+        );
         _aiName = _safeString(recommendations['name']);
         _aiMoistureLevel = _safeString(recommendations['moisture_level']);
         _aiHealthScore = _asScore(recommendations['health_score']);
         _aiMoistureMin = recommendations['ideal_soil_moisture_min'] is int
             ? recommendations['ideal_soil_moisture_min']
-            : int.tryParse(recommendations['ideal_soil_moisture_min']?.toString() ?? '');
+            : int.tryParse(
+                recommendations['ideal_soil_moisture_min']?.toString() ?? '',
+              );
         _aiMoistureMax = recommendations['ideal_soil_moisture_max'] is int
             ? recommendations['ideal_soil_moisture_max']
-            : int.tryParse(recommendations['ideal_soil_moisture_max']?.toString() ?? '');
+            : int.tryParse(
+                recommendations['ideal_soil_moisture_max']?.toString() ?? '',
+              );
         _aiLight = _safeString(recommendations['light']);
         _aiWateringFrequency =
             _safeString(recommendations['watering_frequency']) ??
-                _safeString(recommendations['watering_plan']?['next_watering_in_days']);
+            _safeString(
+              recommendations['watering_plan']?['next_watering_in_days'],
+            );
         _aiWateringAmount = _safeString(recommendations['watering_amount']);
         _aiSpecificIssues = _safeString(recommendations['specific_issues']);
         _aiCareTips = _safeString(recommendations['care_tips']);
         _careDetails = recommendations['care_details'] as Map<String, String>?;
-        
-        _aiInterestingFacts = (recommendations['interesting_facts'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .where((s) => s.trim().isNotEmpty)
-            .toList();
-        
+
+        _aiInterestingFacts =
+            (recommendations['interesting_facts'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .where((s) => s.trim().isNotEmpty)
+                .toList();
+
         _aiPlantSize = recommendations['plant_size'];
         _aiPotSize = recommendations['pot_size'];
-        _aiGrowthStage = recommendations['growth_stage'] ?? recommendations['other_care']?['growth_stage'];
-        
-        final wateringPlan = recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
+        _aiGrowthStage =
+            recommendations['growth_stage'] ??
+            recommendations['other_care']?['growth_stage'];
+
+        final wateringPlan =
+            recommendations['watering_plan'] as Map<String, dynamic>? ?? {};
         final nextDays = wateringPlan['next_watering_in_days'];
-        _nextWateringInDays = nextDays != null ? int.tryParse(nextDays.toString()) : null;
+        _nextWateringInDays = nextDays != null
+            ? int.tryParse(nextDays.toString())
+            : null;
         _shouldWaterNow = wateringPlan['should_water_now'] == true;
-        _wateringAmountMl = wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
-        
-        _wateringRangeMl = recommendations['range_ml'] != null ? List<int>.from(recommendations['range_ml']) : null;
-        _nextAfterWateringHours = recommendations['next_after_watering_in_hours'];
+        _wateringAmountMl =
+            wateringPlan['amount_ml'] ?? recommendations['amount_ml'];
+
+        _wateringRangeMl = recommendations['range_ml'] != null
+            ? List<int>.from(recommendations['range_ml'])
+            : null;
+        _nextAfterWateringHours =
+            recommendations['next_after_watering_in_hours'];
         _nextCheckHours = recommendations['next_check_in_hours'];
         _wateringMode = recommendations['mode'];
-        
+
         _refreshStatus = 'success';
       });
 
@@ -856,9 +989,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       setState(() {
         _refreshStatus = 'error';
       });
-      
+
       print('AI analysis refresh error: $e');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -943,15 +1076,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       ),
     );
   }
-  
+
   /// Calculate light hours per day based on AI light requirements
   String _calculateLightHours() {
     if (_aiLight == null || _aiLight!.isEmpty) {
       return l10n.notSpecified;
     }
-    
+
     final lightRequirement = _aiLight!.toLowerCase();
-    
+
     // Extract hours if already specified as numbers
     final hourPattern = RegExp(r'(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)');
     final hourMatch = hourPattern.firstMatch(lightRequirement);
@@ -959,39 +1092,49 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       final hours = double.tryParse(hourMatch.group(1)!) ?? 0;
       return '${hours.toInt()}';
     }
-    
+
     // Calculate based on light intensity descriptions
-    if (lightRequirement.contains('full sun') || lightRequirement.contains('direct sun')) {
+    if (lightRequirement.contains('full sun') ||
+        lightRequirement.contains('direct sun')) {
       return '6-8'; // Full sun plants need 6-8 hours of direct sunlight
-    } else if (lightRequirement.contains('partial sun') || lightRequirement.contains('morning sun')) {
+    } else if (lightRequirement.contains('partial sun') ||
+        lightRequirement.contains('morning sun')) {
       return '4-6'; // Partial sun plants need 4-6 hours
-    } else if (lightRequirement.contains('partial shade') || lightRequirement.contains('filtered light')) {
+    } else if (lightRequirement.contains('partial shade') ||
+        lightRequirement.contains('filtered light')) {
       return '2-4'; // Partial shade plants need 2-4 hours
-    } else if (lightRequirement.contains('bright indirect') || lightRequirement.contains('bright light')) {
+    } else if (lightRequirement.contains('bright indirect') ||
+        lightRequirement.contains('bright light')) {
       return '8-12'; // Bright indirect light throughout the day
-    } else if (lightRequirement.contains('low light') || lightRequirement.contains('shade')) {
+    } else if (lightRequirement.contains('low light') ||
+        lightRequirement.contains('shade')) {
       return '2-3'; // Low light plants need minimal direct light
-    } else if (lightRequirement.contains('medium light') || lightRequirement.contains('moderate light')) {
+    } else if (lightRequirement.contains('medium light') ||
+        lightRequirement.contains('moderate light')) {
       return '4-6'; // Medium light requirements
-    } else if (lightRequirement.contains('very bright') || lightRequirement.contains('high light')) {
+    } else if (lightRequirement.contains('very bright') ||
+        lightRequirement.contains('high light')) {
       return '10-12'; // Very bright light requirements
     }
-    
+
     // Default calculation based on plant species if available
     final species = _aiName?.toLowerCase() ?? 'unknown';
-    
+
     if (species.contains('succulent') || species.contains('cactus')) {
       return '6-8'; // Most succulents need full sun
     } else if (species.contains('pothos') || species.contains('philodendron')) {
       return '4-6'; // Popular houseplants with moderate light needs
-    } else if (species.contains('snake plant') || species.contains('zz plant')) {
+    } else if (species.contains('snake plant') ||
+        species.contains('zz plant')) {
       return '2-4'; // Low light tolerant plants
-    } else if (species.contains('fiddle leaf') || species.contains('monstera')) {
+    } else if (species.contains('fiddle leaf') ||
+        species.contains('monstera')) {
       return '6-8'; // Bright light loving houseplants
-    } else if (species.contains('calathea') || species.contains('prayer plant')) {
+    } else if (species.contains('calathea') ||
+        species.contains('prayer plant')) {
       return '4-6'; // Prefer bright indirect light
     }
-    
+
     // Default fallback
     return '4-6';
   }
@@ -999,14 +1142,14 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   /// Convert moisture level text to percentage (0-100)
   int _getMoisturePercentage(String? moistureLevel) {
     if (moistureLevel == null) return 50;
-    
+
     try {
       // First, check if it's already a percentage number
       final percentage = int.tryParse(moistureLevel);
       if (percentage != null && percentage >= 0 && percentage <= 100) {
         return percentage;
       }
-      
+
       // Check if it's a range like "40-60%"
       final rangeMatch = RegExp(r'(\d+)\s*-\s*(\d+)').firstMatch(moistureLevel);
       if (rangeMatch != null) {
@@ -1016,34 +1159,36 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           return (min + max) ~/ 2; // Return midpoint
         }
       }
-      
+
       // Fallback to text-based conversion
       final level = moistureLevel.toLowerCase();
       int percentageResult;
-      
+
       if (level.contains('low') || level.contains('dry')) {
         percentageResult = 25;
       } else if (level.contains('moderate') || level.contains('medium')) {
         percentageResult = 50;
-      } else if (level.contains('high') || level.contains('wet') || level.contains('moist')) {
+      } else if (level.contains('high') ||
+          level.contains('wet') ||
+          level.contains('moist')) {
         percentageResult = 75;
       } else if (level.contains('very high') || level.contains('very wet')) {
         percentageResult = 90;
       } else {
         percentageResult = 50; // Default to moderate
       }
-      
+
       return percentageResult;
     } catch (e) {
       print('Error parsing moisture level: $moistureLevel, error: $e');
       return 50; // Safe fallback
     }
   }
-  
+
   /// Format watering frequency to human-readable text
   String _formatWateringFrequency(String? frequency) {
     if (frequency == null) return l10n.onceEvery7Days;
-    
+
     try {
       final days = int.parse(frequency);
       if (days == 1) return l10n.oncePerDay;
@@ -1055,22 +1200,42 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       return l10n.onceEvery7Days;
     }
   }
-  
+
   /// Format moisture level to five gradations
   String _formatMoistureLevel(String? moistureLevel) {
     if (moistureLevel == null) return l10n.medium;
-    
+
     final level = moistureLevel.toLowerCase();
-    if (level.contains('very low') || level.contains('extremely low') || level.contains('dry')) return l10n.low;
-    if (level.contains('low') || level.contains('slightly low')) return l10n.mediumLow;
-    if (level.contains('moderate') || level.contains('medium') || level.contains('average')) return l10n.medium;
-    if (level.contains('high') || level.contains('slightly high') || level.contains('moist')) return l10n.mediumHigh;
-    if (level.contains('very high') || level.contains('extremely high') || level.contains('wet') || level.contains('soggy')) return l10n.high;
-    
+    if (level.contains('very low') ||
+        level.contains('extremely low') ||
+        level.contains('dry'))
+      return l10n.low;
+    if (level.contains('low') || level.contains('slightly low'))
+      return l10n.mediumLow;
+    if (level.contains('moderate') ||
+        level.contains('medium') ||
+        level.contains('average'))
+      return l10n.medium;
+    if (level.contains('high') ||
+        level.contains('slightly high') ||
+        level.contains('moist'))
+      return l10n.mediumHigh;
+    if (level.contains('very high') ||
+        level.contains('extremely high') ||
+        level.contains('wet') ||
+        level.contains('soggy'))
+      return l10n.high;
+
     return l10n.medium; // Default
   }
 
-  Widget _buildCareCard(String title, String value, IconData icon, Color color, {int? moisturePercentage}) {
+  Widget _buildCareCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color, {
+    int? moisturePercentage,
+  }) {
     return Container(
       padding: const EdgeInsets.all(18), // Increased padding
       decoration: BoxDecoration(
@@ -1097,11 +1262,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 12), // Increased spacing
           Text(
@@ -1204,7 +1365,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       if (_selectedImageBytes == null) {
         throw Exception(l10n.pleaseUploadPlantImage);
       }
-      
+
       // Require AI analysis before creating plant (API may omit general_description)
       if (!_hasAiResultsToDisplay) {
         throw Exception(l10n.pleaseWaitForAiAnalysisBeforeAddingPlant);
@@ -1220,13 +1381,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       );
 
       // Use AI-determined watering frequency or default to 7 days
-      final wateringFreq = _aiWateringFrequency != null 
-          ? int.tryParse(_aiWateringFrequency!) ?? 7 
+      final wateringFreq = _aiWateringFrequency != null
+          ? int.tryParse(_aiWateringFrequency!) ?? 7
           : 7;
-      
+
       // NEW PLANTS: NO health status or health message until first manual health check
       // AI analysis is only used for care recommendations, not health status
-      
+
       final plant = Plant(
         id: '', // Will be set by Firestore
         name: _nameController.text.trim(),
@@ -1266,7 +1427,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       );
 
       final plantId = await PlantService().addPlant(plant);
-      
+
       if (mounted) {
         // LEGACY SNACKBAR (disabled 2026-08-03) — success confirmation, not wanted.
         // ScaffoldMessenger.of(context).showSnackBar(
@@ -1287,7 +1448,6 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         final navigator = Navigator.of(context, rootNavigator: true);
 
         SchedulerBinding.instance.addPostFrameCallback((_) async {
-
           // The plant we just wrote is already in hand, so re-reading it is only
           // an optimisation: the server copy carries the scheduling fields
           // addPlant() computes. It must never gate the redirect — a slow or
@@ -1304,8 +1464,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               newPlant = Plant.fromMap({...data, 'id': plantId});
             }
           } catch (e) {
-            debugPrint('⚠️ Could not re-read plant $plantId ($e); '
-                'navigating with the locally built copy.');
+            debugPrint(
+              '⚠️ Could not re-read plant $plantId ($e); '
+              'navigating with the locally built copy.',
+            );
           }
 
           try {
@@ -1359,12 +1521,16 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     }
   }
 
-  Widget _buildInputCard(String label, String hintText, IconData icon,
-      {TextEditingController? controller,
-      String? Function(String?)? validator,
-      bool showNameError = false,
-      ValueChanged<String>? onNameChanged,
-      Color? iconColor}) {
+  Widget _buildInputCard(
+    String label,
+    String hintText,
+    IconData icon, {
+    TextEditingController? controller,
+    String? Function(String?)? validator,
+    bool showNameError = false,
+    ValueChanged<String>? onNameChanged,
+    Color? iconColor,
+  }) {
     final isPlantName = label == l10n.plantName;
     return Container(
       padding: const EdgeInsets.all(18),
@@ -1392,9 +1558,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   color: Color(0xFFCCE8B8),
                   shape: BoxShape.circle,
                 ),
-                child:
-                    const Icon(Icons.local_florist_outlined,
-                        size: 17, color: Color(0xFF5FA346)),
+                child: const Icon(
+                  Icons.local_florist_outlined,
+                  size: 17,
+                  color: Color(0xFF5FA346),
+                ),
               ),
               const SizedBox(width: 10),
               Text(
@@ -1435,8 +1603,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                         isCollapsed: true,
                         filled: false,
                         hoverColor: Colors.transparent,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -1472,8 +1641,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                           border: Border.all(color: const Color(0xFFE4EBE1)),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.shuffle_rounded,
-                            size: 18, color: Color(0xFF5FA346)),
+                        child: const Icon(
+                          Icons.shuffle_rounded,
+                          size: 18,
+                          color: Color(0xFF5FA346),
+                        ),
                       ),
                     ),
                   ),
@@ -1492,8 +1664,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded,
-                      size: 13, color: Color(0xFFE05252)),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 13,
+                    color: Color(0xFFE05252),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1515,7 +1690,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     );
   }
 
-  Widget _buildImageUploadCard({bool limitReached = false, bool subLoading = false, bool subReady = true}) {
+  Widget _buildImageUploadCard({
+    bool limitReached = false,
+    bool subLoading = false,
+    bool subReady = true,
+  }) {
     final bool canTap = subReady && !limitReached && !_isAnalyzing;
     final bool hasPhoto = _selectedImageBytes != null;
     final bool canAnalyze = canTap && hasPhoto;
@@ -1526,7 +1705,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: Color(0x0D2D3D2A), blurRadius: 14, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x0D2D3D2A),
+            blurRadius: 14,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -1536,30 +1719,49 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           Row(
             children: [
               Container(
-                width: 30, height: 30,
+                width: 30,
+                height: 30,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F8EB),
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: const Icon(Icons.photo_camera_outlined, size: 14, color: Color(0xFF4A8C33)),
+                child: const Icon(
+                  Icons.photo_camera_outlined,
+                  size: 14,
+                  color: Color(0xFF4A8C33),
+                ),
               ),
               const SizedBox(width: 10),
-              Builder(builder: (context) {
-                final words = l10n.plantPhoto.split(' ');
-                final plain = '${words.sublist(0, words.length - 1).join(' ')} ';
-                final italic = words.last;
-                return RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontFamily: 'Fraunces', fontSize: 16, fontWeight: FontWeight.w500,
-                        letterSpacing: -0.3, color: Color(0xFF2D3D2A)),
-                    children: [
-                      TextSpan(text: plain),
-                      TextSpan(text: italic, style: const TextStyle(fontStyle: FontStyle.italic, color: Color(0xFF5FA346))),
-                    ],
-                  ),
-                );
-              }),
+              Builder(
+                builder: (context) {
+                  final words = l10n.plantPhoto.split(' ');
+                  final plain =
+                      '${words.sublist(0, words.length - 1).join(' ')} ';
+                  final italic = words.last;
+                  return RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'Fraunces',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: -0.3,
+                        color: Color(0xFF2D3D2A),
+                      ),
+                      children: [
+                        TextSpan(text: plain),
+                        TextSpan(
+                          text: italic,
+                          style: const TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Color(0xFF5FA346),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -1567,27 +1769,31 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           // ── Dual tile grid ──
           Row(
             children: [
-              Expanded(child: _buildPhotoTile(
-                slot: 0,
-                bytes: _selectedImageBytes,
-                title: l10n.addPlantWholePlantTitle,
-                desc: l10n.addPlantWholePlantDesc,
-                tag: l10n.addPlantWholePlantTag,
-                isRequired: true,
-                canTap: canTap,
-                icon: Icons.photo_camera_outlined,
-              )),
+              Expanded(
+                child: _buildPhotoTile(
+                  slot: 0,
+                  bytes: _selectedImageBytes,
+                  title: l10n.addPlantWholePlantTitle,
+                  desc: l10n.addPlantWholePlantDesc,
+                  tag: l10n.addPlantWholePlantTag,
+                  isRequired: true,
+                  canTap: canTap,
+                  icon: Icons.photo_camera_outlined,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildPhotoTile(
-                slot: 1,
-                bytes: _slot1ImageBytes,
-                title: l10n.addPlantCloseUpTitle,
-                desc: l10n.addPlantCloseUpDesc,
-                tag: l10n.addPlantCloseUpTag,
-                isRequired: false,
-                canTap: canTap,
-                icon: Icons.eco_outlined,
-              )),
+              Expanded(
+                child: _buildPhotoTile(
+                  slot: 1,
+                  bytes: _slot1ImageBytes,
+                  title: l10n.addPlantCloseUpTitle,
+                  desc: l10n.addPlantCloseUpDesc,
+                  tag: l10n.addPlantCloseUpTag,
+                  isRequired: false,
+                  canTap: canTap,
+                  icon: Icons.eco_outlined,
+                ),
+              ),
             ],
           ),
 
@@ -1597,7 +1803,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             l10n.addPlantDualHint,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontFamily: 'DM Sans', fontSize: 13,
+              fontFamily: 'DM Sans',
+              fontSize: 13,
               color: Color(0xFF8B9486),
               height: 1.4,
             ),
@@ -1623,34 +1830,42 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
           // ── Analyze button (hidden once species candidates are shown) ──
           if (!_showSpeciesSelection) ...[
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: canAnalyze
-                  ? () => _analyzePlantPhoto(_selectedImageBytes!)
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: canAnalyze ? const Color(0xFF5FA346) : const Color(0xFFDFE6D7),
-                foregroundColor: canAnalyze ? Colors.white : const Color(0xFFA7B29C),
-                elevation: canAnalyze ? 4 : 0,
-                shadowColor: const Color(0xFF56A93B).withValues(alpha: 0.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              icon: Icon(
-                Icons.auto_awesome_rounded,
-                size: 18,
-                color: canAnalyze ? Colors.white : const Color(0xFFA7B29C),
-              ),
-              label: Text(
-                l10n.addPlantAnalyzeButton,
-                style: const TextStyle(
-                  fontFamily: 'DM Sans', fontSize: 16, fontWeight: FontWeight.w700,
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: canAnalyze
+                    ? () => _analyzePlantPhoto(_selectedImageBytes!)
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: canAnalyze
+                      ? const Color(0xFF5FA346)
+                      : const Color(0xFFDFE6D7),
+                  foregroundColor: canAnalyze
+                      ? Colors.white
+                      : const Color(0xFFA7B29C),
+                  elevation: canAnalyze ? 4 : 0,
+                  shadowColor: const Color(0xFF56A93B).withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 18,
+                  color: canAnalyze ? Colors.white : const Color(0xFFA7B29C),
+                ),
+                label: Text(
+                  l10n.addPlantAnalyzeButton,
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
-          ),
           ], // end if (!_showSpeciesSelection)
         ],
       ),
@@ -1694,46 +1909,86 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           children: [
             // Preview image
             if (filled)
-              Image.memory(bytes!, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+              Image.memory(
+                bytes!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
 
             // Overlay content (hidden when filled)
             if (!filled)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 14,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 48, height: 48,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [BoxShadow(color: Color(0x1A223A18), blurRadius: 8, offset: Offset(0, 4))],
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x1A223A18),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Icon(icon, size: 22, color: const Color(0xFF4F9A32)),
+                      child: Icon(
+                        icon,
+                        size: 22,
+                        color: const Color(0xFF4F9A32),
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    Text(title,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF20271E))),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF20271E),
+                      ),
+                    ),
                     const SizedBox(height: 3),
-                    Text(desc,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11.5, color: Color(0xFF90A085), height: 1.3)),
+                    Text(
+                      desc,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 11.5,
+                        color: Color(0xFF90A085),
+                        height: 1.3,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: isRequired ? const Color(0xFFD9EBC6) : const Color(0xFFE6EDF9),
+                        color: isRequired
+                            ? const Color(0xFFD9EBC6)
+                            : const Color(0xFFE6EDF9),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         tag,
                         style: TextStyle(
-                          fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700,
+                          fontFamily: 'DM Sans',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.04,
-                          color: isRequired ? const Color(0xFF3F8127) : const Color(0xFF5878B0),
+                          color: isRequired
+                              ? const Color(0xFF3F8127)
+                              : const Color(0xFF5878B0),
                         ),
                       ),
                     ),
@@ -1744,37 +1999,59 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             // Green check badge (top-right)
             if (filled)
               Positioned(
-                top: 8, right: 8,
+                top: 8,
+                right: 8,
                 child: Container(
-                  width: 24, height: 24,
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
                     color: const Color(0xFF5FA346),
                     shape: BoxShape.circle,
-                    boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2))],
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
 
             // Remove button (top-left)
             if (filled && canTap)
               Positioned(
-                top: 8, left: 8,
+                top: 8,
+                left: 8,
                 child: GestureDetector(
                   onTap: () {
                     setState(() {
-                      if (slot == 0) _selectedImageBytes = null;
-                      else _slot1ImageBytes = null;
+                      if (slot == 0)
+                        _selectedImageBytes = null;
+                      else
+                        _slot1ImageBytes = null;
                     });
                   },
                   child: Container(
-                    width: 24, height: 24,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      boxShadow: const [BoxShadow(color: Color(0x2E000000), blurRadius: 5)],
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x2E000000), blurRadius: 5),
+                      ],
                     ),
-                    child: const Icon(Icons.close_rounded, size: 13, color: Color(0xFF8A9580)),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 13,
+                      color: Color(0xFF8A9580),
+                    ),
                   ),
                 ),
               ),
@@ -1828,34 +2105,56 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFF5FA346).withValues(alpha: 0.18)),
+                      border: Border.all(
+                        color: const Color(0xFF5FA346).withValues(alpha: 0.18),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF5FA346).withValues(alpha: 0.18),
+                          color: const Color(
+                            0xFF5FA346,
+                          ).withValues(alpha: 0.18),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.photo_camera_outlined, size: 24, color: Color(0xFF4A8C33)),
+                    child: const Icon(
+                      Icons.photo_camera_outlined,
+                      size: 24,
+                      color: Color(0xFF4A8C33),
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  Builder(builder: (context) {
-                    final words = l10n.snapYourSprout.split(' ');
-                    final plain = '${words.sublist(0, words.length - 1).join(' ')} ';
-                    final italic = words.last;
-                    return RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
-                        style: const TextStyle(fontFamily: 'Fraunces', fontSize: 18, fontWeight: FontWeight.w500,
-                            letterSpacing: -0.3, color: Color(0xFF2D3D2A)),
-                        children: [
-                          TextSpan(text: plain),
-                          TextSpan(text: italic, style: const TextStyle(fontStyle: FontStyle.italic, color: Color(0xFF5FA346))),
-                        ],
-                      ),
-                    );
-                  }),
+                  Builder(
+                    builder: (context) {
+                      final words = l10n.snapYourSprout.split(' ');
+                      final plain =
+                          '${words.sublist(0, words.length - 1).join(' ')} ';
+                      final italic = words.last;
+                      return RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontFamily: 'Fraunces',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.3,
+                            color: Color(0xFF2D3D2A),
+                          ),
+                          children: [
+                            TextSpan(text: plain),
+                            TextSpan(
+                              text: italic,
+                              style: const TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: Color(0xFF5FA346),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     l10n.snapDescription,
@@ -1877,9 +2176,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   }
 
   Widget _buildAnalyzingOverlay() {
-    return Positioned.fill(
-      child: _AnalyzingOverlay(),
-    );
+    return Positioned.fill(child: _AnalyzingOverlay());
   }
 
   Widget _buildTipPill(IconData icon, String label) {
@@ -1888,7 +2185,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFF5FA346).withValues(alpha: 0.12)),
+        border: Border.all(
+          color: const Color(0xFF5FA346).withValues(alpha: 0.12),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1926,9 +2225,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     const Color cInkSoft = Color(0xFF4A5C46);
 
     final commonName = _aiName ?? _nameController.text.trim();
-    final latinName = (_confirmedSpecies != null &&
-            _confirmedSpecies!.toLowerCase() !=
-                commonName.toLowerCase())
+    final latinName =
+        (_confirmedSpecies != null &&
+            _confirmedSpecies!.toLowerCase() != commonName.toLowerCase())
         ? _confirmedSpecies!
         : null;
 
@@ -1941,9 +2240,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         border: Border.all(color: cSagePale, width: 1),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x0D000000),
-              blurRadius: 10,
-              offset: Offset(0, 4)),
+            color: Color(0x0D000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -1961,8 +2261,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   color: cSagePale2,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.psychology_outlined,
-                    size: 17, color: cSage),
+                child: const Icon(
+                  Icons.psychology_outlined,
+                  size: 17,
+                  color: cSage,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1982,8 +2285,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: cSagePale2,
                   border: Border.all(color: cSagePale, width: 1.5),
@@ -1992,8 +2297,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_rounded,
-                        size: 13, color: cSage),
+                    const Icon(Icons.check_rounded, size: 13, color: cSage),
                     const SizedBox(width: 5),
                     Text(
                       l10n.aiReady,
@@ -2095,8 +2399,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           if (_aiWateringFrequency != null) ...[
             const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: cBluePale,
                 border: Border.all(color: cBlueBorder, width: 1),
@@ -2112,8 +2415,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                       color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.water_drop_rounded,
-                        size: 16, color: cBlue),
+                    child: const Icon(
+                      Icons.water_drop_rounded,
+                      size: 16,
+                      color: cBlue,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -2163,7 +2469,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     decoration: const BoxDecoration(
                       color: cSageSoft,
                       borderRadius: BorderRadius.only(
@@ -2181,8 +2489,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                             color: cSagePale,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.lightbulb_outline,
-                              size: 16, color: cSage),
+                          child: const Icon(
+                            Icons.lightbulb_outline,
+                            size: 16,
+                            color: cSage,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -2202,13 +2513,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     ),
                   ),
                   Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ..._buildStructuredCareSections(_aiCareTips!),
-                      ],
+                      children: [..._buildStructuredCareSections(_aiCareTips!)],
                     ),
                   ),
                 ],
@@ -2249,7 +2557,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   /// Cleans markdown formatting from AI content for better UI display
   String _cleanMarkdownContent(String content) {
     if (content.isEmpty) return content;
-    
+
     return content
         // Remove markdown headers
         .replaceAll(RegExp(r'^###\s*', multiLine: true), '')
@@ -2282,8 +2590,6 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         .replaceAll(RegExp(r'\n\s*\n'), '\n\n')
         .trim();
   }
-
-
 
   /// Builds a structured care recommendations card from AI tips.
   Widget _buildStructuredCareRecommendations(String content) {
@@ -2319,12 +2625,17 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          ..._parseCareContent(content).map((section) => 
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: _buildCareSection(section['title']!, section['content']!),
-            ),
-          ).toList(),
+          ..._parseCareContent(content)
+              .map(
+                (section) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: _buildCareSection(
+                    section['title']!,
+                    section['content']!,
+                  ),
+                ),
+              )
+              .toList(),
         ],
       ),
     );
@@ -2367,19 +2678,19 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   List<Map<String, String>> _parseCareContent(String content) {
     // First, completely clean all markdown from the content
     final cleanedContent = _cleanAllMarkdown(content);
-    
+
     final List<Map<String, String>> sections = [];
     final lines = cleanedContent.split('\n');
-    
+
     String currentTitle = '';
     List<String> currentContent = [];
-    
+
     for (final line in lines) {
       final trimmedLine = line.trim();
-      
+
       // Skip empty lines
       if (trimmedLine.isEmpty) continue;
-      
+
       // Check if this line looks like a section header (starts with capital letter, no bullet points)
       if (_isSectionHeader(trimmedLine)) {
         // Save previous section if exists
@@ -2389,7 +2700,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             'content': currentContent.join('\n').trim(),
           });
         }
-        
+
         // Start new section
         currentTitle = trimmedLine;
         currentContent = [];
@@ -2398,7 +2709,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         currentContent.add(trimmedLine);
       }
     }
-    
+
     // Add last section
     if (currentTitle.isNotEmpty && currentContent.isNotEmpty) {
       sections.add({
@@ -2406,15 +2717,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         'content': currentContent.join('\n').trim(),
       });
     }
-    
+
     // If no sections were found, create a default one with cleaned content
     if (sections.isEmpty && cleanedContent.isNotEmpty) {
-      sections.add({
-        'title': 'Care Instructions',
-        'content': cleanedContent,
-      });
+      sections.add({'title': 'Care Instructions', 'content': cleanedContent});
     }
-    
+
     return sections;
   }
 
@@ -2426,17 +2734,17 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     // - Are relatively short (not long paragraphs)
     // - Don't contain colons (which indicate key-value pairs)
     // - Don't end with punctuation like periods
-    
+
     if (line.isEmpty) return false;
     if (line.startsWith('•')) return false;
     if (line.contains(':')) return false;
     if (line.endsWith('.')) return false;
     if (line.length > 50) return false; // Too long to be a header
-    
+
     // Check if it starts with a capital letter and looks like a title
-    return RegExp(r'^[A-Z]').hasMatch(line) && 
-           !line.contains('  ') && // No double spaces
-           line.split(' ').length <= 5; // Not too many words
+    return RegExp(r'^[A-Z]').hasMatch(line) &&
+        !line.contains('  ') && // No double spaces
+        line.split(' ').length <= 5; // Not too many words
   }
 
   /// Builds a single care section with title and content.
@@ -2447,19 +2755,21 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       // Use calculated light hours instead of descriptive text
       displayContent = '${_calculateLightHours()} hours per day';
     }
-    
+
     // Transform title for display
     String displayTitle = title;
-    if (title.toLowerCase().contains('1. plant identification') || title.toLowerCase().contains('plant identification')) {
-              displayTitle = 'Plant';
+    if (title.toLowerCase().contains('1. plant identification') ||
+        title.toLowerCase().contains('plant identification')) {
+      displayTitle = 'Plant';
     }
-    
+
     // Split content into lines and clean each line
-    final contentLines = displayContent.split('\n')
+    final contentLines = displayContent
+        .split('\n')
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         .toList();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2493,24 +2803,27 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         ),
         const SizedBox(height: 8),
         // Section content with proper formatting
-        ...contentLines.map((line) => Padding(
-          padding: const EdgeInsets.only(bottom: 4.0),
-          child: Text(
-            line,
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              height: 1.4,
-              fontSize: 14,
-            ),
-          ),
-        )).toList(),
+        ...contentLines
+            .map(
+              (line) => Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: Text(
+                  line,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
       ],
     );
   }
 
   /// Returns appropriate icon for each care section.
 
-  
   /// Builds interesting facts section matching plant page design
   Widget _buildInterestingFactsInDetails(List<String> facts) {
     return Column(
@@ -2518,11 +2831,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       children: [
         Row(
           children: [
-            Icon(
-              Icons.auto_awesome,
-              color: AppTheme.accentGreen,
-              size: 18,
-            ),
+            Icon(Icons.auto_awesome, color: AppTheme.accentGreen, size: 18),
             const SizedBox(width: 8),
             Text(
               l10n.interestingFactsTitle,
@@ -2535,49 +2844,51 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        
+
         // Display facts with green borders matching plant page
-        ...facts.take(4).map((fact) => 
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppTheme.accentGreen.withOpacity(0.4),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '• ',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.accentGreen,
-                    fontWeight: FontWeight.bold,
+        ...facts
+            .take(4)
+            .map(
+              (fact) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.accentGreen.withOpacity(0.4),
+                    width: 1.5,
                   ),
                 ),
-                Expanded(
-                  child: Text(
-                    _cleanMarkdownContent(fact),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                      height: 1.4,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '• ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.accentGreen,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: Text(
+                        _cleanMarkdownContent(fact),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ).toList(),
+              ),
+            )
+            .toList(),
       ],
     );
   }
-
 
   Widget _buildSpeciesSelectionCard() {
     return Container(
@@ -2585,7 +2896,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -2599,7 +2914,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               Expanded(
                 child: Text(
                   l10n.isThisYourPlant,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -2616,15 +2935,22 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             final confidence = ((sp['confidence'] ?? 0) * 100).round();
             final imageUrl = sp['image_url'] as String?;
             return Padding(
-              padding: EdgeInsets.only(bottom: idx < _speciesCandidates.length - 1 ? 12 : 0),
+              padding: EdgeInsets.only(
+                bottom: idx < _speciesCandidates.length - 1 ? 12 : 0,
+              ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () => _confirmSpecies(sp['scientific_name'] ?? sp['common_name'] ?? 'Unknown'),
+                  onTap: () => _confirmSpecies(
+                    sp['scientific_name'] ?? sp['common_name'] ?? 'Unknown',
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.accentGreen.withOpacity(0.3), width: 1.5),
+                      border: Border.all(
+                        color: AppTheme.accentGreen.withOpacity(0.3),
+                        width: 1.5,
+                      ),
                       borderRadius: BorderRadius.circular(16),
                       color: AppTheme.accentGreen.withOpacity(0.04),
                     ),
@@ -2640,21 +2966,35 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                   height: 72,
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
-                                    width: 72, height: 72,
+                                    width: 72,
+                                    height: 72,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentGreen.withOpacity(0.1),
+                                      color: AppTheme.accentGreen.withOpacity(
+                                        0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Icon(Icons.eco, color: AppTheme.accentGreen, size: 32),
+                                    child: Icon(
+                                      Icons.eco,
+                                      color: AppTheme.accentGreen,
+                                      size: 32,
+                                    ),
                                   ),
                                 )
                               : Container(
-                                  width: 72, height: 72,
+                                  width: 72,
+                                  height: 72,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentGreen.withOpacity(0.1),
+                                    color: AppTheme.accentGreen.withOpacity(
+                                      0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Icon(Icons.eco, color: AppTheme.accentGreen, size: 32),
+                                  child: Icon(
+                                    Icons.eco,
+                                    color: AppTheme.accentGreen,
+                                    size: 32,
+                                  ),
                                 ),
                         ),
                         const SizedBox(width: 12),
@@ -2663,18 +3003,31 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                sp['common_name'] ?? sp['scientific_name'] ?? '?',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                                sp['common_name'] ??
+                                    sp['scientific_name'] ??
+                                    '?',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 sp['scientific_name'] ?? '',
-                                style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textSecondary),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontStyle: FontStyle.italic,
+                                  color: AppTheme.textSecondary,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 sp['visual_hint'] ?? '',
-                                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textSecondary,
+                                ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -2683,14 +3036,21 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.accentGreen.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '$confidence%',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accentGreen),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.accentGreen,
+                            ),
                           ),
                         ),
                       ],
@@ -2712,7 +3072,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   foregroundColor: AppTheme.textSecondary,
                   side: BorderSide(color: Colors.grey.shade300),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
@@ -2743,9 +3105,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: AppTheme.accentGreen, width: 1.5),
+                        borderSide: BorderSide(
+                          color: AppTheme.accentGreen,
+                          width: 1.5,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                     textInputAction: TextInputAction.search,
                     onSubmitted: (_) => _retryWithManualInput(),
@@ -2757,8 +3125,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.accentGreen,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     elevation: 0,
                   ),
                   child: const Icon(Icons.search, size: 22),
@@ -2777,7 +3150,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(24),
@@ -2785,7 +3162,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         children: [
           Text(
             'Analyzing ${_confirmedSpecies ?? "plant"}...',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -2874,11 +3255,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             final plantCount = plantSnap.data?.length ?? 0;
             // subReady: true once we have actual subscription data (cached or fresh)
             final subReady = subInfo != null;
-            final limitReached = subReady &&
+            final limitReached =
+                subReady &&
                 plantCount >= subInfo!.plantLimit &&
                 !subInfo.isActive;
 
-            final disableAdd = limitReached ||
+            final disableAdd =
+                limitReached ||
                 _isLoading ||
                 _isAnalyzing ||
                 _isFetchingFullAnalysis ||
@@ -2899,7 +3282,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                             // The tab bar floats over the content now, so the
                             // last field needs room to clear it.
                             padding: EdgeInsets.fromLTRB(
-                                20, 16, 20, limitReached ? 180 : 112),
+                              20,
+                              16,
+                              20,
+                              limitReached ? 180 : 112,
+                            ),
                             child: Form(
                               key: _formKey,
                               child: Column(
@@ -2911,14 +3298,16 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                     controller: _nameController,
                                     showNameError: _nameError,
                                     onNameChanged: (_) {
-                                      if (_nameError) setState(() => _nameError = false);
+                                      if (_nameError)
+                                        setState(() => _nameError = false);
                                     },
                                     iconColor: AppTheme.accentGreen,
                                   ),
                                   const SizedBox(height: 20),
                                   _buildImageUploadCard(
-                                      limitReached: limitReached,
-                                      subReady: subReady),
+                                    limitReached: limitReached,
+                                    subReady: subReady,
+                                  ),
                                   const SizedBox(height: 20),
                                   if (_showSpeciesSelection) ...[
                                     _buildSpeciesSelectionCard(),
@@ -2983,17 +3372,17 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   List<Widget> _buildStructuredCareSections(String content) {
     final sections = <Widget>[];
     final lines = content.split('\n');
-    
+
     for (final line in lines) {
       final trimmedLine = line.trim();
       if (trimmedLine.isEmpty) continue;
-      
+
       if (trimmedLine.contains(':')) {
         final parts = trimmedLine.split(':');
         if (parts.length >= 2) {
           final rawTitle = parts[0].trim();
           final value = parts.sublist(1).join(':').trim();
-          
+
           if (rawTitle.isNotEmpty && value.isNotEmpty) {
             final isFirstSection = sections.isEmpty;
             sections.add(
@@ -3009,7 +3398,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         }
       }
     }
-    
+
     if (sections.isEmpty) {
       sections.add(
         Padding(
@@ -3018,7 +3407,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         ),
       );
     }
-    
+
     return sections;
   }
 
@@ -3028,20 +3417,31 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   IconData _getIconForSection(String title) {
     final canonical = careLabelToKey(title);
     switch (canonical) {
-      case CareSection.water: return Icons.water_drop;
-      case CareSection.light: return Icons.wb_sunny;
-      case CareSection.temperature: return Icons.thermostat;
+      case CareSection.water:
+        return Icons.water_drop;
+      case CareSection.light:
+        return Icons.wb_sunny;
+      case CareSection.temperature:
+        return Icons.thermostat;
       case CareSection.soil:
       case CareSection.soilMoisture:
-      case CareSection.moistureCheck: return Icons.eco;
-      case CareSection.fertilizer: return Icons.grass;
-      case CareSection.growthRate: return Icons.trending_up;
+      case CareSection.moistureCheck:
+        return Icons.eco;
+      case CareSection.fertilizer:
+        return Icons.grass;
+      case CareSection.growthRate:
+        return Icons.trending_up;
       case 'cultivar':
-      case 'generalDescription': return Icons.local_florist;
-      case 'toxicity': return Icons.warning_amber_outlined;
-      case 'placement': return Icons.place_outlined;
-      case 'personality': return Icons.psychology_outlined;
-      default: return Icons.info_outline;
+      case 'generalDescription':
+        return Icons.local_florist;
+      case 'toxicity':
+        return Icons.warning_amber_outlined;
+      case 'placement':
+        return Icons.place_outlined;
+      case 'personality':
+        return Icons.psychology_outlined;
+      default:
+        return Icons.info_outline;
     }
   }
 }
@@ -3106,8 +3506,11 @@ class _BotanlyAddPlantHeader extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
-                    size: 16, color: Color(0xFF2D3D2A)),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 16,
+                  color: Color(0xFF2D3D2A),
+                ),
               ),
             ),
           ),
@@ -3146,12 +3549,8 @@ class _BotanlyAddBigButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = disabled
-        ? const Color(0xFFCDD5CB)
-        : BotanlyColors.sage;
-    final textColor = disabled
-        ? const Color(0xFFCDD5CB)
-        : BotanlyColors.sage;
+    final borderColor = disabled ? const Color(0xFFCDD5CB) : BotanlyColors.sage;
+    final textColor = disabled ? const Color(0xFFCDD5CB) : BotanlyColors.sage;
 
     return SizedBox(
       width: double.infinity,
@@ -3163,10 +3562,7 @@ class _BotanlyAddBigButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderColor,
-              width: 1.5,
-            ),
+            border: Border.all(color: borderColor, width: 1.5),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
@@ -3183,8 +3579,7 @@ class _BotanlyAddBigButton extends StatelessWidget {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
-                            valueColor:
-                                AlwaysStoppedAnimation(textColor),
+                            valueColor: AlwaysStoppedAnimation(textColor),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -3201,24 +3596,16 @@ class _BotanlyAddBigButton extends StatelessWidget {
                       ],
                     )
                   : isUpload
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.camera_alt_outlined, size: 17, color: textColor),
-                            const SizedBox(width: 8),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
-                                color: textColor,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.camera_alt_outlined,
+                          size: 17,
+                          color: textColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
                           label,
                           style: TextStyle(
                             fontFamily: 'DM Sans',
@@ -3228,6 +3615,18 @@ class _BotanlyAddBigButton extends StatelessWidget {
                             color: textColor,
                           ),
                         ),
+                      ],
+                    )
+                  : Text(
+                      label,
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                        color: textColor,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -3320,8 +3719,10 @@ class _AnalyzingOverlayState extends State<_AnalyzingOverlay>
   @override
   void initState() {
     super.initState();
-    _spin = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))
-      ..repeat();
+    _spin = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
   }
 
   @override
@@ -3336,7 +3737,9 @@ class _AnalyzingOverlayState extends State<_AnalyzingOverlay>
       children: [
         // Dark blur overlay
         Positioned.fill(
-          child: Container(color: const Color(0xFF2D3D2A).withValues(alpha: 0.45)),
+          child: Container(
+            color: const Color(0xFF2D3D2A).withValues(alpha: 0.45),
+          ),
         ),
         // Center content
         Center(
@@ -3354,7 +3757,12 @@ class _AnalyzingOverlayState extends State<_AnalyzingOverlay>
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: SweepGradient(
-                        colors: [Color(0xFFA8D784), Color(0xFFCDEE9B), Color(0xFF5FA346), Color(0xFFA8D784)],
+                        colors: [
+                          Color(0xFFA8D784),
+                          Color(0xFFCDEE9B),
+                          Color(0xFF5FA346),
+                          Color(0xFFA8D784),
+                        ],
                       ),
                     ),
                     padding: const EdgeInsets.all(3),
@@ -3364,38 +3772,61 @@ class _AnalyzingOverlayState extends State<_AnalyzingOverlay>
                         color: Color(0xD92D3D2A),
                       ),
                       child: const Center(
-                        child: Icon(Icons.eco_outlined, size: 24, color: Color(0xFFCDEE9B)),
+                        child: Icon(
+                          Icons.eco_outlined,
+                          size: 24,
+                          color: Color(0xFFCDEE9B),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-              Builder(builder: (ctx) {
-                final l10n = AppLocalizations.of(ctx)!;
-                return RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: const TextStyle(fontFamily: 'Fraunces', fontSize: 19,
-                        fontWeight: FontWeight.w500, letterSpacing: -0.3, color: Colors.white),
-                    children: [
-                      TextSpan(text: l10n.identifyingPlantPrefix),
-                      TextSpan(text: l10n.identifyingPlantWord, style: const TextStyle(fontStyle: FontStyle.italic, color: Color(0xFFCDEE9B))),
-                      const TextSpan(text: '…'),
-                    ],
-                  ),
-                );
-              }),
+              Builder(
+                builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx)!;
+                  return RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'Fraunces',
+                        fontSize: 19,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: -0.3,
+                        color: Colors.white,
+                      ),
+                      children: [
+                        TextSpan(text: l10n.identifyingPlantPrefix),
+                        TextSpan(
+                          text: l10n.identifyingPlantWord,
+                          style: const TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Color(0xFFCDEE9B),
+                          ),
+                        ),
+                        const TextSpan(text: '…'),
+                      ],
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 6),
-              Builder(builder: (ctx) {
-                final l10n = AppLocalizations.of(ctx)!;
-                return Text(
-                  l10n.identifyingSubtitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11.5,
-                      color: Color(0xBFFFFFFF), height: 1.4),
-                );
-              }),
+              Builder(
+                builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx)!;
+                  return Text(
+                    l10n.identifyingSubtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 11.5,
+                      color: Color(0xBFFFFFFF),
+                      height: 1.4,
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -3411,21 +3842,30 @@ class _Sparkle extends StatefulWidget {
   final double? right;
   final double delay;
 
-  const _Sparkle({this.top, this.bottom, this.left, this.right, required this.delay});
+  const _Sparkle({
+    this.top,
+    this.bottom,
+    this.left,
+    this.right,
+    required this.delay,
+  });
 
   @override
   State<_Sparkle> createState() => _SparkleState();
 }
 
-class _SparkleState extends State<_Sparkle> with SingleTickerProviderStateMixin {
+class _SparkleState extends State<_Sparkle>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))
-      ..repeat();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
     _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
   }
 
@@ -3442,9 +3882,11 @@ class _SparkleState extends State<_Sparkle> with SingleTickerProviderStateMixin 
         builder: (_, constraints) {
           final w = constraints.maxWidth;
           final h = constraints.maxHeight;
-          final dx = (widget.left != null ? widget.left! * w : null) ??
+          final dx =
+              (widget.left != null ? widget.left! * w : null) ??
               (w - widget.right! * w - 14);
-          final dy = (widget.top != null ? widget.top! * h : null) ??
+          final dy =
+              (widget.top != null ? widget.top! * h : null) ??
               (h - widget.bottom! * h - 14);
           return AnimatedBuilder(
             animation: _anim,
@@ -3458,7 +3900,11 @@ class _SparkleState extends State<_Sparkle> with SingleTickerProviderStateMixin 
                   opacity: (0.2 + 0.8 * pulse).clamp(0.0, 1.0),
                   child: Transform.scale(
                     scale: 0.8 + 0.3 * pulse,
-                    child: const Icon(Icons.lens_blur_rounded, size: 14, color: Color(0xFFCDEE9B)),
+                    child: const Icon(
+                      Icons.lens_blur_rounded,
+                      size: 14,
+                      color: Color(0xFFCDEE9B),
+                    ),
                   ),
                 ),
               );
@@ -3509,6 +3955,7 @@ class _AddPlantAnalysisLoader extends StatefulWidget {
   final AppLocalizations l10n;
   final int initialStep;
   final bool showProfileButton;
+
   /// When false the step counter stays frozen at [initialStep] — no timer fires.
   /// Use for the first (identification-only) analysis where step 3 is irrelevant.
   final bool advanceSteps;
@@ -3524,7 +3971,8 @@ class _AddPlantAnalysisLoader extends StatefulWidget {
   });
 
   @override
-  State<_AddPlantAnalysisLoader> createState() => _AddPlantAnalysisLoaderState();
+  State<_AddPlantAnalysisLoader> createState() =>
+      _AddPlantAnalysisLoaderState();
 }
 
 class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
@@ -3586,7 +4034,8 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
           children: [
             // ── Pulsing ring + disc ──
             SizedBox(
-              width: 210, height: 210,
+              width: 210,
+              height: 210,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -3594,7 +4043,8 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
                   ...List.generate(3, (i) => _PulseRing(delay: i * 800)),
                   // Photo disc
                   Container(
-                    width: 150, height: 150,
+                    width: 150,
+                    height: 150,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(
@@ -3604,7 +4054,11 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
                       ),
                       border: Border.all(color: const Color(0xFFCFE6BB)),
                       boxShadow: const [
-                        BoxShadow(color: Color(0x264F9A32), blurRadius: 24, offset: Offset(0, 10)),
+                        BoxShadow(
+                          color: Color(0x264F9A32),
+                          blurRadius: 24,
+                          offset: Offset(0, 10),
+                        ),
                       ],
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -3612,11 +4066,18 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
                         ? Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.memory(widget.photoBytes!, fit: BoxFit.cover),
+                              Image.memory(
+                                widget.photoBytes!,
+                                fit: BoxFit.cover,
+                              ),
                               if (!_complete) const _ScanLine(),
                             ],
                           )
-                        : const Icon(Icons.eco_rounded, size: 64, color: Color(0xFF4F9A32)),
+                        : const Icon(
+                            Icons.eco_rounded,
+                            size: 64,
+                            color: Color(0xFF4F9A32),
+                          ),
                   ),
                 ],
               ),
@@ -3629,8 +4090,11 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
               l10n.addPlantAnalyzingTitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'Fraunces', fontSize: 24, fontWeight: FontWeight.w700,
-                letterSpacing: -0.3, color: Color(0xFF20271E),
+                fontFamily: 'Fraunces',
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+                color: Color(0xFF20271E),
               ),
             ),
 
@@ -3638,12 +4102,17 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: Text(
-                _complete ? l10n.addPlantAnalysisComplete : l10n.addPlantAnalyzingSubtitle,
+                _complete
+                    ? l10n.addPlantAnalysisComplete
+                    : l10n.addPlantAnalyzingSubtitle,
                 key: ValueKey(_complete),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'DM Sans', fontSize: 15,
-                  color: _complete ? const Color(0xFF4A9632) : const Color(0xFF8B9486),
+                  fontFamily: 'DM Sans',
+                  fontSize: 15,
+                  color: _complete
+                      ? const Color(0xFF4A9632)
+                      : const Color(0xFF8B9486),
                   fontWeight: _complete ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
@@ -3657,20 +4126,29 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
               child: Column(
                 children: [
                   _StepRow(
-                      label: l10n.addPlantStepPhotosReceived,
-                      state: _currentStep > 0
-                          ? _AddPlantStepState.done
-                          : _AddPlantStepState.now),
+                    label: l10n.addPlantStepPhotosReceived,
+                    state: _currentStep > 0
+                        ? _AddPlantStepState.done
+                        : _AddPlantStepState.now,
+                  ),
                   const SizedBox(height: 13),
-                  _StepRow(label: l10n.addPlantStepIdentifying,
-                      state: _currentStep > 1
-                          ? _AddPlantStepState.done
-                          : (_currentStep == 1 ? _AddPlantStepState.now : _AddPlantStepState.pending)),
+                  _StepRow(
+                    label: l10n.addPlantStepIdentifying,
+                    state: _currentStep > 1
+                        ? _AddPlantStepState.done
+                        : (_currentStep == 1
+                              ? _AddPlantStepState.now
+                              : _AddPlantStepState.pending),
+                  ),
                   const SizedBox(height: 13),
-                  _StepRow(label: l10n.addPlantStepCarePlan,
-                      state: _currentStep > 2
-                          ? _AddPlantStepState.done
-                          : (_currentStep == 2 ? _AddPlantStepState.now : _AddPlantStepState.pending)),
+                  _StepRow(
+                    label: l10n.addPlantStepCarePlan,
+                    state: _currentStep > 2
+                        ? _AddPlantStepState.done
+                        : (_currentStep == 2
+                              ? _AddPlantStepState.now
+                              : _AddPlantStepState.pending),
+                  ),
                 ],
               ),
             ),
@@ -3691,12 +4169,22 @@ class _AddPlantAnalysisLoaderState extends State<_AddPlantAnalysisLoader>
                             backgroundColor: const Color(0xFF5FA346),
                             foregroundColor: Colors.white,
                             elevation: 4,
-                            shadowColor: const Color(0xFF56A93B).withValues(alpha: 0.5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shadowColor: const Color(
+                              0xFF56A93B,
+                            ).withValues(alpha: 0.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
                           icon: const Icon(Icons.eco_rounded, size: 18),
-                          label: Text(l10n.addPlantSeePlantProfile,
-                              style: const TextStyle(fontFamily: 'DM Sans', fontSize: 16, fontWeight: FontWeight.w700)),
+                          label: Text(
+                            l10n.addPlantSeePlantProfile,
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
                     )
@@ -3724,13 +4212,16 @@ class _StepRow extends StatelessWidget {
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: 24, height: 24,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isDone ? const Color(0xFF5FA346) : Colors.transparent,
             border: Border.all(
-              color: isDone ? const Color(0xFF5FA346)
-                  : isNow ? const Color(0xFF5FA346)
+              color: isDone
+                  ? const Color(0xFF5FA346)
+                  : isNow
+                  ? const Color(0xFF5FA346)
                   : const Color(0xFFD4DDC9),
               width: 2.5,
             ),
@@ -3738,15 +4229,19 @@ class _StepRow extends StatelessWidget {
           child: isDone
               ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
               : isNow
-                  ? const _BlinkingDot()
-                  : null,
+              ? const _BlinkingDot()
+              : null,
         ),
         const SizedBox(width: 12),
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w600,
-            color: (isDone || isNow) ? const Color(0xFF46503F) : const Color(0xFFAAB3A3),
+            fontFamily: 'DM Sans',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: (isDone || isNow)
+                ? const Color(0xFF46503F)
+                : const Color(0xFFAAB3A3),
           ),
         ),
       ],
@@ -3760,15 +4255,18 @@ class _BlinkingDot extends StatefulWidget {
   State<_BlinkingDot> createState() => _BlinkingDotState();
 }
 
-class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderStateMixin {
+class _BlinkingDotState extends State<_BlinkingDot>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
     _anim = Tween<double>(begin: 1.0, end: 0.25).animate(_ctrl);
   }
 
@@ -3784,7 +4282,8 @@ class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderSta
       child: FadeTransition(
         opacity: _anim,
         child: Container(
-          width: 9, height: 9,
+          width: 9,
+          height: 9,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: Color(0xFF5FA346),
@@ -3802,7 +4301,8 @@ class _PulseRing extends StatefulWidget {
   State<_PulseRing> createState() => _PulseRingState();
 }
 
-class _PulseRingState extends State<_PulseRing> with SingleTickerProviderStateMixin {
+class _PulseRingState extends State<_PulseRing>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
   late final Animation<double> _opacity;
@@ -3810,9 +4310,14 @@ class _PulseRingState extends State<_PulseRing> with SingleTickerProviderStateMi
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
-    _scale = Tween<double>(begin: 0.55, end: 1.15).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    _scale = Tween<double>(
+      begin: 0.55,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
     _opacity = TweenSequence([
       TweenSequenceItem(tween: Tween(begin: 0.7, end: 0.0), weight: 80),
       TweenSequenceItem(tween: ConstantTween(0.0), weight: 20),
@@ -3837,7 +4342,8 @@ class _PulseRingState extends State<_PulseRing> with SingleTickerProviderStateMi
         child: Opacity(
           opacity: _opacity.value,
           child: Container(
-            width: 210, height: 210,
+            width: 210,
+            height: 210,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFFBFE0A0), width: 2),
@@ -3855,17 +4361,22 @@ class _ScanLine extends StatefulWidget {
   State<_ScanLine> createState() => _ScanLineState();
 }
 
-class _ScanLineState extends State<_ScanLine> with SingleTickerProviderStateMixin {
+class _ScanLineState extends State<_ScanLine>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _pos;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))
-      ..repeat();
-    _pos = Tween<double>(begin: -36, end: 150).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+    _pos = Tween<double>(
+      begin: -36,
+      end: 150,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -3882,7 +4393,8 @@ class _ScanLineState extends State<_ScanLine> with SingleTickerProviderStateMixi
         children: [
           Positioned(
             top: _pos.value,
-            left: 0, right: 0,
+            left: 0,
+            right: 0,
             child: Container(
               height: 36,
               decoration: const BoxDecoration(

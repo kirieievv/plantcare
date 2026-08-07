@@ -87,10 +87,7 @@ class _ForgotPasswordNewPasswordScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BotanlyWordmark(
-            title: 'Botanly',
-            subtitle: l10n.setNewPassword,
-          ),
+          BotanlyWordmark(title: 'Botanly', subtitle: l10n.setNewPassword),
           const SizedBox(height: 40),
           BotanlyAuthField(
             controller: _newPasswordController,

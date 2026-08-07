@@ -55,13 +55,11 @@ class UserService {
           .get();
 
       final totalPlants = plantsSnapshot.docs.length;
-      final plantsNeedingWater = plantsSnapshot.docs
-          .where((doc) {
-            final data = doc.data();
-            final nextWatering = DateTime.parse(data['nextWatering']);
-            return DateTime.now().isAfter(nextWatering);
-          })
-          .length;
+      final plantsNeedingWater = plantsSnapshot.docs.where((doc) {
+        final data = doc.data();
+        final nextWatering = DateTime.parse(data['nextWatering']);
+        return DateTime.now().isAfter(nextWatering);
+      }).length;
 
       return {
         'totalPlants': totalPlants,
@@ -73,4 +71,4 @@ class UserService {
       return {};
     }
   }
-} 
+}

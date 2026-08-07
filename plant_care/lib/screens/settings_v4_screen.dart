@@ -30,6 +30,17 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
   String _quietEnd = '08:00';
   bool _loaded = false;
 
+  /// The name shown on the account card, taken from the profile.
+  ///
+  /// Not the Firebase Auth display name, which is where this used to come
+  /// from. That one is written once at sign-up and by nothing since — the
+  /// registration screen that asked for it was removed, and editing the
+  /// profile writes here instead. So the header could show a name typed a
+  /// year ago while the profile showed a different one, with no way to
+  /// reconcile them. The profile is the only place a name can be set, so it
+  /// is the only place worth reading.
+  String _name = '';
+
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   @override
@@ -52,6 +63,7 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
 
       if (!mounted) return;
       setState(() {
+        _name = (data?['name'] as String? ?? '').trim();
         _quietStart = data?['quietHours']?['start'] ?? '22:00';
         _quietEnd = data?['quietHours']?['end'] ?? '08:00';
         if (channels is Map) {
@@ -74,8 +86,8 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
           .collection('users')
           .doc(widget.user.uid)
           .set({
-        'wateringReminderChannels': {'email': _email, 'push': _push},
-      }, SetOptions(merge: true));
+            'wateringReminderChannels': {'email': _email, 'push': _push},
+          }, SetOptions(merge: true));
       await AuthService.saveUserPreferences({
         'watering_reminders': _email || _push,
       });
@@ -134,7 +146,8 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
                 glyphBg: kGlassWaterBg,
                 glyphColor: kGlassWater,
                 title: _languageName(locale.languageCode),
-                trailing: LanguageService.localeNotifier.value.languageCode ==
+                trailing:
+                    LanguageService.localeNotifier.value.languageCode ==
                         locale.languageCode
                     ? const BotanlyGlyph(
                         BotanlySvg.check,
@@ -146,7 +159,8 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
                   await LanguageService.setLanguage(locale.languageCode);
                   if (!sheetContext.mounted) return;
                   Navigator.of(sheetContext).pop();
-                  if (mounted) showBotanlyToast(context, l10n.settingsSavedToast);
+                  if (mounted)
+                    showBotanlyToast(context, l10n.settingsSavedToast);
                 },
               ),
             ),
@@ -157,13 +171,13 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
   }
 
   static String _languageName(String code) => switch (code) {
-        'ru' => 'Русский',
-        'uk' => 'Українська',
-        'de' => 'Deutsch',
-        'es' => 'Español',
-        'fr' => 'Français',
-        _ => 'English',
-      };
+    'ru' => 'Русский',
+    'uk' => 'Українська',
+    'de' => 'Deutsch',
+    'es' => 'Español',
+    'fr' => 'Français',
+    _ => 'English',
+  };
 
   Future<void> _changePassword() async {
     final changed = await showBotanlySheet<bool>(
@@ -275,7 +289,9 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
 
   Widget _account() {
     final email = widget.user.email ?? '';
-    final name = widget.user.displayName?.trim();
+    // Empty means empty: no name line, no placeholder dash. The email moves up
+    // and takes the headline, which is the one thing always known.
+    final name = _name;
 
     return GlassSurface(
       padding: const EdgeInsets.all(16),
@@ -301,7 +317,7 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name == null || name.isEmpty ? email : name,
+                  name.isEmpty ? email : name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: glassFont(
@@ -311,7 +327,7 @@ class _SettingsV4ScreenState extends State<SettingsV4Screen> {
                     color: kGlassInk,
                   ),
                 ),
-                if (name != null && name.isNotEmpty && email.isNotEmpty) ...[
+                if (name.isNotEmpty && email.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     email,
@@ -452,11 +468,7 @@ class _QuietRow extends StatelessWidget {
   final String subtitle;
   final VoidCallback? onTap;
 
-  const _QuietRow({
-    required this.title,
-    required this.subtitle,
-    this.onTap,
-  });
+  const _QuietRow({required this.title, required this.subtitle, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -619,8 +631,9 @@ class _QuietHoursSheetState extends State<_QuietHoursSheet> {
             mainAxisExtent: 44,
           ),
           itemBuilder: (_, hour) {
-            final selectedEndpoint =
-                _editingStart ? hour == _start : hour == _end;
+            final selectedEndpoint = _editingStart
+                ? hour == _start
+                : hour == _end;
             final inside = _inRange(hour);
 
             return GestureDetector(
@@ -638,21 +651,22 @@ class _QuietHoursSheetState extends State<_QuietHoursSheet> {
                   color: selectedEndpoint
                       ? kGlassWater
                       : inside
-                          ? kGlassWaterBg
-                          : const Color(0x0F141E0F),
+                      ? kGlassWaterBg
+                      : const Color(0x0F141E0F),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   hour.toString().padLeft(2, '0'),
                   style: glassFont(
                     fontSize: 13.5,
-                    fontWeight:
-                        selectedEndpoint ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selectedEndpoint
+                        ? FontWeight.w700
+                        : FontWeight.w500,
                     color: selectedEndpoint
                         ? Colors.white
                         : inside
-                            ? kGlassBlueText
-                            : kGlassMut,
+                        ? kGlassBlueText
+                        : kGlassMut,
                   ),
                 ),
               ),
@@ -821,7 +835,8 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
       setState(() {
         _busy = false;
         // The one failure the user can actually act on gets its own sentence.
-        _error = message.contains('wrong-password') ||
+        _error =
+            message.contains('wrong-password') ||
                 message.contains('invalid-credential')
             ? l10n.passwordCurrentWrongError
             : l10n.errorChangingPassword(message);
@@ -894,10 +909,10 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                   decoration: BoxDecoration(
                     color: i < _strength
                         ? (_strength == 1
-                            ? kGlassWarm
-                            : _strength == 2
-                                ? kGlassSun
-                                : kGlassAccent)
+                              ? kGlassWarm
+                              : _strength == 2
+                              ? kGlassSun
+                              : kGlassAccent)
                         : const Color(0x1C141E0F),
                     borderRadius: BorderRadius.circular(999),
                   ),

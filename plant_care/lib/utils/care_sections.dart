@@ -109,62 +109,98 @@ Map<String, String> careLabelsForLang(String lang) {
   switch (lang) {
     case 'ru':
       return const {
-        'cultivar': 'Культивар', 'generalDescription': 'Общее описание',
-        'soil': 'Почва', 'soilMoisture': 'Влажность почвы',
-        'moistureCheck': 'Проверка влажности', 'water': 'Полив',
-        'light': 'Освещение', 'temperature': 'Температура',
-        'fertilizer': 'Удобрения', 'growthRate': 'Скорость роста',
-        'toxicity': 'Токсичность', 'placement': 'Размещение',
+        'cultivar': 'Культивар',
+        'generalDescription': 'Общее описание',
+        'soil': 'Почва',
+        'soilMoisture': 'Влажность почвы',
+        'moistureCheck': 'Проверка влажности',
+        'water': 'Полив',
+        'light': 'Освещение',
+        'temperature': 'Температура',
+        'fertilizer': 'Удобрения',
+        'growthRate': 'Скорость роста',
+        'toxicity': 'Токсичность',
+        'placement': 'Размещение',
         'personality': 'Характер',
       };
     case 'uk':
       return const {
-        'cultivar': 'Культивар', 'generalDescription': 'Загальний опис',
-        'soil': 'Ґрунт', 'soilMoisture': 'Вологість ґрунту',
-        'moistureCheck': 'Перевірка вологості', 'water': 'Полив',
-        'light': 'Освітлення', 'temperature': 'Температура',
-        'fertilizer': 'Добрива', 'growthRate': 'Швидкість росту',
-        'toxicity': 'Токсичність', 'placement': 'Розміщення',
+        'cultivar': 'Культивар',
+        'generalDescription': 'Загальний опис',
+        'soil': 'Ґрунт',
+        'soilMoisture': 'Вологість ґрунту',
+        'moistureCheck': 'Перевірка вологості',
+        'water': 'Полив',
+        'light': 'Освітлення',
+        'temperature': 'Температура',
+        'fertilizer': 'Добрива',
+        'growthRate': 'Швидкість росту',
+        'toxicity': 'Токсичність',
+        'placement': 'Розміщення',
         'personality': 'Характер',
       };
     case 'de':
       return const {
-        'cultivar': 'Kultivar', 'generalDescription': 'Allgemeine Beschreibung',
-        'soil': 'Erde', 'soilMoisture': 'Bodenfeuchtigkeit',
-        'moistureCheck': 'Feuchtigkeitsprüfung', 'water': 'Wasser',
-        'light': 'Licht', 'temperature': 'Temperatur',
-        'fertilizer': 'Dünger', 'growthRate': 'Wachstumsrate',
-        'toxicity': 'Toxizität', 'placement': 'Standort',
+        'cultivar': 'Kultivar',
+        'generalDescription': 'Allgemeine Beschreibung',
+        'soil': 'Erde',
+        'soilMoisture': 'Bodenfeuchtigkeit',
+        'moistureCheck': 'Feuchtigkeitsprüfung',
+        'water': 'Wasser',
+        'light': 'Licht',
+        'temperature': 'Temperatur',
+        'fertilizer': 'Dünger',
+        'growthRate': 'Wachstumsrate',
+        'toxicity': 'Toxizität',
+        'placement': 'Standort',
         'personality': 'Charakter',
       };
     case 'es':
       return const {
-        'cultivar': 'Cultivar', 'generalDescription': 'Descripción general',
-        'soil': 'Suelo', 'soilMoisture': 'Humedad del suelo',
-        'moistureCheck': 'Verificación de humedad', 'water': 'Agua',
-        'light': 'Luz', 'temperature': 'Temperatura',
-        'fertilizer': 'Fertilizante', 'growthRate': 'Tasa de crecimiento',
-        'toxicity': 'Toxicidad', 'placement': 'Ubicación',
+        'cultivar': 'Cultivar',
+        'generalDescription': 'Descripción general',
+        'soil': 'Suelo',
+        'soilMoisture': 'Humedad del suelo',
+        'moistureCheck': 'Verificación de humedad',
+        'water': 'Agua',
+        'light': 'Luz',
+        'temperature': 'Temperatura',
+        'fertilizer': 'Fertilizante',
+        'growthRate': 'Tasa de crecimiento',
+        'toxicity': 'Toxicidad',
+        'placement': 'Ubicación',
         'personality': 'Personalidad',
       };
     case 'fr':
       return const {
-        'cultivar': 'Cultivar', 'generalDescription': 'Description générale',
-        'soil': 'Sol', 'soilMoisture': 'Humidité du sol',
-        'moistureCheck': "Vérification de l'humidité", 'water': 'Eau',
-        'light': 'Lumière', 'temperature': 'Température',
-        'fertilizer': 'Engrais', 'growthRate': 'Taux de croissance',
-        'toxicity': 'Toxicité', 'placement': 'Emplacement',
+        'cultivar': 'Cultivar',
+        'generalDescription': 'Description générale',
+        'soil': 'Sol',
+        'soilMoisture': 'Humidité du sol',
+        'moistureCheck': "Vérification de l'humidité",
+        'water': 'Eau',
+        'light': 'Lumière',
+        'temperature': 'Température',
+        'fertilizer': 'Engrais',
+        'growthRate': 'Taux de croissance',
+        'toxicity': 'Toxicité',
+        'placement': 'Emplacement',
         'personality': 'Personnalité',
       };
     default:
       return const {
-        'cultivar': 'Cultivar', 'generalDescription': 'General Description',
-        'soil': 'Soil', 'soilMoisture': 'Soil Moisture',
-        'moistureCheck': 'Moisture Check', 'water': 'Water',
-        'light': 'Light', 'temperature': 'Temperature',
-        'fertilizer': 'Fertilizer', 'growthRate': 'Growth Rate',
-        'toxicity': 'Toxicity', 'placement': 'Placement',
+        'cultivar': 'Cultivar',
+        'generalDescription': 'General Description',
+        'soil': 'Soil',
+        'soilMoisture': 'Soil Moisture',
+        'moistureCheck': 'Moisture Check',
+        'water': 'Water',
+        'light': 'Light',
+        'temperature': 'Temperature',
+        'fertilizer': 'Fertilizer',
+        'growthRate': 'Growth Rate',
+        'toxicity': 'Toxicity',
+        'placement': 'Placement',
         'personality': 'Personality',
       };
   }
@@ -259,8 +295,7 @@ const _labelToKey = <String, String>{
 };
 
 /// Resolves one written label to its canonical key, or null if unrecognised.
-String? careLabelToKey(String raw) =>
-    _labelToKey[_normalizeLabel(raw)];
+String? careLabelToKey(String raw) => _labelToKey[_normalizeLabel(raw)];
 
 /// Longest real label is ~26 chars; anything longer is prose, not a heading.
 const _maxLabelLength = 40;
@@ -305,8 +340,10 @@ Map<String, String> parseCareSections(String? blob) {
     if (colon > 0 && colon <= _maxLabelLength) {
       key = careLabelToKey(line.substring(0, colon));
       if (key != null) {
-        remainder =
-            line.substring(colon + 1).replaceFirst(_leadingEmphasis, '').trim();
+        remainder = line
+            .substring(colon + 1)
+            .replaceFirst(_leadingEmphasis, '')
+            .trim();
       }
     }
     // Markdown-style heading on its own line, body follows.
@@ -342,4 +379,32 @@ String? composeCareTips(Map<String, String?> sections, String lang) {
     lines.add('${labels[key]}: $value');
   }
   return lines.isEmpty ? null : lines.join('\n');
+}
+
+/// Builds the stored blob from the analyser's nested `care_recommendations`.
+///
+/// The writer half of [parseCareSections], and the reason both live here: the
+/// label vocabulary has to match on the way out and on the way in, and it did
+/// not when this lived next to one of its two callers.
+String? composeCareTipsFromCareMap(Map<String, dynamic>? care, String lang) {
+  if (care == null) return null;
+  const sourceKeys = <String, String>{
+    CareSection.cultivar: 'name',
+    CareSection.generalDescription: 'general_description',
+    CareSection.soil: 'soil',
+    CareSection.soilMoisture: 'moisture',
+    CareSection.moistureCheck: 'moisture_check_tip',
+    CareSection.water: 'water',
+    CareSection.light: 'light',
+    CareSection.temperature: 'temperature',
+    CareSection.fertilizer: 'fertilizer',
+    CareSection.growthRate: 'growth_rate',
+    CareSection.toxicity: 'toxicity',
+    CareSection.placement: 'placement',
+    CareSection.personality: 'personality',
+  };
+  final sections = sourceKeys.map(
+    (section, key) => MapEntry(section, care[key]?.toString().trim()),
+  );
+  return composeCareTips(sections, lang);
 }

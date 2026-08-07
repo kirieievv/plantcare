@@ -15,12 +15,15 @@ import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/models/plant_health.dart';
 import 'package:plant_care/models/task.dart';
+import 'package:plant_care/utils/chat_topics.dart';
 import 'package:plant_care/screens/all_tasks_screen.dart';
 import 'package:plant_care/screens/plant_chat_screen.dart';
 import 'package:plant_care/screens/plant_details_screen.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/services/task_service.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
+import 'package:plant_care/services/subscription_service.dart';
+import 'package:plant_care/services/weather_service.dart';
 import 'package:plant_care/widgets/botanly_kit.dart';
 import 'package:plant_care/widgets/garden_pulse.dart';
 import 'package:plant_care/widgets/pull_to_refresh.dart';
@@ -51,6 +54,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   StreamSubscription<List<Plant>>? _plantSub;
   StreamSubscription<List<CareTask>>? _taskSub;
+  StreamSubscription<SubscriptionInfo>? _subSub;
+  StreamSubscription<WeatherReading>? _weatherSub;
+
+  /// Null until something is known. The header simply omits the weather block
+  /// while it is — the screen never waits on this to draw (SPEC 12, §4).
+  WeatherReading? _weather;
+
+  /// Whether the paid doors are shut. Watched rather than read once, so paying
+  /// removes the reminder bar without a restart (SPEC 10, §5.3).
+  bool _subLocked = false;
+  bool _subTrialEnded = false;
 
   /// Null until the answer arrives. Everything the screen renders from data is
   /// gated on these two being non-null — that is what keeps a "100" from
@@ -96,6 +110,42 @@ class _HomeScreenState extends State<HomeScreen> {
     _plants = _cachedPlants;
     _openTasks = _cachedTasks;
     _listen();
+    _watchSubscription();
+    _watchWeather();
+  }
+
+  /// Cache first, network second.
+  ///
+  /// Yesterday's city is still the right city, so the header can draw at once
+  /// and correct itself a moment later if anything changed.
+  void _watchWeather() {
+    _weatherSub = WeatherService().stream.listen((reading) {
+      if (mounted) setState(() => _weather = reading);
+    });
+
+    WeatherService().loadCached().then((reading) {
+      if (mounted) setState(() => _weather = reading);
+      // Failures are silent by design: no city means the header shows the date
+      // alone, which is the specified fallback.
+      WeatherService().refresh();
+    });
+  }
+
+  void _watchSubscription() {
+    void apply(SubscriptionInfo info) {
+      final locked = !info.hasAccess;
+      final trial = info.rawStatus == SubscriptionStatus.trial;
+      if (!mounted) return;
+      if (locked == _subLocked && trial == _subTrialEnded) return;
+      setState(() {
+        _subLocked = locked;
+        _subTrialEnded = trial;
+      });
+    }
+
+    final current = SubscriptionService().currentInfo;
+    if (current != null) apply(current);
+    _subSub = SubscriptionService().stream.listen(apply);
   }
 
   @override
@@ -110,6 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _plantSub?.cancel();
     _taskSub?.cancel();
+    _subSub?.cancel();
+    _weatherSub?.cancel();
     _minHold?.cancel();
     _timeout?.cancel();
     _pullProgress.dispose();
@@ -263,8 +315,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (plant == null) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            PlantChatScreen(plant: plant, initialQuestion: question),
+        builder: (_) => PlantChatScreen(
+          plant: plant,
+          initialQuestion: question,
+          // Same rule as on the plant screen: the task leads to the subject it
+          // is about, so a watering chore and the watering card land in one
+          // thread rather than two.
+          topic: switch (task.category) {
+            TaskCategory.water => ChatTopic.water,
+            TaskCategory.light => ChatTopic.light,
+            TaskCategory.soil => ChatTopic.soil,
+            TaskCategory.fertilizer => ChatTopic.fertilizer,
+            TaskCategory.scan => ChatTopic.diagnostics,
+            TaskCategory.other => ChatTopic.general,
+          },
+        ),
       ),
     );
   }
@@ -321,10 +386,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     _Header(
                       l10n: l10n,
                       onProfile: () => widget.onTabChange?.call(3),
+                      weather: _weather,
                     ),
                     // Room for the top plant's name, which by design reaches
                     // just above the dial.
                     const SizedBox(height: 14),
+                    // The one and only mention of the subscription outside the
+                    // paid doors themselves (SPEC 10, §3). No pop-up on launch,
+                    // no blur over the garden — one calm line that says what
+                    // still works, and a way back.
+                    if (_subLocked)
+                      _LockBar(
+                        l10n: l10n,
+                        trial: _subTrialEnded,
+                        onTap: () => widget.onTabChange?.call(2),
+                      ),
                     if (_failed)
                       _ErrorCard(
                         message: l10n.gardenLoadError,
@@ -358,6 +434,36 @@ class _HomeScreenState extends State<HomeScreen> {
                         onOpenPlant: _openPlant,
                         onShowAll: () => widget.onTabChange?.call(1),
                       ),
+                      // The garden score is the average of the last scans.
+                      // With no subscription there are no new scans, so the
+                      // number freezes — saying so is the honest move; a stale
+                      // number shown plainly reads as "the garden is fine".
+                      if (_subLocked && plants.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const BotanlyGlyph(
+                                BotanlySvg.clock,
+                                size: 13,
+                                color: kGlassMut2,
+                              ),
+                              const SizedBox(width: 7),
+                              Flexible(
+                                child: Text(
+                                  l10n.gateStaleScore,
+                                  textAlign: TextAlign.center,
+                                  style: glassFont(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: kGlassMut2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       if (loading || plants.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
@@ -459,7 +565,10 @@ class _Header extends StatelessWidget {
   final AppLocalizations l10n;
   final VoidCallback onProfile;
 
-  const _Header({required this.l10n, required this.onProfile});
+  /// Location and temperature, or nulls while they are unknown.
+  final WeatherReading? weather;
+
+  const _Header({required this.l10n, required this.onProfile, this.weather});
 
   @override
   Widget build(BuildContext context) {
@@ -475,16 +584,30 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  date.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: glassFont(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 11.5 * 0.09,
-                    color: kGlassMut,
-                  ),
+                // Date and weather share one line (SPEC 12, §2). No card, no
+                // chip, no sheet — and the row is not tappable, because at this
+                // stage there is nothing behind it, and a control that opens
+                // nothing annoys more than its absence.
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        date.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: glassFont(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 11.5 * 0.09,
+                          color: kGlassMut,
+                        ),
+                      ),
+                    ),
+                    // Missing weather removes the whole block rather than
+                    // leaving a dash behind: an empty slot reads as breakage.
+                    if (weather?.location != null && weather?.weather != null)
+                      _WeatherBit(reading: weather!),
+                  ],
                 ),
                 const SizedBox(height: 3),
                 RichText(
@@ -933,6 +1056,175 @@ class _Thumb extends StatelessWidget {
         height: 44,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => placeholder,
+      ),
+    );
+  }
+}
+
+/// The one line about the subscription the whole app is allowed to show
+/// outside the paid doors themselves (SPEC 10, §3).
+///
+/// It leads with what still works, because the fear a lapsed user actually has
+/// is that the garden stopped being looked after. The way back is a pill on the
+/// right rather than a full-width button — this is a reminder, not a demand.
+class _LockBar extends StatelessWidget {
+  final AppLocalizations l10n;
+
+  /// A finished trial and a cancelled subscription need different first lines.
+  final bool trial;
+  final VoidCallback onTap;
+
+  const _LockBar({
+    required this.l10n,
+    required this.trial,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: BotanlyPress(
+        scale: 0.99,
+        onTap: onTap,
+        child: GlassSurface(
+          radius: 22,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: kGlassAttnBg,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const BotanlyGlyph(
+                  BotanlySvg.lock,
+                  size: 16,
+                  color: kGlassAttnText,
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      trial ? l10n.gateBarTitleTrial : l10n.gateBarTitleExpired,
+                      style: glassFont(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 13.5 * -0.015,
+                        color: kGlassInk,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.gateBarBody,
+                      style: glassFont(
+                        fontSize: 11.5,
+                        height: 1.35,
+                        color: kGlassMut,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: kGlassAccent.withAlpha(36),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  l10n.gateBarAction,
+                  style: glassFont(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: kGlassGreenText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The weather half of the header line: dot, icon, temperature, city.
+///
+/// The icon carries the condition by colour, the temperature is tabular so it
+/// does not jitter between 9° and 36°, and the city is the part that gives way
+/// when the line runs out of room — the number is what people read.
+class _WeatherBit extends StatelessWidget {
+  final WeatherReading reading;
+
+  const _WeatherBit({required this.reading});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final weather = reading.weather!;
+    final location = reading.location!;
+
+    final (String glyph, Color tint) = switch (weather.condition) {
+      WeatherCondition.sun => (BotanlySvg.sun, kGlassSun),
+      WeatherCondition.cloud => (BotanlySvg.cloud, kGlassMut2),
+      WeatherCondition.rain => (BotanlySvg.rain, kGlassWater),
+      WeatherCondition.cold => (BotanlySvg.snowflake, kGlassWater),
+    };
+
+    // Country decides the unit, not the interface language (SPEC 6.1): someone
+    // in Germany reading the app in English still sees Celsius.
+    final degrees = weather.temperatureIn(fahrenheit: location.usesFahrenheit);
+
+    return Flexible(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(width: 7),
+          Container(
+            width: 3,
+            height: 3,
+            decoration: const BoxDecoration(
+              color: Color(0x38141E0F),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 7),
+          BotanlyGlyph(glyph, size: 13, color: tint),
+          const SizedBox(width: 5),
+          Text(
+            l10n.weatherDegrees('$degrees'),
+            style: glassFont(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: kGlassInk2,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              location.city.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: glassFont(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 11.5 * 0.04,
+                color: kGlassMut,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

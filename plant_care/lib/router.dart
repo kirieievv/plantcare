@@ -22,10 +22,7 @@ final appRouter = GoRouter(
   redirect: _guardRedirect,
   refreshListenable: _AuthStateNotifier(),
   routes: [
-    GoRoute(
-      path: '/welcome',
-      builder: (_, __) => const SplashScreen(),
-    ),
+    GoRoute(path: '/welcome', builder: (_, __) => const SplashScreen()),
     GoRoute(
       path: '/login',
       builder: (_, __) => const AuthScreen(isRegistration: false),
@@ -69,15 +66,11 @@ final appRouter = GoRouter(
         );
       },
     ),
-    GoRoute(
-      path: '/onboarding',
-      builder: (_, __) => const OnboardingScreen(),
-    ),
+    GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
     GoRoute(
       path: '/home',
-      builder: (_, __) => MainNavigationScreen(
-        user: FirebaseAuth.instance.currentUser,
-      ),
+      builder: (_, __) =>
+          MainNavigationScreen(user: FirebaseAuth.instance.currentUser),
     ),
     GoRoute(
       path: '/stripe-success',
@@ -91,7 +84,8 @@ String? _guardRedirect(BuildContext context, GoRouterState state) {
   final isAuthed = user != null;
   final path = state.uri.path;
 
-  final isPublic = path == '/welcome' ||
+  final isPublic =
+      path == '/welcome' ||
       path == '/login' ||
       path == '/register' ||
       path.startsWith('/register/') ||

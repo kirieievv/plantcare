@@ -1,9 +1,9 @@
-/// The "First watering" line in the care plan the user accepts.
+/// The care plan the user accepts on the last step of the add-plant flow.
 ///
-/// It used to say "today" unconditionally — copied straight from the mockup,
-/// where it was demo text. The row then contradicted the watering tile two rows
-/// above it, and contradicted the plant screen a second later. These pin the
-/// line to the analyzer's own `should_water_now`.
+/// The "First watering" line used to say "today" unconditionally — copied
+/// straight from the mockup, where it was demo text. Since the conditions quiz
+/// it is computed from the answers, so these pin the line to the same
+/// arithmetic the plant is saved with.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,49 +20,92 @@ void main() {
   });
 
   group('firstWateringDetail', () {
-    test('a thirsty plant is watered today, dose and all', () {
+    test('a plant already due is watered today, dose and all', () {
       expect(
-        firstWateringDetail(ru, ml: 250, waterNow: true, intervalDays: 10),
-        '250 МЛ · 1 ¼ стакана · сегодня',
+        firstWateringDetail(
+          ru,
+          ml: 250,
+          firstInDays: 0,
+          unknownLastWatering: false,
+        ),
+        '250 мл · 1 ¼ стакана · сегодня',
       );
     });
 
-    test('a plant on schedule names the day the analyzer picked', () {
-      final line =
-          firstWateringDetail(ru, ml: 250, waterNow: false, intervalDays: 10);
+    test('a plant on schedule names the day the plan picked', () {
+      final line = firstWateringDetail(
+        ru,
+        ml: 250,
+        firstInDays: 10,
+        unknownLastWatering: false,
+      );
 
-      expect(line, '250 МЛ · 1 ¼ стакана · через 10 дней');
+      expect(line, '250 мл · 1 ¼ стакана · через 10 дней');
       // The bug in one assertion: this used to end in "сегодня".
       expect(line.contains('сегодня'), isFalse);
     });
 
-    test('without a dose the line is just the day', () {
+    test('"don\'t know" promises a check, not a date', () {
       expect(
-        firstWateringDetail(ru, ml: null, waterNow: true, intervalDays: 10),
-        'сегодня',
-      );
-      expect(
-        firstWateringDetail(ru, ml: null, waterNow: false, intervalDays: 10),
-        'Через 10 дней',
+        firstWateringDetail(
+          ru,
+          ml: 250,
+          firstInDays: 0,
+          unknownLastWatering: true,
+        ),
+        '250 мл · 1 ¼ стакана · проверим сегодня',
       );
     });
 
-    test('a zero dose is treated as no dose, not as "0 ml"', () {
+    test('a zero dose leaves just the day', () {
       expect(
-        firstWateringDetail(ru, ml: 0, waterNow: false, intervalDays: 4),
-        'Через 4 дня',
+        firstWateringDetail(
+          ru,
+          ml: 0,
+          firstInDays: 4,
+          unknownLastWatering: false,
+        ),
+        'через 4 дня',
       );
+    });
+
+    test('above a litre the glasses are dropped', () {
+      final line = firstWateringDetail(
+        ru,
+        ml: 2600,
+        firstInDays: 3,
+        unknownLastWatering: false,
+      );
+      expect(line, '2,6 л · через 3 дня');
+      expect(line.contains('стакан'), isFalse);
     });
 
     test('English keeps the same shape', () {
       expect(
-        firstWateringDetail(en, ml: 250, waterNow: false, intervalDays: 10),
-        '250 ML · 1 ¼ glasses · in 10 days',
+        firstWateringDetail(
+          en,
+          ml: 250,
+          firstInDays: 10,
+          unknownLastWatering: false,
+        ),
+        '250 ml · 1 ¼ glasses · in 10 days',
       );
-      expect(
-        firstWateringDetail(en, ml: null, waterNow: false, intervalDays: 1),
-        'In 1 day',
-      );
+    });
+  });
+
+  group('volumeLabel', () {
+    test('millilitres below a litre', () {
+      expect(volumeLabel(ru, 400), '400 мл');
+      expect(volumeLabel(en, 950), '950 ml');
+    });
+
+    test('litres above it, in the locale\'s own decimal mark', () {
+      expect(volumeLabel(ru, 2600), '2,6 л');
+      expect(volumeLabel(en, 2600), '2.6 l');
+    });
+
+    test('a round litre does not print a trailing zero', () {
+      expect(volumeLabel(en, 2000), '2 l');
     });
   });
 
@@ -76,6 +119,24 @@ void main() {
       expect(glassesLabel(en, 250), '1 ¼ glasses');
       expect(glassesLabel(en, 400), '2 glasses');
       expect(glassesLabel(en, 50), '¼ glasses');
+    });
+  });
+
+  group('accentSpans', () {
+    test('the highlighted word lands where the translation put it', () {
+      // Russian keeps it mid-sentence, German puts it first — the same helper
+      // has to serve both without either locale hard-coding a position.
+      final spans = accentSpans(ru.quizPotQuestion, ru.quizPotQuestionAccent);
+      expect(spans.map((s) => (s as TextSpan).text).join(), 'Какого диаметра горшок?');
+      expect((spans[1] as TextSpan).text, 'диаметра');
+    });
+
+    test('an accent at the end of the string leaves no empty tail', () {
+      final spans = accentSpans(
+        en.addPlantHeaderPhoto,
+        en.addPlantHeaderPhotoAccent,
+      );
+      expect(spans.map((s) => (s as TextSpan).text).join(), 'Add a plant');
     });
   });
 }

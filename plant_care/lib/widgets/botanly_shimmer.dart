@@ -246,10 +246,7 @@ class ShimmerBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ShimmerBox(
-        height: 80,
-        radius: 18,
-      ),
+      child: ShimmerBox(height: 80, radius: 18),
     );
   }
 }
@@ -337,20 +334,20 @@ class ShimmerInfoCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          ...List.generate(rows, (i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerLine(width: 80, height: 11),
-                const SizedBox(height: 5),
-                ShimmerLine(
-                  width: i % 2 == 0 ? 160 : 120,
-                  height: 14,
-                ),
-              ],
+          ...List.generate(
+            rows,
+            (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ShimmerLine(width: 80, height: 11),
+                  const SizedBox(height: 5),
+                  ShimmerLine(width: i % 2 == 0 ? 160 : 120, height: 14),
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -372,7 +369,11 @@ class ShimmerTipCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFEBEBEB)),
         boxShadow: const [
-          BoxShadow(color: Color(0x08000000), blurRadius: 12, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -520,9 +521,15 @@ class ShimmerSettingsRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ShimmerLine(width: 120 + (showTrailing ? 0 : 40), height: 13),
+                    ShimmerLine(
+                      width: 120 + (showTrailing ? 0 : 40),
+                      height: 13,
+                    ),
                     const SizedBox(height: 7),
-                    ShimmerLine(width: 180 + (showTrailing ? 0 : 20), height: 11),
+                    ShimmerLine(
+                      width: 180 + (showTrailing ? 0 : 20),
+                      height: 11,
+                    ),
                   ],
                 ),
               ),
@@ -530,8 +537,7 @@ class ShimmerSettingsRow extends StatelessWidget {
             ],
           ),
         ),
-        if (showDivider)
-          const Divider(height: 1, color: Color(0xFFF0F3ED)),
+        if (showDivider) const Divider(height: 1, color: Color(0xFFF0F3ED)),
       ],
     );
   }

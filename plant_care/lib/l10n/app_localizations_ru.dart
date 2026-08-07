@@ -2387,4 +2387,772 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get refreshFailed => 'Не удалось обновить. Проверь соединение.';
+
+  @override
+  String addPlantHeaderPhoto(String accent) {
+    return 'Добавить $accent';
+  }
+
+  @override
+  String get addPlantHeaderPhotoAccent => 'растение';
+
+  @override
+  String addPlantHeaderSpecies(String accent) {
+    return 'Уточним $accent';
+  }
+
+  @override
+  String get addPlantHeaderSpeciesAccent => 'вид';
+
+  @override
+  String addPlantHeaderConditions(String accent) {
+    return 'Про $accent';
+  }
+
+  @override
+  String get addPlantHeaderConditionsAccent => 'условия';
+
+  @override
+  String addPlantHeaderPlan(String accent) {
+    return 'План $accent';
+  }
+
+  @override
+  String get addPlantHeaderPlanAccent => 'ухода';
+
+  @override
+  String get addPlantBack => 'Назад';
+
+  @override
+  String quizQuestionOf(int step, int total) {
+    return 'Вопрос $step из $total';
+  }
+
+  @override
+  String get quizNext => 'Далее';
+
+  @override
+  String get quizBuildPlan => 'Составить план';
+
+  @override
+  String quizPotQuestion(String accent) {
+    return 'Какого $accent горшок?';
+  }
+
+  @override
+  String get quizPotQuestionAccent => 'диаметра';
+
+  @override
+  String get quizPotWhy => 'От объёма грунта зависит, сколько воды нужно за один полив.';
+
+  @override
+  String get quizPotHint => 'Диаметр по краю горшка, а не по растению.';
+
+  @override
+  String get unitCm => 'см';
+
+  @override
+  String volumeMl(String value) {
+    return '$value мл';
+  }
+
+  @override
+  String volumeLitres(String value) {
+    return '$value л';
+  }
+
+  @override
+  String quizPotPerWatering(String volume) {
+    return '$volume за полив';
+  }
+
+  @override
+  String quizMaterialQuestion(String accent) {
+    return 'Из чего горшок и есть ли $accent?';
+  }
+
+  @override
+  String get quizMaterialQuestionAccent => 'дренаж';
+
+  @override
+  String get quizMaterialWhy => 'Терракота сохнет вдвое быстрее пластика. Без отверстий растёт риск корневой гнили.';
+
+  @override
+  String get quizMatPlastic => 'Пластик';
+
+  @override
+  String get quizMatPlasticDesc => 'Держит влагу дольше';
+
+  @override
+  String get quizMatCeramic => 'Керамика';
+
+  @override
+  String get quizMatCeramicDesc => 'С глазурью, не дышит';
+
+  @override
+  String get quizMatTerracotta => 'Терракота';
+
+  @override
+  String get quizMatTerracottaDesc => 'Дышит, сохнет быстро';
+
+  @override
+  String get quizMatUnknown => 'Не знаю';
+
+  @override
+  String get quizMatUnknownDesc => 'Возьмём среднее';
+
+  @override
+  String get quizDrainageLabel => 'Отверстия для воды';
+
+  @override
+  String get quizDrainageYes => 'Есть';
+
+  @override
+  String get quizDrainageYesDesc => 'Лишняя вода уходит в поддон';
+
+  @override
+  String get quizDrainageNo => 'Нет';
+
+  @override
+  String get quizDrainageNoDesc => 'Вода застаивается у корней';
+
+  @override
+  String quizPlaceQuestion(String accent) {
+    return 'Где растение $accent?';
+  }
+
+  @override
+  String get quizPlaceQuestionAccent => 'стоит';
+
+  @override
+  String get quizPlaceWhy => 'Так мы поймём, сколько света оно реально получает — и нужно ли притенение.';
+
+  @override
+  String get quizPlaceSouth => 'Юг';
+
+  @override
+  String get quizPlaceSouthDesc => 'Подоконник, много солнца';
+
+  @override
+  String get quizPlaceEast => 'Восток / запад';
+
+  @override
+  String get quizPlaceEastDesc => 'Мягкое утреннее солнце';
+
+  @override
+  String get quizPlaceNorth => 'Север';
+
+  @override
+  String get quizPlaceNorthDesc => 'Свет есть, солнца нет';
+
+  @override
+  String get quizPlaceRoom => 'В глубине комнаты';
+
+  @override
+  String get quizPlaceRoomDesc => 'Далеко от окна';
+
+  @override
+  String get quizPlaceBalcony => 'Балкон';
+
+  @override
+  String get quizPlaceBalconyDesc => 'Улица, сезонно';
+
+  @override
+  String get quizPlaceBath => 'Ванная';
+
+  @override
+  String get quizPlaceBathDesc => 'Влажно, мало света';
+
+  @override
+  String get quizHeatLabel => 'Рядом батарея или кондиционер';
+
+  @override
+  String get quizHeatNo => 'Нет';
+
+  @override
+  String get quizHeatNoDesc => 'Обычный воздух в комнате';
+
+  @override
+  String get quizHeatYes => 'Да';
+
+  @override
+  String get quizHeatYesDesc => 'Пересушивает грунт и воздух';
+
+  @override
+  String quizWaterQuestion(String accent) {
+    return 'Когда $accent поливал?';
+  }
+
+  @override
+  String get quizWaterQuestionAccent => 'последний раз';
+
+  @override
+  String get quizWaterWhy => 'От этого зависит дата первого полива — иначе задача поставится вслепую.';
+
+  @override
+  String get quizWaterToday => 'Сегодня';
+
+  @override
+  String get quizWaterTodayDesc => 'Грунт ещё влажный';
+
+  @override
+  String get quizWaterFewDays => '2–3 дня назад';
+
+  @override
+  String get quizWaterFewDaysDesc => 'Верхний слой подсох';
+
+  @override
+  String get quizWaterWeek => 'Около недели';
+
+  @override
+  String get quizWaterWeekDesc => 'Скорее всего пора поливать';
+
+  @override
+  String get quizWaterUnknown => 'Не знаю';
+
+  @override
+  String get quizWaterUnknownDesc => 'Проверим по фото и почве';
+
+  @override
+  String get addPlantPlanTuned => 'План собран по твоим ответам';
+
+  @override
+  String get addPlantCheckToday => 'проверим сегодня';
+
+  @override
+  String get placeLightSouth => '6–8 ч';
+
+  @override
+  String get placeLightEast => '4–6 ч';
+
+  @override
+  String get placeLightNorth => '2–3 ч';
+
+  @override
+  String get placeLightRoom => 'Мало света';
+
+  @override
+  String get placeLightBalcony => '6–9 ч';
+
+  @override
+  String get placeLightBath => '2–3 ч';
+
+  @override
+  String get soilModerate => 'Умеренно влажная';
+
+  @override
+  String get addPlantAddLight => 'Добавить света';
+
+  @override
+  String get addPlantAddLightDetail => 'Ближе к окну или фитолампа на 4–6 ч';
+
+  @override
+  String get addPlantAddDrainage => 'Сделать дренаж';
+
+  @override
+  String get addPlantAddDrainageDetail => 'Без отверстий вода застаивается у корней';
+
+  @override
+  String get addPlantMoveFromHeat => 'Отодвинуть от тепла';
+
+  @override
+  String get addPlantMoveFromHeatDetail => 'Батарея пересушивает грунт';
+
+  @override
+  String get lockedLabelTrial => 'Добавление на паузе';
+
+  @override
+  String get lockedLabelLimit => 'Лимит бесплатного плана';
+
+  @override
+  String get lockedLabelCancelled => 'Подписка отменена';
+
+  @override
+  String get lockedPillTrial => 'Пробный период завершён';
+
+  @override
+  String lockedPillLimit(int count, int limit) {
+    return 'Бесплатный план · $count из $limit';
+  }
+
+  @override
+  String get lockedPillCancelled => 'Доступ закончился';
+
+  @override
+  String lockedLeadTrial(String accent) {
+    return 'Новые растения $accent';
+  }
+
+  @override
+  String get lockedLeadTrialAccent => 'ждут подписки';
+
+  @override
+  String lockedLeadLimit(String accent) {
+    return 'В бесплатном плане $accent';
+  }
+
+  @override
+  String lockedLeadLimitAccent(int limit) {
+    return '$limit растений';
+  }
+
+  @override
+  String lockedLeadCancelled(String accent) {
+    return 'Подписка $accent';
+  }
+
+  @override
+  String get lockedLeadCancelledAccent => 'не активна';
+
+  @override
+  String lockedSubTrial(String date) {
+    return 'Пробный период закончился $date';
+  }
+
+  @override
+  String get lockedSubLimit => 'Подписка снимает лимит — растений может быть сколько угодно.';
+
+  @override
+  String lockedSubCancelled(String date) {
+    return 'Премиум был активен до $date';
+  }
+
+  @override
+  String get lockedKeepTitle => 'Что остаётся';
+
+  @override
+  String get lockedUnlockTitle => 'Что вернёт подписка';
+
+  @override
+  String lockedKeepPlants(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count растений под присмотром',
+      many: '$count растений под присмотром',
+      few: '$count растения под присмотром',
+      one: '$count растение под присмотром',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lockedKeepPlantsDesc => 'Остаются в саду вместе с историей проверок';
+
+  @override
+  String get lockedKeepReminders => 'Напоминания о поливе';
+
+  @override
+  String get lockedKeepRemindersDesc => 'Продолжают приходить как раньше';
+
+  @override
+  String get lockedUnlockNewPlants => 'Новые растения';
+
+  @override
+  String get lockedUnlockNewPlantsDesc => 'Определение вида по фото и персональный план ухода';
+
+  @override
+  String get lockedUnlockHealth => 'Проверка здоровья';
+
+  @override
+  String get lockedUnlockHealthDesc => 'Анализ по фото, балл состояния и рекомендации';
+
+  @override
+  String get lockedUnlockChat => 'AI-ассистент';
+
+  @override
+  String get lockedUnlockChatDesc => 'Ответы по каждому растению с учётом его условий';
+
+  @override
+  String get lockedPlanYear => 'Год';
+
+  @override
+  String get lockedPlanMonth => 'Месяц';
+
+  @override
+  String get lockedPlanYearNote => '\$21,99 в год · \$1,83 в месяц';
+
+  @override
+  String get lockedPlanMonthNote => '\$1,99 в месяц · отмена в любой момент';
+
+  @override
+  String get lockedPlanBadge => 'Выгодно';
+
+  @override
+  String get lockedFinePrint => 'Подписка продлевается автоматически. Отменить можно в любой момент в настройках магазина.';
+
+  @override
+  String lockedCtaResume(String plan) {
+    return 'Возобновить · $plan';
+  }
+
+  @override
+  String lockedCtaUpgrade(String plan) {
+    return 'Улучшить · $plan';
+  }
+
+  @override
+  String get lockedRestore => 'Восстановить покупки';
+
+  @override
+  String get lockedRestoreDone => 'Покупки восстановлены';
+
+  @override
+  String get lockedRestoreNothing => 'На этом аккаунте нечего восстанавливать';
+
+  @override
+  String get billingIssueTitle => 'Не прошёл платёж';
+
+  @override
+  String get billingIssueBody => 'Проверьте способ оплаты — доступ работает, пока магазин повторяет попытки.';
+
+  @override
+  String get duplicateSubscriptionTitle => 'Найдены две подписки';
+
+  @override
+  String get duplicateSubscriptionBody => 'Вы платите одновременно в App Store и на сайте. Одну из подписок стоит отменить.';
+
+  @override
+  String get gateBarTitleTrial => 'Пробный период завершён';
+
+  @override
+  String get gateBarTitleExpired => 'Подписка не активна';
+
+  @override
+  String get gateBarBody => 'Полив работает, анализ и ассистент — по подписке';
+
+  @override
+  String get gateBarAction => 'Возобновить';
+
+  @override
+  String get gateStaleScore => 'Балл не обновляется — нужна проверка здоровья';
+
+  @override
+  String gateSheetHealth(String accent) {
+    return 'Проверка здоровья $accent';
+  }
+
+  @override
+  String gateSheetChat(String accent) {
+    return 'AI-ассистент $accent';
+  }
+
+  @override
+  String get gateSheetAccent => 'по подписке';
+
+  @override
+  String get gateSheetBody => 'Пробный период завершён. Растение и его уход остаются с тобой — вернётся только то, что считает AI.';
+
+  @override
+  String get gateSheetKeepWatering => 'Полив и напоминания работают';
+
+  @override
+  String get gateSheetKeepHistory => 'История проверок и карточки ухода открываются';
+
+  @override
+  String get gateSheetCta => 'Возобновить подписку';
+
+  @override
+  String get gateSheetLater => 'Позже';
+
+  @override
+  String get limitLabel => 'Все места заняты';
+
+  @override
+  String limitCountOf(int limit) {
+    return 'из $limit мест';
+  }
+
+  @override
+  String get limitPlanTrial => 'Пробный период';
+
+  @override
+  String get limitPlanFree => 'Бесплатный план';
+
+  @override
+  String get limitPlanPremium => 'Премиум';
+
+  @override
+  String get limitLegendUsed => 'Занято';
+
+  @override
+  String get limitLegendLocked => 'Откроется с Премиумом';
+
+  @override
+  String limitLeadTrial(String accent) {
+    return 'Свободных мест $accent';
+  }
+
+  @override
+  String get limitLeadTrialAccent => 'больше нет';
+
+  @override
+  String limitLeadFree(String accent) {
+    return 'В бесплатном плане $accent';
+  }
+
+  @override
+  String limitLeadFreeAccent(int limit) {
+    return '$limit места';
+  }
+
+  @override
+  String limitLeadPremium(String accent) {
+    return 'Все десять мест $accent';
+  }
+
+  @override
+  String get limitLeadPremiumAccent => 'заняты';
+
+  @override
+  String get limitBody => 'Освободи место или открой десять.';
+
+  @override
+  String get limitBodyPremium => 'Убери растение, которого больше нет, чтобы освободить место для нового.';
+
+  @override
+  String get limitPathUpgrade => 'Открыть 10 мест';
+
+  @override
+  String get limitPathUpgradeDesc => 'Вместе с проверкой здоровья и ассистентом';
+
+  @override
+  String get limitPathFree => 'Освободить место';
+
+  @override
+  String get limitPathFreeDesc => 'Убрать растение, которого больше нет';
+
+  @override
+  String get limitPremiumTitle => 'Премиум';
+
+  @override
+  String limitCtaUpgrade(String plan) {
+    return 'Улучшить · $plan';
+  }
+
+  @override
+  String get weatherDetectedByNetwork => 'Определено по сети';
+
+  @override
+  String get profileCityLabel => 'Город';
+
+  @override
+  String get profileCityHint => 'Влияет на рекомендации по уходу';
+
+  @override
+  String get unitsTemperature => 'Единицы температуры';
+
+  @override
+  String get unitsCelsius => '°C';
+
+  @override
+  String get unitsFahrenheit => '°F';
+
+  @override
+  String get unitsAutomatic => 'Автоматически';
+
+  @override
+  String weatherDegrees(String value) {
+    return '$value°';
+  }
+
+  @override
+  String get chatProposalApply => 'Применить';
+
+  @override
+  String get chatProposalDecline => 'Не надо';
+
+  @override
+  String get chatProposalApplied => 'Применено';
+
+  @override
+  String get chatProposalDeclined => 'Отклонено';
+
+  @override
+  String get chatProposalOutdated => 'Устарело';
+
+  @override
+  String get chatProposalPot => 'Горшок';
+
+  @override
+  String get chatProposalSpecies => 'Вид';
+
+  @override
+  String get chatProposalPause => 'Пауза напоминаний до';
+
+  @override
+  String chatProposalChange(String label, String from, String to) {
+    return '$label: $from → $to';
+  }
+
+  @override
+  String chatProposalSet(String label, String to) {
+    return '$label: $to';
+  }
+
+  @override
+  String get chatTopicWater => 'Полив';
+
+  @override
+  String get chatTopicSoil => 'Почва';
+
+  @override
+  String get chatTopicLight => 'Свет';
+
+  @override
+  String get chatTopicTemperature => 'Температура';
+
+  @override
+  String get chatTopicFertilizer => 'Удобрения';
+
+  @override
+  String get chatTopicDiagnostics => 'Диагностика';
+
+  @override
+  String get chatShowWholeConversation => 'Показать весь разговор';
+
+  @override
+  String chatTitleWithTopic(String topic) {
+    return 'Ассистент · $topic';
+  }
+
+  @override
+  String get plantChatQuickWaterEarly => 'Можно полить раньше?';
+
+  @override
+  String get plantChatQuickSoilSlowToDry => 'Почему земля долго сохнет?';
+
+  @override
+  String get plantChatQuickEnoughLight => 'Хватает ли ей света?';
+
+  @override
+  String get plantChatQuickLeggyGrowth => 'Почему листья вытягиваются?';
+
+  @override
+  String get plantChatQuickShouldMove => 'Стоит ли переставить?';
+
+  @override
+  String get plantChatQuickRepotWhen => 'Когда пересаживать?';
+
+  @override
+  String get plantChatQuickSoilCompacted => 'Почему земля уплотнилась?';
+
+  @override
+  String get plantChatQuickWhichSoil => 'Какой грунт лучше?';
+
+  @override
+  String get memoryTitle => 'Что ассистент знает';
+
+  @override
+  String get memoryExplainer => 'Записано из ваших сообщений в чате. Удалите всё неверное — это используется в каждом ответе.';
+
+  @override
+  String get memoryLoadFailed => 'Не удалось загрузить.';
+
+  @override
+  String get memorySuperseded => 'заменено';
+
+  @override
+  String get memoryForgetConfirm => 'Забыть это?';
+
+  @override
+  String get memoryForgetAction => 'Забыть';
+
+  @override
+  String get memoryKindPlacement => 'Где стоит';
+
+  @override
+  String get memoryKindContainer => 'Горшок';
+
+  @override
+  String get memoryKindWateringHabit => 'Привычки ухода';
+
+  @override
+  String get memoryKindSpecies => 'Вид';
+
+  @override
+  String get memoryKindEnvironment => 'Условия';
+
+  @override
+  String get memoryKindIntervention => 'Что делали';
+
+  @override
+  String get memoryKindSymptom => 'Симптом';
+
+  @override
+  String get memoryKindConstraint => 'Ограничение';
+
+  @override
+  String get memoryKindGoal => 'Цель';
+
+  @override
+  String get memoryKindPreference => 'Предпочтение';
+
+  @override
+  String memoryEmpty(String name) {
+    return 'Пока ничего. Всё, что вы расскажете ассистенту про $name, будет здесь.';
+  }
+
+  @override
+  String get chatTaskOffer => 'Поставить напоминание?';
+
+  @override
+  String chatTaskInDays(int days) {
+    return 'через $days дн.';
+  }
+
+  @override
+  String get chatTaskCreated => 'Напоминание создано';
+
+  @override
+  String chatCtxNextWatering(int days) {
+    return 'Следующий полив через $days дн.';
+  }
+
+  @override
+  String get chatCtxWaterToday => 'Полив сегодня';
+
+  @override
+  String chatCtxLastWatered(String date) {
+    return 'Последний полив $date';
+  }
+
+  @override
+  String chatCtxLight(String hours, String type) {
+    return '$hours ч · $type';
+  }
+
+  @override
+  String chatCtxTemperature(String value) {
+    return 'Оптимум $value';
+  }
+
+  @override
+  String chatCtxFertilizer(String value) {
+    return 'Подкормка $value';
+  }
+
+  @override
+  String get careDiscussWithAssistant => 'Обсудить с ассистентом';
+
+  @override
+  String get chatProposalNextWatering => 'Следующий полив';
+
+  @override
+  String get chatProposalToday => 'сегодня';
+
+  @override
+  String get cityPickerHint => 'Начни вводить город';
+
+  @override
+  String get cityPickerStartTyping => 'Введи хотя бы две буквы';
+
+  @override
+  String get cityPickerSearching => 'Ищем…';
+
+  @override
+  String get cityPickerNothingFound => 'Город с таким названием не найден';
+
+  @override
+  String get cityUpdated => 'Город обновлён';
 }

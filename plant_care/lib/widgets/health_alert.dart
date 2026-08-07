@@ -5,11 +5,8 @@ class HealthAlert extends StatelessWidget {
   final String problem;
   final List<String> indicators;
 
-  const HealthAlert({
-    Key? key,
-    required this.problem,
-    required this.indicators,
-  }) : super(key: key);
+  const HealthAlert({Key? key, required this.problem, required this.indicators})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +43,9 @@ class HealthAlert extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Problem Description
           Container(
             width: double.infinity,
@@ -66,9 +63,9 @@ class HealthAlert extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Indicators Title
           Text(
             l10n.recommendedActionsLabel,
@@ -78,41 +75,43 @@ class HealthAlert extends StatelessWidget {
               color: Colors.red.shade700,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Indicators List
-          ...indicators.map((indicator) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 6),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade600,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    indicator,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.red.shade700,
-                      height: 1.4,
+          ...indicators.map(
+            (indicator) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      indicator,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red.shade700,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
-          
+          ),
+
           const SizedBox(height: 12),
-          
+
           // Note
           Container(
             padding: const EdgeInsets.all(8),
@@ -146,4 +145,4 @@ class HealthAlert extends StatelessWidget {
       ),
     );
   }
-} 
+}

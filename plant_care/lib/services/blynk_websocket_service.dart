@@ -6,7 +6,7 @@ class BlynkWebSocketService {
   WebSocketChannel? _channel;
   final String _authToken;
   final String _serverUrl;
-  final StreamController<Map<String, dynamic>> _sensorDataController = 
+  final StreamController<Map<String, dynamic>> _sensorDataController =
       StreamController<Map<String, dynamic>>.broadcast();
 
   BlynkWebSocketService({
@@ -15,7 +15,8 @@ class BlynkWebSocketService {
   }) : _authToken = authToken,
        _serverUrl = serverUrl;
 
-  Stream<Map<String, dynamic>> get sensorDataStream => _sensorDataController.stream;
+  Stream<Map<String, dynamic>> get sensorDataStream =>
+      _sensorDataController.stream;
 
   /// Connect to Blynk WebSocket
   Future<void> connect() async {
@@ -44,7 +45,7 @@ class BlynkWebSocketService {
   void _handleMessage(dynamic data) {
     try {
       final message = jsonDecode(data.toString());
-      
+
       if (message['type'] == 'sensor_data') {
         _sensorDataController.add({
           'soilMoisture': message['v0'] ?? 0.0,
@@ -68,7 +69,7 @@ class BlynkWebSocketService {
         'value': value,
         'timestamp': DateTime.now().toIso8601String(),
       };
-      
+
       _channel!.sink.add(jsonEncode(message));
     }
   }
@@ -84,4 +85,4 @@ class BlynkWebSocketService {
     disconnect();
     _sensorDataController.close();
   }
-} 
+}

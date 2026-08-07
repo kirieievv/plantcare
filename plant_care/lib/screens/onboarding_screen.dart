@@ -29,9 +29,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _goToPage(int i) {
-    _ctrl.animateToPage(i,
-        duration: const Duration(milliseconds: 380),
-        curve: Curves.easeInOut);
+    _ctrl.animateToPage(
+      i,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -44,9 +46,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: Stack(
         children: [
           // Subtle radial background
-          Positioned.fill(
-            child: CustomPaint(painter: _BgPainter()),
-          ),
+          Positioned.fill(child: CustomPaint(painter: _BgPainter())),
 
           // Main page content
           PageView.builder(
@@ -58,7 +58,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           // ── Dot indicators + CTA footer ──
           Positioned(
-            left: 0, right: 0, bottom: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: SafeArea(
               top: false,
               child: Padding(
@@ -105,13 +107,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   backgroundColor: const Color(0xFF4F9A32),
                                   foregroundColor: Colors.white,
                                   elevation: 8,
-                                  shadowColor:
-                                      const Color(0xFF4F9A32).withValues(alpha: 0.5),
+                                  shadowColor: const Color(
+                                    0xFF4F9A32,
+                                  ).withValues(alpha: 0.5),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18),
                                   ),
                                 ),
-                                icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+                                icon: const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 20,
+                                ),
                                 label: Text(
                                   l10n.onboardingGetStarted,
                                   style: const TextStyle(
@@ -143,7 +149,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onTap: isLast ? null : _finish,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.72),
                         borderRadius: BorderRadius.circular(999),
@@ -172,8 +180,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.chevron_right_rounded,
-                              size: 15, color: Color(0xFF6A7C5D)),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 15,
+                            color: Color(0xFF6A7C5D),
+                          ),
                         ],
                       ),
                     ),
@@ -208,13 +219,15 @@ class _OnboardingPage extends StatelessWidget {
         children: [
           // ── Illustration ──
           SizedBox(
-            width: 230, height: 230,
+            width: 230,
+            height: 230,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // Halo ring
                 Container(
-                  width: 230, height: 230,
+                  width: 230,
+                  height: 230,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const RadialGradient(
@@ -230,7 +243,9 @@ class _OnboardingPage extends StatelessWidget {
                       ),
                     ],
                     border: Border.all(
-                      color: const Color(0xFFD0E8B8), width: 1.5),
+                      color: const Color(0xFFD0E8B8),
+                      width: 1.5,
+                    ),
                   ),
                 ),
                 // Dashed inner ring
@@ -239,17 +254,25 @@ class _OnboardingPage extends StatelessWidget {
                 SvgPicture.string(data.svgString, width: 140, height: 140),
                 // Sparkle top-right
                 Positioned(
-                  top: 24, right: 30,
-                  child: SvgPicture.string(_sparkStar,
-                      width: 16, height: 16,
-                      colorFilter: const ColorFilter.mode(
-                          Color(0xFF4F9A32), BlendMode.srcIn)),
+                  top: 24,
+                  right: 30,
+                  child: SvgPicture.string(
+                    _sparkStar,
+                    width: 16,
+                    height: 16,
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF4F9A32),
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
                 // Accent dot bottom-left
                 Positioned(
-                  bottom: 40, left: 24,
+                  bottom: 40,
+                  left: 24,
                   child: Container(
-                    width: 11, height: 11,
+                    width: 11,
+                    height: 11,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: Color(0xFFE0913F),
@@ -382,23 +405,35 @@ class _BgPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final p1 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFFE5F2D8).withValues(alpha: 0.9),
-          const Color(0xFFF4F6EF).withValues(alpha: 0),
-        ],
-      ).createShader(
-          Rect.fromCenter(center: Offset(size.width * 0.15, 0), width: size.width * 1.6, height: size.height));
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFFE5F2D8).withValues(alpha: 0.9),
+              const Color(0xFFF4F6EF).withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCenter(
+              center: Offset(size.width * 0.15, 0),
+              width: size.width * 1.6,
+              height: size.height,
+            ),
+          );
     canvas.drawRect(Offset.zero & size, p1);
 
     final p2 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFFC8E3B0).withValues(alpha: 0.55),
-          const Color(0xFFF4F6EF).withValues(alpha: 0),
-        ],
-      ).createShader(
-          Rect.fromCenter(center: Offset(size.width, size.height), width: size.width * 1.8, height: size.height * 1.2));
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFFC8E3B0).withValues(alpha: 0.55),
+              const Color(0xFFF4F6EF).withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCenter(
+              center: Offset(size.width, size.height),
+              width: size.width * 1.8,
+              height: size.height * 1.2,
+            ),
+          );
     canvas.drawRect(Offset.zero & size, p2);
   }
 

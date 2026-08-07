@@ -130,11 +130,13 @@ class _LanguagePill extends StatelessWidget {
     ('uk', '🇺🇦', 'Українська'),
   ];
 
-  static String _flagFor(String code) =>
-      _languages.firstWhere((l) => l.$1 == code, orElse: () => ('en', '🇬🇧', 'English')).$2;
+  static String _flagFor(String code) => _languages
+      .firstWhere((l) => l.$1 == code, orElse: () => ('en', '🇬🇧', 'English'))
+      .$2;
 
-  static String _nameFor(String code) =>
-      _languages.firstWhere((l) => l.$1 == code, orElse: () => ('en', '🇬🇧', 'English')).$3;
+  static String _nameFor(String code) => _languages
+      .firstWhere((l) => l.$1 == code, orElse: () => ('en', '🇬🇧', 'English'))
+      .$3;
 
   void _showPicker(BuildContext context) {
     showModalBottomSheet(
@@ -165,8 +167,7 @@ class _LanguagePill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _LanguageFlag(
-                    code: code, emoji: _flagFor(code), fontSize: 16),
+                _LanguageFlag(code: code, emoji: _flagFor(code), fontSize: 16),
                 const SizedBox(width: 7),
                 Text(
                   _nameFor(code),
@@ -237,7 +238,9 @@ class _LanguageSheet extends StatelessWidget {
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Row(
                       children: [
                         _LanguageFlag(code: code, emoji: flag, fontSize: 22),
@@ -256,8 +259,11 @@ class _LanguageSheet extends StatelessWidget {
                         ),
                         const Spacer(),
                         if (code == current)
-                          Icon(Icons.check_rounded,
-                              size: 20, color: BotanlyColors.sage),
+                          Icon(
+                            Icons.check_rounded,
+                            size: 20,
+                            color: BotanlyColors.sage,
+                          ),
                       ],
                     ),
                   ),

@@ -1001,5 +1001,536 @@
   "gardenLoadError": "Не вдалося завантажити сад. Перевір з'єднання та спробуй ще раз.",
   "pullToRefreshHint": "Потягни вниз, щоб оновити",
   "refreshingGarden": "Збираємо дані саду…",
-  "refreshFailed": "Не вдалося оновити. Перевір з'єднання."
+  "refreshFailed": "Не вдалося оновити. Перевір з'єднання.",
+  "addPlantHeaderPhoto": "Додати {accent}",
+  "@addPlantHeaderPhoto": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPhotoAccent": "рослину",
+  "addPlantHeaderSpecies": "Уточнимо {accent}",
+  "@addPlantHeaderSpecies": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderSpeciesAccent": "вид",
+  "addPlantHeaderConditions": "Про {accent}",
+  "@addPlantHeaderConditions": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderConditionsAccent": "умови",
+  "addPlantHeaderPlan": "План {accent}",
+  "@addPlantHeaderPlan": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlantHeaderPlanAccent": "догляду",
+  "addPlantBack": "Назад",
+  "quizQuestionOf": "Питання {step} з {total}",
+  "@quizQuestionOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quizNext": "Далі",
+  "quizBuildPlan": "Скласти план",
+  "quizPotQuestion": "Якого {accent} горщик?",
+  "@quizPotQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotQuestionAccent": "діаметра",
+  "quizPotWhy": "Від обʼєму ґрунту залежить, скільки води потрібно за один полив.",
+  "quizPotHint": "Діаметр по краю горщика, а не по рослині.",
+  "unitCm": "см",
+  "volumeMl": "{value} мл",
+  "@volumeMl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLitres": "{value} л",
+  "@volumeLitres": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPotPerWatering": "{volume} за полив",
+  "@quizPotPerWatering": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestion": "З чого горщик і чи є {accent}?",
+  "@quizMaterialQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizMaterialQuestionAccent": "дренаж",
+  "quizMaterialWhy": "Теракота сохне вдвічі швидше за пластик. Без отворів зростає ризик кореневої гнилі.",
+  "quizMatPlastic": "Пластик",
+  "quizMatPlasticDesc": "Тримає вологу довше",
+  "quizMatCeramic": "Кераміка",
+  "quizMatCeramicDesc": "З глазурʼю, не дихає",
+  "quizMatTerracotta": "Теракота",
+  "quizMatTerracottaDesc": "Дихає, сохне швидко",
+  "quizMatUnknown": "Не знаю",
+  "quizMatUnknownDesc": "Візьмемо середнє",
+  "quizDrainageLabel": "Отвори для води",
+  "quizDrainageYes": "Є",
+  "quizDrainageYesDesc": "Зайва вода йде в піддон",
+  "quizDrainageNo": "Немає",
+  "quizDrainageNoDesc": "Вода застоюється біля коренів",
+  "quizPlaceQuestion": "Де рослина {accent}?",
+  "@quizPlaceQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizPlaceQuestionAccent": "стоїть",
+  "quizPlaceWhy": "Так ми зрозуміємо, скільки світла воно справді отримує — і чи потрібне притінення.",
+  "quizPlaceSouth": "Південь",
+  "quizPlaceSouthDesc": "Підвіконня, багато сонця",
+  "quizPlaceEast": "Схід / захід",
+  "quizPlaceEastDesc": "Мʼяке ранкове сонце",
+  "quizPlaceNorth": "Північ",
+  "quizPlaceNorthDesc": "Світло є, сонця немає",
+  "quizPlaceRoom": "У глибині кімнати",
+  "quizPlaceRoomDesc": "Далеко від вікна",
+  "quizPlaceBalcony": "Балкон",
+  "quizPlaceBalconyDesc": "Вулиця, сезонно",
+  "quizPlaceBath": "Ванна",
+  "quizPlaceBathDesc": "Волого, мало світла",
+  "quizHeatLabel": "Поруч батарея або кондиціонер",
+  "quizHeatNo": "Ні",
+  "quizHeatNoDesc": "Звичайне повітря в кімнаті",
+  "quizHeatYes": "Так",
+  "quizHeatYesDesc": "Пересушує ґрунт і повітря",
+  "quizWaterQuestion": "Коли {accent} поливав?",
+  "@quizWaterQuestion": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "quizWaterQuestionAccent": "востаннє",
+  "quizWaterWhy": "Від цього залежить дата першого поливу — інакше завдання поставиться наосліп.",
+  "quizWaterToday": "Сьогодні",
+  "quizWaterTodayDesc": "Ґрунт ще вологий",
+  "quizWaterFewDays": "2–3 дні тому",
+  "quizWaterFewDaysDesc": "Верхній шар підсох",
+  "quizWaterWeek": "Близько тижня",
+  "quizWaterWeekDesc": "Скоріш за все, час поливати",
+  "quizWaterUnknown": "Не знаю",
+  "quizWaterUnknownDesc": "Перевіримо за фото і ґрунтом",
+  "addPlantPlanTuned": "План складено за твоїми відповідями",
+  "addPlantCheckToday": "перевіримо сьогодні",
+  "placeLightSouth": "6–8 год",
+  "placeLightEast": "4–6 год",
+  "placeLightNorth": "2–3 год",
+  "placeLightRoom": "Мало світла",
+  "placeLightBalcony": "6–9 год",
+  "placeLightBath": "2–3 год",
+  "soilModerate": "Помірно волога",
+  "addPlantAddLight": "Додати світла",
+  "addPlantAddLightDetail": "Ближче до вікна або фітолампа на 4–6 год",
+  "addPlantAddDrainage": "Зробити дренаж",
+  "addPlantAddDrainageDetail": "Без отворів вода застоюється біля коренів",
+  "addPlantMoveFromHeat": "Відсунути від тепла",
+  "addPlantMoveFromHeatDetail": "Батарея пересушує ґрунт",
+  "lockedLabelTrial": "Додавання на паузі",
+  "lockedLabelLimit": "Ліміт безплатного плану",
+  "lockedLabelCancelled": "Підписку скасовано",
+  "lockedPillTrial": "Пробний період завершено",
+  "lockedPillLimit": "Безплатний план · {count} з {limit}",
+  "@lockedPillLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedPillCancelled": "Доступ закінчився",
+  "lockedLeadTrial": "Нові рослини {accent}",
+  "@lockedLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadTrialAccent": "чекають на підписку",
+  "lockedLeadLimit": "У безплатному плані {accent}",
+  "@lockedLeadLimit": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadLimitAccent": "{limit} рослин",
+  "@lockedLeadLimitAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedLeadCancelled": "Підписка {accent}",
+  "@lockedLeadCancelled": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedLeadCancelledAccent": "не активна",
+  "lockedSubTrial": "Пробний період закінчився {date}",
+  "@lockedSubTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedSubLimit": "Підписка знімає ліміт — рослин може бути скільки завгодно.",
+  "lockedSubCancelled": "Преміум був активний до {date}",
+  "@lockedSubCancelled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedKeepTitle": "Що залишається",
+  "lockedUnlockTitle": "Що поверне підписка",
+  "lockedKeepPlants": "{count, plural, one{{count} рослина під наглядом} few{{count} рослини під наглядом} many{{count} рослин під наглядом} other{{count} рослин під наглядом}}",
+  "@lockedKeepPlants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedKeepPlantsDesc": "Залишаються в саду разом з історією перевірок",
+  "lockedKeepReminders": "Нагадування про полив",
+  "lockedKeepRemindersDesc": "Продовжують надходити як раніше",
+  "lockedUnlockNewPlants": "Нові рослини",
+  "lockedUnlockNewPlantsDesc": "Визначення виду за фото та персональний план догляду",
+  "lockedUnlockHealth": "Перевірка здоровʼя",
+  "lockedUnlockHealthDesc": "Аналіз за фото, бал стану та рекомендації",
+  "lockedUnlockChat": "AI-асистент",
+  "lockedUnlockChatDesc": "Відповіді щодо кожної рослини з урахуванням її умов",
+  "lockedPlanYear": "Рік",
+  "lockedPlanMonth": "Місяць",
+  "lockedPlanYearNote": "$21,99 на рік · $1,83 на місяць",
+  "lockedPlanMonthNote": "$1,99 на місяць · скасування будь-коли",
+  "lockedPlanBadge": "Вигідно",
+  "lockedFinePrint": "Підписка продовжується автоматично. Скасувати можна будь-коли в налаштуваннях магазину.",
+  "lockedCtaResume": "Відновити · {plan}",
+  "@lockedCtaResume": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCtaUpgrade": "Покращити · {plan}",
+  "@lockedCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedRestore": "Відновити покупки",
+  "lockedRestoreDone": "Покупки відновлено",
+  "lockedRestoreNothing": "На цьому акаунті немає чого відновлювати",
+  "billingIssueTitle": "Платіж не пройшов",
+  "billingIssueBody": "Перевірте спосіб оплати — доступ працює, доки магазин повторює спроби.",
+  "duplicateSubscriptionTitle": "Знайдено дві підписки",
+  "duplicateSubscriptionBody": "Ви платите одночасно в App Store і на сайті. Одну з підписок варто скасувати.",
+  "gateBarTitleTrial": "Пробний період завершено",
+  "gateBarTitleExpired": "Підписка не активна",
+  "gateBarBody": "Полив працює, аналіз і асистент — за підпискою",
+  "gateBarAction": "Відновити",
+  "gateStaleScore": "Бал не оновлюється — потрібна перевірка здоровʼя",
+  "gateSheetHealth": "Перевірка здоровʼя {accent}",
+  "@gateSheetHealth": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetChat": "AI-асистент {accent}",
+  "@gateSheetChat": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "gateSheetAccent": "за підпискою",
+  "gateSheetBody": "Пробний період завершено. Рослина та її догляд залишаються з тобою — повернеться лише те, що рахує AI.",
+  "gateSheetKeepWatering": "Полив і нагадування працюють",
+  "gateSheetKeepHistory": "Історія перевірок і картки догляду відкриваються",
+  "gateSheetCta": "Відновити підписку",
+  "gateSheetLater": "Пізніше",
+  "limitLabel": "Усі місця зайняті",
+  "limitCountOf": "з {limit} місць",
+  "@limitCountOf": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitPlanTrial": "Пробний період",
+  "limitPlanFree": "Безплатний план",
+  "limitPlanPremium": "Преміум",
+  "limitLegendUsed": "Зайнято",
+  "limitLegendLocked": "Відкриється з Преміумом",
+  "limitLeadTrial": "Вільних місць {accent}",
+  "@limitLeadTrial": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadTrialAccent": "більше немає",
+  "limitLeadFree": "У безплатному плані {accent}",
+  "@limitLeadFree": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadFreeAccent": "{limit} місця",
+  "@limitLeadFreeAccent": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "limitLeadPremium": "Усі десять місць {accent}",
+  "@limitLeadPremium": {
+    "placeholders": {
+      "accent": {
+        "type": "String"
+      }
+    }
+  },
+  "limitLeadPremiumAccent": "зайняті",
+  "limitBody": "Звільни місце або відкрий десять.",
+  "limitBodyPremium": "Прибери рослину, якої більше немає, щоб звільнити місце для нової.",
+  "limitPathUpgrade": "Відкрити 10 місць",
+  "limitPathUpgradeDesc": "Разом із перевіркою здоровʼя та асистентом",
+  "limitPathFree": "Звільнити місце",
+  "limitPathFreeDesc": "Прибрати рослину, якої більше немає",
+  "limitPremiumTitle": "Преміум",
+  "limitCtaUpgrade": "Покращити · {plan}",
+  "@limitCtaUpgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherDetectedByNetwork": "Визначено за мережею",
+  "profileCityLabel": "Місто",
+  "profileCityHint": "Впливає на рекомендації з догляду",
+  "unitsTemperature": "Одиниці температури",
+  "unitsCelsius": "°C",
+  "unitsFahrenheit": "°F",
+  "unitsAutomatic": "Автоматично",
+  "weatherDegrees": "{value}°",
+  "@weatherDegrees": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalApply": "Застосувати",
+  "chatProposalDecline": "Не треба",
+  "chatProposalApplied": "Застосовано",
+  "chatProposalDeclined": "Відхилено",
+  "chatProposalOutdated": "Застаріло",
+  "chatProposalPot": "Горщик",
+  "chatProposalSpecies": "Вид",
+  "chatProposalPause": "Пауза нагадувань до",
+  "chatProposalChange": "{label}: {from} → {to}",
+  "@chatProposalChange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatProposalSet": "{label}: {to}",
+  "@chatProposalSet": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTopicWater": "Полив",
+  "chatTopicSoil": "Ґрунт",
+  "chatTopicLight": "Світло",
+  "chatTopicTemperature": "Температура",
+  "chatTopicFertilizer": "Добрива",
+  "chatTopicDiagnostics": "Діагностика",
+  "chatShowWholeConversation": "Показати всю розмову",
+  "chatTitleWithTopic": "Асистент · {topic}",
+  "@chatTitleWithTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "plantChatQuickWaterEarly": "Можна полити раніше?",
+  "plantChatQuickSoilSlowToDry": "Чому земля довго сохне?",
+  "plantChatQuickEnoughLight": "Чи вистачає їй світла?",
+  "plantChatQuickLeggyGrowth": "Чому листя витягується?",
+  "plantChatQuickShouldMove": "Чи варто переставити?",
+  "plantChatQuickRepotWhen": "Коли пересаджувати?",
+  "plantChatQuickSoilCompacted": "Чому земля ущільнилася?",
+  "plantChatQuickWhichSoil": "Який ґрунт кращий?",
+  "memoryTitle": "Що асистент знає",
+  "memoryExplainer": "Записано з ваших повідомлень у чаті. Видаліть усе хибне — це використовується у кожній відповіді.",
+  "memoryLoadFailed": "Не вдалося завантажити.",
+  "memorySuperseded": "замінено",
+  "memoryForgetConfirm": "Забути це?",
+  "memoryForgetAction": "Забути",
+  "memoryKindPlacement": "Де стоїть",
+  "memoryKindContainer": "Горщик",
+  "memoryKindWateringHabit": "Звички догляду",
+  "memoryKindSpecies": "Вид",
+  "memoryKindEnvironment": "Умови",
+  "memoryKindIntervention": "Що робили",
+  "memoryKindSymptom": "Симптом",
+  "memoryKindConstraint": "Обмеження",
+  "memoryKindGoal": "Мета",
+  "memoryKindPreference": "Уподобання",
+  "memoryEmpty": "Поки нічого. Усе, що ви розкажете асистенту про {name}, буде тут.",
+  "@memoryEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTaskOffer": "Поставити нагадування?",
+  "chatTaskInDays": "через {days} дн.",
+  "@chatTaskInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTaskCreated": "Нагадування створено",
+  "chatCtxNextWatering": "Наступний полив через {days} дн.",
+  "@chatCtxNextWatering": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "chatCtxWaterToday": "Полив сьогодні",
+  "chatCtxLastWatered": "Останній полив {date}",
+  "@chatCtxLastWatered": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxLight": "{hours} год · {type}",
+  "@chatCtxLight": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxTemperature": "Оптимум {value}",
+  "@chatCtxTemperature": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCtxFertilizer": "Підживлення {value}",
+  "@chatCtxFertilizer": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "careDiscussWithAssistant": "Обговорити з асистентом",
+  "chatProposalNextWatering": "Наступний полив",
+  "chatProposalToday": "сьогодні",
+  "cityPickerHint": "Почни вводити місто",
+  "cityPickerStartTyping": "Введи щонайменше дві літери",
+  "cityPickerSearching": "Шукаємо…",
+  "cityPickerNothingFound": "Місто з такою назвою не знайдено",
+  "cityUpdated": "Місто оновлено"
 }

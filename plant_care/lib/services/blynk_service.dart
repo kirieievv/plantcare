@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class BlynkService {
   final String _authToken;
   final String _serverUrl;
-  
+
   BlynkService({
     required String authToken,
     String serverUrl = 'https://blynk.cloud/external/api',
@@ -76,17 +76,10 @@ class BlynkService {
           'lastSeen': DateTime.now().toIso8601String(),
         };
       } else {
-        return {
-          'connected': false,
-          'lastSeen': null,
-        };
+        return {'connected': false, 'lastSeen': null};
       }
     } catch (e) {
-      return {
-        'connected': false,
-        'lastSeen': null,
-        'error': e.toString(),
-      };
+      return {'connected': false, 'lastSeen': null, 'error': e.toString()};
     }
   }
 
@@ -94,7 +87,9 @@ class BlynkService {
   Future<bool> sendNotification(String message) async {
     try {
       final response = await http.get(
-        Uri.parse('$_serverUrl/notify?token=$_authToken&body=${Uri.encodeComponent(message)}'),
+        Uri.parse(
+          '$_serverUrl/notify?token=$_authToken&body=${Uri.encodeComponent(message)}',
+        ),
       );
 
       return response.statusCode == 200;
@@ -102,4 +97,4 @@ class BlynkService {
       throw Exception('Error sending notification: $e');
     }
   }
-} 
+}
