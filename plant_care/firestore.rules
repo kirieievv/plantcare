@@ -1,28 +1,131 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Watering events: user can only create/read their own events
+
+    // Owner of the plant a subcollection hangs off. Costs one document read per
+    // rule evaluation, which is the price of keeping ownership on the parent
+    // instead of denormalising userId onto every fact.
+    function ownsPlant(plantId) {
+      return request.auth != null
+        && get(/databases/$(database)/documents/plants/$(plantId)).data.userId == request.auth.uid;
+    }
+
+    // Per-user document, plus everything nested under it — plant_chats/{plantId}/
+    // messages/{messageId} and chat_quotas/{plantId} both live here (confirmed in
+    // lib/screens/plant_chat_screen.dart). Owner-only, both directions: the client
+    // writes its own profile fields and chat messages directly, and reads its own
+    // quota. Firestore rules are NOT inherited by subcollections automatically —
+    // the nested {document=**} match is what covers plant_chats/messages/chat_quotas
+    // at any depth under this user.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Plants: owner CRUD directly from the client (add/edit/delete their own
+    // plants — confirmed in lib/screens/add_plant_screen.dart and friends).
+    match /plants/{plantId} {
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Assistant memory — what the app knows about a plant beyond its own fields.
+    //
+    // Facts are extracted server-side from what the owner says in chat, so the
+    // client never creates or edits them: a client-side write here would let
+    // anyone plant a belief the assistant then repeats as established truth.
+    // Delete is the deliberate exception — the "what the assistant knows" screen
+    // has to be able to actually forget something, or a wrong fact is
+    // undebuggable for the user and for us.
+    match /plants/{plantId}/facts/{factId} {
+      allow read, delete: if ownsPlant(plantId);
+      allow create, update: if false;
+    }
+
+    // Rolling summary and the single pending question. A projection of the facts
+    // above, rebuilt server-side — read-only for the client.
+    match /plants/{plantId}/memory/{docId} {
+      allow read: if ownsPlant(plantId);
+      allow write: if false;
+    }
+
+    // Health checks: owner CRUD. Tempting to lock writes to the Admin SDK —
+    // a client that can write here can fabricate its own diagnosis — but in
+    // this app the client IS the writer: HealthCheckService.addHealthCheck
+    // does the .set() straight from health_check_modal.dart after a scan.
+    // Denying create here does not harden anything, it deletes the feature.
+    // The blast radius of the write is the user's own plant either way.
+    match /health_checks/{checkId} {
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Watering events — this rule was already correct, it was just silently
+    // overridden by the wildcard block at the bottom of the old file (Firestore
+    // rules are OR'd across every matching block for a given path, so a
+    // permissive wildcard anywhere defeats every stricter rule above it).
     match /watering_events/{eventId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow update, delete: if false;
     }
 
-    // Care tasks: a user only ever sees and edits their own
+    // Care tasks: a user only ever sees and edits their own. Unlike health_checks
+    // this one stays client-writable — TaskService.createFromAnalysis creates
+    // analysis tasks from the app, and the user completes and postpones them.
     match /tasks/{taskId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // Allow read/write access to all documents for testing
-    // WARNING: This is for development only - don't use in production!
-    match /{document=**} {
-      allow read, write: if true;
+    // FCM tokens: doc id is the token string itself, userId lives in the body
+    // (lib/services/notification_service.dart sets and deletes by token id
+    // straight from the client). It also queries its own tokens back to count
+    // them after registering, so read has to be allowed for the owner — a blanket
+    // read:false there fails silently inside a try/catch and the only symptom is
+    // a wrong token count nobody looks at.
+    match /fcm_tokens/{token} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-    
-    // For production, use more restrictive rules like:
-    // match /plants/{plantId} {
-    //   allow read, write: if request.auth != null;
-    // }
+
+    // Global, non-personal content: any signed-in user may read; nobody writes
+    // from the client (server-managed — seasonal_tips by a scheduled Function,
+    // app_config by hand/admin tooling).
+    match /seasonal_tips/{weekKey} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    match /app_config/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Pure server-internal collections — no client access at all, in either
+    // direction. password_reset_codes / email_verification_pins / mail are
+    // actively dangerous if client-readable or -writable (account takeover /
+    // spam-relay vectors), not just "shouldn't be touched".
+    match /ai_usage/{docId} { allow read, write: if false; }
+    match /ai_usage_daily/{docId} { allow read, write: if false; }
+    match /push_notifications/{docId} { allow read, write: if false; }
+    match /mail/{docId} { allow read, write: if false; }
+    match /password_reset_codes/{docId} { allow read, write: if false; }
+    match /email_verification_pins/{docId} { allow read, write: if false; }
+    match /scheduled_test_pushes/{docId} { allow read, write: if false; }
+    match /system/{docId} { allow read, write: if false; }
+
+    // Everything else: closed by default. The previous
+    // `match /{document=**} { allow read, write: if true; }` here was the actual
+    // hole — it silently granted access to every collection above too (rules are
+    // OR'd, not first-match-wins), regardless of how tight the specific rules
+    // were. Add a specific `match` block above for any new collection instead of
+    // loosening this one.
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
-} 
+}
