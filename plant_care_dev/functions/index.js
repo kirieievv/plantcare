@@ -9,6 +9,7 @@ const {
   describeWeather,
   locationOf,
   lookupCityByIp,
+  searchCities,
   weatherForCity,
   weatherSnapshot,
 } = require('./weather');
@@ -1476,7 +1477,7 @@ exports.resolveUserLocation = functions.https.onRequest((req, res) => {
 
       const db = admin.firestore();
       const userRef = db.collection('users').doc(userId);
-      const existing = (await userRef.get()).data()?.location || null;
+      const existing = (await userRef.get()).data()?.geo || null;
 
       if (existing?.source === 'manual') {
         return res.json({ location: existing, source: 'manual' });
@@ -1494,7 +1495,10 @@ exports.resolveUserLocation = functions.https.onRequest((req, res) => {
         source: 'ip',
         updatedAt: admin.firestore.Timestamp.now(),
       };
-      await userRef.set({ location }, { merge: true });
+      // Stored as `geo`, not `location`: the profile already owns `location`
+      // as a free-text string, and writing an object there broke reading the
+      // profile at all.
+      await userRef.set({ geo: location }, { merge: true });
       return res.json({ location, source: 'ip' });
     } catch (error) {
       console.error('❌ resolveUserLocation error:', error);
@@ -1530,6 +1534,24 @@ exports.getWeather = functions.https.onRequest((req, res) => {
     } catch (error) {
       console.error('❌ getWeather error:', error);
       return res.status(500).json({ error: error.message });
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  searchCities — suggestions while the user types, in their language
+// ═══════════════════════════════════════════════════════════════════
+exports.searchCities = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    try {
+      const query = req.body?.query ?? req.query?.query ?? '';
+      const language = req.body?.language ?? req.query?.language ?? 'en';
+      const cities = await searchCities(query, language);
+      return res.json({ cities });
+    } catch (error) {
+      console.error('❌ searchCities error:', error);
+      // An empty list is a usable answer; an error would block the field.
+      return res.json({ cities: [] });
     }
   });
 });
@@ -1997,12 +2019,30 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
  * take `userId` from the request body and trust it, which meant anyone who
  * knew a plant id could read that plant's chat context.
  */
-async function verifyCaller(req, res) {
+async function verifyCaller(req, res, { allowLegacyBody = false } = {}) {
   const authHeader = String(req.headers.authorization || '');
   const bearerToken = authHeader.startsWith('Bearer ')
     ? authHeader.slice('Bearer '.length).trim()
     : '';
   if (!bearerToken) {
+    // An endpoint that already exists in production is called by copies of the
+    // app that are out in the world and cannot be updated on our schedule.
+    // Rejecting them the moment this deploys would break the chat for everyone
+    // who has not gone to the App Store yet, to close a hole that is standing
+    // wide open in production this very minute — the old path is exactly what
+    // runs there today. So the old way keeps working, and is removed once the
+    // update has spread. New endpoints get no such courtesy: nothing calls them
+    // yet, so nothing breaks by demanding a token from the start.
+    if (allowLegacyBody) {
+      const source = req.method === 'GET' ? req.query : (req.body || {});
+      const legacyUid = String(source.userId || '').trim();
+      if (legacyUid) {
+        console.warn(
+          `Legacy unauthenticated call to ${req.path || 'endpoint'} for uid ${legacyUid}`,
+        );
+        return legacyUid;
+      }
+    }
     res.status(401).json({ success: false, error: 'Missing bearer token.' });
     return null;
   }
@@ -2203,7 +2243,7 @@ async function incrementChatImageQuota(db, userId, plantId) {
 exports.chatImageQuota = functions.https.onRequest((req, res) => {
   return cors(req, res, async () => {
     try {
-      const userId = await verifyCaller(req, res);
+      const userId = await verifyCaller(req, res, { allowLegacyBody: true });
       if (!userId) return;
 
       const { plantId } = req.method === 'GET' ? req.query : (req.body || {});
@@ -2423,8 +2463,9 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       }
 
       // Identity comes from the verified token, never from the body. `userId`
-      // used to be whatever the caller claimed it was.
-      const userId = await verifyCaller(req, res);
+      // used to be whatever the caller claimed it was — still accepted here
+      // while the shipped App Store build, which sends no token, is out there.
+      const userId = await verifyCaller(req, res, { allowLegacyBody: true });
       if (!userId) return;
 
       const {
@@ -5495,6 +5536,7 @@ exports.plannedTasksFor = plannedTasksFor;
 exports.describeGrowingConditions = describeGrowingConditions;
 exports.loadChatHistory = loadChatHistory;
 exports.CHAT_HISTORY_WINDOW = CHAT_HISTORY_WINDOW;
+exports.verifyCaller = verifyCaller;
 
 exports.scheduleCareTasks = functions.pubsub
   .schedule('every 6 hours')

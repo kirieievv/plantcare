@@ -198,7 +198,35 @@ class SubscriptionService {
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
-  static const String _revenueCatApiKey = 'test_PmSXLdLZsTNwVdwXrspziEIrGGU';
+  /// The App Store key. A shipped build always uses this one.
+  static const String _appStoreKey = 'appl_EvGqyyNvoDLXHRIFaGEMDwlaBuH';
+
+  /// RevenueCat's simulated store, for working without touching the App Store.
+  static const String _testStoreKey = 'test_PmSXLdLZsTNwVdwXrspziEIrGGU';
+
+  /// Passed with --dart-define=REVENUECAT_KEY=... and honoured only in debug.
+  static const String _keyOverride = String.fromEnvironment('REVENUECAT_KEY');
+
+  /// Which store this build talks to.
+  ///
+  /// This used to be one constant that got edited by hand whenever someone
+  /// wanted to test without the App Store. It was switched to the test key at
+  /// least twice, and the second time it was not switched back: the build that
+  /// went to the App Store in July carries it, which is why the paywall there
+  /// shows no plans at all. Real purchases had been going through until then —
+  /// the June builds all carry the App Store key.
+  ///
+  /// So the switch no longer lives in the source. A release build cannot be
+  /// anything but the App Store, and the override is confined to debug, where
+  /// forgetting to undo it costs nothing.
+  static String get _revenueCatApiKey {
+    if (kDebugMode && _keyOverride.isNotEmpty) return _keyOverride;
+    return _appStoreKey;
+  }
+
+  /// Kept referenced so the test key stays discoverable from the code that
+  /// documents it, rather than living only in a shell history somewhere.
+  static String get testStoreKey => _testStoreKey;
 
   static const String _monthlyProductId = 'com.botanly.app.monthly';
   static const String _annualProductId = 'com.botanly.app.annual';
@@ -403,17 +431,27 @@ class SubscriptionService {
 
   /// Fetch available offerings from RevenueCat.
   /// Returns empty list on web (not supported).
+  /// The plans on offer, or an explanation of why there are none.
+  ///
+  /// This used to swallow the error and return an empty list, so every
+  /// possible cause — wrong key, no offering configured, products not ready in
+  /// App Store Connect, Paid Apps agreement unsigned — arrived at the screen
+  /// as the same blank shrug. That turned a five-minute fix into weeks of
+  /// guessing, because the one thing that would have named it was thrown away
+  /// one line after RevenueCat handed it over.
   Future<List<Package>> fetchPackages() async {
     if (kIsWeb) return [];
-    try {
-      final offerings = await Purchases.getOfferings();
-      final current = offerings.current;
-      if (current == null) return [];
-      return current.availablePackages;
-    } catch (e) {
-      debugPrint('⚠️ fetchPackages error: $e');
-      return [];
+    final offerings = await Purchases.getOfferings();
+    final current = offerings.current;
+    // No offering is not an error as far as the SDK is concerned, but it is
+    // still a misconfiguration, and the owner deserves to be told which.
+    if (current == null) {
+      throw StateError(
+        'RevenueCat returned no current offering '
+        '(${offerings.all.length} offering(s) configured).',
+      );
     }
+    return current.availablePackages;
   }
 
   /// Purchase a specific package.

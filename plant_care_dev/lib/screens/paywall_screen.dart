@@ -504,10 +504,33 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (_packages.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          l10n.paywallError,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.dmSans(fontSize: 13, color: BotanlyColors.inkMute),
+        child: Column(
+          children: [
+            Text(
+              l10n.paywallError,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: BotanlyColors.inkMute,
+              ),
+            ),
+            // The cause, spelled out. An empty plan list only happens when the
+            // store is misconfigured, and the person who can fix that is
+            // whoever is holding the phone. A screenshot of "something went
+            // wrong" is worth nothing; a screenshot naming the offering, the
+            // key or the missing agreement is worth the whole investigation.
+            if (_error != null && _error!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  color: BotanlyColors.inkMute,
+                ),
+              ),
+            ],
+          ],
         ),
       );
     }
