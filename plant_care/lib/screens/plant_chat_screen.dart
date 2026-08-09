@@ -3,14 +3,10 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/models/plant.dart';
@@ -23,6 +19,7 @@ import 'package:plant_care/services/task_service.dart';
 import 'package:plant_care/screens/plant_memory_screen.dart';
 import 'package:plant_care/utils/chat_topics.dart';
 import 'package:plant_care/utils/cloud_functions.dart';
+import 'package:plant_care/utils/image_source_picker.dart';
 import 'package:plant_care/widgets/botanly_loader.dart';
 import 'package:plant_care/widgets/botanly_shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,7 +66,6 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _inputFocus = FocusNode();
-  final ImagePicker _picker = ImagePicker();
   final List<_ChatMessage> _messages = [];
   bool _isSending = false;
   bool _isLoadingHistory = true;
@@ -315,66 +311,22 @@ class _PlantChatScreenState extends State<PlantChatScreen> {
 
   // ─────────────────────── Pick image ───────────────────────
 
-  bool get _isMobile {
-    if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.android;
-  }
-
   Future<void> _pickImage() async {
     if (!_canAttachImage) {
       _showSnackBar(l10n.plantChatImageQuotaReached);
       return;
     }
-    if (_isMobile) {
-      await _showImageSourceSheet();
-    } else {
-      await _pickImageFromSource(ImageSource.gallery);
-    }
-  }
-
-  Future<void> _showImageSourceSheet() async {
-    await showCupertinoModalPopup<void>(
-      context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _pickImageFromSource(ImageSource.camera);
-            },
-            child: const Text('Camera'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _pickImageFromSource(ImageSource.gallery);
-            },
-            child: const Text('Photo Library'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Cancel'),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickImageFromSource(ImageSource source) async {
     try {
-      final XFile? xfile = await _picker.pickImage(
-        source: source,
+      final bytes = await pickImageBytes(
+        context,
         maxWidth: 900,
         maxHeight: 1200,
         imageQuality: 85,
       );
-      if (xfile == null) return;
-      final bytes = await xfile.readAsBytes();
-      if (!mounted) return;
+      if (bytes == null || !mounted) return;
       setState(() => _pendingImageBytes = bytes);
     } catch (e) {
-      _showSnackBar('Error picking image: $e');
+      _showSnackBar(l10n.errorPickingImage('$e'));
     }
   }
 

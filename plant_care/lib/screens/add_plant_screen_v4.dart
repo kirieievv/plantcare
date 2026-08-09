@@ -17,12 +17,9 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import 'package:plant_care/l10n/app_localizations.dart';
@@ -39,8 +36,8 @@ import 'package:plant_care/services/task_service.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
 import 'package:plant_care/utils/care_sections.dart';
 import 'package:plant_care/utils/cloud_functions.dart';
+import 'package:plant_care/utils/image_source_picker.dart';
 import 'package:plant_care/utils/plant_conditions.dart';
-import 'package:plant_care/utils/web_file_picker.dart';
 import 'package:plant_care/widgets/botanly_kit.dart';
 
 /// Glass base for a 200 ml glass — the same constant the plant screen uses.
@@ -67,7 +64,6 @@ class AddPlantScreenV4 extends StatefulWidget {
 class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
   final _name = TextEditingController();
   final _manual = TextEditingController();
-  final _picker = ImagePicker();
 
   _Step _step = _Step.photo;
 
@@ -184,11 +180,6 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
     if (_plan != null) setState(() => _step = _Step.plan);
   }
 
-  bool get _isMobile =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.android);
-
   bool get _canIdentify =>
       _slots[0] != null && _name.text.trim().isNotEmpty && !_busy;
 
@@ -205,20 +196,12 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
   Future<void> _pick(int slot) async {
     if (_busy) return;
     try {
-      if (_isMobile) {
-        final image = await _picker.pickImage(
-          source: ImageSource.gallery,
-          maxWidth: 1200,
-          maxHeight: 1600,
-          imageQuality: 90,
-        );
-        if (image == null) return;
-        final bytes = await image.readAsBytes();
-        if (mounted) setState(() => _slots[slot] = bytes);
-      } else {
-        final bytes = await pickCenteredImageFromWeb();
-        if (bytes != null && mounted) setState(() => _slots[slot] = bytes);
-      }
+      final bytes = await pickImageBytes(
+        context,
+        maxWidth: 1200,
+        maxHeight: 1600,
+      );
+      if (bytes != null && mounted) setState(() => _slots[slot] = bytes);
     } catch (e) {
       if (mounted)
         setState(() => _error = l10n.errorPickingImage(e.toString()));
