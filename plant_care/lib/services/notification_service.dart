@@ -21,7 +21,15 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  bool _initialized = false;
+  /// The one initialisation run, held so concurrent callers wait on it.
+  ///
+  /// A bool set at the end of the method did not hold: signing in calls
+  /// initialize() from the auth screen and again from the authStateChanges
+  /// listener, and between the guard and the flag sit up to eighteen seconds of
+  /// token retries. Both callers passed, and everything inside ran twice —
+  /// including asking for permission.
+  Future<void>? _initialization;
+
   bool _tokenRegistered = false;
 
   /// Last Firebase uid for which we saved the current device token to Firestore.
@@ -31,10 +39,15 @@ class NotificationService {
   static const int _maxTokenRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 3);
 
-  /// Initialize FCM and local notifications
-  Future<void> initialize() async {
-    if (_initialized) return;
+  /// Initialize FCM and local notifications.
+  ///
+  /// Safe to call from as many places as want to: the first call does the work,
+  /// every other one waits for that same call to finish.
+  Future<void> initialize() {
+    return _initialization ??= _initialize();
+  }
 
+  Future<void> _initialize() async {
     try {
       print('🔔 NotificationService: Initializing...');
 
@@ -58,7 +71,6 @@ class NotificationService {
       // Set up message handlers
       _setupMessageHandlers();
 
-      _initialized = true;
       print('✅ NotificationService: Initialized successfully');
     } catch (e) {
       print('❌ NotificationService: Error during initialization: $e');
@@ -80,10 +92,16 @@ class NotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
+    // Not this plugin's job to ask. Left at the default true, it calls
+    // requestAuthorization itself, and Firebase Messaging asks again two lines
+    // later in initialize() — which is why the owner saw the system dialog
+    // twice on a fresh install. The permission belongs to the app, not to a
+    // plugin, so one asker is enough and local notifications still work under
+    // whatever Messaging is granted.
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const initSettings = InitializationSettings(
