@@ -10,6 +10,21 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/plants/$(plantId)).data.userId == request.auth.uid;
     }
 
+    // The admin panel (plant_care_admin) reads the database with the ordinary
+    // client SDK, so the rules have to know about it. Its own check is a string
+    // comparison in the browser — a gate on the interface, not on the data,
+    // which held only while the database was open to everyone.
+    //
+    // By uid rather than by email. An email would work today, but it leans on
+    // the project keeping one account per address, and it stops being true the
+    // day the address changes. Neither the uid nor the email is a secret: what
+    // stands between a stranger and this is Firebase refusing to issue a token
+    // for an account whose password they do not have.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid == 'oAbaAldoRLgAJ7j80uAWHSUODDt1';
+    }
+
     // Per-user document, plus everything nested under it — plant_chats/{plantId}/
     // messages/{messageId} and chat_quotas/{plantId} both live here (confirmed in
     // lib/screens/plant_chat_screen.dart). Owner-only, both directions: the client
@@ -19,6 +34,12 @@ service cloud.firestore {
     // at any depth under this user.
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // The panel lists every user and edits subscription status by hand when a
+      // webhook is missed. Not narrowed to those fields: rules cannot express
+      // "only these keys" without listing every other one, and a list that goes
+      // stale silently is worse than none.
+      allow read, write: if isAdmin();
 
       match /{document=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -30,6 +51,8 @@ service cloud.firestore {
     match /plants/{plantId} {
       allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Read only: the panel lists plants, it never edits one.
+      allow read: if isAdmin();
     }
 
     // Assistant memory — what the app knows about a plant beyond its own fields.
@@ -61,6 +84,7 @@ service cloud.firestore {
     match /health_checks/{checkId} {
       allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin();
     }
 
     // Watering events — this rule was already correct, it was just silently
@@ -91,6 +115,7 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if isAdmin();
     }
 
     // Global, non-personal content: any signed-in user may read; nobody writes
@@ -103,16 +128,24 @@ service cloud.firestore {
     match /app_config/{docId} {
       allow read: if request.auth != null;
       allow write: if false;
+      // Trial length and plant limits are edited from the panel's Subscription
+      // page, and every client reads them back on launch.
+      allow write: if isAdmin();
     }
 
     // Pure server-internal collections — no client access at all, in either
     // direction. password_reset_codes / email_verification_pins / mail are
     // actively dangerous if client-readable or -writable (account takeover /
     // spam-relay vectors), not just "shouldn't be touched".
-    match /ai_usage/{docId} { allow read, write: if false; }
-    match /ai_usage_daily/{docId} { allow read, write: if false; }
-    match /push_notifications/{docId} { allow read, write: if false; }
-    match /mail/{docId} { allow read, write: if false; }
+    // Readable by the panel, which is what Stats and Logs are built on. Writing
+    // stays shut to everyone including the admin: these are records of what the
+    // system did, and a record you can edit is not a record.
+    match /ai_usage/{docId} { allow read: if isAdmin(); allow write: if false; }
+    match /ai_usage_daily/{docId} { allow read: if isAdmin(); allow write: if false; }
+    match /push_notifications/{docId} { allow read: if isAdmin(); allow write: if false; }
+    // This one carries the password-reset messages, so reading it is effectively
+    // access to every account. Granted knowingly: the Logs page is wanted whole.
+    match /mail/{docId} { allow read: if isAdmin(); allow write: if false; }
     match /password_reset_codes/{docId} { allow read, write: if false; }
     match /email_verification_pins/{docId} { allow read, write: if false; }
     match /scheduled_test_pushes/{docId} { allow read, write: if false; }
