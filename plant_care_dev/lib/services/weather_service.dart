@@ -175,6 +175,22 @@ class CitySuggestion {
 /// Location plus weather, as the header needs them.
 typedef WeatherReading = ({UserLocation? location, WeatherInfo? weather});
 
+/// Whether a cache written by [storedOwner] may be used by [currentUid].
+///
+/// The city cache lives in the device's preferences, so without an owner it is
+/// the phone's rather than the person's. A second account signing in inherited
+/// the first one's city — shown in the profile, used to adjust watering, and
+/// never written to that account's own record, because the daily resolve saw
+/// the *device* had resolved recently and skipped.
+///
+/// An unclaimed cache counts as somebody else's. That is deliberate: every
+/// install that predates this has one, and treating it as foreign costs a
+/// single lookup and leaves each account with a city it actually owns.
+bool cacheBelongsTo(String? storedOwner, String? currentUid) {
+  if (currentUid == null || storedOwner == null) return false;
+  return storedOwner == currentUid;
+}
+
 class WeatherService {
   static final WeatherService _instance = WeatherService._internal();
   factory WeatherService() => _instance;
@@ -183,6 +199,15 @@ class WeatherService {
   static const _kLastResolvedKey = 'weather_location_resolved_at';
   static const _kCachedLocation = 'weather_location_cache';
   static const _kCachedWeather = 'weather_reading_cache';
+
+  /// Which account the cached city belongs to.
+  ///
+  /// Without this the cache is the device's rather than the person's, and a
+  /// second account signing in on the same phone inherits the first one's city:
+  /// the header shows it, and the daily resolve is skipped because the *device*
+  /// resolved recently — so the new account's `geo` is never written and its
+  /// watering is adjusted against a city it never chose.
+  static const _kCacheOwner = 'weather_cache_owner';
 
   /// The city is looked up at most once a day (SPEC 3.1). People do not move
   /// between cities often enough to justify a request per launch.
@@ -206,6 +231,16 @@ class WeatherService {
     if (_cached != null) return _cached!;
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (!cacheBelongsTo(
+        prefs.getString(_kCacheOwner),
+        AuthService.currentUser?.uid,
+      )) {
+        // Somebody else's city, or a cache from before this was recorded.
+        // Either way it is not ours to show, and pretending we have nothing is
+        // what sends us to resolve it properly.
+        _cached = (location: null, weather: null);
+        return _cached!;
+      }
       final location = UserLocation.fromMap(
         _decode(prefs.getString(_kCachedLocation)),
       );
@@ -268,6 +303,8 @@ class WeatherService {
   Future<void> _persist(WeatherReading reading) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final uid = AuthService.currentUser?.uid;
+      if (uid != null) await prefs.setString(_kCacheOwner, uid);
       if (reading.location != null) {
         await prefs.setString(
           _kCachedLocation,
@@ -321,6 +358,16 @@ class WeatherService {
   Future<bool> _resolveDue() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      // The daily interval is about how often a person moves, not about how
+      // often the phone is used. Somebody else's stamp says nothing about this
+      // account, and honouring it is what left new accounts with no city of
+      // their own recorded at all.
+      if (!cacheBelongsTo(
+        prefs.getString(_kCacheOwner),
+        AuthService.currentUser?.uid,
+      )) {
+        return true;
+      }
       final last = prefs.getInt(_kLastResolvedKey);
       if (last == null) return true;
       final since = DateTime.now().millisecondsSinceEpoch - last;

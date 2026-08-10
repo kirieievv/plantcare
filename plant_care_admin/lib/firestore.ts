@@ -117,7 +117,9 @@ function toGeo(v: unknown): AdminUser["geo"] {
   const source = g.source === "manual" || g.source === "ip" ? g.source : undefined;
   return {
     city: typeof g.city === "string" ? g.city : undefined,
-    country: typeof g.country === "string" ? g.country : undefined,
+    // The resolver stores `countryCode`; reading `country` meant the suffix
+    // beside the city never once rendered.
+    country: typeof g.countryCode === "string" ? g.countryCode : undefined,
     timezone: typeof g.timezone === "string" ? g.timezone : undefined,
     source,
     updatedAt: toDate(g.updatedAt),
