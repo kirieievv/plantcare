@@ -82,6 +82,45 @@ class _GardenPulseState extends State<GardenPulse>
   static const _nearRadius = 110.0;
   static const _farRadius = 150.0;
 
+  /// The white disc the ring is painted around.
+  static const _coreDiameter = _ringSize - 2 * _RingPainter.stroke; // 148
+
+  /// Text inside a circle is bounded by the inscribed square, not by the
+  /// diameter: a line as wide as the disc has its ends in the corners, where
+  /// there is no disc left. 148 / √2 ≈ 105.
+  ///
+  /// This is why the block was already wrong at 100%: the column was 132 wide,
+  /// 27 px past the edge. Short strings simply never reached the corners.
+  /// Derived from the ring rather than hardcoded, so resizing the dial keeps
+  /// the text inside it.
+  static final _coreBox = _coreDiameter / math.sqrt2;
+
+  /// How far the type inside the dial is allowed to follow the system size.
+  ///
+  /// Only this block is capped; everywhere else the OS setting works in full,
+  /// which is the accessibility half of the bargain. Here the geometry is the
+  /// content: a circle cannot grow with the type, so past this point the text
+  /// would leave the ring rather than be read.
+  ///
+  /// This is a ceiling, not a switch — it holds for every step from 115% up,
+  /// AX5 included, and below it the block scales like everything else.
+  ///
+  /// Why 1.15 and not more. Everything in the safe square except the score
+  /// grows with the cap, and the score takes what is left: 36 px at 100%,
+  /// 31 at 110%, 26 at 115%. From there each further 5% costs the score about
+  /// 3.5 px, so somewhere around 1.2–1.25 it hits the 22 px floor. Raising the
+  /// cap buys the label and the verdict a pixel or so and takes four off the
+  /// one number the block exists to show.
+  static const _maxTextScale = 1.15;
+
+  /// The system scaler as this block honours it.
+  ///
+  /// Used for the parts that are measured rather than laid out by a `Text` —
+  /// the gaps and the plant-name slot — so they follow the same cap as the
+  /// glyphs do.
+  TextScaler _scaler(BuildContext context) =>
+      MediaQuery.textScalerOf(context).clamp(maxScaleFactor: _maxTextScale);
+
   /// Seat angles per plant count, 0° pointing right and negatives pointing up.
   /// Straight from the handoff: the sixth layout is the widest the near ring
   /// takes before labels start to touch.
@@ -135,23 +174,29 @@ class _GardenPulseState extends State<GardenPulse>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _blockHeight,
-      child: Stack(
-        alignment: Alignment.center,
-        // Labels reach outside the seats by design; clipping them is what
-        // cropped the plants' names.
-        clipBehavior: Clip.none,
-        children: [
-          // The halo is a heartbeat. There is nothing to beat for yet.
-          if (!widget.loading) _buildHalo(),
-          _buildRing(),
-          // Over the ring, under the seats: the weather hides the score, never
-          // the garden (pull_to_refresh_flow §7).
-          _clouds(),
-          ...(widget.loading ? _loadingSeats() : _seats()),
-          if (!widget.loading) _buildDroplets(),
-        ],
+    // The cap covers the whole block, dial and orbit alike: the plant names sit
+    // in seats placed by angle, so they run into each other for the same reason
+    // the score runs out of the ring.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: _maxTextScale,
+      child: SizedBox(
+        height: _blockHeight,
+        child: Stack(
+          alignment: Alignment.center,
+          // Labels reach outside the seats by design; clipping them is what
+          // cropped the plants' names.
+          clipBehavior: Clip.none,
+          children: [
+            // The halo is a heartbeat. There is nothing to beat for yet.
+            if (!widget.loading) _buildHalo(),
+            _buildRing(),
+            // Over the ring, under the seats: the weather hides the score,
+            // never the garden (pull_to_refresh_flow §7).
+            _clouds(),
+            ...(widget.loading ? _loadingSeats() : _seats()),
+            if (!widget.loading) _buildDroplets(),
+          ],
+        ),
       ),
     );
   }
@@ -356,37 +401,147 @@ class _GardenPulseState extends State<GardenPulse>
               ],
             ),
           ),
-          SizedBox(width: 132, child: loading ? _loadingCore() : _core()),
+          SizedBox(
+            width: _coreBox,
+            height: _coreBox,
+            child: loading ? _loadingCore() : _core(context),
+          ),
         ],
       ),
     );
   }
 
-  Widget _core() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _coreLabel(),
-        const SizedBox(height: 4),
-        Text(
-          '${widget.garden.score}',
-          style: glassFont(
-            fontSize: 36,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 36 * -0.045,
-            height: 1,
-            color: kGlassInk,
+  /// Below this the score stops being the headline of the block and becomes
+  /// just another line of text.
+  static const _minScoreSize = 22.0;
+
+  static const _scoreSize = 36.0;
+
+  static final _captionStyle = glassFont(
+    fontSize: 12.5,
+    height: 1.3,
+    color: kGlassMut,
+  );
+
+  static final _labelStyle = glassFont(
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 11 * 0.12,
+    height: 1.15,
+    color: kGlassMut2,
+  );
+
+  /// How tall [text] renders inside the safe square.
+  double _lineBoxHeight(
+    String text,
+    TextStyle style,
+    TextScaler scaler,
+    int maxLines,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+      maxLines: maxLines,
+      textScaler: scaler,
+    )..layout(maxWidth: _coreBox);
+    return painter.size.height;
+  }
+
+  Widget _core(BuildContext context) {
+    final scaler = _scaler(context);
+
+    // Relative, not the old fixed 4 and 5: at a raised size a fixed gap leaves
+    // the score hanging away from the verdict and pulls the optical centre up.
+    // 0.34 em of the caption's own size, which lands on the same ~4 px at 100%.
+    final gap = scaler.scale(12.5) * 0.34;
+
+    // The score is the only element with slack — the label and the verdict are
+    // already at reading size — so it is the one that gives way. Its size is
+    // measured rather than fitted: `FittedBox` alone has no floor and, at the
+    // cap, quietly took the number under 22.
+    //
+    // The handoff warns about exactly this shape of bug: the children must not
+    // shrink on their own, or the measurement describes a layout that isn't
+    // the one on screen. Hence real text metrics, at the same scaler the
+    // `Text` widgets below will use.
+    final labelHeight = _lineBoxHeight(
+      widget.label.toUpperCase(),
+      _labelStyle,
+      scaler,
+      2,
+    );
+    var captionLines = 2;
+    var captionHeight = _lineBoxHeight(
+      widget.caption,
+      _captionStyle,
+      scaler,
+      captionLines,
+    );
+
+    double slack() => _coreBox - labelHeight - captionHeight - 2 * gap;
+
+    // Last resort before the number becomes unreadable: the verdict gives up
+    // its second line. It is a summary of the list right below it; the score
+    // has nowhere else to be shown.
+    if (slack() < _minScoreSize) {
+      captionLines = 1;
+      captionHeight = _lineBoxHeight(
+        widget.caption,
+        _captionStyle,
+        scaler,
+        captionLines,
+      );
+    }
+
+    // Floored to a whole point: a paragraph rounds its line box up, so a score
+    // sized 26.88 renders 27 and the column overflows by the tenth of a pixel
+    // that rounding invented.
+    final scoreSize = slack().floorToDouble().clamp(
+      _minScoreSize,
+      scaler.scale(_scoreSize),
+    );
+
+    return Semantics(
+      container: true,
+      // The cap gives a reader of large type smaller glyphs than they asked
+      // for, so the whole dial is offered to VoiceOver as one sentence, at
+      // whatever size the system reads it.
+      label: '${widget.label}: ${widget.garden.score}. ${widget.caption}',
+      excludeSemantics: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _coreLabel(),
+          SizedBox(height: gap),
+          // Already sized against the system setting above; scaling it a
+          // second time here is what the no-scaling wrapper prevents.
+          MediaQuery.withNoTextScaling(
+            child: Text(
+              '${widget.garden.score}',
+              maxLines: 1,
+              softWrap: false,
+              style: glassFont(
+                fontSize: scoreSize,
+                fontWeight: FontWeight.w600,
+                letterSpacing: scoreSize * -0.045,
+                height: 1,
+                color: kGlassInk,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          widget.caption,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: glassFont(fontSize: 12.5, height: 1.3, color: kGlassMut),
-        ),
-      ],
+          SizedBox(height: gap),
+          Text(
+            widget.caption,
+            textAlign: TextAlign.center,
+            maxLines: captionLines,
+            overflow: TextOverflow.ellipsis,
+            style: _captionStyle,
+          ),
+        ],
+      ),
     );
   }
 
@@ -401,14 +556,15 @@ class _GardenPulseState extends State<GardenPulse>
     );
   }
 
+  /// Two lines are enough for every locale we ship; the ellipsis is the last
+  /// resort rather than the plan. Hiding the label at large type was the other
+  /// option and it loses what the number means.
   Widget _coreLabel() => Text(
     widget.label.toUpperCase(),
-    style: glassFont(
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 11 * 0.12,
-      color: kGlassMut2,
-    ),
+    textAlign: TextAlign.center,
+    maxLines: 2,
+    overflow: TextOverflow.ellipsis,
+    style: _labelStyle,
   );
 
   /// Six drops falling out of the ring when a watering task is closed.
@@ -767,7 +923,11 @@ class _SeatFrame extends StatelessWidget {
     final gap = far ? 14.0 : 17.0;
     final labelBox = SizedBox(
       width: far ? 84.0 : 96.0,
-      height: 14,
+      // One line of the 11 px name at whatever scale the block ended up with.
+      // The old flat 14 fit exactly at 100% and clipped the descenders at
+      // anything above it. `MediaQuery` here is already the capped one — the
+      // block wraps everything it draws.
+      height: MediaQuery.textScalerOf(context).scale(11) * 1.3,
       child: label,
     );
 

@@ -30,6 +30,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settings => 'Paramètres';
 
   @override
+  String get tabHome => 'Jardin';
+
+  @override
+  String get tabPlants => 'Plantes';
+
+  @override
+  String get tabAdd => 'Ajouter';
+
+  @override
+  String get tabProfile => 'Profil';
+
+  @override
+  String get tabSettings => 'Réglages';
+
+  @override
   String get authenticationError => 'Erreur d\'authentification';
 
   @override

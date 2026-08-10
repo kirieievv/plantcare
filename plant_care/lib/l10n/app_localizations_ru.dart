@@ -30,6 +30,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settings => 'Настройки';
 
   @override
+  String get tabHome => 'Сад';
+
+  @override
+  String get tabPlants => 'Растения';
+
+  @override
+  String get tabAdd => 'Добавить';
+
+  @override
+  String get tabProfile => 'Профиль';
+
+  @override
+  String get tabSettings => 'Настройки';
+
+  @override
   String get authenticationError => 'Ошибка аутентификации';
 
   @override

@@ -145,6 +145,36 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// No description provided for @tabHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Garden'**
+  String get tabHome;
+
+  /// No description provided for @tabPlants.
+  ///
+  /// In en, this message translates to:
+  /// **'Plants'**
+  String get tabPlants;
+
+  /// No description provided for @tabAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get tabAdd;
+
+  /// No description provided for @tabProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get tabProfile;
+
+  /// No description provided for @tabSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get tabSettings;
+
   /// No description provided for @authenticationError.
   ///
   /// In en, this message translates to:

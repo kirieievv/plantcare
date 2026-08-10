@@ -626,16 +626,12 @@ class _Header extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 3),
-                RichText(
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    style: glassFont(
-                      fontSize: 27,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 27 * -0.035,
-                      color: kGlassInk,
-                    ),
+                // `Text.rich`, not a bare `RichText`: the latter ignores the
+                // system text size entirely, so the one line the screen is
+                // named after was the only thing that never grew when the user
+                // asked for larger type.
+                Text.rich(
+                  TextSpan(
                     children: [
                       TextSpan(text: '${l10n.homeGardenTitleLead} '),
                       TextSpan(
@@ -643,6 +639,14 @@ class _Header extends StatelessWidget {
                         style: const TextStyle(color: kGlassAccent),
                       ),
                     ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: glassFont(
+                    fontSize: 27,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 27 * -0.035,
+                    color: kGlassInk,
                   ),
                 ),
               ],
@@ -846,15 +850,24 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 0, 6, 9),
+      // Every child here used to be rigid, which left the `Spacer` below with
+      // nothing to give up — so at a raised text size the row did not shorten,
+      // it ran off the screen. The heading gives way now; the link keeps its
+      // full width, because half of "Все задачи" is a worse thing to aim at
+      // than a shortened heading.
       child: Row(
         children: [
-          Text(
-            title.toUpperCase(),
-            style: glassFont(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 11.5 * 0.1,
-              color: kGlassMut,
+          Flexible(
+            child: Text(
+              title.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: glassFont(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 11.5 * 0.1,
+                color: kGlassMut,
+              ),
             ),
           ),
           const SizedBox(width: 9),
@@ -869,6 +882,8 @@ class _SectionLabel extends StatelessWidget {
                   children: [
                     Text(
                       action!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: glassFont(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,

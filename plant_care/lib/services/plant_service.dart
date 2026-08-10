@@ -35,6 +35,47 @@ class PlantService {
     );
   }
 
+  /// When a plant just added to the garden is due its first watering.
+  ///
+  /// Counted from the last watering the user reported in the quiz, not from the
+  /// moment they added the plant. A rosemary watered three days ago and thirsty
+  /// every seven is due in four days; starting the count today would put ten
+  /// days between two waterings while the card still reads "every 7 days".
+  ///
+  /// [anchor] is that reported watering. Null when nobody asked — the legacy
+  /// add screens — and then today is the only date there is.
+  ///
+  /// [shouldWaterNow] wins outright: the analyzer looked at the soil, or the
+  /// user said "about a week ago", and the plan they just accepted says "water
+  /// today". A date a week out would contradict it the moment the screen opens.
+  ///
+  /// Pure on purpose — this is the arithmetic the whole schedule hangs on, and
+  /// inside a method that writes to Firestore it could not be tested.
+  static DateTime initialWateringDue({
+    required DateTime now,
+    required DateTime? anchor,
+    required int intervalDays,
+    required bool shouldWaterNow,
+    String preferredTime = '18:00',
+  }) {
+    if (shouldWaterNow) return now;
+    return calculateNextWateringAt(
+      from: anchor ?? now,
+      intervalDays: intervalDays,
+      preferredTime: preferredTime,
+    );
+  }
+
+  /// The document carries dates as ISO strings, but a Firestore `Timestamp`
+  /// turns up too on documents written by the functions. Anything else — and
+  /// anything unparseable — is no date at all.
+  static DateTime? _parseDate(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
   // Get all plants for current user
   Stream<List<Plant>> getPlants() {
     final user = AuthService.currentUser;
@@ -183,20 +224,18 @@ class PlantService {
     // Get shouldWaterNow from plant (from AI analysis)
     final shouldWaterNow = plantData['shouldWaterNow'] ?? false;
 
-    // IMPORTANT: Use shared helper to calculate nextWateringAt with preferred time
-    // This ensures consistent calculation in AddPlant, HealthCheck, and WaterPlant flows
-    //
-    // Unless the analyzer already said the plant is thirsty. It looked at the
-    // soil in the photo, and the care plan the user just accepted says "first
-    // watering: today" — pushing the due date a full interval out would make
-    // the plant screen contradict that plan the moment it opens.
-    final nextDue = shouldWaterNow == true
-        ? now
-        : calculateNextWateringAt(
-            from: now,
-            intervalDays: wateringIntervalDays,
-            preferredTime: preferredTime,
-          );
+    // Counted from the watering the user reported in the quiz — see
+    // [initialWateringDue]. Counting from `now` was the bug behind "the plan
+    // promises water in 4 days, the plant screen says 7": the answer "watered
+    // 2–3 days ago" was written into the document and then ignored here.
+    final anchor = _parseDate(plantData['lastWateredAt']);
+    final nextDue = initialWateringDue(
+      now: now,
+      anchor: anchor,
+      intervalDays: wateringIntervalDays,
+      shouldWaterNow: shouldWaterNow == true,
+      preferredTime: preferredTime,
+    );
 
     print(
       '🌱 PlantService.addPlant: intervalDays=$wateringIntervalDays, shouldWaterNow=$shouldWaterNow, preferredTime=$preferredTime, nextDue=$nextDue',

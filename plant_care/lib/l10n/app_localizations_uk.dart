@@ -30,6 +30,21 @@ class AppLocalizationsUk extends AppLocalizations {
   String get settings => 'Налаштування';
 
   @override
+  String get tabHome => 'Сад';
+
+  @override
+  String get tabPlants => 'Рослини';
+
+  @override
+  String get tabAdd => 'Додати';
+
+  @override
+  String get tabProfile => 'Профіль';
+
+  @override
+  String get tabSettings => 'Опції';
+
+  @override
   String get authenticationError => 'Помилка автентифікації';
 
   @override
