@@ -168,8 +168,13 @@ export default function UsersPage() {
         },
         sortingFn: "basic",
       }),
-      col.accessor("timezone", {
-        header: "Timezone",
+      // City rather than timezone: the timezone is derived from it and says
+      // less. Where the city came from is left to the profile card — a marker
+      // on every row of a fifty-row table would be noise, and the question
+      // only comes up once you are already looking at one user.
+      col.accessor((u) => u.geo?.city ?? "", {
+        id: "city",
+        header: "City",
         cell: (info) => info.getValue() || "—",
       }),
       col.accessor("location", {
