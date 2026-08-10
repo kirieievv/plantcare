@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchStats, fetchNewUsersLast30Days, type StatsOverview } from "@/lib/firestore";
+import {
+  fetchStats,
+  fetchNewUsersLast30Days,
+  fetchWeatherHealth,
+  type StatsOverview,
+  type WeatherHealth,
+} from "@/lib/firestore";
+import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   BarChart,
@@ -23,14 +30,16 @@ import { format, parseISO } from "date-fns";
 export default function StatsPage() {
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [chartData, setChartData] = useState<{ date: string; count: number }[]>([]);
+  const [weather, setWeather] = useState<WeatherHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([fetchStats(), fetchNewUsersLast30Days()])
-      .then(([s, chart]) => {
+    Promise.all([fetchStats(), fetchNewUsersLast30Days(), fetchWeatherHealth()])
+      .then(([s, chart, health]) => {
         setStats(s);
         setChartData(chart);
+        setWeather(health);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -60,6 +69,8 @@ export default function StatsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Stats</h1>
+
+      <WeatherProviderLine health={weather} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -172,6 +183,45 @@ export default function StatsPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Whether the weather provider is still answering.
+ *
+ * The app hides its own outage: without weather the header shows the date alone
+ * and the schedule falls back to a plain interval, so nothing looks broken and
+ * nobody finds out. This is the one place that says so.
+ */
+function WeatherProviderLine({ health }: { health: WeatherHealth | null }) {
+  if (!health) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Weather provider — nothing recorded yet
+      </p>
+    );
+  }
+
+  const ok = health.lastOkAt;
+  const failed = health.lastFailAt;
+  // Failing right now means the last thing that happened was a failure. A count
+  // on its own does not say that: it also rises for a provider that recovered.
+  const down = failed != null && (ok == null || failed > ok);
+
+  return (
+    <div
+      className={`rounded-lg border px-4 py-3 text-sm ${
+        down ? "border-red-200 bg-red-50 text-red-800" : "text-muted-foreground"
+      }`}
+    >
+      <span className="font-medium">Weather provider</span>{" "}
+      {down ? "is not answering" : "is answering"}
+      {ok && <> · last success {formatDistanceToNow(ok, { addSuffix: true })}</>}
+      {health.failures > 0 && <> · {health.failures} failures</>}
+      {down && health.lastError && (
+        <div className="mt-1 font-mono text-xs">{health.lastError}</div>
+      )}
     </div>
   );
 }

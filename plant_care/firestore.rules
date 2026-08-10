@@ -149,7 +149,10 @@ service cloud.firestore {
     match /password_reset_codes/{docId} { allow read, write: if false; }
     match /email_verification_pins/{docId} { allow read, write: if false; }
     match /scheduled_test_pushes/{docId} { allow read, write: if false; }
-    match /system/{docId} { allow read, write: if false; }
+    // Holds weather_health, which is how an outage at the weather provider
+    // becomes visible instead of only reaching Cloud Logging. Written by the
+    // Admin SDK, which these rules do not apply to.
+    match /system/{docId} { allow read: if isAdmin(); allow write: if false; }
 
     // Everything else: closed by default. The previous
     // `match /{document=**} { allow read, write: if true; }` here was the actual

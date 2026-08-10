@@ -14,6 +14,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 
 const {
+  HEALTH_QUIET_MS,
   WEATHER_FORCED_TTL_MS,
   WEATHER_TTL_MS,
   cityKeyOf,
@@ -21,6 +22,7 @@ const {
   conditionFromCode,
   describeWeather,
   isFresh,
+  providerHealthUpdate,
   weatherSnapshot,
 } = require('../weather.js');
 
@@ -149,4 +151,54 @@ test('a Firestore Timestamp is read the same as a plain number', () => {
   const asTimestamp = { fetchedAt: { toMillis: () => NOW - 5 * 60 * 1000 } };
   assert.equal(isFresh(asTimestamp, WEATHER_TTL_MS, NOW), true);
   assert.equal(isFresh(asTimestamp, WEATHER_FORCED_TTL_MS, NOW), true);
+});
+
+// ── Noticing that the provider stopped answering ─────────────────────────────
+//
+// Losing the weather costs the app nothing it cannot survive — the header falls
+// back to the date, the schedule to its plain interval. That is exactly why the
+// outage would go unseen, so the record of it has to be right.
+
+test('a failure is written down with its reason', () => {
+  const u = providerHealthUpdate({ ok: false, error: 'HTTP 429', now: NOW });
+  assert.equal(u.lastError, 'HTTP 429');
+  assert.equal(u.failures, 'increment');
+  assert.equal(u.lastFailAt, NOW);
+  assert.equal(u.lastOkAt, undefined);
+});
+
+test('a provider failing intermittently keeps its count', () => {
+  // The failure that matters most: one call in three fails. Clearing the
+  // counter on every success would report a healthy zero forever.
+  const u = providerHealthUpdate({
+    ok: true,
+    previous: { lastFailAt: NOW - 60 * 1000, failures: 7 },
+    now: NOW,
+  });
+  assert.equal(u.failures, undefined, 'the count must survive a success');
+  assert.equal(u.lastOkAt, NOW);
+});
+
+test('an hour of quiet forgets the run of failures', () => {
+  const u = providerHealthUpdate({
+    ok: true,
+    previous: { lastFailAt: NOW - HEALTH_QUIET_MS - 1, failures: 7 },
+    now: NOW,
+  });
+  assert.equal(u.failures, 0);
+});
+
+test('a first ever success starts from zero rather than nothing', () => {
+  const u = providerHealthUpdate({ ok: true, previous: null, now: NOW });
+  assert.equal(u.failures, 0);
+  assert.equal(u.lastOkAt, NOW);
+});
+
+test('an unreasonably long error is cut, not stored whole', () => {
+  const u = providerHealthUpdate({ ok: false, error: 'x'.repeat(5000), now: NOW });
+  assert.equal(u.lastError.length, 200);
+});
+
+test('a failure with no message still says something', () => {
+  assert.equal(providerHealthUpdate({ ok: false, now: NOW }).lastError, 'unknown');
 });

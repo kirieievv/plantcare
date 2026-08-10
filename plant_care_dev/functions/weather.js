@@ -166,14 +166,77 @@ function conditionFromCode(code) {
  * than by waiting an hour.
  */
 function isFresh(cached, maxAgeMs, now = Date.now()) {
-  if (!cached || !cached.fetchedAt) return false;
-  // Firestore hands back a Timestamp; a plain number is what the tests pass.
-  const at =
-    typeof cached.fetchedAt.toMillis === 'function'
-      ? cached.fetchedAt.toMillis()
-      : Number(cached.fetchedAt);
-  if (!Number.isFinite(at)) return false;
-  return now - at < maxAgeMs;
+  const at = millisOf(cached && cached.fetchedAt);
+  return at !== null && now - at < maxAgeMs;
+}
+
+/** Milliseconds from a Firestore Timestamp or a plain number, else null. */
+function millisOf(v) {
+  if (v === null || v === undefined) return null;
+  const at = typeof v.toMillis === 'function' ? v.toMillis() : Number(v);
+  return Number.isFinite(at) ? at : null;
+}
+
+/**
+ * How long the provider must behave before a run of failures is forgotten.
+ *
+ * Not reset on the first success: a provider failing one call in three would
+ * then always read zero, because the successes in between keep wiping it. The
+ * count is meant to survive exactly that.
+ */
+const HEALTH_QUIET_MS = 60 * 60 * 1000;
+
+/**
+ * What the health record should become after one call to the provider.
+ *
+ * Kept apart from the writing so it can be asked about directly. `failures`
+ * comes back as the string 'increment' rather than a Firestore sentinel — the
+ * decision is which of the two to do, and that is testable without a database.
+ */
+function providerHealthUpdate({ ok, error, previous, now = Date.now() }) {
+  if (!ok) {
+    return {
+      lastFailAt: now,
+      lastError: String(error || 'unknown').slice(0, 200),
+      failures: 'increment',
+    };
+  }
+
+  const lastFailAt = millisOf(previous && previous.lastFailAt);
+  const settled = lastFailAt === null || now - lastFailAt >= HEALTH_QUIET_MS;
+  return settled ? { lastOkAt: now, failures: 0 } : { lastOkAt: now };
+}
+
+/**
+ * Writes down whether the provider answered, so an outage is noticeable.
+ *
+ * The app survives losing the weather: the header falls back to the date alone
+ * and the watering schedule to its plain interval. That is the point — and also
+ * the problem, because nothing about it is visible. A console warning lands in
+ * Cloud Logging, which nobody opens, so the feature could quietly disappear for
+ * weeks.
+ *
+ * Failing to write this must never cost the caller its answer: it is a report
+ * about the request, not part of it.
+ */
+async function recordProviderOutcome({ ok, error }) {
+  try {
+    const db = admin.firestore();
+    const ref = db.collection('system').doc('weather_health');
+    const previous = (await ref.get()).data() || null;
+
+    const update = providerHealthUpdate({ ok, error, previous });
+    const write = { ...update };
+    if (write.lastOkAt) write.lastOkAt = admin.firestore.Timestamp.now();
+    if (write.lastFailAt) write.lastFailAt = admin.firestore.Timestamp.now();
+    if (write.failures === 'increment') {
+      write.failures = admin.firestore.FieldValue.increment(1);
+    }
+
+    await ref.set(write, { merge: true });
+  } catch (e) {
+    console.warn(`⚠️ weather: health write failed: ${e.message}`);
+  }
 }
 
 /**
@@ -228,9 +291,11 @@ async function weatherForCity(lat, lon, { maxAgeMs = WEATHER_TTL_MS } = {}) {
     }
 
     await ref.set(record, { merge: true });
+    await recordProviderOutcome({ ok: true });
     return record;
   } catch (e) {
     console.warn(`⚠️ weather: fetch failed for ${key}: ${e.message}`);
+    await recordProviderOutcome({ ok: false, error: e.message });
     // Stale is better than blank; blank is better than an error.
     return cached || null;
   }
@@ -343,7 +408,9 @@ function weatherSnapshot(weather) {
 module.exports = {
   WEATHER_TTL_MS,
   WEATHER_FORCED_TTL_MS,
+  HEALTH_QUIET_MS,
   isFresh,
+  providerHealthUpdate,
   cityKeyOf,
   clientIpOf,
   conditionFromCode,

@@ -124,6 +124,33 @@ function toGeo(v: unknown): AdminUser["geo"] {
   };
 }
 
+export interface WeatherHealth {
+  lastOkAt?: Date;
+  lastFailAt?: Date;
+  lastError?: string;
+  failures: number;
+}
+
+/**
+ * Whether the weather provider is answering.
+ *
+ * Losing it costs the app nothing visible — the header drops to the date alone
+ * and the watering schedule to its plain interval — which is exactly why an
+ * outage needs somewhere to show up. Returns null when nothing has been
+ * recorded yet, which is a different thing from healthy.
+ */
+export async function fetchWeatherHealth(): Promise<WeatherHealth | null> {
+  const snap = await getDoc(doc(db, "system", "weather_health"));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    lastOkAt: toDate(d.lastOkAt),
+    lastFailAt: toDate(d.lastFailAt),
+    lastError: typeof d.lastError === "string" ? d.lastError : undefined,
+    failures: typeof d.failures === "number" ? d.failures : 0,
+  };
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 export async function fetchUsers(): Promise<AdminUser[]> {
