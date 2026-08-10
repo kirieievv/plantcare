@@ -178,7 +178,16 @@ function sanitizeProposal(raw, plant = {}) {
 
 /** Applies a proposal the owner has confirmed. Assumes it has been sanitized. */
 function proposalUpdate(proposal) {
-  return { [proposal.field]: proposal.to };
+  const update = { [proposal.field]: proposal.to };
+
+  // A size the owner states is a measured size, whatever it was before. Without
+  // this the field changes and its provenance does not, so a plant added with
+  // "I don't know the pot" keeps the number marked as a guess — and the next
+  // health check replaces what the owner just said with its own reading off a
+  // photo. The pot is theirs; saying so is measuring it.
+  if (proposal.field === 'potDiameterCm') update.potDiameterSource = 'user';
+
+  return update;
 }
 
 /**

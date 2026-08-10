@@ -2661,7 +2661,10 @@ exports.chatPlantAssistant = functions.https.onRequest((req, res) => {
       if (proposal && isOwnerObservation(proposal.field) && factsRecorded.length) {
         try {
           await db.collection('plants').doc(plantId).update({
-            [proposal.field]: proposal.to,
+            // Through the shared builder, so this path carries the same
+            // companion fields the confirmed one does — the pot's provenance
+            // was silently missing here.
+            ...proposalUpdate(proposal),
             ...(invalidatesPlan(proposal.field)
               ? { carePlanStaleAt: new Date().toISOString() }
               : {}),
