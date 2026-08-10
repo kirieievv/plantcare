@@ -35,6 +35,25 @@ export interface AdminUser {
   emailReminders?: boolean | null;
   pushReminders?: boolean | null;
   emailVerified?: boolean | null;
+  /** Interface language the app is set to, as a locale code. */
+  language?: string;
+  /**
+   * Where the app thinks the user is, which is what the watering schedule is
+   * adjusted against.
+   *
+   * Separate from `location`, the free-text line on the profile: that one is
+   * whatever the user typed about themselves, this one is a resolved place.
+   * `source` matters — a city found from the IP address is a guess, one the
+   * user picked is a statement, and the resolver never overwrites the second
+   * with the first.
+   */
+  geo?: {
+    city?: string;
+    country?: string;
+    timezone?: string;
+    source?: "ip" | "manual";
+    updatedAt?: Date;
+  };
 }
 
 export interface AdminPlant {
@@ -91,6 +110,20 @@ function toDate(v: unknown): Date | undefined {
   return undefined;
 }
 
+/** The resolved place on a user document, or undefined if none was ever set. */
+function toGeo(v: unknown): AdminUser["geo"] {
+  if (!v || typeof v !== "object") return undefined;
+  const g = v as Record<string, unknown>;
+  const source = g.source === "manual" || g.source === "ip" ? g.source : undefined;
+  return {
+    city: typeof g.city === "string" ? g.city : undefined,
+    country: typeof g.country === "string" ? g.country : undefined,
+    timezone: typeof g.timezone === "string" ? g.timezone : undefined,
+    source,
+    updatedAt: toDate(g.updatedAt),
+  };
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 export async function fetchUsers(): Promise<AdminUser[]> {
@@ -119,6 +152,8 @@ export async function fetchUsers(): Promise<AdminUser[]> {
       emailVerified: data.emailVerified === true ? true
         : data.emailVerified === false ? false
         : null,
+      language: typeof data.language === "string" ? data.language : undefined,
+      geo: toGeo(data.geo),
     };
   });
 }
@@ -145,6 +180,8 @@ export async function fetchUserById(uid: string): Promise<AdminUser | null> {
     emailVerified: data.emailVerified === true ? true
       : data.emailVerified === false ? false
       : null,
+    language: typeof data.language === "string" ? data.language : undefined,
+    geo: toGeo(data.geo),
   };
 }
 
@@ -763,22 +800,23 @@ export async function fetchPushNotifications(userId: string): Promise<PushNotifi
     query(
       collection(db, "push_notifications"),
       where("userId", "==", userId),
-      orderBy("sentAt", "desc"),
       limit(100)
     )
   );
-  return snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      userId: data.userId || userId,
-      plantId: data.plantId || null,
-      plantName: data.plantName || null,
-      title: data.title || "",
-      body: data.body || "",
-      stage: data.stage || null,
-      successCount: data.successCount ?? 1,
-      sentAt: toDate(data.sentAt),
-    };
-  });
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        userId: data.userId || userId,
+        plantId: data.plantId || null,
+        plantName: data.plantName || null,
+        title: data.title || "",
+        body: data.body || "",
+        stage: data.stage || null,
+        successCount: data.successCount ?? 1,
+        sentAt: toDate(data.sentAt),
+      };
+    })
+    .sort((a, b) => (b.sentAt?.getTime() ?? 0) - (a.sentAt?.getTime() ?? 0));
 }

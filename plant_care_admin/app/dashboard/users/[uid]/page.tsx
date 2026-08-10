@@ -73,6 +73,23 @@ function fmtShort(d?: Date) {
   return format(d, "MMM d, yyyy");
 }
 
+/** The six languages the app ships. Anything else is shown as its raw code
+ *  rather than hidden, so a locale we did not expect is visible instead of
+ *  looking like no language at all. */
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  ru: "Русский",
+  uk: "Українська",
+  de: "Deutsch",
+  es: "Español",
+  fr: "Français",
+};
+
+function languageLabel(code?: string) {
+  if (!code) return "—";
+  return LANGUAGE_NAMES[code] ?? code;
+}
+
 function healthBadge(status?: string) {
   if (status === "ok")
     return (
@@ -398,6 +415,31 @@ export default function UserDetailPage({
                     <span>{daysSinceRegistration} days</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Language</span>
+                  <span>{languageLabel(user.language)}</span>
+                </div>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-muted-foreground shrink-0">City</span>
+                  {user.geo?.city ? (
+                    <span className="text-right">
+                      {user.geo.city}
+                      {user.geo.country ? `, ${user.geo.country}` : ""}
+                      {/* Where it came from decides whether a wrong city is the
+                          user's own doing or ours, which is the first thing
+                          worth knowing when a schedule looks off. */}
+                      <span className="text-muted-foreground text-xs ml-1">
+                        {user.geo.source === "manual"
+                          ? "· set by user"
+                          : user.geo.source === "ip"
+                          ? "· from IP"
+                          : ""}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">UID</span>
                   <span className="font-mono text-xs text-muted-foreground">
