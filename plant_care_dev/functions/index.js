@@ -716,6 +716,7 @@ async function loadHealthCheckAgentContext(plantId, userId) {
           // and all of it changes the diagnosis: "the soil is not drying" is a
           // different problem in a sealed plastic pot than in terracotta.
           potDiameterCm: plantData.potDiameterCm ?? null,
+          potDiameterSource: plantData.potDiameterSource || null,
           potMaterial: plantData.potMaterial || null,
           hasDrainage: typeof plantData.hasDrainage === 'boolean'
             ? plantData.hasDrainage
@@ -1186,7 +1187,16 @@ function describeGrowingConditions(plant) {
   const parts = [];
 
   const pot = [];
-  if (Number.isFinite(plant.potDiameterCm)) pot.push(`${plant.potDiameterCm} cm`);
+  if (Number.isFinite(plant.potDiameterCm)) {
+    // How much this number is worth. "16 cm" and "16 cm, assumed because nobody
+    // knew" lead to different advice, and until this qualifier existed the
+    // prompt stated all three cases as measured fact.
+    const source = {
+      photo: ' (estimated from a photo)',
+      assumed: ' (assumed default — the size is actually unknown)',
+    }[plant.potDiameterSource] || '';
+    pot.push(`${plant.potDiameterCm} cm${source}`);
+  }
   if (plant.potMaterial && plant.potMaterial !== 'unknown') pot.push(plant.potMaterial);
   if (plant.hasDrainage === true) pot.push('with drainage holes');
   if (plant.hasDrainage === false) pot.push('with NO drainage holes');
@@ -1291,6 +1301,7 @@ Return ONLY valid JSON (no markdown) using this schema:
   "health_score": 0,
   "findings": [ { "category": "light|water|soil|leaves|pests", "title": "string", "text": "string" } ],
   "recommendations": [ { "priority": 1, "title": "string", "explanation": "string", "action_label": "string" } ],
+  "pot": { "diameter_cm": 14 },
   "plant_assistant": {
     "status": "healthy or issue_detected", "praise_phrase": "string", "health_summary": "string",
     "maintenance_footer": "string", "problem_name": "string", "problem_description": "string",
@@ -1299,6 +1310,12 @@ Return ONLY valid JSON (no markdown) using this schema:
 }
 
 Rules:
+- pot.diameter_cm: the pot's diameter across its rim, in whole centimetres, judged from the first image —
+  the one the user was asked to take of the whole plant together with its pot. The plant's own leaves and
+  the pot's proportions are the scale. Use null when the pot is out of frame, cropped or hidden. Range 8-40.
+  This matters most when the stored pot size is marked as estimated or assumed: the app replaces a guess
+  with your reading, and a confident wrong number is spent on the watering dose. When the stored size came
+  from the user, treat theirs as correct and still report what you see.
 - health_score is an integer 0-100 summarising overall condition from the CURRENT image:
   90-100 thriving, 75-89 healthy with minor notes, 55-74 needs attention, 30-54 struggling, 0-29 critical.
   It must agree with plant_assistant.status: status="healthy" implies >= 75, "issue_detected" implies < 75.
@@ -1830,6 +1847,7 @@ Return ONLY a JSON object:
       "placement_short": "placement in 3-4 words"
     }
   },
+  "pot": { "diameter_cm": 14 },
   "other_care": { "growth_stage": "Seedling/Young/Mature/Established" },
   "interesting_facts": ["...", "...", "...", "..."],
   "specific_issues": ["...", "...", "..."],
@@ -1846,6 +1864,8 @@ specific_issues: 2-3 SPECIES-SPECIFIC CARE RISKS (not current problems).
 amount_ml: 50-1500 for normal pots, up to 2500 for very large containers.
 In care_recommendations.name, use "${confirmedSpecies}".
 care_recommendations.details are compact UI labels, not prose: max 30 characters each, no full sentences, no trailing period. Fill every key; omit one only if the species genuinely has no such requirement. details.light_hours is digits and an optional dash only ("4-6"), with no unit word; details.temperature_optimal and details.temperature_minimum must include the °C unit.
+pot.diameter_cm: the pot's diameter across its rim, in whole centimetres, judged from the photo — the plant's own leaves and the pot's proportions are the scale. Use null when the pot is out of frame, cropped, or hidden by foliage: the app then falls back to an average, and a confident wrong number is worse than an honest gap. Range 8-40; anything outside that is not a windowsill pot.
+
 care_recommendations.ideal_soil_moisture_min / ideal_soil_moisture_max: the IDEAL soil moisture percentage range for THIS species based on its botanical needs (0–100). Base this on species biology, NOT on the current visual soil state in the photo. Examples: cactus/succulent → 5–15; drought-tolerant → 15–30; average indoor → 30–50; tropical/moisture-loving → 50–70; bog plant → 70–90. These are integer percentages.
 
 Return ONLY JSON. No text. No markdown.
@@ -1951,6 +1971,29 @@ exports.analyzeHealthCheckAgent = functions.runWith({ timeoutSeconds: 120, memor
           admin.firestore(), plantId,
           `The photo looks like a ${seenMaterial} pot, but ${statedMaterial} is on file. Which is it?`
         );
+      }
+
+      // The pot size, on the other hand, is replaced outright — but only when
+      // nobody measured it. The user is still the authority; this overwrites a
+      // guess with a reading, never a reading with a guess. The health check is
+      // the better vantage point of the two: its first photo is required to
+      // show the whole pot, while the add-plant photo often shows only leaves.
+      const seenDiameter = potDiameterFromPhoto(parsed?.pot);
+      // Only these two are guesses. A missing source means the plant predates
+      // the field, and back then the only way a size got in was the user moving
+      // the slider — so silence here means "measured", not "unknown".
+      const statedSource = context.plant?.potDiameterSource || null;
+      const isGuess = statedSource === 'photo' || statedSource === 'assumed';
+      if (seenDiameter && isGuess && plantId) {
+        try {
+          await admin.firestore().collection('plants').doc(plantId).update({
+            potDiameterCm: seenDiameter,
+            potDiameterSource: 'photo',
+          });
+        } catch (e) {
+          // A refinement, not the answer the user is waiting for.
+          console.warn(`⚠️ health check: could not refine pot size: ${e.message}`);
+        }
       }
 
       if (accUsage.total_tokens > 0) {
@@ -3361,6 +3404,26 @@ function clampAmount(amount) {
   return Math.min(Math.max(amount, MIN), MAX);
 }
 
+/** Bounds of a pot a windowsill plant actually lives in. */
+const POT_MIN_CM = 8;
+const POT_MAX_CM = 40;
+
+/**
+ * The pot diameter the model read off the photo, or null.
+ *
+ * Null is a real answer here, not a failure: the user only sees this number
+ * when they said they don't know the pot size, and an invented one would be
+ * spent on the watering dose. Anything outside [8, 40] cm is the model
+ * measuring something other than a pot, so it goes back to null rather than
+ * being clamped into looking plausible.
+ */
+function potDiameterFromPhoto(pot) {
+  const cm = parseDimension(pot && pot.diameter_cm);
+  if (!Number.isFinite(cm)) return null;
+  const rounded = Math.round(cm);
+  return rounded >= POT_MIN_CM && rounded <= POT_MAX_CM ? rounded : null;
+}
+
 /**
  * Parse dimension string (e.g., "15 cm" or "6 in") to number in cm
  */
@@ -3456,6 +3519,10 @@ function transformNewJsonToLegacy(jsonData) {
     // Ideal soil moisture range from AI
     ideal_soil_moisture_min: careRec.ideal_soil_moisture_min ?? null,
     ideal_soil_moisture_max: careRec.ideal_soil_moisture_max ?? null,
+    // Read off the photo, and only used when the user said they don't know the
+    // pot size. Null whenever the pot is not clearly in frame — the app then
+    // falls back to an average rather than to a confident wrong number.
+    pot_diameter_cm: potDiameterFromPhoto(jsonData.pot),
     // Pass the full structured object so the client can build
     // localized section titles in the user's language.
     care_recommendations: careRec,

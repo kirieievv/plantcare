@@ -817,7 +817,11 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     return Positioned(
       left: 16,
       right: 16,
-      bottom: 86 + MediaQuery.of(context).padding.bottom,
+      // The gap over the tab bar, and nothing else: inside a tab the shell's
+      // `extendBody: true` already folds the bar's height into `padding.bottom`,
+      // so the 86 that used to sit here counted it twice and left the toast
+      // floating in the middle of the screen.
+      bottom: 12 + MediaQuery.of(context).padding.bottom,
       child: AnimatedBuilder(
         animation: _c,
         builder: (_, child) => Opacity(

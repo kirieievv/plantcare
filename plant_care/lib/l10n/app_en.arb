@@ -1235,6 +1235,15 @@
   "quizPotQuestionAccent": "diameter",
   "quizPotWhy": "The volume of soil decides how much water one watering needs.",
   "quizPotHint": "Measure across the rim of the pot, not the plant.",
+  "quizPotUnknown": "I don't know — measure it from the photo",
+  "addPlantPotFromPhoto": "Pot size from the photo — about {cm} cm",
+  "addPlantPotAverage": "The pot isn't visible, so we took an average {cm} cm",
+  "@addPlantPotFromPhoto": {
+    "placeholders": { "cm": { "type": "int" } }
+  },
+  "@addPlantPotAverage": {
+    "placeholders": { "cm": { "type": "int" } }
+  },
   "unitCm": "cm",
   "volumeMl": "{value} ml",
   "@volumeMl": {

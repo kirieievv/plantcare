@@ -48,6 +48,17 @@ enum _Step { photo, species, conditions, plan }
 /// How many questions the conditions quiz asks.
 const _kQuestions = 4;
 
+/// Breathing room between the pinned quiz button and the tab bar under it.
+///
+/// Only this — no tab-bar height. The shell runs `extendBody: true`, which
+/// folds the bar into `MediaQuery.padding.bottom`, so adding it again is what
+/// used to leave the button hanging in the middle of the card.
+const double _kCtaGap = 8;
+
+/// The pinned footer: its fade-out scrim plus the button under it (14 pt of
+/// padding above and below a 15.5 pt line). Used to end the list above it.
+const double _kCtaHeight = 30 + 14 * 2 + 22;
+
 class AddPlantScreenV4 extends StatefulWidget {
   final VoidCallback? onPlantAdded;
 
@@ -100,6 +111,12 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
   /// 16 cm counts as an answer from the start (SPEC 3.2): a disabled "Next"
   /// under a slider that already shows a value reads as a bug, not a rule.
   int _potCm = kPotDefaultCm;
+
+  /// The user said they don't know the pot, so the analyzer measures it off the
+  /// photo instead. Kept apart from [_potCm] because the slider always holds a
+  /// number — "unknown" is a fact about where that number came from, not a
+  /// value the slider could show.
+  bool _potFromPhoto = false;
 
   /// Nothing else is pre-selected — a pre-ticked answer is an answer the user
   /// never gave, and these five feed straight into the plan.
@@ -345,9 +362,11 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
       // days into its cycle, and pretending otherwise pushes the first task a
       // full interval too late.
       final anchor = lastWateredAnchor(now, daysAgo);
-      // The pot the user measured beats the pot the analyzer guessed from a
-      // photo — this is the whole reason the question is asked.
-      final ml = wateringMlForPot(_potCm);
+      // The pot the user measured beats the pot the analyzer read off a photo —
+      // that is the whole reason the question is asked. The photo only answers
+      // when the user said they don't know.
+      final potCm = _potDiameter(plan);
+      final ml = wateringMlForPot(potCm);
       final problems = _problemTasks;
 
       // The photo lives in Storage, not in Firestore: the document has a 1 MB
@@ -398,7 +417,12 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
         shouldWaterNow: firstIn == 0,
         // The quiz answers, stored for good: every later health check, chat
         // reply and plan recalculation reads them (SPEC 1.3).
-        potDiameterCm: _potCm,
+        potDiameterCm: potCm,
+        // Which of the three this number is. Without it every later prompt
+        // states an assumed 16 cm as measured fact.
+        potDiameterSource: !_potFromPhoto
+            ? 'user'
+            : (_int(plan['pot_diameter_cm']) != null ? 'photo' : 'assumed'),
         potMaterial: _material,
         hasDrainage: _drainage,
         placement: _placement,
@@ -495,6 +519,7 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
       _error = null;
       _q = 0;
       _potCm = kPotDefaultCm;
+      _potFromPhoto = false;
       _material = null;
       _drainage = null;
       _placement = null;
@@ -506,6 +531,16 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
   // ── the plan, as bent by the answers (SPEC §4) ────────────────────────────
 
   /// The species baseline from the analyzer, before the conditions touch it.
+  /// The diameter the plan is built on.
+  ///
+  /// The slider's number unless the user handed the question to the photo, in
+  /// which case it is what the analyzer measured — and the average only if the
+  /// pot was not clearly in frame and the analyzer honestly said nothing.
+  int _potDiameter(Map<String, dynamic>? plan) {
+    if (!_potFromPhoto) return _potCm;
+    return _int(plan?['pot_diameter_cm']) ?? kPotDefaultCm;
+  }
+
   int _baseInterval(Map<String, dynamic> plan) =>
       _int(plan['next_watering_in_days']) ??
       _int(_coerceMap(plan['watering_plan'])?['next_watering_in_days']) ??
@@ -608,7 +643,12 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
                     Positioned(
                       left: 16,
                       right: 16,
-                      bottom: 88 + MediaQuery.of(context).padding.bottom,
+                      // Just the breathing room, nothing more. The shell runs
+                      // `extendBody: true`, so inside a tab `padding.bottom`
+                      // already carries the tab bar's height — the 88 that used
+                      // to be added here counted it a second time and pushed the
+                      // button a finger's width up into the content.
+                      bottom: _kCtaGap + MediaQuery.of(context).padding.bottom,
                       child: _QuizFooter(
                         label: _q == _kQuestions - 1
                             ? l10n.quizBuildPlan
@@ -634,9 +674,10 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
   }
 
   Widget _body() {
-    // The quiz footer floats over the list, so the list has to end above it.
+    // The quiz footer floats over the list, so the list has to end above it:
+    // the gap under the button, plus the button itself.
     final bottomInset = _step == _Step.conditions
-        ? 190 + MediaQuery.of(context).padding.bottom
+        ? _kCtaGap * 2 + _kCtaHeight + MediaQuery.of(context).padding.bottom
         : 120.0;
 
     return ListView(
@@ -1134,7 +1175,12 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
                   min: kPotMinCm.toDouble(),
                   max: kPotMaxCm.toDouble(),
                   divisions: kPotMaxCm - kPotMinCm,
-                  onChanged: (v) => setState(() => _potCm = v.round()),
+                  // Touching the slider is an answer, so it takes the
+                  // question back from the photo.
+                  onChanged: (v) => setState(() {
+                    _potCm = v.round();
+                    _potFromPhoto = false;
+                  }),
                 ),
               ),
             ),
@@ -1165,6 +1211,32 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
         Text(
           l10n.quizPotHint,
           style: glassFont(fontSize: 12.5, height: 1.45, color: kGlassMut),
+        ),
+        const SizedBox(height: 4),
+        // The way out for someone who has no tape measure to hand. Every other
+        // question in the quiz offers one; this was the only slider, and a
+        // slider has no "don't know" position.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _potFromPhoto = true);
+              _nextQuestion();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                l10n.quizPotUnknown,
+                style: glassFont(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: kGlassGreenText,
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -1426,7 +1498,7 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
   Widget _stepPlan() {
     final plan = _plan!;
     final scientific = _str(plan['scientific_name']) ?? _selectedSpecies ?? '';
-    final ml = wateringMlForPot(_potCm);
+    final ml = wateringMlForPot(_potDiameter(plan));
     final interval = _plannedInterval(plan);
     final problems = _problemTasks;
     final score = startingScore(problems.length);
@@ -1605,6 +1677,19 @@ class _AddPlantScreenV4State extends State<AddPlantScreenV4> {
               unknownLastWatering: daysAgo < 0,
             ),
           ),
+          // Where the dose came from, when it did not come from the user. The
+          // volume is the one number on this card nobody can check by eye, so
+          // it says whether the pot was measured off the photo or fell back to
+          // an average.
+          if (_potFromPhoto) ...[
+            const SizedBox(height: 7),
+            Text(
+              _int(plan['pot_diameter_cm']) != null
+                  ? l10n.addPlantPotFromPhoto(_potDiameter(plan))
+                  : l10n.addPlantPotAverage(kPotDefaultCm),
+              style: glassFont(fontSize: 12, height: 1.4, color: kGlassMut2),
+            ),
+          ],
           for (final task in problems) ...[
             const SizedBox(height: 9),
             _PlanRow(

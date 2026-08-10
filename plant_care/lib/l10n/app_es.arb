@@ -1068,6 +1068,9 @@
   "quizPotQuestionAccent": "diámetro",
   "quizPotWhy": "El volumen de sustrato decide cuánta agua necesita cada riego.",
   "quizPotHint": "Mide por el borde de la maceta, no la planta.",
+  "quizPotUnknown": "No lo sé — que lo mida por la foto",
+  "addPlantPotFromPhoto": "Tamaño de la maceta según la foto: unos {cm} cm",
+  "addPlantPotAverage": "La maceta no se ve, tomamos {cm} cm de media",
   "unitCm": "cm",
   "volumeMl": "{value} ml",
   "@volumeMl": {

@@ -334,6 +334,16 @@ class Plant {
   // All nullable on purpose — plants added before the quiz have none of this,
   // and every reader has to survive that.
   final int? potDiameterCm; // 8..40
+
+  /// Where [potDiameterCm] came from: `user` measured it, `photo` had it read
+  /// off a picture, `assumed` is the average we fall back to when neither.
+  ///
+  /// Without this the three are indistinguishable in the document, and every
+  /// prompt states a guessed 16 cm as fact — which is worse than the silence
+  /// we had before the field was always filled in. Null on plants added before
+  /// the question existed.
+  final String? potDiameterSource;
+
   final String? potMaterial; // 'plastic' | 'ceramic' | 'terracotta' | 'unknown'
   final bool? hasDrainage;
   final String?
@@ -409,6 +419,7 @@ class Plant {
     bool? shouldWaterNow,
     this.deletedAt,
     this.potDiameterCm,
+    this.potDiameterSource,
     this.potMaterial,
     this.hasDrainage,
     this.placement,
@@ -469,6 +480,7 @@ class Plant {
       'shouldWaterNow': shouldWaterNow,
       'deletedAt': deletedAt?.toIso8601String(),
       'potDiameterCm': potDiameterCm,
+      'potDiameterSource': potDiameterSource,
       'potMaterial': potMaterial,
       'hasDrainage': hasDrainage,
       'placement': placement,
@@ -584,6 +596,7 @@ class Plant {
             : (map['potDiameterCm'] != null
                   ? int.tryParse(map['potDiameterCm'].toString())
                   : null),
+        potDiameterSource: map['potDiameterSource']?.toString(),
         potMaterial: map['potMaterial']?.toString(),
         // `is bool` rather than `== true`: for these two, "no" and "never asked"
         // are different answers, and collapsing null into false would tell the
@@ -687,6 +700,7 @@ class Plant {
     bool? shouldWaterNow,
     DateTime? deletedAt,
     int? potDiameterCm,
+    String? potDiameterSource,
     String? potMaterial,
     bool? hasDrainage,
     String? placement,
@@ -743,6 +757,7 @@ class Plant {
       shouldWaterNow: shouldWaterNow ?? this.shouldWaterNow,
       deletedAt: deletedAt ?? this.deletedAt,
       potDiameterCm: potDiameterCm ?? this.potDiameterCm,
+      potDiameterSource: potDiameterSource ?? this.potDiameterSource,
       potMaterial: potMaterial ?? this.potMaterial,
       hasDrainage: hasDrainage ?? this.hasDrainage,
       placement: placement ?? this.placement,

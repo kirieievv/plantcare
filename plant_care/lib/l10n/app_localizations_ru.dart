@@ -2464,6 +2464,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get quizPotHint => 'Диаметр по краю горшка, а не по растению.';
 
   @override
+  String get quizPotUnknown => 'Не знаю размер — определим по фото';
+
+  @override
+  String addPlantPotFromPhoto(int cm) {
+    return 'Размер горшка по фото — около $cm см';
+  }
+
+  @override
+  String addPlantPotAverage(int cm) {
+    return 'Горшка не видно на фото, взяли средние $cm см';
+  }
+
+  @override
   String get unitCm => 'см';
 
   @override

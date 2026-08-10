@@ -2435,6 +2435,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get quizPotHint => 'Am Topfrand messen, nicht an der Pflanze.';
 
   @override
+  String get quizPotUnknown => 'Weiß ich nicht — vom Foto ablesen';
+
+  @override
+  String addPlantPotFromPhoto(int cm) {
+    return 'Topfgröße laut Foto — etwa $cm cm';
+  }
+
+  @override
+  String addPlantPotAverage(int cm) {
+    return 'Der Topf ist nicht zu sehen, daher $cm cm im Schnitt';
+  }
+
+  @override
   String get unitCm => 'cm';
 
   @override

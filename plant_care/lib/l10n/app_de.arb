@@ -1068,6 +1068,9 @@
   "quizPotQuestionAccent": "Durchmesser",
   "quizPotWhy": "Das Erdvolumen bestimmt, wie viel Wasser eine Gabe braucht.",
   "quizPotHint": "Am Topfrand messen, nicht an der Pflanze.",
+  "quizPotUnknown": "Weiß ich nicht — vom Foto ablesen",
+  "addPlantPotFromPhoto": "Topfgröße laut Foto — etwa {cm} cm",
+  "addPlantPotAverage": "Der Topf ist nicht zu sehen, daher {cm} cm im Schnitt",
   "unitCm": "cm",
   "volumeMl": "{value} ml",
   "@volumeMl": {

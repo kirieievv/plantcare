@@ -4411,6 +4411,24 @@ abstract class AppLocalizations {
   /// **'Measure across the rim of the pot, not the plant.'**
   String get quizPotHint;
 
+  /// No description provided for @quizPotUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'I don\'t know — measure it from the photo'**
+  String get quizPotUnknown;
+
+  /// No description provided for @addPlantPotFromPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Pot size from the photo — about {cm} cm'**
+  String addPlantPotFromPhoto(int cm);
+
+  /// No description provided for @addPlantPotAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'The pot isn\'t visible, so we took an average {cm} cm'**
+  String addPlantPotAverage(int cm);
+
   /// No description provided for @unitCm.
   ///
   /// In en, this message translates to:
