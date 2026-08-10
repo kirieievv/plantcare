@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -228,14 +229,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 // Its own layer: inside the backdrop filter the web renderer
                 // kept showing the previously selected tile for a beat.
                 child: RepaintBoundary(
-                  child: Row(
-                    children: [
-                      _buildNavItem(0, l10n.home),
-                      _buildNavItem(1, l10n.myPlants),
-                      _buildNavItem(2, l10n.addPlant),
-                      _buildNavItem(3, l10n.profile),
-                      _buildNavItem(4, l10n.settings),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final labels = [
+                        l10n.tabHome,
+                        l10n.tabPlants,
+                        l10n.tabAdd,
+                        l10n.tabProfile,
+                        l10n.tabSettings,
+                      ];
+                      final size = _labelSize(
+                        context,
+                        labels,
+                        constraints.maxWidth,
+                      );
+                      return Row(
+                        children: [
+                          for (var i = 0; i < labels.length; i++)
+                            _buildNavItem(i, labels[i], size),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -246,7 +260,57 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, String label) {
+  /// Base size of a tab label, and the floor it never goes under.
+  static const _labelBase = 11.0;
+
+  /// How far a label may follow the system size before the cell runs out.
+  static const _labelMaxScale = 1.15;
+
+  /// One size for all five labels, chosen by the longest of them.
+  ///
+  /// Per-label sizing was the other option and it looks broken: five words at
+  /// five different sizes read as a rendering fault, not as a considered
+  /// layout. So the widest word sets the size and the rest follow it.
+  ///
+  /// The floor is the base size, never below: a label that does not fit at
+  /// 11 px is a translation problem, and the fix is a shorter word rather than
+  /// smaller type. That is why "Мои растения" is now "Растения" — it never fit,
+  /// even before Dynamic Type existed.
+  double _labelSize(
+    BuildContext context,
+    List<String> labels,
+    double barWidth,
+  ) {
+    // The cell as the Row actually divides it, minus this item's own padding —
+    // measured rather than assumed, so a 320 pt SE and a 430 pt Pro Max each
+    // get their real budget.
+    final budget = barWidth / labels.length - 2 * 2;
+    if (budget <= 0) return _labelBase;
+
+    final wanted = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: _labelMaxScale).scale(_labelBase);
+
+    var widest = 0.0;
+    for (final label in labels) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: glassFont(fontSize: _labelBase, fontWeight: FontWeight.w600),
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      widest = math.max(widest, painter.size.width);
+    }
+
+    // Glyph advances scale with the type size, so the ratio is the largest size
+    // the widest word still fits at.
+    final fits = widest > 0 ? _labelBase * budget / widest : wanted;
+    return math.min(wanted, fits).clamp(_labelBase, wanted);
+  }
+
+  Widget _buildNavItem(int index, String label, double labelSize) {
     final isSelected = _currentIndex == index;
     final stroke = isSelected ? Colors.white : kGlassMut;
 
@@ -289,14 +353,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
               ),
               const SizedBox(height: 5),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: glassFont(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? kGlassGreenText : kGlassMut,
+              // Sized above against the real cell width, so scaling it again
+              // here would double-count the system setting. The icon keeps its
+              // 21 px either way — growing it is what pushes the bar taller.
+              MediaQuery.withNoTextScaling(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: glassFont(
+                    fontSize: labelSize,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected ? kGlassGreenText : kGlassMut,
+                  ),
                 ),
               ),
             ],

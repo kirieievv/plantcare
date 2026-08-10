@@ -211,6 +211,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _timeout?.cancel();
     _timeout = Timer(_maxRefresh, () => _endRefresh(failed: true));
     _listen();
+    // The gesture asked for the whole screen, and the weather is part of it.
+    // Not awaited: the spinner ends on plants and tasks as it always has, and
+    // the header corrects itself through the stream a moment later — the same
+    // way it does on an ordinary arrival.
+    WeatherService().refresh(userAsked: true);
   }
 
   void _maybeEndRefresh() {

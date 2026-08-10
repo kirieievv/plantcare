@@ -234,15 +234,23 @@ class WeatherService {
   /// Every failure here is silent by design: no city means the header shows the
   /// date alone, which is the specified fallback. Nothing about this is worth
   /// an error message to someone who opened the app to water a plant.
-  Future<WeatherReading> refresh({bool force = false}) async {
+  /// [userAsked] marks a pull-to-refresh rather than an arrival. It lowers how
+  /// old the server's cached reading may be, and deliberately does *not* touch
+  /// the city: a city is re-resolved once a day because it rarely changes and
+  /// the lookup service has limits of its own, and a gesture on the home screen
+  /// is not evidence the user moved.
+  Future<WeatherReading> refresh({
+    bool relocate = false,
+    bool userAsked = false,
+  }) async {
     final cached = await loadCached();
     try {
-      final location = await _resolveLocation(cached.location, force: force);
+      final location = await _resolveLocation(cached.location, force: relocate);
       if (location == null) {
         return _publish((location: null, weather: null));
       }
 
-      final weather = await _fetchWeather(location);
+      final weather = await _fetchWeather(location, userAsked: userAsked);
       return _publish((location: location, weather: weather ?? cached.weather));
     } catch (e) {
       debugPrint('⚠️ WeatherService: refresh failed: $e');
@@ -332,12 +340,21 @@ class WeatherService {
     } catch (_) {}
   }
 
-  Future<WeatherInfo?> _fetchWeather(UserLocation location) async {
+  Future<WeatherInfo?> _fetchWeather(
+    UserLocation location, {
+    bool userAsked = false,
+  }) async {
     final response = await http
         .post(
           Uri.parse(getWeatherUrl),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'lat': location.lat, 'lon': location.lon}),
+          body: jsonEncode({
+            'lat': location.lat,
+            'lon': location.lon,
+            // The server keeps a per-city cache and decides for itself; this
+            // only tells it which of its two ages to apply.
+            if (userAsked) 'fresh': true,
+          }),
         )
         .timeout(const Duration(seconds: 8));
 

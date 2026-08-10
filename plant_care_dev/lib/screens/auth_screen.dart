@@ -173,28 +173,46 @@ class _AuthScreenState extends State<AuthScreen> {
               ],
               if (_isLogin) ...[
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Wrap, not Row: the two labels are translated, and their
+                // combined width is not something the design can promise. In
+                // Russian they overflow a 390 pt screen by a hair; in French
+                // ("Se souvenir de moi pendant 30 jours" next to "Mot de passe
+                // oublié ?") by far more. When they no longer fit side by side
+                // the second one drops to its own line instead of being
+                // clipped, and nothing has to be shortened or scaled down.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     InkWell(
                       borderRadius: BorderRadius.circular(8),
                       onTap: () => setState(() => _rememberMe = !_rememberMe),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 6,
-                          horizontal: 4,
-                        ),
+                        // No horizontal padding: in Russian the two labels miss
+                        // fitting on one line by less than a pixel, and these
+                        // few points are what buys the row back. The tap target
+                        // keeps its height from the vertical padding.
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Row(
+                          // `min`, or this row claims the Wrap's full width and
+                          // then overflows on the label instead of letting the
+                          // link move to the next line.
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             _RememberCheckbox(checked: _rememberMe),
                             const SizedBox(width: 8),
-                            Text(
-                              l10n.rememberMe30Days,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w300,
-                                color: BotanlyColors.moss.withValues(
-                                  alpha: 0.65,
+                            Flexible(
+                              // Last resort, for a narrow screen and a long
+                              // translation at once: the label wraps onto a
+                              // second line rather than being cut off.
+                              child: Text(
+                                l10n.rememberMe30Days,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w300,
+                                  color: BotanlyColors.moss.withValues(
+                                    alpha: 0.65,
+                                  ),
                                 ),
                               ),
                             ),
@@ -206,7 +224,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       onPressed: _isLoading ? null : _openForgotPasswordFlow,
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 2,
                           vertical: 6,
                         ),
                         minimumSize: const Size(0, 32),

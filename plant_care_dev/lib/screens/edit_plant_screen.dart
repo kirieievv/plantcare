@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/image_upload_service.dart';
 import 'package:plant_care/services/plant_service.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
+import 'package:plant_care/utils/image_source_picker.dart';
 import 'package:plant_care/widgets/botanly_kit.dart';
 
 /// Edit plant — Liquid Glass, from the `edit_plant_flow` handoff.
@@ -36,7 +36,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   Uint8List? _newPhoto;
 
   bool _isLoading = false;
-  bool _isImageLoading = false;
+
   ScaffoldMessengerState? _messenger;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
@@ -76,24 +76,21 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
 
   Future<void> _pickImage() async {
     try {
-      setState(() => _isImageLoading = true);
-
-      final image = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 900,
-        maxHeight: 1200,
-        imageQuality: 90,
-      );
-      if (image == null) return;
-
       // Bytes rather than a File: the same path then works on web, and the
       // upload service takes bytes anyway.
-      final bytes = await image.readAsBytes();
-      if (mounted) setState(() => _newPhoto = bytes);
+      //
+      // No spinner over the photo while this runs: picking now starts with a
+      // camera/gallery sheet, and a loader turning behind it reads as the app
+      // being busy rather than as waiting for the user. Everything after the
+      // sheet is instant.
+      final bytes = await pickImageBytes(
+        context,
+        maxWidth: 900,
+        maxHeight: 1200,
+      );
+      if (bytes != null && mounted) setState(() => _newPhoto = bytes);
     } catch (e) {
       _toast(l10n.errorPickingImage(e.toString()), kGlassWarm);
-    } finally {
-      if (mounted) setState(() => _isImageLoading = false);
     }
   }
 
@@ -361,20 +358,6 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                     _photoEmptyState(),
                   if (_photoChanged)
                     Positioned(top: 12, left: 12, child: _newPhotoBadge()),
-                  if (_isImageLoading)
-                    const ColoredBox(
-                      color: Color(0x8EFFFFFF),
-                      child: Center(
-                        child: SizedBox(
-                          width: 26,
-                          height: 26,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: kGlassAccent,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -383,7 +366,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
           _photoButton(
             glyph: BotanlySvg.upload,
             label: l10n.changeImage,
-            onTap: _isImageLoading || _isLoading ? null : _pickImage,
+            onTap: _isLoading ? null : _pickImage,
           ),
           if (_photoChanged) ...[const SizedBox(height: 9), _revertButton()],
         ],

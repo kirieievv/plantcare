@@ -14,10 +14,13 @@ const test = require('node:test');
 const assert = require('node:assert');
 
 const {
+  WEATHER_FORCED_TTL_MS,
+  WEATHER_TTL_MS,
   cityKeyOf,
   clientIpOf,
   conditionFromCode,
   describeWeather,
+  isFresh,
   weatherSnapshot,
 } = require('../weather.js');
 
@@ -98,4 +101,52 @@ test('the snapshot keeps what a later argument would need', () => {
     fetchedAt: 'stamp',
   });
   assert.strictEqual(weatherSnapshot(null), null);
+});
+
+// ── How long a cached reading counts as current ──────────────────────────────
+//
+// The same record has two answers, and that is the entire mechanism behind the
+// pull-to-refresh gesture: fresh enough for someone who just opened the app,
+// stale for someone who pulled the screen down asking for a new number. Pinned
+// here because the alternative is waiting an hour to find out.
+
+const NOW = 1_760_000_000_000;
+const minutesAgo = (n) => ({ fetchedAt: NOW - n * 60 * 1000 });
+
+test('a reading from ten minutes ago is current on an ordinary open', () => {
+  assert.equal(isFresh(minutesAgo(10), WEATHER_TTL_MS, NOW), true);
+});
+
+test('an hour later it is not', () => {
+  assert.equal(isFresh(minutesAgo(61), WEATHER_TTL_MS, NOW), false);
+});
+
+test('the same reading is stale for someone who pulled the screen', () => {
+  // Half an hour old: still good enough to draw on arrival, not good enough to
+  // hand back to a gesture that exists to produce a new number.
+  const halfHour = minutesAgo(30);
+  assert.equal(isFresh(halfHour, WEATHER_TTL_MS, NOW), true);
+  assert.equal(isFresh(halfHour, WEATHER_FORCED_TTL_MS, NOW), false);
+});
+
+test('pulling twice in a minute does not fetch twice', () => {
+  // The floor under the gesture. Without it, nothing stops a person pulling
+  // once a second and every pull leaving the building.
+  assert.equal(isFresh(minutesAgo(1), WEATHER_FORCED_TTL_MS, NOW), true);
+});
+
+test('nothing cached is never current', () => {
+  assert.equal(isFresh(null, WEATHER_TTL_MS, NOW), false);
+  assert.equal(isFresh({}, WEATHER_TTL_MS, NOW), false);
+});
+
+test('a record without a usable timestamp is refetched, not trusted', () => {
+  // A half-written cache entry must not pin the city to whatever it holds.
+  assert.equal(isFresh({ fetchedAt: 'today' }, WEATHER_TTL_MS, NOW), false);
+});
+
+test('a Firestore Timestamp is read the same as a plain number', () => {
+  const asTimestamp = { fetchedAt: { toMillis: () => NOW - 5 * 60 * 1000 } };
+  assert.equal(isFresh(asTimestamp, WEATHER_TTL_MS, NOW), true);
+  assert.equal(isFresh(asTimestamp, WEATHER_FORCED_TTL_MS, NOW), true);
 });

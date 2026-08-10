@@ -69,6 +69,24 @@ void main() async {
   runApp(const MyApp());
 }
 
+/// How far the app follows the system text size.
+///
+/// iOS steps, as a multiple of the default: xLarge 1.12, xxLarge 1.24,
+/// xxxLarge 1.35, then the accessibility sizes — AX1 1.62, AX3 1.90, AX5 2.35.
+/// The line between "I'd like it bigger" and "I can't see" runs right after
+/// xxxLarge, and this ceiling sits just under it: every ordinary setting works
+/// as asked, only the AX modes are cut.
+///
+/// This is a deliberate trade, not a forgotten setting. At AX5 the screens
+/// stopped being readable in a different way — the hint line ate half the
+/// screen, card titles cut to "Переска…", tab labels to "Г…". A size nobody can
+/// operate is not accessibility either. The honest fix is layouts that reflow
+/// at any size; until they do, this is the floor of the damage.
+///
+/// The garden dial keeps its own, stricter cap: a circle cannot grow with the
+/// type at all. See `_maxTextScale` in `widgets/garden_pulse.dart`.
+const double kMaxTextScale = 1.3;
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -150,6 +168,10 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+          builder: (context, child) => MediaQuery.withClampedTextScaling(
+            maxScaleFactor: kMaxTextScale,
+            child: child!,
+          ),
           routerConfig: appRouter,
         ),
       ),

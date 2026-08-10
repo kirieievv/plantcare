@@ -18,8 +18,25 @@
 
 const admin = require('firebase-admin');
 
-/** How long a city's weather is worth reusing. */
-const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
+/**
+ * How long a city's weather is worth reusing when nobody asked for it.
+ *
+ * Was three hours, which is long enough for the temperature on the header to
+ * be visibly wrong. An hour costs nothing worth counting: the cache is keyed by
+ * city, so the outbound calls scale with how many cities the users are in, not
+ * with how many users there are or how often they open the app.
+ */
+const WEATHER_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * How long it is worth reusing when the user pulled the screen down.
+ *
+ * A gesture that hands back the same number it already showed reads as broken,
+ * so the bar for refetching drops. It does not drop to zero: nothing stops a
+ * person pulling once a second, and this is what keeps that from becoming a
+ * request per pull.
+ */
+const WEATHER_FORCED_TTL_MS = 10 * 60 * 1000;
 
 /** Coordinates are rounded to this many decimals — ~1 km, enough for weather. */
 const COORD_PRECISION = 2;
@@ -138,12 +155,34 @@ function conditionFromCode(code) {
 }
 
 /**
+ * Whether a cached record still counts as current for the age being asked for.
+ *
+ * A separate function because the same record has two answers: fresh enough for
+ * someone who just opened the app, stale for someone who pulled the screen down
+ * asking for a new number. That is the whole difference between the two paths,
+ * and inside `weatherForCity` it could only be exercised with a live Firestore.
+ *
+ * `now` is a parameter so the boundaries can be asked about directly rather
+ * than by waiting an hour.
+ */
+function isFresh(cached, maxAgeMs, now = Date.now()) {
+  if (!cached || !cached.fetchedAt) return false;
+  // Firestore hands back a Timestamp; a plain number is what the tests pass.
+  const at =
+    typeof cached.fetchedAt.toMillis === 'function'
+      ? cached.fetchedAt.toMillis()
+      : Number(cached.fetchedAt);
+  if (!Number.isFinite(at)) return false;
+  return now - at < maxAgeMs;
+}
+
+/**
  * Current weather plus a week of highs and lows, from the shared city cache.
  *
  * A stale record beats no record: if the provider is down we hand back whatever
  * was cached last. The home screen must never wait on this to draw.
  */
-async function weatherForCity(lat, lon) {
+async function weatherForCity(lat, lon, { maxAgeMs = WEATHER_TTL_MS } = {}) {
   const db = admin.firestore();
   const key = cityKeyOf(lat, lon);
   const ref = db.collection('weather').doc(key);
@@ -156,11 +195,7 @@ async function weatherForCity(lat, lon) {
     console.warn(`⚠️ weather: cache read failed for ${key}: ${e.message}`);
   }
 
-  const fresh =
-    cached &&
-    cached.fetchedAt &&
-    Date.now() - cached.fetchedAt.toMillis() < WEATHER_TTL_MS;
-  if (fresh) return cached;
+  if (isFresh(cached, maxAgeMs)) return cached;
 
   try {
     const url =
@@ -307,6 +342,8 @@ function weatherSnapshot(weather) {
 
 module.exports = {
   WEATHER_TTL_MS,
+  WEATHER_FORCED_TTL_MS,
+  isFresh,
   cityKeyOf,
   clientIpOf,
   conditionFromCode,

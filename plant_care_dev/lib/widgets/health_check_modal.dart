@@ -1,12 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' show FontFeature;
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:plant_care/l10n/app_localizations.dart';
 import 'package:plant_care/utils/app_theme.dart';
@@ -16,7 +12,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:plant_care/models/plant.dart';
 import 'package:plant_care/services/language_service.dart';
-import 'package:plant_care/utils/web_file_picker.dart';
+import 'package:plant_care/utils/image_source_picker.dart';
 import 'package:plant_care/utils/care_sections.dart';
 import 'package:plant_care/theme/botanly_glass.dart';
 import 'package:plant_care/widgets/health_result_view.dart';
@@ -59,7 +55,6 @@ class _HealthCheckModalState extends State<HealthCheckModal>
 
   bool _isAnalyzing = false;
   String? _errorMessage;
-  final ImagePicker _picker = ImagePicker();
 
   _Step _step = _Step.upload;
 
@@ -109,74 +104,21 @@ class _HealthCheckModalState extends State<HealthCheckModal>
       ? 'ai_care'
       : 'ai_agent';
 
-  bool get _isMobile =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.android);
-
   int get _filledCount => _slots.where((b) => b != null).length;
   bool get _canAnalyze => _slots[0] != null && !_isAnalyzing;
 
   // ─── image picking ────────────────────────────────────────────────────────
 
-  void _pickForSlot(int slotIndex) {
+  Future<void> _pickForSlot(int slotIndex) async {
     if (_isAnalyzing) return;
     setState(() => _errorMessage = null);
-    if (_isMobile) {
-      _showNativeSheet(slotIndex);
-    } else {
-      _pickWebForSlot(slotIndex);
-    }
-  }
-
-  Future<void> _showNativeSheet(int slotIndex) async {
-    final l10n = AppLocalizations.of(context)!;
-    await showCupertinoModalPopup<void>(
-      context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _pickFromSource(slotIndex, ImageSource.camera);
-            },
-            child: Text(l10n.camera),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _pickFromSource(slotIndex, ImageSource.gallery);
-            },
-            child: Text(l10n.gallery),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: Text(l10n.cancel),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickWebForSlot(int slotIndex) async {
-    final bytes = await pickCenteredImageFromWeb();
-    if (bytes != null && mounted) {
-      _setSlot(slotIndex, bytes);
-    }
-  }
-
-  Future<void> _pickFromSource(int slotIndex, ImageSource source) async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
+      final bytes = await pickImageBytes(
+        context,
         maxWidth: 900,
         maxHeight: 1200,
-        imageQuality: 90,
       );
-      if (image != null && mounted) {
-        final bytes = await image.readAsBytes();
-        _setSlot(slotIndex, bytes);
-      }
+      if (bytes != null && mounted) _setSlot(slotIndex, bytes);
     } catch (e) {
       if (mounted) {
         final message = AppLocalizations.of(context)!.errorPickingImage('$e');

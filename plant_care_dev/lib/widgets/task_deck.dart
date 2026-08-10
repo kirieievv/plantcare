@@ -46,6 +46,12 @@ class _TaskDeckState extends State<TaskDeck>
 
   /// The collapsed block. A line, not a card — see [_EmptyDeck].
   static const _emptyHeight = 50.0;
+
+  /// The deck is a pile of overlapping cards, so it needs a number rather than
+  /// an intrinsic height — and a `Stack` clips what sticks out, which is how a
+  /// number blind to the system text size ends up cutting the buttons off the
+  /// bottom of the card. These two follow the (already capped) scaler.
+  double _box(double base) => MediaQuery.textScalerOf(context).scale(base);
   static const _collapse = Duration(milliseconds: 300);
   static const _collapseCurve = Cubic(0.22, 1, 0.36, 1);
   static const _swipeThreshold = 96.0;
@@ -108,7 +114,7 @@ class _TaskDeckState extends State<TaskDeck>
       return AnimatedContainer(
         duration: _collapse,
         curve: _collapseCurve,
-        height: _emptyHeight,
+        height: _box(_emptyHeight),
         child: _EmptyDeck(title: l10n.deckAllClearTitle),
       );
     }
@@ -120,7 +126,7 @@ class _TaskDeckState extends State<TaskDeck>
     return AnimatedContainer(
       duration: _collapse,
       curve: _collapseCurve,
-      height: _height,
+      height: _box(_height),
       // The reference gives the deck 18 px of air and the collapsed line 14.
       // The screen supplies 14 to both, so only the difference lives here.
       margin: const EdgeInsets.only(bottom: 4),
@@ -257,7 +263,12 @@ class _Card extends StatelessWidget {
                             children: [
                               Text(
                                 task.title,
-                                maxLines: 1,
+                                // Two lines for the same reason the subline has
+                                // them: at a raised text size one line turned
+                                // "Пересканировать растение" into
+                                // "Пересканировать раст…", and the verb is the
+                                // whole instruction.
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: glassFont(
                                   fontSize: 15.5,

@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
 const { taskStrings, normaliseLocale } = require('./task_strings');
 const {
+  WEATHER_FORCED_TTL_MS,
   clientIpOf,
   describeWeather,
   locationOf,
@@ -1519,7 +1520,12 @@ exports.getWeather = functions.https.onRequest((req, res) => {
         return res.status(400).json({ error: 'lat and lon are required' });
       }
 
-      const weather = await weatherForCity(lat, lon);
+      // Set when the user pulled the screen down rather than merely arrived.
+      // It lowers the bar for refetching; it does not remove it.
+      const asked = req.body?.fresh === true || req.query?.fresh === 'true';
+      const weather = await weatherForCity(lat, lon, {
+        ...(asked ? { maxAgeMs: WEATHER_FORCED_TTL_MS } : {}),
+      });
       if (!weather) return res.json({ weather: null });
 
       return res.json({
