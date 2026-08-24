@@ -15,8 +15,9 @@
   "main": "index.js",
   "dependencies": {
     "cors": "^2.8.5",
-    "firebase-admin": "^11.8.0",
+    "firebase-admin": "^12.7.0",
     "firebase-functions": "^4.3.1",
+    "google-auth-library": "^9.0.0",
     "openai": "^4.0.0",
     "stripe": "^22.1.1"
   },

@@ -5,8 +5,10 @@ import {
   fetchStats,
   fetchNewUsersLast30Days,
   fetchWeatherHealth,
+  fetchSyncHealth,
   type StatsOverview,
   type WeatherHealth,
+  type SyncHealth,
 } from "@/lib/firestore";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,15 +33,17 @@ export default function StatsPage() {
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [chartData, setChartData] = useState<{ date: string; count: number }[]>([]);
   const [weather, setWeather] = useState<WeatherHealth | null>(null);
+  const [sync, setSync] = useState<SyncHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([fetchStats(), fetchNewUsersLast30Days(), fetchWeatherHealth()])
-      .then(([s, chart, health]) => {
+    Promise.all([fetchStats(), fetchNewUsersLast30Days(), fetchWeatherHealth(), fetchSyncHealth()])
+      .then(([s, chart, health, syncHealth]) => {
         setStats(s);
         setChartData(chart);
         setWeather(health);
+        setSync(syncHealth);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -71,6 +75,7 @@ export default function StatsPage() {
       <h1 className="text-2xl font-bold">Stats</h1>
 
       <WeatherProviderLine health={weather} />
+      <BigQuerySyncLine health={sync} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -219,6 +224,49 @@ function WeatherProviderLine({ health }: { health: WeatherHealth | null }) {
       {down ? "is not answering" : "is answering"}
       {ok && <> · last success {formatDistanceToNow(ok, { addSuffix: true })}</>}
       {health.failures > 0 && <> · {health.failures} failures</>}
+      {down && health.lastError && (
+        <div className="mt-1 font-mono text-xs">{health.lastError}</div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Whether last night's copy of the database into BigQuery went through.
+ *
+ * The marketing and analysis agents answer from that copy, not from Firestore.
+ * A sync that quietly stops leaves them answering confidently from data that is
+ * a week old and looks exactly like today's.
+ */
+function BigQuerySyncLine({ health }: { health: SyncHealth | null }) {
+  if (!health) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        BigQuery sync — nothing recorded yet
+      </p>
+    );
+  }
+
+  const ok = health.lastOkAt;
+  const failed = health.lastFailAt;
+  const down = failed != null && (ok == null || failed > ok);
+  // A sync that succeeded but stopped running is the failure mode this exists
+  // for, so age matters as much as the last verdict.
+  const stale =
+    !down && ok != null && Date.now() - ok.getTime() > 36 * 60 * 60 * 1000;
+
+  return (
+    <div
+      className={`rounded-lg border px-4 py-3 text-sm ${
+        down || stale
+          ? "border-red-200 bg-red-50 text-red-800"
+          : "text-muted-foreground"
+      }`}
+    >
+      <span className="font-medium">BigQuery sync</span>{" "}
+      {down ? "failed" : stale ? "has not run in over a day" : "is current"}
+      {ok && <> · last success {formatDistanceToNow(ok, { addSuffix: true })}</>}
+      {health.lastLoadedCount != null && <> · {health.lastLoadedCount} tables</>}
       {down && health.lastError && (
         <div className="mt-1 font-mono text-xs">{health.lastError}</div>
       )}

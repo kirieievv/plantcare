@@ -153,6 +153,31 @@ export async function fetchWeatherHealth(): Promise<WeatherHealth | null> {
   };
 }
 
+export interface SyncHealth {
+  lastOkAt?: Date;
+  lastFailAt?: Date;
+  lastError?: string;
+  lastLoadedCount?: number;
+}
+
+/**
+ * Whether last night's copy of Firestore into BigQuery went through.
+ *
+ * The agents answer from that copy. If it silently stops refreshing they keep
+ * answering — on data that is a week old and looks no different from today's.
+ */
+export async function fetchSyncHealth(): Promise<SyncHealth | null> {
+  const snap = await getDoc(doc(db, "system", "bigquery_sync"));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    lastOkAt: toDate(d.lastOkAt),
+    lastFailAt: toDate(d.lastFailAt),
+    lastError: typeof d.lastError === "string" ? d.lastError : undefined,
+    lastLoadedCount: typeof d.lastLoadedCount === "number" ? d.lastLoadedCount : undefined,
+  };
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 export async function fetchUsers(): Promise<AdminUser[]> {

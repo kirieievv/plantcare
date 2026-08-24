@@ -5665,3 +5665,176 @@ exports.scheduleCareTasks = functions.pubsub
     );
     return null;
   });
+
+// ═══════════════════════════════════════════════════════════════════
+//  Nightly copy of Firestore into BigQuery
+//
+//  The marketing, analysis and QA agents read BigQuery rather than
+//  Firestore. Not for want of access: Firestore bills per document read
+//  and cannot group or join, so "where do people drop out" would mean
+//  downloading every user, every day, per agent. BigQuery is written
+//  once a night and answered in SQL.
+//
+//  Two functions rather than one that waits. A managed export is
+//  asynchronous, and polling it inside a function runs into the nine
+//  minute ceiling — which would hold today and break silently once the
+//  database is larger. Half an hour between the steps removes the
+//  question entirely; both derive the same date, so neither needs to
+//  tell the other anything.
+// ═══════════════════════════════════════════════════════════════════
+
+const BQ_BUCKET = 'gs://plant-care-94574-firestore-exports';
+const BQ_DATASET = 'botanly';
+
+/**
+ * Everything except the three collections that must never leave Firestore:
+ * `password_reset_codes` and `email_verification_pins` hold live PINs, and
+ * `mail` holds the messages carrying them. A copy in a warehouse several
+ * agents read is a way to sign in as anybody.
+ */
+const BQ_KINDS = [
+  'users', 'plants', 'tasks', 'health_checks', 'watering_events',
+  'ai_usage', 'ai_usage_daily', 'push_notifications', 'seasonal_tips',
+  'fcm_tokens', 'facts', 'memory', 'plant_chats', 'messages', 'chat_quotas',
+];
+
+/** The night both halves are working on. Same string in both functions. */
+function bqNightKey(now = new Date()) {
+  return now.toISOString().slice(0, 10);
+}
+
+async function googleToken() {
+  const { GoogleAuth } = require('google-auth-library');
+  const auth = new GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  });
+  return (await auth.getClient()).getAccessToken();
+}
+
+/**
+ * Records how the sync went, so a night that quietly stops working is
+ * noticeable. Without this the agents keep answering — on last week's data,
+ * indistinguishable from today's.
+ */
+async function recordSyncOutcome(fields) {
+  try {
+    await admin.firestore().collection('system').doc('bigquery_sync').set(
+      { ...fields, at: admin.firestore.Timestamp.now() },
+      { merge: true },
+    );
+  } catch (e) {
+    console.warn(`⚠️ bigquery sync: could not record outcome: ${e.message}`);
+  }
+}
+
+exports.exportFirestoreNightly = functions.pubsub
+  .schedule('0 3 * * *')
+  .timeZone('Europe/Berlin')
+  .onRun(async () => {
+    const night = bqNightKey();
+    const url =
+      'https://firestore.googleapis.com/v1/projects/plant-care-94574/' +
+      'databases/(default):exportDocuments';
+
+    try {
+      const token = await googleToken();
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token.token || token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          outputUriPrefix: `${BQ_BUCKET}/nightly/${night}`,
+          collectionIds: BQ_KINDS,
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+
+      console.log(`📤 bigquery sync: export of ${night} started`);
+      await recordSyncOutcome({ lastExportStartedAt: admin.firestore.Timestamp.now(), night });
+    } catch (e) {
+      console.error(`❌ bigquery sync: export failed: ${e.message}`);
+      await recordSyncOutcome({
+        lastFailAt: admin.firestore.Timestamp.now(),
+        lastError: `export: ${String(e.message).slice(0, 200)}`,
+      });
+    }
+    return null;
+  });
+
+exports.loadFirestoreIntoBigQuery = functions
+  .runWith({ timeoutSeconds: 540 })
+  .pubsub.schedule('30 3 * * *')
+  .timeZone('Europe/Berlin')
+  .onRun(async () => {
+    const night = bqNightKey();
+    const loaded = [];
+    const failed = [];
+
+    try {
+      const token = await googleToken();
+      const bearer = token.token || token;
+
+      for (const kind of BQ_KINDS) {
+        const body = {
+          configuration: {
+            load: {
+              sourceUris: [
+                `${BQ_BUCKET}/nightly/${night}/all_namespaces/kind_${kind}/` +
+                `all_namespaces_kind_${kind}.export_metadata`,
+              ],
+              sourceFormat: 'DATASTORE_BACKUP',
+              // Replace, not append: this is a snapshot of the whole database,
+              // and appending would multiply every row by the number of nights.
+              writeDisposition: 'WRITE_TRUNCATE',
+              destinationTable: {
+                projectId: 'plant-care-94574',
+                datasetId: BQ_DATASET,
+                tableId: kind,
+              },
+            },
+          },
+        };
+
+        const res = await fetch(
+          'https://bigquery.googleapis.com/bigquery/v2/projects/plant-care-94574/jobs',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${bearer}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          },
+        );
+        if (res.ok) loaded.push(kind);
+        else {
+          failed.push(kind);
+          console.warn(`⚠️ bigquery sync: ${kind} — ${res.status} ${await res.text()}`);
+        }
+      }
+
+      console.log(`📥 bigquery sync: ${loaded.length} loaded, ${failed.length} failed`);
+      await recordSyncOutcome(
+        failed.length
+          ? {
+              lastFailAt: admin.firestore.Timestamp.now(),
+              lastError: `load: ${failed.join(', ')}`.slice(0, 200),
+              lastLoadedCount: loaded.length,
+            }
+          : {
+              lastOkAt: admin.firestore.Timestamp.now(),
+              lastLoadedCount: loaded.length,
+              lastError: null,
+            },
+      );
+    } catch (e) {
+      console.error(`❌ bigquery sync: load failed: ${e.message}`);
+      await recordSyncOutcome({
+        lastFailAt: admin.firestore.Timestamp.now(),
+        lastError: `load: ${String(e.message).slice(0, 200)}`,
+      });
+    }
+    return null;
+  });
