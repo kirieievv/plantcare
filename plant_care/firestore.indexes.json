@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "watering_events",
+      "collectionGroup": "health_checks",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -9,8 +9,72 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "health_checks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "plantId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "timestamp",
           "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "plants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "healthStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deletedAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "plants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "muted",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deletedAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "plants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "muted",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nextNotificationAt",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -43,69 +107,15 @@
       ]
     },
     {
-      "collectionGroup": "plants",
+      "collectionGroup": "scheduled_test_pushes",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "muted",
+          "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "nextNotificationAt",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "health_checks",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "plantId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "timestamp",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "health_checks",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "plantId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "timestamp",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "tasks",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "done",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "dueAt",
+          "fieldPath": "sendAt",
           "order": "ASCENDING"
         }
       ]
@@ -116,10 +126,6 @@
       "fields": [
         {
           "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "plantId",
           "order": "ASCENDING"
         },
         {
@@ -155,44 +161,38 @@
       ]
     },
     {
-      "collectionGroup": "plants",
+      "collectionGroup": "tasks",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "healthStatus",
+          "fieldPath": "userId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "deletedAt",
+          "fieldPath": "plantId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "done",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dueAt",
           "order": "ASCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "plants",
+      "collectionGroup": "watering_events",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "muted",
+          "fieldPath": "plantId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "deletedAt",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "scheduled_test_pushes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "sendAt",
-          "order": "ASCENDING"
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
         }
       ]
     }

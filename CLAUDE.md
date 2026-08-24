@@ -130,18 +130,17 @@ webhooks, and pubsub crons for watering reminders, seasonal tips and AI-usage ag
 - **Legacy field pairs in `Plant`.** `lastWatered`/`lastWateredAt` and
   `wateringFrequency`/`wateringIntervalDays` coexist; old fields are not yet removed. Check
   which one a code path actually reads before changing either.
-- **Firestore indexes: never deploy with `--force`.** It deletes every index the
-  project has and `firestore.indexes.json` does not name, without asking. Production
-  carried an undeclared `scheduled_test_pushes` index for months; `--force` would have
-  removed it silently and the scheduled-push query would have started failing. A plain
-  `firebase deploy --only firestore:indexes` can only create, never delete, and is always
-  the right command. If you create an index by hand — from the link in a "this query
-  requires an index" error, or with `gcloud firestore indexes composite create` — write it
-  into `firestore.indexes.json` in the same sitting, or the next person to reach for
-  `--force` deletes it. Do not spell out `__name__` in that file: Firestore appends it
-  itself, and naming it makes every deploy die on a 409 (`b1619e8a`). The deploy prints
-  "there are N indexes defined in your project that are not present in your file" whenever
-  drift returns — that line is the alarm, and it costs nothing to read.
+- **Firestore indexes: `firestore.indexes.json` is generated, not written.** Run
+  `plant_care/scripts/sync-firestore-indexes.sh` and commit what it changes; a non-empty
+  diff means somebody created an index outside the file, which is what the link in a "this
+  query requires an index" error does. Keeping the file current is the whole safeguard,
+  because a deploy deletes every index the file does not name: `--force` does it without
+  asking, and a plain `firebase deploy --only firestore:indexes` asks — "Would you like to
+  delete these indexes?" — which is one keystroke away from the same result. Production
+  carried an undeclared `scheduled_test_pushes` index for months and came that close to
+  losing it. Never hand-edit the file, and never spell out `__name__` in it: Firestore
+  appends that key itself, and naming it where the generator would not makes every deploy
+  die on a 409 (`b1619e8a`).
 - **Another agent may be working in the other environment.** `plant_care` and
   `plant_care_dev` are kept identical by hand, so a copy in either direction can carry
   someone else's half-finished change with it. Diff the specific files you mean to sync
