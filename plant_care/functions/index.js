@@ -486,8 +486,19 @@ const WATERING_EMAIL_LEAD_MINUTES = 30;
 const WATERING_EMAIL_FOLLOW_UP_MINUTES = 30;
 /** Firestore query lower bound for nextDueAt (exclude ancient rows). */
 const WATERING_EMAIL_STALE_LOOKBACK_DAYS = 11;
-/** Max stale-slot catch-up steps per plant per invocation (avoids timeouts). */
-const WATERING_EMAIL_MAX_REMINDERS = 20;
+/**
+ * How many reminders one watering is worth: five, spread over four days.
+ *
+ * It used to be twenty, which is ten days at two a day — nobody meant that. The
+ * intent was already written down a few hundred lines below, where the AI copy
+ * was reserved for "the first 4 days" and everything after it got a cheap
+ * template: four days was the design and the cap was a leftover. Somebody who
+ * has not watered by the fourth day will not water on the ninth, but they will
+ * certainly turn the reminders off.
+ *
+ * (The comment that stood here described the constant below it, not this one.)
+ */
+const WATERING_EMAIL_MAX_REMINDERS = 5;
 /** Max stale-slot catch-up steps per plant per invocation (avoids timeouts). */
 const WATERING_EMAIL_STALE_CATCHUP_MAX_STEPS = 40;
 const WATERING_EMAIL_STALE_BUFFER_MS = 20 * 60 * 1000;
@@ -507,6 +518,95 @@ function sanitizeLocale(value) {
 
 function buildReminderCycleId(plantId, nextDueAt) {
   return `v2:${plantId}:${nextDueAt.toISOString()}`;
+}
+
+/**
+ * One message for the several plants that came due together.
+ *
+ * Reminders used to go out one per plant, so a person with four of them due at
+ * six in the evening got four notifications inside the same minute — which
+ * happened, in production, to somebody with seven plants. The plan allows ten.
+ *
+ * Deliberately not written by the AI, unlike the single-plant copy. What is
+ * useful here is the list; prose about four plants at once would be longer,
+ * slower and less scannable, and it would cost a model call to say less.
+ */
+function buildGroupedReminderCopy({ locale, userName, plantNames }) {
+  const names = plantNames.filter(Boolean);
+  const n = names.length;
+  const list = names.join(', ');
+  const you = userName || null;
+
+  // Russian and Ukrainian want three forms, and the group can be two to ten.
+  const slavic = (one, few, many) => {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return few;
+    return many;
+  };
+
+  const wrap = (subject, greeting, body, tail) => ({
+    subject,
+    // Paragraphs, not one run-on line: the html has always been laid out this
+    // way and the plain-text part should read the same.
+    text: `${greeting}\n\n${body}\n\n${tail}`,
+    html: `<p>${greeting}</p><p>${body.replace(list, `<strong>${list}</strong>`)}</p><p>${tail}</p><p>- Plant Care</p>`,
+  });
+
+  if (locale === 'ru') {
+    const word = slavic('растение', 'растения', 'растений');
+    return wrap(
+      `${n} ${word} ${slavic('ждёт', 'ждут', 'ждут')} полива`,
+      `Привет${you ? `, ${you}` : ''}!`,
+      `Полива ждут: ${list}.`,
+      'После полива отметьте каждое кнопкой "I have watered" в приложении.'
+    );
+  }
+
+  if (locale === 'uk') {
+    const word = slavic('рослина', 'рослини', 'рослин');
+    return wrap(
+      `${n} ${word} ${slavic('чекає', 'чекають', 'чекають')} на полив`,
+      `Привіт${you ? `, ${you}` : ''}!`,
+      `Поливу чекають: ${list}.`,
+      'Після поливу позначте кожну кнопкою "I have watered" у застосунку.'
+    );
+  }
+
+  if (locale === 'de') {
+    return wrap(
+      `${n} Pflanzen brauchen Wasser`,
+      `Hallo${you ? ` ${you}` : ''}!`,
+      `Diese Pflanzen sind dran: ${list}.`,
+      'Tippe nach dem Gießen bei jeder auf "I have watered" in der App.'
+    );
+  }
+
+  if (locale === 'es') {
+    return wrap(
+      `${n} plantas necesitan riego`,
+      `Hola${you ? ` ${you}` : ''}:`,
+      `Estas plantas esperan riego: ${list}.`,
+      'Despues de regar, marca cada una con "I have watered" en la app.'
+    );
+  }
+
+  if (locale === 'fr') {
+    return wrap(
+      `${n} plantes ont besoin d'eau`,
+      `Bonjour${you ? ` ${you}` : ''},`,
+      `Ces plantes attendent d'etre arrosees : ${list}.`,
+      'Apres arrosage, touchez "I have watered" pour chacune dans l\'application.'
+    );
+  }
+
+  return wrap(
+    `${n} plants need watering`,
+    `Hi${you ? ` ${you}` : ''},`,
+    `These plants are waiting: ${list}.`,
+    'After watering, tap "I have watered" for each one in the app.'
+  );
 }
 
 function buildWateringEmailFallback({ stage, plantName, cultivar, userName, minutesToDue, minutesOverdue, locale }) {
@@ -2926,6 +3026,47 @@ function fcmErrorOf(err) {
   return message ? message.slice(0, 200) : null;
 }
 
+/**
+ * When the nth reminder for a watering falls due.
+ *
+ * The first day gets two — a warning half an hour before the plant is due, and
+ * a nudge half an hour after, for the person who meant to and forgot. After
+ * that one a day is enough: the plant is simply overdue, and saying so twice
+ * daily is nagging rather than helping.
+ *
+ *   0   due − 30 min      day 1, warning
+ *   1   due + 30 min      day 1, reminder
+ *   2   due + 1d + 30m    day 2
+ *   3   due + 2d + 30m    day 3
+ *   4   due + 3d + 30m    day 4
+ *
+ * Written as cases rather than as arithmetic on the index, because the old
+ * two-a-day formula read as if the cadence were uniform, and it no longer is.
+ */
+function reminderSlotAt(nextDueAt, index, leadMs, followMs) {
+  const due = nextDueAt.getTime();
+  if (index === 0) return new Date(due - leadMs);
+  if (index === 1) return new Date(due + followMs);
+  return new Date(due + (index - 1) * DAY_MS + followMs);
+}
+
+/**
+ * What the nth reminder is, in the words the copy and the plant document use.
+ *
+ * Kept beside the timing so the two cannot drift: `dayNum` is what the reader
+ * is told, and only the very first slot is a warning about something that has
+ * not happened yet.
+ */
+function describeReminderSlot(index) {
+  const isPre = index === 0;
+  return {
+    isPre,
+    dayNum: index <= 1 ? 1 : index,
+    stage: isPre ? 'first_reminder' : 'followup_reminder',
+    plantStage: isPre ? 'pre_sent' : 'post_sent',
+  };
+}
+
 function truncateForFcmNotification(s, maxLen) {
   const t = String(s || '').trim().replace(/\s+/g, ' ');
   if (t.length <= maxLen) return t;
@@ -2942,7 +3083,8 @@ async function sendWateringReminderPushMulticast(
   plantId,
   plantName,
   emailCopy,
-  stage
+  stage,
+  plantIds = null
 ) {
   // Nothing to send to is not an attempt — the caller must not read it as one.
   if (!tokens || tokens.length === 0) return { delivered: 0, failed: 0, error: null };
@@ -2958,7 +3100,13 @@ async function sendWateringReminderPushMulticast(
       data: {
         type: 'watering_reminder',
         stage: String(stage),
+        // plantId and action stay exactly as they were, group or not. The
+        // installed app bails out of its tap handler when plantId is missing,
+        // and only logs an action it does not recognise; we are not rebuilding
+        // it, so the shipped version must keep seeing the shape it expects.
+        // plantIds is there for a build that can read it.
         plantId: String(plantId),
+        plantIds: String((plantIds && plantIds.join(',')) || plantId),
         plantName: String(plantName || 'Plant'),
         action: 'open_plant',
       },
@@ -2997,6 +3145,7 @@ async function sendWateringReminderPushMulticast(
     await db.collection('push_notifications').add({
       userId,
       plantId: plantId || null,
+      plantIds: plantIds || (plantId ? [plantId] : []),
       plantName: plantName || null,
       title,
       body,
@@ -4243,12 +4392,8 @@ exports.processWateringEmailReminders = functions.pubsub
     const userCache = new Map();
     const fcmTokenCache = new Map();
 
-    function getReminderTime(nextDueAt, index) {
-      const day = Math.floor(index / 2);
-      const isPre = index % 2 === 0;
-      const baseTime = nextDueAt.getTime() + day * DAY_MS;
-      return new Date(isPre ? baseTime - preWindowMs : baseTime + followWindowMs);
-    }
+    const getReminderTime = (nextDueAt, index) =>
+      reminderSlotAt(nextDueAt, index, preWindowMs, followWindowMs);
 
     async function getUserInfo(uid) {
       if (userCache.has(uid)) return userCache.get(uid);
@@ -4351,6 +4496,8 @@ exports.processWateringEmailReminders = functions.pubsub
     let fcmDeliveredTotal = 0;
     let pushAttempts = 0;
     let pushLastError = null;
+    /** uid -> the plants of that person whose reminder fell due in this run. */
+    const dueByUser = new Map();
     let skipped = 0;
 
     for (const doc of candidatesSnap.docs) {
@@ -4418,9 +4565,12 @@ exports.processWateringEmailReminders = functions.pubsub
       }
 
       if (remindersSentCount >= WATERING_EMAIL_MAX_REMINDERS) {
+        // The count is left as it stands rather than clamped to the cap. It is
+        // the record of how many reminders this watering actually drew, and
+        // lowering the cap from twenty to five would otherwise rewrite the
+        // history of every plant that had already passed the new number.
         await doc.ref.update({
           reminderCycleId: cycleId,
-          remindersSentCount: WATERING_EMAIL_MAX_REMINDERS,
           reminderStage: 'completed',
           reminderLastCheckedAt: nowIso,
         });
@@ -4434,14 +4584,32 @@ exports.processWateringEmailReminders = functions.pubsub
         continue;
       }
 
+      // Everything above decided *whether* this plant is owed a reminder. Who
+      // it goes to, and in how many messages, is decided once per person after
+      // the loop — see the second pass. Sending here is what produced four
+      // notifications inside one minute for somebody with four plants due.
+      const slot = describeReminderSlot(remindersSentCount);
+      const group = dueByUser.get(uid) || [];
+      group.push({
+        ref: doc.ref,
+        plantId: doc.id,
+        data,
+        nextDueAt,
+        cycleId,
+        index: remindersSentCount,
+        slot,
+        plantName: data.name || 'your plant',
+        cultivar: data.aiName || data.species || null,
+      });
+      dueByUser.set(uid, group);
+    }
+
+    // ── Second pass: one message per person ─────────────────────────────────
+    for (const [uid, group] of dueByUser) {
       const userInfo = await getUserInfo(uid);
       const { channels } = userInfo;
-      if (userInfo.deleted) {
-        skipped += 1;
-        continue;
-      }
-      if (!channels.email && !channels.push) {
-        skipped += 1;
+      if (userInfo.deleted || (!channels.email && !channels.push)) {
+        skipped += group.length;
         continue;
       }
 
@@ -4451,61 +4619,60 @@ exports.processWateringEmailReminders = functions.pubsub
       const canTryPush = channels.push && fcmTokens.length > 0;
 
       if (channels.push && fcmTokens.length === 0) {
-        console.warn(
-          `⚠️ Watering reminder: push enabled but no fcm_tokens for uid=${uid} plant=${doc.id}`
-        );
+        console.warn(`\u26a0\ufe0f Watering reminder: push enabled but no fcm_tokens for uid=${uid}`);
       }
 
       if (!canTryEmail && !canTryPush) {
         console.warn(
-          `⚠️ Reminder skipped: no delivery path for uid=${uid} (channels email=${channels.email}, push=${channels.push})`
+          `\u26a0\ufe0f Reminder skipped: no delivery path for uid=${uid} (channels email=${channels.email}, push=${channels.push})`
         );
-        skipped += 1;
+        skipped += group.length;
         continue;
       }
 
-      const isPre = remindersSentCount % 2 === 0;
-      const stage = isPre ? 'first_reminder' : 'followup_reminder';
-      const dayNum = Math.floor(remindersSentCount / 2) + 1;
-
       const locale = sanitizeLocale(userInfo.locale);
-      const minutesToDue = Math.max(0, Math.round((nextDueAt.getTime() - now.getTime()) / 60000));
-      const minutesOverdue = Math.max(0, Math.round((now.getTime() - nextDueAt.getTime()) / 60000));
-      const plantName = data.name || 'your plant';
-      const cultivar = data.aiName || data.species || null;
+      const first = group[0];
+      const plantNames = group.map((g) => g.plantName);
 
-      const emailPayload = {
-        stage,
-        locale,
-        plantName,
-        cultivar,
-        userName: userInfo.name || null,
-        minutesToDue,
-        minutesOverdue,
-        recommendedAmountMl: data.wateringAmountMl || null,
-      };
-
-      // AI for first 4 days (slots 0-7); fallback for days 4-9.
-      // Push-only users also get AI-generated text for the first 4 days.
-      const shouldUseAI = (canTryEmail || canTryPush) && remindersSentCount < 8;
-      const emailCopy = shouldUseAI
-        ? await generateWateringEmailWithAI(emailPayload, { userId: uid, plantId: doc.id })
-        : buildWateringEmailFallback(emailPayload);
+      // One plant is the ordinary case and keeps the copy the model writes for
+      // it. Several share a single message, listed rather than described.
+      const copy =
+        group.length === 1
+          ? await generateWateringEmailWithAI(
+              {
+                stage: first.slot.stage,
+                locale,
+                plantName: first.plantName,
+                cultivar: first.cultivar,
+                userName: userInfo.name || null,
+                minutesToDue: Math.max(
+                  0,
+                  Math.round((first.nextDueAt.getTime() - now.getTime()) / 60000)
+                ),
+                minutesOverdue: Math.max(
+                  0,
+                  Math.round((now.getTime() - first.nextDueAt.getTime()) / 60000)
+                ),
+                recommendedAmountMl: first.data.wateringAmountMl || null,
+              },
+              { userId: uid, plantId: first.plantId }
+            )
+          : buildGroupedReminderCopy({
+              locale,
+              userName: userInfo.name || null,
+              plantNames,
+            });
 
       let mailQueued = false;
       if (canTryEmail) {
         try {
           await db.collection('mail').add({
             to: userInfo.email,
-            message: {
-              subject: emailCopy.subject,
-              text: emailCopy.text,
-              html: emailCopy.html,
-            },
+            message: { subject: copy.subject, text: copy.text, html: copy.html },
           });
           mailQueued = true;
         } catch (e) {
-          console.error(`❌ mail queue failed for plant ${doc.id}:`, e.message);
+          console.error(`\u274c mail queue failed for uid=${uid}:`, e.message);
         }
       }
 
@@ -4516,36 +4683,44 @@ exports.processWateringEmailReminders = functions.pubsub
           db,
           uid,
           fcmTokens,
-          doc.id,
-          plantName,
-          emailCopy,
-          stage
+          first.plantId,
+          plantNames.join(', '),
+          copy,
+          first.slot.stage,
+          group.map((g) => g.plantId)
         );
         pushSuccess = push.delivered;
         if (push.error) pushLastError = push.error;
       }
 
-      const delivered = mailQueued || pushSuccess > 0;
-      if (!delivered) {
-        skipped += 1;
+      if (!mailQueued && pushSuccess === 0) {
+        skipped += group.length;
         continue;
       }
-
       fcmDeliveredTotal += pushSuccess;
 
-      const newCount = remindersSentCount + 1;
-      await doc.ref.update({
-        reminderCycleId: cycleId,
-        remindersSentCount: newCount,
-        reminderLastSentAt: nowIso,
-        reminderLastCheckedAt: nowIso,
-        reminderStage: newCount >= WATERING_EMAIL_MAX_REMINDERS ? 'completed' : (isPre ? 'pre_sent' : 'post_sent'),
-        notificationState: isPre ? 'due' : 'overdue',
-      });
+      // The counters are per plant even when the message was not: each one is
+      // owed its own five reminders and reaches the end of them separately.
+      const batch = db.batch();
+      for (const g of group) {
+        const newCount = g.index + 1;
+        batch.update(g.ref, {
+          reminderCycleId: g.cycleId,
+          remindersSentCount: newCount,
+          reminderLastSentAt: nowIso,
+          reminderLastCheckedAt: nowIso,
+          reminderStage:
+            newCount >= WATERING_EMAIL_MAX_REMINDERS ? 'completed' : g.slot.plantStage,
+          notificationState: g.slot.isPre ? 'due' : 'overdue',
+        });
+        slotsCompleted += 1;
+      }
+      await batch.commit();
 
-      slotsCompleted += 1;
       console.log(
-        `📬 Reminder slot #${newCount} (day ${dayNum}, ${isPre ? 'pre' : 'post'}) plant=${doc.id} mail=${mailQueued ? 'yes' : 'no'} fcm_ok=${pushSuccess}`
+        `\ud83d\udcec Reminder for uid=${uid}: ${group.length} plant(s) [` +
+          group.map((g) => `${g.plantId}#${g.index + 1}/day${g.slot.dayNum}`).join(' ') +
+          `] mail=${mailQueued ? 'yes' : 'no'} fcm_ok=${pushSuccess}`
       );
     }
 
@@ -5696,6 +5871,10 @@ exports.CHAT_HISTORY_WINDOW = CHAT_HISTORY_WINDOW;
 exports.verifyCaller = verifyCaller;
 exports.accountIsDeleted = accountIsDeleted;
 exports.plantIsDeleted = plantIsDeleted;
+exports.reminderSlotAt = reminderSlotAt;
+exports.describeReminderSlot = describeReminderSlot;
+exports.buildGroupedReminderCopy = buildGroupedReminderCopy;
+exports.WATERING_EMAIL_MAX_REMINDERS = WATERING_EMAIL_MAX_REMINDERS;
 exports.fcmErrorOf = fcmErrorOf;
 exports.pushHealthUpdate = pushHealthUpdate;
 
