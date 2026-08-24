@@ -4,15 +4,8 @@ import { useEffect, useState } from "react";
 import {
   fetchStats,
   fetchNewUsersLast30Days,
-  fetchWeatherHealth,
-  fetchSyncHealth,
-  fetchPushHealth,
   type StatsOverview,
-  type WeatherHealth,
-  type SyncHealth,
-  type PushHealth,
 } from "@/lib/firestore";
-import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   BarChart,
@@ -34,26 +27,14 @@ import { format, parseISO } from "date-fns";
 export default function StatsPage() {
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [chartData, setChartData] = useState<{ date: string; count: number }[]>([]);
-  const [weather, setWeather] = useState<WeatherHealth | null>(null);
-  const [sync, setSync] = useState<SyncHealth | null>(null);
-  const [push, setPush] = useState<PushHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetchStats(),
-      fetchNewUsersLast30Days(),
-      fetchWeatherHealth(),
-      fetchSyncHealth(),
-      fetchPushHealth(),
-    ])
-      .then(([s, chart, health, syncHealth, pushHealth]) => {
+    Promise.all([fetchStats(), fetchNewUsersLast30Days()])
+      .then(([s, chart]) => {
         setStats(s);
         setChartData(chart);
-        setWeather(health);
-        setSync(syncHealth);
-        setPush(pushHealth);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -83,10 +64,6 @@ export default function StatsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Stats</h1>
-
-      <WeatherProviderLine health={weather} />
-      <PushDeliveryLine health={push} />
-      <BigQuerySyncLine health={sync} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -210,113 +187,3 @@ export default function StatsPage() {
  * and the schedule falls back to a plain interval, so nothing looks broken and
  * nobody finds out. This is the one place that says so.
  */
-function WeatherProviderLine({ health }: { health: WeatherHealth | null }) {
-  if (!health) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Weather provider — nothing recorded yet
-      </p>
-    );
-  }
-
-  const ok = health.lastOkAt;
-  const failed = health.lastFailAt;
-  // Failing right now means the last thing that happened was a failure. A count
-  // on its own does not say that: it also rises for a provider that recovered.
-  const down = failed != null && (ok == null || failed > ok);
-
-  return (
-    <div
-      className={`rounded-lg border px-4 py-3 text-sm ${
-        down ? "border-red-200 bg-red-50 text-red-800" : "text-muted-foreground"
-      }`}
-    >
-      <span className="font-medium">Weather provider</span>{" "}
-      {down ? "is not answering" : "is answering"}
-      {ok && <> · last success {formatDistanceToNow(ok, { addSuffix: true })}</>}
-      {health.failures > 0 && <> · {health.failures} failures</>}
-      {down && health.lastError && (
-        <div className="mt-1 font-mono text-xs">{health.lastError}</div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Whether last night's copy of the database into BigQuery went through.
- *
- * The marketing and analysis agents answer from that copy, not from Firestore.
- * A sync that quietly stops leaves them answering confidently from data that is
- * a week old and looks exactly like today's.
- */
-function PushDeliveryLine({ health }: { health: PushHealth | null }) {
-  if (!health?.lastAttemptAt) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Watering pushes — none attempted yet
-      </p>
-    );
-  }
-
-  const { lastAttemptAt, lastOkAt, lastFailAt, lastDeliveredCount } = health;
-  // The last attempt is the whole verdict. Age is deliberately not an alarm
-  // here: reminders fall due a couple of times a day and some days none do, so
-  // a quiet week is ordinary and turning it red would train everyone to ignore
-  // this line — which is how the outage it exists for went unseen.
-  const down = lastFailAt != null && (lastOkAt == null || lastFailAt >= lastOkAt);
-
-  return (
-    <div
-      className={`rounded-lg border px-4 py-3 text-sm ${
-        down ? "border-red-200 bg-red-50 text-red-800" : "text-muted-foreground"
-      }`}
-    >
-      <span className="font-medium">Watering pushes</span>{" "}
-      {down ? "reached no device" : "are arriving"} · last attempt{" "}
-      {formatDistanceToNow(lastAttemptAt, { addSuffix: true })}
-      {!down && lastDeliveredCount != null && (
-        <> · {lastDeliveredCount} {lastDeliveredCount === 1 ? "device" : "devices"}</>
-      )}
-      {down && health.failures > 1 && <> · {health.failures} runs in a row</>}
-      {down && health.lastError && (
-        <div className="mt-1 font-mono text-xs">{health.lastError}</div>
-      )}
-    </div>
-  );
-}
-
-function BigQuerySyncLine({ health }: { health: SyncHealth | null }) {
-  if (!health) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        BigQuery sync — nothing recorded yet
-      </p>
-    );
-  }
-
-  const ok = health.lastOkAt;
-  const failed = health.lastFailAt;
-  const down = failed != null && (ok == null || failed > ok);
-  // A sync that succeeded but stopped running is the failure mode this exists
-  // for, so age matters as much as the last verdict.
-  const stale =
-    !down && ok != null && Date.now() - ok.getTime() > 36 * 60 * 60 * 1000;
-
-  return (
-    <div
-      className={`rounded-lg border px-4 py-3 text-sm ${
-        down || stale
-          ? "border-red-200 bg-red-50 text-red-800"
-          : "text-muted-foreground"
-      }`}
-    >
-      <span className="font-medium">BigQuery sync</span>{" "}
-      {down ? "failed" : stale ? "has not run in over a day" : "is current"}
-      {ok && <> · last success {formatDistanceToNow(ok, { addSuffix: true })}</>}
-      {health.lastLoadedCount != null && <> · {health.lastLoadedCount} tables</>}
-      {down && health.lastError && (
-        <div className="mt-1 font-mono text-xs">{health.lastError}</div>
-      )}
-    </div>
-  );
-}

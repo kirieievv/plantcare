@@ -29,6 +29,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { format, parseISO } from "date-fns";
+import { SystemHealth } from "@/components/system-health";
 
 function StatCard({
   title,
@@ -103,6 +104,8 @@ export default function DashboardPage() {
           {format(new Date(), "EEEE, MMMM d, yyyy")}
         </p>
       </div>
+
+      <SystemHealth />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard title="Total Users" value={stats?.totalUsers ?? 0} icon={Users} highlight />

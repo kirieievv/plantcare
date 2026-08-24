@@ -196,6 +196,62 @@ export async function fetchPushHealth(): Promise<PushHealth | null> {
   };
 }
 
+export interface MailHealth {
+  lastOkAt?: Date;
+  lastFailAt?: Date;
+  lastError?: string;
+  /** Failures newer than the last delivery that worked. */
+  consecutiveFailures: number;
+}
+
+/**
+ * Whether the watering emails are actually going out.
+ *
+ * Nothing has to be written for this: the Trigger Email extension stamps every
+ * message with how it went. It just was never read. In April the provider ran
+ * out of credits and answered 401 for six days — a hundred and forty-nine
+ * undelivered messages that nobody saw, because the app queues mail and never
+ * looks back.
+ *
+ * Counted as a run of failures newer than the last success rather than as a
+ * ratio: one bounced address between two good sends is ordinary, and a line
+ * that reddens for it is a line that gets ignored.
+ */
+export async function fetchMailHealth(sampleSize = 50): Promise<MailHealth | null> {
+  const snap = await getDocs(
+    query(collection(db, "mail"), orderBy("delivery.startTime", "desc"), limit(sampleSize))
+  );
+  if (snap.empty) return null;
+
+  let lastOkAt: Date | undefined;
+  let lastFailAt: Date | undefined;
+  let lastError: string | undefined;
+  let consecutiveFailures = 0;
+  let stillAtHead = true;
+
+  for (const d of snap.docs) {
+    const data = d.data();
+    const state = data.delivery?.state;
+    const at = toDate(data.delivery?.endTime || data.delivery?.startTime);
+
+    if (state === "SUCCESS") {
+      if (!lastOkAt) lastOkAt = at;
+      stillAtHead = false;
+    } else if (state === "ERROR") {
+      if (!lastFailAt) {
+        lastFailAt = at;
+        lastError = typeof data.delivery?.error === "string"
+          ? data.delivery.error.split("\n")[0].slice(0, 200)
+          : undefined;
+      }
+      if (stillAtHead) consecutiveFailures += 1;
+    }
+    // PENDING, PROCESSING and RETRY are still in flight and say nothing yet.
+  }
+
+  return { lastOkAt, lastFailAt, lastError, consecutiveFailures };
+}
+
 export interface SyncHealth {
   lastOkAt?: Date;
   lastFailAt?: Date;
