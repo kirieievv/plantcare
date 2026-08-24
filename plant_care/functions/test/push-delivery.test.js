@@ -20,7 +20,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { accountIsDeleted, fcmErrorOf } = require('../index.js');
+const { accountIsDeleted, fcmErrorOf, pushHealthUpdate } = require('../index.js');
 
 test('an account that deleted itself is deleted', () => {
   // Both fields, as deleteAccount writes them.
@@ -78,4 +78,65 @@ test('the outage itself fits in a document', () => {
 test('no error is null, not the string "undefined"', () => {
   assert.strictEqual(fcmErrorOf(null), null);
   assert.strictEqual(fcmErrorOf(undefined), null);
+});
+
+// ── Whether anyone would find out next time ──────────────────────────────────
+//
+// The outage lasted twenty days because nothing recorded it. These pin the one
+// judgement that makes the record trustworthy: a run that sent nothing is not
+// evidence either way. Reminders fall due a couple of times a day and some days
+// none do — call that healthy and a dead transport shows green, call it stale
+// and every quiet weekend cries outage.
+
+test('a run that sent nothing has no opinion', () => {
+  assert.strictEqual(
+    pushHealthUpdate({ attempted: false, delivered: 0, now: 1000 }),
+    null
+  );
+});
+
+test('one device reached means the transport works', () => {
+  const u = pushHealthUpdate({ attempted: true, delivered: 1, now: 1000 });
+  assert.strictEqual(u.lastOkAt, 1000);
+  assert.strictEqual(u.failures, 0);
+  assert.strictEqual(u.lastFailAt, undefined);
+});
+
+test('stale tokens alongside a delivery are not a failure', () => {
+  // The ordinary case: several dead tokens, one live phone. Nothing is wrong.
+  const u = pushHealthUpdate({
+    attempted: true,
+    delivered: 1,
+    error: 'messaging/registration-token-not-registered',
+    now: 1000,
+  });
+  assert.strictEqual(u.lastOkAt, 1000);
+  assert.strictEqual(u.failures, 0);
+});
+
+test('reaching nobody is the failure worth seeing', () => {
+  // The real outage: the batch endpoint answering 404 for every device.
+  const u = pushHealthUpdate({
+    attempted: true,
+    delivered: 0,
+    error: 'messaging/unknown-error',
+    now: 1000,
+  });
+  assert.strictEqual(u.lastFailAt, 1000);
+  assert.strictEqual(u.failures, 'increment');
+  assert.strictEqual(u.lastOkAt, undefined);
+  assert.match(u.lastError, /unknown-error/);
+});
+
+test('a failure with no error still says something', () => {
+  const u = pushHealthUpdate({ attempted: true, delivered: 0, now: 1000 });
+  assert.ok(u.lastError && u.lastError.length > 0);
+});
+
+test('every attempt is dated, whichever way it went', () => {
+  // Without this the panel cannot tell "working" from "not tried lately".
+  for (const delivered of [0, 3]) {
+    const u = pushHealthUpdate({ attempted: true, delivered, now: 1000 });
+    assert.strictEqual(u.lastAttemptAt, 1000);
+  }
 });

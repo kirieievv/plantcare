@@ -161,6 +161,41 @@ export async function fetchWeatherHealth(): Promise<WeatherHealth | null> {
   };
 }
 
+export interface PushHealth {
+  lastAttemptAt?: Date;
+  lastOkAt?: Date;
+  lastFailAt?: Date;
+  lastError?: string;
+  lastDeliveredCount?: number;
+  failures: number;
+}
+
+/**
+ * Whether the last batch of watering pushes reached anyone.
+ *
+ * The transport was dead for months and left no trace a person would see: the
+ * mail kept going, so nobody complained, and the push log stayed empty, which
+ * reads as "no reminders were due" rather than "none of them arrived".
+ *
+ * `lastAttemptAt` is the field that makes this readable. Reminders fall due a
+ * couple of times a day and some days none do, so an old `lastOkAt` on its own
+ * cannot tell a broken transport from a quiet week.
+ */
+export async function fetchPushHealth(): Promise<PushHealth | null> {
+  const snap = await getDoc(doc(db, "system", "push_health"));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    lastAttemptAt: toDate(d.lastAttemptAt),
+    lastOkAt: toDate(d.lastOkAt),
+    lastFailAt: toDate(d.lastFailAt),
+    lastError: typeof d.lastError === "string" ? d.lastError : undefined,
+    lastDeliveredCount:
+      typeof d.lastDeliveredCount === "number" ? d.lastDeliveredCount : undefined,
+    failures: typeof d.failures === "number" ? d.failures : 0,
+  };
+}
+
 export interface SyncHealth {
   lastOkAt?: Date;
   lastFailAt?: Date;

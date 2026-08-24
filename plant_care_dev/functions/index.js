@@ -2926,7 +2926,8 @@ async function sendWateringReminderPushMulticast(
   emailCopy,
   stage
 ) {
-  if (!tokens || tokens.length === 0) return 0;
+  // Nothing to send to is not an attempt — the caller must not read it as one.
+  if (!tokens || tokens.length === 0) return { delivered: 0, failed: 0, error: null };
   let successTotal = 0;
   let failureTotal = 0;
   let firstError = null;
@@ -2990,7 +2991,61 @@ async function sendWateringReminderPushMulticast(
   } catch (e) {
     console.warn('⚠️ push_notifications log failed:', e.message);
   }
-  return successTotal;
+  return { delivered: successTotal, failed: failureTotal, error: firstError };
+}
+
+/**
+ * What the push health record should become after one run of the reminder job.
+ *
+ * Silence is not a verdict. Reminders fall due a couple of times a day and some
+ * days none do, so a run that sent nothing says nothing about whether pushes
+ * work — recording it as healthy would paint a dead transport green, and
+ * recording it as stale would cry outage every quiet weekend. Only a run that
+ * actually tried gets an opinion.
+ *
+ * One device reached is enough to call the transport working: the rest of the
+ * failures are stale tokens, which are ordinary and clean themselves up.
+ */
+function pushHealthUpdate({ attempted, delivered, error, now = Date.now() }) {
+  if (!attempted) return null;
+  if (delivered > 0) {
+    return { lastAttemptAt: now, lastOkAt: now, lastDeliveredCount: delivered, failures: 0 };
+  }
+  return {
+    lastAttemptAt: now,
+    lastFailAt: now,
+    lastError: String(error || 'no device accepted the push').slice(0, 200),
+    failures: 'increment',
+  };
+}
+
+/**
+ * Writes down whether the last batch of watering pushes reached anyone.
+ *
+ * This is the part that was missing while the transport was dead. The failure
+ * left no trace anywhere a person looks: the mail kept going, so users had no
+ * reason to complain, and the push log stayed empty, which reads as "no
+ * reminders were due". Twenty days of it were found by hand.
+ *
+ * Failing to write this must never cost the run its work — it is a report about
+ * the job, not part of it.
+ */
+async function recordPushOutcome(db, { attempted, delivered, error }) {
+  const update = pushHealthUpdate({ attempted, delivered, error });
+  if (!update) return;
+  try {
+    const write = { ...update };
+    const stamp = admin.firestore.Timestamp.now();
+    for (const key of ['lastAttemptAt', 'lastOkAt', 'lastFailAt']) {
+      if (write[key]) write[key] = stamp;
+    }
+    if (write.failures === 'increment') {
+      write.failures = admin.firestore.FieldValue.increment(1);
+    }
+    await db.collection('system').doc('push_health').set(write, { merge: true });
+  } catch (e) {
+    console.warn('⚠️ push health write failed:', e.message);
+  }
 }
 
 /**
@@ -4276,6 +4331,8 @@ exports.processWateringEmailReminders = functions.pubsub
 
     let slotsCompleted = 0;
     let fcmDeliveredTotal = 0;
+    let pushAttempts = 0;
+    let pushLastError = null;
     let skipped = 0;
 
     for (const doc of candidatesSnap.docs) {
@@ -4436,7 +4493,8 @@ exports.processWateringEmailReminders = functions.pubsub
 
       let pushSuccess = 0;
       if (canTryPush) {
-        pushSuccess = await sendWateringReminderPushMulticast(
+        pushAttempts += 1;
+        const push = await sendWateringReminderPushMulticast(
           db,
           uid,
           fcmTokens,
@@ -4445,6 +4503,8 @@ exports.processWateringEmailReminders = functions.pubsub
           emailCopy,
           stage
         );
+        pushSuccess = push.delivered;
+        if (push.error) pushLastError = push.error;
       }
 
       const delivered = mailQueued || pushSuccess > 0;
@@ -4470,6 +4530,12 @@ exports.processWateringEmailReminders = functions.pubsub
         `📬 Reminder slot #${newCount} (day ${dayNum}, ${isPre ? 'pre' : 'post'}) plant=${doc.id} mail=${mailQueued ? 'yes' : 'no'} fcm_ok=${pushSuccess}`
       );
     }
+
+    await recordPushOutcome(db, {
+      attempted: pushAttempts > 0,
+      delivered: fcmDeliveredTotal,
+      error: pushLastError,
+    });
 
     console.log(
       `✅ processWateringEmailReminders done: slots=${slotsCompleted}, fcm_devices_ok=${fcmDeliveredTotal}, skipped=${skipped}, scanned=${candidatesSnap.size}`
@@ -5612,6 +5678,7 @@ exports.CHAT_HISTORY_WINDOW = CHAT_HISTORY_WINDOW;
 exports.verifyCaller = verifyCaller;
 exports.accountIsDeleted = accountIsDeleted;
 exports.fcmErrorOf = fcmErrorOf;
+exports.pushHealthUpdate = pushHealthUpdate;
 
 exports.scheduleCareTasks = functions.pubsub
   .schedule('every 6 hours')
