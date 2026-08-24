@@ -20,7 +20,12 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { accountIsDeleted, fcmErrorOf, pushHealthUpdate } = require('../index.js');
+const {
+  accountIsDeleted,
+  plantIsDeleted,
+  fcmErrorOf,
+  pushHealthUpdate,
+} = require('../index.js');
 
 test('an account that deleted itself is deleted', () => {
   // Both fields, as deleteAccount writes them.
@@ -139,4 +144,32 @@ test('every attempt is dated, whichever way it went', () => {
     const u = pushHealthUpdate({ attempted: true, delivered, now: 1000 });
     assert.strictEqual(u.lastAttemptAt, 1000);
   }
+});
+
+// ── Plants the owner threw out ───────────────────────────────────────────────
+//
+// One account had four notifications waiting and a single living plant: the
+// other three had been in the bin since the tenth, and had quietly collected
+// seventeen, fifteen and nine reminder slots since. The app had been hiding
+// them correctly the whole time — this job simply never read the field.
+
+test('a plant in the bin is deleted', () => {
+  assert.strictEqual(plantIsDeleted({ deletedAt: '2026-08-10T17:49:11.805Z' }), true);
+});
+
+test('an explicit null means the plant is alive', () => {
+  // What the app writes for every plant it creates.
+  assert.strictEqual(plantIsDeleted({ name: 'Зелёныш', deletedAt: null }), false);
+});
+
+test('a document with no such field is alive', () => {
+  // Absence has never meant deleted anywhere else here, and reading it that way
+  // would silence reminders wholesale.
+  assert.strictEqual(plantIsDeleted({ name: 'Зелёныш' }), false);
+  assert.strictEqual(plantIsDeleted({}), false);
+});
+
+test('nothing at all is not a deleted plant', () => {
+  assert.strictEqual(plantIsDeleted(null), false);
+  assert.strictEqual(plantIsDeleted(undefined), false);
 });

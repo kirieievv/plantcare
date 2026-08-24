@@ -2893,6 +2893,24 @@ function accountIsDeleted(user) {
 }
 
 /**
+ * Whether this plant is one the owner threw out.
+ *
+ * Deleting a plant is a soft delete — the row stays, which is deliberate. The
+ * app has always read it correctly and hides them; this job never looked at the
+ * field at all, so a plant deleted a fortnight ago went on collecting reminder
+ * slots. One account had four notifications waiting for it and only one living
+ * plant; the other three had been in the bin since the tenth.
+ *
+ * A document with no such field at all is alive: absence has never meant
+ * deleted anywhere else in this codebase, and reading it that way would silence
+ * reminders wholesale.
+ */
+function plantIsDeleted(plant) {
+  if (!plant) return false;
+  return !!plant.deletedAt;
+}
+
+/**
  * A short, storable name for whatever FCM objected to.
  *
  * The interesting failure is not a token going stale — it is the transport
@@ -4338,7 +4356,7 @@ exports.processWateringEmailReminders = functions.pubsub
     for (const doc of candidatesSnap.docs) {
       const data = doc.data() || {};
       const uid = data.userId;
-      if (!uid || data.muted === true) {
+      if (!uid || data.muted === true || plantIsDeleted(data)) {
         skipped += 1;
         continue;
       }
@@ -5677,6 +5695,7 @@ exports.loadChatHistory = loadChatHistory;
 exports.CHAT_HISTORY_WINDOW = CHAT_HISTORY_WINDOW;
 exports.verifyCaller = verifyCaller;
 exports.accountIsDeleted = accountIsDeleted;
+exports.plantIsDeleted = plantIsDeleted;
 exports.fcmErrorOf = fcmErrorOf;
 exports.pushHealthUpdate = pushHealthUpdate;
 

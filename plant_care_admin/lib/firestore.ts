@@ -401,6 +401,17 @@ export async function fetchPlantsByUser(userId: string): Promise<AdminPlant[]> {
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
 
+/**
+ * Deleting a plant or an account is a soft delete — the document stays, which is
+ * deliberate. Counting those documents is not: the panel was reporting a hundred
+ * plants where forty-three are alive, and fourteen with problems where five are.
+ *
+ * Counted as total minus deleted rather than as `deletedAt == null`, because a
+ * null-equality query in Firestore matches only documents that carry the field
+ * with an explicit null in it. Fourteen plants have no such field, and no user
+ * document has one at all — asked that way the panel would have reported
+ * twenty-eight plants and zero users.
+ */
 export async function fetchStats(): Promise<StatsOverview> {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -419,6 +430,10 @@ export async function fetchStats(): Promise<StatsOverview> {
     activeWeekSnap,
     plantsIssuesSnap,
     mutedPlantsSnap,
+    deletedUsersSnap,
+    deletedPlantsSnap,
+    deletedIssuesSnap,
+    deletedMutedSnap,
   ] = await Promise.all([
     getCountFromServer(collection(db, "users")),
     getCountFromServer(collection(db, "plants")),
@@ -428,17 +443,29 @@ export async function fetchStats(): Promise<StatsOverview> {
     getCountFromServer(query(collection(db, "users"), where("lastLogin", ">=", weekTs))),
     getCountFromServer(query(collection(db, "plants"), where("healthStatus", "==", "issue"))),
     getCountFromServer(query(collection(db, "plants"), where("muted", "==", true))),
+    getCountFromServer(query(collection(db, "users"), where("deletedAt", "!=", null))),
+    getCountFromServer(query(collection(db, "plants"), where("deletedAt", "!=", null))),
+    getCountFromServer(
+      query(collection(db, "plants"), where("healthStatus", "==", "issue"), where("deletedAt", "!=", null))
+    ),
+    getCountFromServer(
+      query(collection(db, "plants"), where("muted", "==", true), where("deletedAt", "!=", null))
+    ),
   ]);
 
+  const live = (all: number, deleted: number) => Math.max(0, all - deleted);
+
   return {
-    totalUsers: totalUsersSnap.data().count,
-    totalPlants: totalPlantsSnap.data().count,
+    totalUsers: live(totalUsersSnap.data().count, deletedUsersSnap.data().count),
+    totalPlants: live(totalPlantsSnap.data().count, deletedPlantsSnap.data().count),
+    // The registration and login figures are about people arriving, not about
+    // what they still own, so a later deletion does not unmake them.
     newUsersToday: newUsersTodaySnap.data().count,
     newUsersThisWeek: newUsersWeekSnap.data().count,
     activeToday: activeTodaySnap.data().count,
     activeThisWeek: activeWeekSnap.data().count,
-    plantsWithIssues: plantsIssuesSnap.data().count,
-    mutedPlants: mutedPlantsSnap.data().count,
+    plantsWithIssues: live(plantsIssuesSnap.data().count, deletedIssuesSnap.data().count),
+    mutedPlants: live(mutedPlantsSnap.data().count, deletedMutedSnap.data().count),
   };
 }
 
