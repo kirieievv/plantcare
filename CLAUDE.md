@@ -130,6 +130,22 @@ webhooks, and pubsub crons for watering reminders, seasonal tips and AI-usage ag
 - **Legacy field pairs in `Plant`.** `lastWatered`/`lastWateredAt` and
   `wateringFrequency`/`wateringIntervalDays` coexist; old fields are not yet removed. Check
   which one a code path actually reads before changing either.
+- **Firestore indexes: never deploy with `--force`.** It deletes every index the
+  project has and `firestore.indexes.json` does not name, without asking. Production
+  carried an undeclared `scheduled_test_pushes` index for months; `--force` would have
+  removed it silently and the scheduled-push query would have started failing. A plain
+  `firebase deploy --only firestore:indexes` can only create, never delete, and is always
+  the right command. If you create an index by hand — from the link in a "this query
+  requires an index" error, or with `gcloud firestore indexes composite create` — write it
+  into `firestore.indexes.json` in the same sitting, or the next person to reach for
+  `--force` deletes it. Do not spell out `__name__` in that file: Firestore appends it
+  itself, and naming it makes every deploy die on a 409 (`b1619e8a`). The deploy prints
+  "there are N indexes defined in your project that are not present in your file" whenever
+  drift returns — that line is the alarm, and it costs nothing to read.
+- **Another agent may be working in the other environment.** `plant_care` and
+  `plant_care_dev` are kept identical by hand, so a copy in either direction can carry
+  someone else's half-finished change with it. Diff the specific files you mean to sync
+  before copying, and never copy a whole directory.
 - **Secrets** live in `.env` and `assets/.env`, both git-ignored. Never commit or echo them.
 - **Localization**: add keys to `lib/l10n/app_en.arb` and the other five, then run
   `flutter gen-l10n`. The `app_localizations*.dart` files are generated — do not hand-edit.
