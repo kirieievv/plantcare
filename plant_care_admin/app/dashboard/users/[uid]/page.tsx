@@ -376,6 +376,14 @@ export default function UserDetailPage({
               <div className="space-y-1">
                 <p className="text-lg font-semibold">{user.name || "—"}</p>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
+                {user.deletedAt && (
+                  <Badge
+                    variant="outline"
+                    className="border-red-400 text-red-700 text-xs"
+                  >
+                    Account deleted
+                  </Badge>
+                )}
                 {user.bio && (
                   <p className="text-sm text-muted-foreground italic">
                     &ldquo;{user.bio}&rdquo;
@@ -413,6 +421,12 @@ export default function UserDetailPage({
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Member for</span>
                     <span>{daysSinceRegistration} days</span>
+                  </div>
+                )}
+                {user.deletedAt && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Deleted</span>
+                    <span className="text-red-700">{fmtShort(user.deletedAt)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -1045,6 +1059,7 @@ export default function UserDetailPage({
                       <TableHead className="text-xs uppercase tracking-wide text-muted-foreground w-36">Date</TableHead>
                       <TableHead className="text-xs uppercase tracking-wide text-muted-foreground w-28">Plant</TableHead>
                       <TableHead className="text-xs uppercase tracking-wide text-muted-foreground w-20">Stage</TableHead>
+                      <TableHead className="text-xs uppercase tracking-wide text-muted-foreground w-32">Delivered</TableHead>
                       <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Title</TableHead>
                       <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">Body</TableHead>
                     </TableRow>
@@ -1065,6 +1080,22 @@ export default function UserDetailPage({
                           >
                             {n.stage === "first_reminder" ? "pre" : n.stage === "followup_reminder" ? "post" : n.stage || "—"}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {n.successCount > 0 ? (
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {n.successCount} {n.successCount === 1 ? "device" : "devices"}
+                              {n.failureCount > 0 ? `, ${n.failureCount} failed` : ""}
+                            </span>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-xs border-red-400 text-red-700 max-w-[160px] truncate"
+                              title={n.error || undefined}
+                            >
+                              {n.error || "not delivered"}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-xs font-medium max-w-[200px]">
                           {n.title}

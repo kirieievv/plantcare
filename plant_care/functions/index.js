@@ -2854,15 +2854,58 @@ async function removeInvalidTokens(db, userId, tokens, response) {
     const userRef = db.collection('users').doc(userId);
     const userSnap = await userRef.get();
     if (userSnap.exists) {
+      const update = {};
       const arr = userSnap.data().fcmTokens;
       if (Array.isArray(arr)) {
         const next = arr.filter((t) => !invalidTokens.includes(String(t)));
-        if (next.length !== arr.length) {
-          await userRef.update({ fcmTokens: next });
-        }
+        if (next.length !== arr.length) update.fcmTokens = next;
       }
+      // fcmTokenCount is written once, when a token is registered, and was
+      // never corrected when one went away — the account that prompted all this
+      // still claims one device and has none. Recount rather than decrement:
+      // the number is only ever read by a human, and a wrong one is worse than
+      // no number at all.
+      const remaining = await db
+        .collection('fcm_tokens')
+        .where('userId', '==', userId)
+        .get();
+      if (userSnap.data().fcmTokenCount !== remaining.size) {
+        update.fcmTokenCount = remaining.size;
+      }
+      if (Object.keys(update).length > 0) await userRef.update(update);
     }
   }
+}
+
+/**
+ * Whether this account has asked to be gone.
+ *
+ * Deleting an account keeps the plants — that is deliberate, the history is
+ * worth having. What was never intended is that the reminder job kept writing
+ * to the person: one account deleted itself fourteen minutes after signing up
+ * and collected thirty-eight watering emails over the eleven days that
+ * followed. Both fields are checked because `deleteAccount` writes both, and a
+ * document that has only one of them is still someone who left.
+ */
+function accountIsDeleted(user) {
+  if (!user) return false;
+  return user.status === 'deleted' || !!user.deletedAt;
+}
+
+/**
+ * A short, storable name for whatever FCM objected to.
+ *
+ * The interesting failure is not a token going stale — it is the transport
+ * itself answering with a page of HTML, which is what a decommissioned endpoint
+ * does. Kept to a code and one line so a whole Google error page cannot land in
+ * a Firestore document.
+ */
+function fcmErrorOf(err) {
+  if (!err) return null;
+  const code = err.code || err.errorInfo?.code;
+  if (code) return String(code);
+  const message = String(err.message || err).replace(/\s+/g, ' ').trim();
+  return message ? message.slice(0, 200) : null;
 }
 
 function truncateForFcmNotification(s, maxLen) {
@@ -2885,6 +2928,8 @@ async function sendWateringReminderPushMulticast(
 ) {
   if (!tokens || tokens.length === 0) return 0;
   let successTotal = 0;
+  let failureTotal = 0;
+  let firstError = null;
   const title = truncateForFcmNotification(emailCopy.subject, 100);
   const body = truncateForFcmNotification(emailCopy.text, 240);
   for (let i = 0; i < tokens.length; i += FCM_WATERING_MULTICAST_MAX) {
@@ -2906,34 +2951,44 @@ async function sendWateringReminderPushMulticast(
       tokens: chunk,
     };
     try {
-      const response = await admin.messaging().sendMulticast(message);
+      // sendEachForMulticast, not sendMulticast: the latter posts to FCM's
+      // /batch endpoint, which Google decommissioned. It answered 404 for every
+      // watering push for as long as there are logs — see fcmErrorOf.
+      const response = await admin.messaging().sendEachForMulticast(message);
       successTotal += response.successCount;
+      failureTotal += response.failureCount;
       if (response.failureCount > 0) {
         const firstErr = response.responses.find((r) => !r.success)?.error;
+        firstError = firstError || fcmErrorOf(firstErr);
         console.warn(
-          `⚠️ FCM watering reminder partial failure user=${userId} ok=${response.successCount} fail=${response.failureCount} first=${firstErr?.code || firstErr?.message || firstErr}`
+          `⚠️ FCM watering reminder partial failure user=${userId} ok=${response.successCount} fail=${response.failureCount} first=${firstError}`
         );
       }
       await removeInvalidTokens(db, userId, chunk, response);
     } catch (e) {
+      failureTotal += chunk.length;
+      firstError = firstError || fcmErrorOf(e);
       console.error('❌ FCM watering reminder send error:', e.message);
     }
   }
-  if (successTotal > 0) {
-    try {
-      await db.collection('push_notifications').add({
-        userId,
-        plantId: plantId || null,
-        plantName: plantName || null,
-        title,
-        body,
-        stage: stage || null,
-        successCount: successTotal,
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      console.warn('⚠️ push_notifications log failed:', e.message);
-    }
+  // Every attempt is recorded, including the ones that failed. Logging only
+  // successes is how a twenty-day outage stayed invisible: the collection was
+  // empty, which reads as "no reminders were due" rather than "none arrived".
+  try {
+    await db.collection('push_notifications').add({
+      userId,
+      plantId: plantId || null,
+      plantName: plantName || null,
+      title,
+      body,
+      stage: stage || null,
+      successCount: successTotal,
+      failureCount: failureTotal,
+      error: firstError,
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    console.warn('⚠️ push_notifications log failed:', e.message);
   }
   return successTotal;
 }
@@ -3092,12 +3147,12 @@ async function sendFcmTestMulticast(db, userId, tokens, title, body) {
       tokens: chunk,
     };
     try {
-      const response = await admin.messaging().sendMulticast(message);
+      const response = await admin.messaging().sendEachForMulticast(message);
       successTotal += response.successCount;
       if (response.failureCount > 0) {
         const firstErr = response.responses.find((r) => !r.success)?.error;
         console.warn(
-          `⚠️ FCM test push partial failure user=${userId} ok=${response.successCount} fail=${response.failureCount} first=${firstErr?.code || firstErr?.message || firstErr}`
+          `⚠️ FCM test push partial failure user=${userId} ok=${response.successCount} fail=${response.failureCount} first=${fcmErrorOf(firstErr)}`
         );
       }
       await removeInvalidTokens(db, userId, chunk, response);
@@ -4128,6 +4183,7 @@ exports.processWateringEmailReminders = functions.pubsub
         email: null,
         locale: 'en',
         name: null,
+        deleted: false,
         channels: { email: true, push: true },
       };
       try {
@@ -4138,6 +4194,7 @@ exports.processWateringEmailReminders = functions.pubsub
           email: data.email || data.emailLower || null,
           locale: sanitizeLocale(data.locale || data.language || 'en'),
           name: data.name || data.displayName || null,
+          deleted: accountIsDeleted(data),
           channels: {
             email: ch.email !== false,
             push: ch.push !== false,
@@ -4304,6 +4361,10 @@ exports.processWateringEmailReminders = functions.pubsub
 
       const userInfo = await getUserInfo(uid);
       const { channels } = userInfo;
+      if (userInfo.deleted) {
+        skipped += 1;
+        continue;
+      }
       if (!channels.email && !channels.push) {
         skipped += 1;
         continue;
@@ -5549,6 +5610,8 @@ exports.describeGrowingConditions = describeGrowingConditions;
 exports.loadChatHistory = loadChatHistory;
 exports.CHAT_HISTORY_WINDOW = CHAT_HISTORY_WINDOW;
 exports.verifyCaller = verifyCaller;
+exports.accountIsDeleted = accountIsDeleted;
+exports.fcmErrorOf = fcmErrorOf;
 
 exports.scheduleCareTasks = functions.pubsub
   .schedule('every 6 hours')

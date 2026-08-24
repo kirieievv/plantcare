@@ -311,6 +311,12 @@ class NotificationService {
       final token = await _fcm.getToken();
       if (token != null) {
         await _firestore.collection('fcm_tokens').doc(token).delete();
+        // The summary field on the user document is written when a token is
+        // registered and was never corrected here, so an account that signed
+        // out went on claiming a device it no longer had.
+        await _firestore.collection('users').doc(user.uid).set({
+          'fcmTokenCount': 0,
+        }, SetOptions(merge: true));
         print('✅ NotificationService: FCM token removed from fcm_tokens');
       }
 

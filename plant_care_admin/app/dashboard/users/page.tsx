@@ -123,14 +123,22 @@ export default function UsersPage() {
         header: "Last login",
         cell: (info) => {
           const d = info.getValue();
+          // Deletion outranks recency: an account that left last week is not
+          // "Active", and until this said so there was nothing anywhere in the
+          // panel to show that anyone had ever deleted themselves.
+          const deletedAt = info.row.original.deletedAt;
           return (
             <div className="flex items-center gap-2">
               <span>{fmtDate(d)}</span>
-              {isActiveRecently(d) && (
+              {deletedAt ? (
+                <Badge variant="secondary" className="bg-red-100 text-red-700 text-xs">
+                  Deleted
+                </Badge>
+              ) : isActiveRecently(d) ? (
                 <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
                   Active
                 </Badge>
-              )}
+              ) : null}
             </div>
           );
         },

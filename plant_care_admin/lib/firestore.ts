@@ -26,6 +26,14 @@ export interface AdminUser {
   location?: string;
   createdAt?: Date;
   lastLogin?: Date;
+  /**
+   * When the account asked to be gone.
+   *
+   * Deleting an account keeps the plants and the history on purpose, so a
+   * deleted user is indistinguishable from a live one everywhere it isn't
+   * shown — which is how a departure went unnoticed for eleven days.
+   */
+  deletedAt?: Date;
   timezone?: string;
   plantCount?: number;
   aiCostUsd?: number;
@@ -194,6 +202,7 @@ export async function fetchUsers(): Promise<AdminUser[]> {
       location: data.location,
       createdAt: toDate(data.createdAt),
       lastLogin: toDate(data.lastLogin),
+      deletedAt: toDate(data.deletedAt),
       timezone: data.timezone,
       subscriptionStatus: (data.subscriptionStatus as string) || "trial",
       subscriptionExpiresAt: toDate(data.subscriptionExpiresAt),
@@ -224,6 +233,7 @@ export async function fetchUserById(uid: string): Promise<AdminUser | null> {
     location: data.location,
     createdAt: toDate(data.createdAt),
     lastLogin: toDate(data.lastLogin),
+    deletedAt: toDate(data.deletedAt),
     timezone: data.timezone,
     emailReminders: data.wateringReminderChannels != null
       ? (data.wateringReminderChannels.email !== false)
@@ -846,6 +856,11 @@ export interface PushNotification {
   body: string;
   stage: string | null;
   successCount: number;
+  // Attempts that reached nobody are recorded too, so the table has to be able
+  // to say so. Older documents predate both fields and were only written on
+  // success — hence the defaults below.
+  failureCount: number;
+  error: string | null;
   sentAt?: Date;
 }
 
@@ -869,6 +884,8 @@ export async function fetchPushNotifications(userId: string): Promise<PushNotifi
         body: data.body || "",
         stage: data.stage || null,
         successCount: data.successCount ?? 1,
+        failureCount: data.failureCount ?? 0,
+        error: data.error ?? null,
         sentAt: toDate(data.sentAt),
       };
     })
